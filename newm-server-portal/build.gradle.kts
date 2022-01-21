@@ -1,7 +1,6 @@
 plugins {
     application
     id("com.github.ben-manes.versions")
-    id("com.github.johnrengelman.shadow")
     kotlin("jvm")
     kotlin("plugin.serialization")
 }
@@ -9,14 +8,8 @@ plugins {
 java.sourceCompatibility = JavaVersion.VERSION_16
 java.targetCompatibility = JavaVersion.VERSION_16
 
-application {
-    mainClass.set("io.projectnewm.server.ApplicationKt")
-}
-
 dependencies {
     implementation(project(":newm-server-common"))
-    implementation(project(":newm-server-portal"))
-    implementation(project(":newm-server-mobile"))
 
     compileOnly(Dependencies.Kotlin.REFLECTION)
     implementation(Dependencies.Kotlin.STDLIB_JDK8)
@@ -43,14 +36,4 @@ dependencies {
     testImplementation(Dependencies.GoogleTruth.TRUTH)
     testImplementation(Dependencies.Ktor.SERVER_TESTS)
     testImplementation(Dependencies.Coroutines.TEST)
-}
-
-tasks {
-    shadowJar {
-        // defaults to project.name
-        //archiveBaseName.set("${project.name}-fat")
-
-        // defaults to all, so removing this overrides the normal, non-fat jar
-        archiveClassifier.set("")
-    }
 }

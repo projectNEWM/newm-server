@@ -1,5 +1,4 @@
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 buildscript {
     repositories {
@@ -20,7 +19,7 @@ plugins {
 }
 
 allprojects {
-    group = "io.projectnewm"
+    group = "io.projectnewm.server"
     version = "0.0.1-SNAPSHOT"
 }
 
@@ -85,7 +84,7 @@ subprojects {
 
     tasks.withType<Jar> {
         manifest {
-            attributes["Main-Class"] = "io.projectnewm.ApplicationKt"
+            attributes["Main-Class"] = "io.projectnewm.server.ApplicationKt"
         }
     }
 
