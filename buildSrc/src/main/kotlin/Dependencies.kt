@@ -13,6 +13,12 @@ object Dependencies {
         const val JSON = "org.jetbrains.kotlinx:kotlinx-serialization-json:$VERSION"
     }
 
+    object KotlinDateTime {
+        private const val VERSION = "0.3.2"
+
+        const val CORE = "org.jetbrains.kotlinx:kotlinx-datetime:$VERSION"
+    }
+
     object Coroutines {
         private const val VERSION = "1.6.0"
 
