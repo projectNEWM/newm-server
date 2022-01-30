@@ -1,0 +1,7 @@
+version: "3.9"
+services:
+  api:
+    build: .
+    ports:
+      - "3939:3939"
+    restart: on-failure

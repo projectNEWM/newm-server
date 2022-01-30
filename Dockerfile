@@ -1,6 +1,11 @@
-FROM openjdk:17
+FROM gradle:jdk17-alpine
 EXPOSE 3939:3939
-RUN mkdir /app
-COPY ./newm-server/build/install/newm-server /app/
-WORKDIR app/bin
-CMD ["./newm-server"]
+
+WORKDIR /app
+COPY . .
+USER root
+RUN chown -R gradle .
+USER gradle
+RUN gradle build
+
+ENTRYPOINT ["gradle","run"]
