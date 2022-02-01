@@ -1,0 +1,17 @@
+# We may start running these on docker in the future,
+# but I wanted to put something in place in the meantime
+name: test-pull-request
+on:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-java@v2
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+      - name: run tests
+        run: ./gradlew check
