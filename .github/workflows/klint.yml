@@ -1,7 +1,10 @@
 # We may start running these on docker in the future,
 # but I wanted to put something in place in the meantime
-name: test-pull-request
+name: klint
 on:
+  push:
+    branches:
+      - master
   pull_request:
 
 jobs:
@@ -13,5 +16,9 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '17'
-      - name: run tests
-        run: ./gradlew check
+      - run: |
+          curl -sSLO https://github.com/pinterest/ktlint/releases/download/0.42.1/ktlint && chmod a+x ktlint && sudo mv ktlint /usr/local/bin/
+      - name: run ktlint
+        run: |
+          ktlint
+        continue-on-error: false
