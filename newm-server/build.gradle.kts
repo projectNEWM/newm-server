@@ -6,8 +6,8 @@ plugins {
     kotlin("plugin.serialization")
 }
 
-java.sourceCompatibility = JavaVersion.VERSION_16
-java.targetCompatibility = JavaVersion.VERSION_16
+java.sourceCompatibility = JavaVersion.VERSION_17
+java.targetCompatibility = JavaVersion.VERSION_17
 
 application {
     mainClass.set("io.projectnewm.server.ApplicationKt")

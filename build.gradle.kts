@@ -65,10 +65,12 @@ subprojects {
     }
 
     project.tasks.withType<org.jetbrains.kotlin.gradle.tasks.UsesKotlinJavaToolchain>().configureEach {
-        kotlinJavaToolchain.jdk.use(
-            "/usr/lib/jvm/java-16-openjdk-amd64",
-            JavaVersion.VERSION_16
-        )
+        val service = project.extensions.getByType<JavaToolchainService>()
+        val customLauncher = service.launcherFor {
+            this.languageVersion.set(JavaLanguageVersion.of(JavaVersion.VERSION_17.majorVersion))
+        }
+
+        this.kotlinJavaToolchain.toolchain.use(customLauncher)
     }
 
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
@@ -78,7 +80,7 @@ subprojects {
                 "-Xopt-in=kotlin.RequiresOptIn",
                 "-Xopt-in=kotlinx.serialization.ExperimentalSerializationApi"
             )
-            jvmTarget = "16"
+            jvmTarget = "17"
         }
     }
 
