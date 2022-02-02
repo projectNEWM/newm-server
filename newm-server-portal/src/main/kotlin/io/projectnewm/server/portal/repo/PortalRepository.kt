@@ -6,7 +6,6 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
-
 class PortalRepository {
 
     suspend fun getSongs(): GetSongsResponse {

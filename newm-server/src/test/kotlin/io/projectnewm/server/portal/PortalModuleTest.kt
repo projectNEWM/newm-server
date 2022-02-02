@@ -1,13 +1,15 @@
 package io.projectnewm.server.portal
 
 import com.google.common.truth.Truth.assertThat
-import io.ktor.http.*
-import io.ktor.server.testing.*
+import io.ktor.http.HttpMethod
+import io.ktor.http.HttpStatusCode
+import io.ktor.server.testing.handleRequest
+import io.ktor.server.testing.withTestApplication
 import io.projectnewm.server.mainModule
 import io.projectnewm.server.portal.model.GetSongsResponse
 import io.projectnewm.server.portal.repo.mockSongs
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.Test
 
 class PortalModuleTest {

@@ -50,7 +50,7 @@ dependencies {
 tasks {
     shadowJar {
         // defaults to project.name
-        //archiveBaseName.set("${project.name}-fat")
+        // archiveBaseName.set("${project.name}-fat")
 
         // defaults to all, so removing this overrides the normal, non-fat jar
         archiveClassifier.set("")

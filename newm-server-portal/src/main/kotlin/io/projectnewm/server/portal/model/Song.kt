@@ -1,7 +1,6 @@
 package io.projectnewm.server.portal.model
 
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.serializers.LocalDateIso8601Serializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

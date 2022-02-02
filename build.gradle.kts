@@ -93,7 +93,6 @@ subprojects {
     tasks.withType<Test> {
         maxHeapSize = "8192m"
     }
-
 }
 
 fun isNonStable(version: String): Boolean {
