@@ -93,7 +93,6 @@ subprojects {
     tasks.withType<Test> {
         maxHeapSize = "8192m"
     }
-
 }
 
 fun isNonStable(version: String): Boolean {
@@ -101,4 +100,9 @@ fun isNonStable(version: String): Boolean {
     val regex = "^[0-9,.v-]+(-r)?$".toRegex()
     val isStable = stableKeyword || regex.matches(version)
     return isStable.not()
+}
+
+// staging task for heroku
+tasks.create("stage") {
+    dependsOn(":newm-server:installDist")
 }

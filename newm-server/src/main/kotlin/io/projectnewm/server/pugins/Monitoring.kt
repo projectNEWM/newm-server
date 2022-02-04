@@ -1,10 +1,10 @@
 package io.projectnewm.server.pugins
 
-import io.ktor.server.application.*
-import io.ktor.server.plugins.*
-import io.ktor.server.request.*
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+import io.ktor.server.plugins.CallLogging
+import io.ktor.server.request.path
 import org.slf4j.event.Level
-
 
 fun Application.configureMonitoring() {
     install(CallLogging) {

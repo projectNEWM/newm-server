@@ -1,6 +1,6 @@
 package io.projectnewm.server
 
-import io.ktor.server.application.*
+import io.ktor.server.application.Application
 import io.projectnewm.server.pugins.configureMonitoring
 import io.projectnewm.server.pugins.configureSerialization
 
