@@ -26,6 +26,7 @@ dependencies {
     implementation(Dependencies.Ktor.SERVER_SESSIONS)
     implementation(Dependencies.Ktor.SERVER_CONTENT_NEGOTIATION)
     implementation(Dependencies.Ktor.SERVER_CALL_LOGGING)
+    implementation(Dependencies.Ktor.SERVER_AUTH)
     implementation(Dependencies.Ktor.SERIALIZATION)
     implementation(Dependencies.Ktor.SERIALIZATION_JSON)
 
