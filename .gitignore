@@ -25,3 +25,6 @@ hs_err_pid*
 #project files
 .gradle
 .idea
+
+# Build files
+build

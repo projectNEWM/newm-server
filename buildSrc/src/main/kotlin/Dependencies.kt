@@ -50,12 +50,6 @@ object Dependencies {
         const val CLASSIC = "ch.qos.logback:logback-classic:$VERSION"
     }
 
-    object CommonsLogging {
-        private const val VERSION = "1.2"
-
-        const val LOGGING = "commons-logging:commons-logging:$VERSION"
-    }
-
     object JUnit {
         private const val VERSION = "5.8.2"
 

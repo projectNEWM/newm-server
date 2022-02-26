@@ -32,8 +32,6 @@ dependencies {
 
     implementation(Dependencies.LogBack.CLASSIC)
 
-    implementation(Dependencies.CommonsLogging.LOGGING)
-
     testImplementation(Dependencies.JUnit.JUPITER)
     testImplementation(Dependencies.Mockk.MOCKK)
     testImplementation(Dependencies.GoogleTruth.TRUTH)
