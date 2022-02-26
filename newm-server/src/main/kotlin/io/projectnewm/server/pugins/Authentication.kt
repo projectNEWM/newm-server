@@ -27,11 +27,13 @@ fun Application.configureAuthentication(repository: UserRepository) {
     install(Authentication) {
         configureOAuth(OAuthType.Google, environment)
         configureOAuth(OAuthType.Facebook, environment)
+        configureOAuth(OAuthType.LinkedIn, environment)
         configureJwt(environment)
     }
     routing {
         routeOAuth(OAuthType.Google, repository)
         routeOAuth(OAuthType.Facebook, repository)
+        routeOAuth(OAuthType.LinkedIn, repository)
 
         // TODO: remove these temporary test pages
         get("/") {
@@ -71,7 +73,7 @@ fun Application.configureAuthentication(repository: UserRepository) {
                         a("/login-facebook") { +"Login with Facebook" }
                     }
                     p {
-                        a("/login-linkedin") { +"Login with LinkedIn (coming soon)" }
+                        a("/login-linkedin") { +"Login with LinkedIn" }
                     }
                 }
             }
