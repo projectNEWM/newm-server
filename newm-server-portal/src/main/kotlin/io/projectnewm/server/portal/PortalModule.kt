@@ -13,7 +13,7 @@ import io.projectnewm.server.portal.repo.PortalRepository
 fun Application.portalModule() {
     val repository = PortalRepository()
     routing {
-        authenticate("auth-jwt-google") {
+        authenticate("auth-jwt") {
             route("/portal/songs") {
                 get {
                     call.respond(repository.getSongs())

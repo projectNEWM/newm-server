@@ -10,7 +10,7 @@ import io.ktor.server.routing.routing
 @Suppress("unused")
 fun Application.mobileModule() {
     routing {
-        authenticate("auth-jwt-google") {
+        authenticate("auth-jwt") {
             get("/mobile") {
                 call.respond(mapOf("Module" to "Mobile"))
             }
