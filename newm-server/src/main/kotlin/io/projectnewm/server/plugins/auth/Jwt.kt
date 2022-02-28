@@ -1,4 +1,4 @@
-package io.projectnewm.server.pugins.auth
+package io.projectnewm.server.plugins.auth
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
@@ -12,7 +12,7 @@ import io.ktor.server.auth.parseAuthorizationHeader
 import io.ktor.server.sessions.sessions
 import io.projectnewm.server.ext.getConfigLong
 import io.projectnewm.server.ext.getConfigString
-import io.projectnewm.server.pugins.token
+import io.projectnewm.server.sessions.token
 import java.util.Date
 
 fun Authentication.Configuration.configureJwt(environment: ApplicationEnvironment) {

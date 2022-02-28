@@ -33,10 +33,6 @@ subprojects {
         mavenCentral()
     }
 
-//    apply {
-//        plugin("io.spring.dependency-management")
-//    }
-
     tasks.withType<Test> {
         useJUnitPlatform()
     }

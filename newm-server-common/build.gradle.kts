@@ -28,6 +28,8 @@ dependencies {
     implementation(Dependencies.Ktor.SERIALIZATION)
     implementation(Dependencies.Ktor.SERIALIZATION_JSON)
 
+    implementation(Dependencies.Koin.KTOR)
+
     implementation(Dependencies.LogBack.CLASSIC)
 
     testImplementation(Dependencies.JUnit.JUPITER)

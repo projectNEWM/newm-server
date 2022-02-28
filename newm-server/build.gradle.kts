@@ -40,6 +40,8 @@ dependencies {
     implementation(Dependencies.Ktor.SERIALIZATION)
     implementation(Dependencies.Ktor.SERIALIZATION_JSON)
 
+    implementation(Dependencies.Koin.KTOR)
+
     implementation(Dependencies.LogBack.CLASSIC)
 
     testImplementation(Dependencies.JUnit.JUPITER)
@@ -47,6 +49,7 @@ dependencies {
     testImplementation(Dependencies.GoogleTruth.TRUTH)
     testImplementation(Dependencies.Ktor.SERVER_TESTS)
     testImplementation(Dependencies.Coroutines.TEST)
+    testImplementation(Dependencies.Koin.JUNIT)
 }
 
 tasks {

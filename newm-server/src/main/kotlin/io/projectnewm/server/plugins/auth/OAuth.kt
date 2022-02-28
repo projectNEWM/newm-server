@@ -1,4 +1,4 @@
-package io.projectnewm.server.pugins.auth
+package io.projectnewm.server.plugins.auth
 
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
@@ -19,14 +19,10 @@ import io.ktor.server.sessions.sessions
 import io.ktor.server.util.url
 import io.projectnewm.server.ext.getConfigString
 import io.projectnewm.server.ext.getConfigStrings
-import io.projectnewm.server.pugins.token
+import io.projectnewm.server.koin.inject
+import io.projectnewm.server.oauth.OAuthType
+import io.projectnewm.server.sessions.token
 import io.projectnewm.server.user.UserRepository
-
-enum class OAuthType {
-    Google,
-    Facebook,
-    LinkedIn
-}
 
 fun Authentication.Configuration.configureOAuth(
     type: OAuthType,
@@ -56,7 +52,8 @@ fun Authentication.Configuration.configureOAuth(
     }
 }
 
-fun Routing.routeOAuth(type: OAuthType, repository: UserRepository) {
+fun Routing.routeOAuth(type: OAuthType) {
+    val repository: UserRepository by inject()
     val name = type.name.lowercase()
     authenticate("auth-oauth-$name") {
         get("/login-$name") {

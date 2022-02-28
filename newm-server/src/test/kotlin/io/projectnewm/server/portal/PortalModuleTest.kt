@@ -5,9 +5,10 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.testing.handleRequest
 import io.ktor.server.testing.withTestApplication
+import io.projectnewm.server.plugins.configureDependencyInjection
+import io.projectnewm.server.plugins.configureSerialization
 import io.projectnewm.server.portal.model.GetSongsResponse
-import io.projectnewm.server.portal.repo.mockSongs
-import io.projectnewm.server.pugins.configureSerialization
+import io.projectnewm.server.portal.song.impl.mockSongs
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.Test
@@ -17,6 +18,7 @@ class PortalModuleTest {
     fun testGetSongs() {
         withTestApplication({
             configureSerialization()
+            configureDependencyInjection()
             configureFakeAuthentication()
             portalModule()
         }) {

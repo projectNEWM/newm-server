@@ -1,20 +1,21 @@
 package io.projectnewm.server
 
 import io.ktor.server.application.Application
-import io.projectnewm.server.pugins.configureAuthentication
-import io.projectnewm.server.pugins.configureMonitoring
-import io.projectnewm.server.pugins.configureSerialization
-import io.projectnewm.server.pugins.configureSessions
-import io.projectnewm.server.user.UserRepository
+import io.projectnewm.server.debug.configureDebugHomePage
+import io.projectnewm.server.plugins.configureAuthentication
+import io.projectnewm.server.plugins.configureDependencyInjection
+import io.projectnewm.server.plugins.configureMonitoring
+import io.projectnewm.server.plugins.configureSerialization
+import io.projectnewm.server.plugins.configureSessions
 
 fun main(args: Array<String>) = io.ktor.server.cio.EngineMain.main(args)
 
 @Suppress("unused")
 fun Application.mainModule() {
-    val userRepository = UserRepository()
-
     configureMonitoring()
+    configureDependencyInjection()
     configureSerialization()
     configureSessions()
-    configureAuthentication(userRepository)
+    configureAuthentication()
+    configureDebugHomePage()
 }

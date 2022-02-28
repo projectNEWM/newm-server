@@ -50,6 +50,14 @@ object Dependencies {
         const val CLASSIC = "ch.qos.logback:logback-classic:$VERSION"
     }
 
+    object Koin {
+        private const val VERSION = "3.2.0-beta-1"
+
+        const val KTOR = "io.insert-koin:koin-ktor:$VERSION"
+        const val TEST = "io.insert-koin:koin-test:$VERSION"
+        const val JUNIT = "io.insert-koin:koin-test-junit5:$VERSION"
+    }
+
     object JUnit {
         private const val VERSION = "5.8.2"
 
