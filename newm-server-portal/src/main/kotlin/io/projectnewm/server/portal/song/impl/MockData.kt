@@ -1,4 +1,4 @@
-package io.projectnewm.server.portal.repo
+package io.projectnewm.server.portal.song.impl
 
 import io.projectnewm.server.portal.model.Contributor
 import io.projectnewm.server.portal.model.Role
@@ -18,17 +18,17 @@ val mockSongs = listOf(
         contributors = listOf(
             Contributor(
                 name = "John",
-                role = Role.PRODUCER,
+                role = Role.Producer,
                 stake = 0.25
             ),
             Contributor(
                 name = "Dan",
-                role = Role.SOUND_ENGINEER,
+                role = Role.SoundEngineer,
                 stake = 0.25
             ),
             Contributor(
                 name = "Cudi",
-                role = Role.SINGER,
+                role = Role.Singer,
                 stake = 0.5
             )
         )
@@ -44,17 +44,17 @@ val mockSongs = listOf(
         contributors = listOf(
             Contributor(
                 name = "John",
-                role = Role.PRODUCER,
+                role = Role.Producer,
                 stake = 0.25
             ),
             Contributor(
                 name = "Dan",
-                role = Role.SOUND_ENGINEER,
+                role = Role.SoundEngineer,
                 stake = 0.25
             ),
             Contributor(
                 name = "J Cole",
-                role = Role.SINGER,
+                role = Role.Singer,
                 stake = 0.5
             )
         )
@@ -70,17 +70,17 @@ val mockSongs = listOf(
         contributors = listOf(
             Contributor(
                 name = "John",
-                role = Role.PRODUCER,
+                role = Role.Producer,
                 stake = 0.25
             ),
             Contributor(
                 name = "Dan",
-                role = Role.SOUND_ENGINEER,
+                role = Role.SoundEngineer,
                 stake = 0.25
             ),
             Contributor(
                 name = "Kendrick Lamar",
-                role = Role.SINGER,
+                role = Role.Singer,
                 stake = 0.5
             )
         )
@@ -96,17 +96,17 @@ val mockSongs = listOf(
         contributors = listOf(
             Contributor(
                 name = "John",
-                role = Role.PRODUCER,
+                role = Role.Producer,
                 stake = 0.25
             ),
             Contributor(
                 name = "Dan",
-                role = Role.SOUND_ENGINEER,
+                role = Role.SoundEngineer,
                 stake = 0.25
             ),
             Contributor(
                 name = "Tyler the Creator",
-                role = Role.SINGER,
+                role = Role.Singer,
                 stake = 0.5
             )
         )
@@ -122,17 +122,17 @@ val mockSongs = listOf(
         contributors = listOf(
             Contributor(
                 name = "John",
-                role = Role.PRODUCER,
+                role = Role.Producer,
                 stake = 0.25
             ),
             Contributor(
                 name = "Dan",
-                role = Role.SOUND_ENGINEER,
+                role = Role.SoundEngineer,
                 stake = 0.25
             ),
             Contributor(
                 name = "Kid Cudi",
-                role = Role.SINGER,
+                role = Role.Singer,
                 stake = 0.5
             )
         )

@@ -1,41 +1,22 @@
-package io.projectnewm.server.pugins
+package io.projectnewm.server.debug
 
 import io.ktor.server.application.Application
 import io.ktor.server.application.call
-import io.ktor.server.application.install
-import io.ktor.server.auth.Authentication
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.auth.principal
 import io.ktor.server.html.respondHtml
-import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
-import io.ktor.server.sessions.sessions
-import io.projectnewm.server.pugins.auth.OAuthType
-import io.projectnewm.server.pugins.auth.configureJwt
-import io.projectnewm.server.pugins.auth.configureOAuth
-import io.projectnewm.server.pugins.auth.routeOAuth
-import io.projectnewm.server.user.UserRepository
 import kotlinx.html.a
 import kotlinx.html.body
 import kotlinx.html.h1
 import kotlinx.html.h6
 import kotlinx.html.p
 
-fun Application.configureAuthentication(repository: UserRepository) {
-    install(Authentication) {
-        configureOAuth(OAuthType.Google, environment)
-        configureOAuth(OAuthType.Facebook, environment)
-        configureOAuth(OAuthType.LinkedIn, environment)
-        configureJwt(environment)
-    }
+// Home page for debug & testing during development
+fun Application.configureDebugHomePage() {
     routing {
-        routeOAuth(OAuthType.Google, repository)
-        routeOAuth(OAuthType.Facebook, repository)
-        routeOAuth(OAuthType.LinkedIn, repository)
-
-        // TODO: remove these temporary test pages
         get("/") {
             call.respondHtml {
                 body {
@@ -77,10 +58,6 @@ fun Application.configureAuthentication(repository: UserRepository) {
                     }
                 }
             }
-        }
-        get("/logout") {
-            call.sessions.clear()
-            call.respondText("Successfully logged out!!!")
         }
         authenticate("auth-jwt") {
             get("/jwt") {

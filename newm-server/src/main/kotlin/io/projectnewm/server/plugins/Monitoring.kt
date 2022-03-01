@@ -1,4 +1,4 @@
-package io.projectnewm.server.pugins
+package io.projectnewm.server.plugins
 
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
