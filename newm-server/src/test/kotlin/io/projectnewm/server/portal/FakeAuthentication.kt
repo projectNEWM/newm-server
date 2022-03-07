@@ -5,7 +5,7 @@ import io.ktor.server.application.install
 import io.ktor.server.auth.Authentication
 import io.ktor.server.auth.AuthenticationProvider
 
-fun Application.configureFakeAuthentication() {
+fun Application.installFakeAuthentication() {
     install(Authentication) {
         AuthenticationProvider(object : AuthenticationProvider.Configuration("auth-jwt") {}).apply {
             register(this)

@@ -10,14 +10,13 @@ import io.ktor.server.routing.routing
 import io.projectnewm.server.koin.inject
 import io.projectnewm.server.portal.song.SongRepository
 
-// https://ktor.io/docs/locations.html
 @Suppress("unused")
 fun Application.portalModule() {
     val repository: SongRepository by inject()
 
     routing {
         authenticate("auth-jwt") {
-            route("/portal/songs") {
+            route("v1/portal/songs") {
                 get {
                     call.respond(repository.getSongs())
                 }

@@ -1,4 +1,4 @@
-package io.projectnewm.server.plugins.auth
+package io.projectnewm.server.auth.jwt
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
@@ -10,18 +10,23 @@ import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.auth.jwt.jwt
 import io.ktor.server.auth.parseAuthorizationHeader
 import io.ktor.server.sessions.sessions
-import io.projectnewm.server.ext.getConfigLong
 import io.projectnewm.server.ext.getConfigString
+import io.projectnewm.server.ext.toUUID
+import io.projectnewm.server.koin.inject
 import io.projectnewm.server.sessions.token
-import java.util.Date
+import io.projectnewm.server.user.UserRepository
 
-fun Authentication.Configuration.configureJwt(environment: ApplicationEnvironment) {
+fun Authentication.Configuration.configureJwt() {
+    val repository: UserRepository by inject()
+    val environment: ApplicationEnvironment by inject()
 
+    val realm = environment.getConfigString("jwt.realm")
     val issuer = environment.getConfigString("jwt.issuer")
     val audience = environment.getConfigString("jwt.audience")
     val secret = environment.getConfigString("jwt.secret")
 
     jwt("auth-jwt") {
+        this.realm = realm
         verifier(
             verifier = JWT.require(Algorithm.HMAC256(secret))
                 .withAudience(audience)
@@ -29,23 +34,14 @@ fun Authentication.Configuration.configureJwt(environment: ApplicationEnvironmen
                 .build()
         )
         validate { credential ->
-            credential.payload.subject?.let { JWTPrincipal(credential.payload) }
+            credential.payload.subject?.takeIf { repository.exists(it.toUUID()) }?.let {
+                JWTPrincipal(credential.payload)
+            }
         }
         authHeader { call ->
             call.request.parseAuthorizationHeader() ?: call.sessions.token?.let {
                 HttpAuthHeader.Single(AuthScheme.Bearer, it)
             }
         }
-    }
-}
-
-fun createJwtToken(subject: String, environment: ApplicationEnvironment): String {
-    return with(environment) {
-        JWT.create()
-            .withIssuer(getConfigString("jwt.issuer"))
-            .withAudience(getConfigString("jwt.audience"))
-            .withSubject(subject)
-            .withExpiresAt(Date(System.currentTimeMillis() + getConfigLong("jwt.timeToLive")))
-            .sign(Algorithm.HMAC256(getConfigString("jwt.secret")))
     }
 }

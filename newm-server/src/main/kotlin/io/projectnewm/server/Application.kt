@@ -1,21 +1,32 @@
 package io.projectnewm.server
 
 import io.ktor.server.application.Application
-import io.projectnewm.server.debug.configureDebugHomePage
-import io.projectnewm.server.plugins.configureAuthentication
-import io.projectnewm.server.plugins.configureDependencyInjection
-import io.projectnewm.server.plugins.configureMonitoring
-import io.projectnewm.server.plugins.configureSerialization
-import io.projectnewm.server.plugins.configureSessions
+import io.ktor.server.routing.routing
+import io.projectnewm.server.auth.createAuthenticationRoutes
+import io.projectnewm.server.auth.installAuthentication
+import io.projectnewm.server.content.installContentNegotiation
+import io.projectnewm.server.database.initializeDatabase
+import io.projectnewm.server.debug.createDebugRoutes
+import io.projectnewm.server.koin.installDependencyInjection
+import io.projectnewm.server.logging.installCallLogging
+import io.projectnewm.server.sessions.installSessions
+import io.projectnewm.server.user.createUserRoutes
 
 fun main(args: Array<String>) = io.ktor.server.cio.EngineMain.main(args)
 
 @Suppress("unused")
 fun Application.mainModule() {
-    configureMonitoring()
-    configureDependencyInjection()
-    configureSerialization()
-    configureSessions()
-    configureAuthentication()
-    configureDebugHomePage()
+    installCallLogging()
+    installDependencyInjection()
+    installContentNegotiation()
+    installSessions()
+    installAuthentication()
+
+    initializeDatabase()
+
+    routing {
+        createAuthenticationRoutes()
+        createUserRoutes()
+        createDebugRoutes()
+    }
 }
