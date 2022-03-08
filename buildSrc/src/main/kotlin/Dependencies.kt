@@ -16,7 +16,7 @@ object Dependencies {
     object KotlinDateTime {
         private const val VERSION = "0.3.2"
 
-        const val CORE = "org.jetbrains.kotlinx:kotlinx-datetime:$VERSION"
+        const val ALL = "org.jetbrains.kotlinx:kotlinx-datetime:$VERSION"
     }
 
     object Coroutines {
@@ -34,11 +34,15 @@ object Dependencies {
         const val SERVER_CIO = "io.ktor:ktor-server-cio:$VERSION"
         const val SERVER_SESSIONS = "io.ktor:ktor-server-sessions:$VERSION"
         const val SERVER_CONTENT_NEGOTIATION = "io.ktor:ktor-server-content-negotiation:$VERSION"
+        const val SERVER_LOCATIONS = "io.ktor:ktor-server-locations:$VERSION"
         const val SERVER_CALL_LOGGING = "io.ktor:ktor-server-call-logging:$VERSION"
         const val SERVER_AUTH = "io.ktor:ktor-server-auth:$VERSION"
         const val SERVER_AUTH_JWT = "io.ktor:ktor-server-auth-jwt:$VERSION"
         const val SERVER_HTML_BUILDER = "io.ktor:ktor-server-html-builder:$VERSION"
+        const val CLIENT_CORE = "io.ktor:ktor-client-core:$VERSION"
         const val CLIENT_CIO = "io.ktor:ktor-client-cio:$VERSION"
+        const val CLIENT_CONTENT_NEGOTIATION = "io.ktor:ktor-client-content-negotiation:$VERSION"
+        const val CLIENT_SERIALIZATION = "io.ktor:ktor-client-serialization:$VERSION"
         const val SERIALIZATION = "io.ktor:ktor-serialization:$VERSION"
         const val SERIALIZATION_JSON = "io.ktor:ktor-serialization-kotlinx-json:$VERSION"
         const val SERVER_TESTS = "io.ktor:ktor-server-tests:$VERSION"
@@ -56,6 +60,26 @@ object Dependencies {
         const val KTOR = "io.insert-koin:koin-ktor:$VERSION"
         const val TEST = "io.insert-koin:koin-test:$VERSION"
         const val JUNIT = "io.insert-koin:koin-test-junit5:$VERSION"
+    }
+
+    object Expose {
+        private const val VERSION = "0.37.3"
+
+        const val CORE = "org.jetbrains.exposed:exposed-core:$VERSION"
+        const val DAO = "org.jetbrains.exposed:exposed-dao:$VERSION"
+        const val JDBC = "org.jetbrains.exposed:exposed-jdbc:$VERSION"
+    }
+
+    object HikariCP {
+        private const val VERSION = "3.4.2"
+
+        const val ALL = "com.zaxxer:HikariCP:$VERSION"
+    }
+
+    object PostgreSQL {
+        private const val VERSION = "42.2.2"
+
+        const val ALL = "org.postgresql:postgresql:$VERSION"
     }
 
     object JUnit {

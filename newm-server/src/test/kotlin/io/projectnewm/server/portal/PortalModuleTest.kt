@@ -5,8 +5,8 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.testing.handleRequest
 import io.ktor.server.testing.withTestApplication
-import io.projectnewm.server.plugins.configureDependencyInjection
-import io.projectnewm.server.plugins.configureSerialization
+import io.projectnewm.server.content.installContentNegotiation
+import io.projectnewm.server.koin.installDependencyInjection
 import io.projectnewm.server.portal.model.GetSongsResponse
 import io.projectnewm.server.portal.song.impl.mockSongs
 import kotlinx.serialization.decodeFromString
@@ -17,12 +17,12 @@ class PortalModuleTest {
     @Test
     fun testGetSongs() {
         withTestApplication({
-            configureSerialization()
-            configureDependencyInjection()
-            configureFakeAuthentication()
+            installContentNegotiation()
+            installDependencyInjection()
+            installFakeAuthentication()
             portalModule()
         }) {
-            handleRequest(HttpMethod.Get, "/portal/songs").apply {
+            handleRequest(HttpMethod.Get, "v1/portal/songs").apply {
                 assertThat(response.status()).isEqualTo(HttpStatusCode.OK)
                 assertThat(response.content).isNotEmpty()
                 val response = Json.decodeFromString<GetSongsResponse>(response.content!!)
