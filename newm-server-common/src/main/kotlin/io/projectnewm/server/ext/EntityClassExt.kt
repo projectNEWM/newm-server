@@ -10,6 +10,6 @@ import java.util.UUID
 
 fun <ID : Comparable<ID>, T : Entity<ID>> EntityClass<ID, T>.exists(
     op: SqlExpressionBuilder.() -> Op<Boolean>
-): Boolean = !find(op).empty()
+): Boolean = table.exists(op)
 
-fun <T : UUIDEntity> UUIDEntityClass<T>.exists(id: UUID): Boolean = exists { table.id eq id }
+fun <T : UUIDEntity> UUIDEntityClass<T>.exists(id: UUID): Boolean = table.exists(id)

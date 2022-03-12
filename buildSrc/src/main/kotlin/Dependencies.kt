@@ -36,6 +36,8 @@ object Dependencies {
         const val SERVER_CONTENT_NEGOTIATION = "io.ktor:ktor-server-content-negotiation:$VERSION"
         const val SERVER_LOCATIONS = "io.ktor:ktor-server-locations:$VERSION"
         const val SERVER_CALL_LOGGING = "io.ktor:ktor-server-call-logging:$VERSION"
+        const val SERVER_STATUS_PAGES = "io.ktor:ktor-server-status-pages:$VERSION"
+        const val SERVER_CORS = "io.ktor:ktor-server-cors:$VERSION"
         const val SERVER_AUTH = "io.ktor:ktor-server-auth:$VERSION"
         const val SERVER_AUTH_JWT = "io.ktor:ktor-server-auth-jwt:$VERSION"
         const val SERVER_HTML_BUILDER = "io.ktor:ktor-server-html-builder:$VERSION"
@@ -68,6 +70,7 @@ object Dependencies {
         const val CORE = "org.jetbrains.exposed:exposed-core:$VERSION"
         const val DAO = "org.jetbrains.exposed:exposed-dao:$VERSION"
         const val JDBC = "org.jetbrains.exposed:exposed-jdbc:$VERSION"
+        const val TIME = "org.jetbrains.exposed:exposed-java-time:$VERSION"
     }
 
     object HikariCP {
@@ -80,6 +83,20 @@ object Dependencies {
         private const val VERSION = "42.2.2"
 
         const val ALL = "org.postgresql:postgresql:$VERSION"
+    }
+
+    // https://github.com/patrickfav/bcrypt
+    object JBCrypt {
+        private const val VERSION = "0.9.0"
+
+        const val ALL = "at.favre.lib:bcrypt:$VERSION"
+    }
+
+    // https://commons.apache.org/proper/commons-email/
+    object ApacheCommonsEmail {
+        private const val VERSION = "1.5"
+
+        const val ALL = "org.apache.commons:commons-email:$VERSION"
     }
 
     object JUnit {

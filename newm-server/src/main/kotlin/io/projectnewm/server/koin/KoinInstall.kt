@@ -3,6 +3,7 @@ package io.projectnewm.server.koin
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.application.log
+import io.projectnewm.server.auth.authKoinModule
 import io.projectnewm.server.client.clientKoinModule
 import io.projectnewm.server.portal.song.songKoinModule
 import io.projectnewm.server.user.userKoinModule
@@ -15,6 +16,12 @@ fun Application.installDependencyInjection() {
         factory { get<Application>().log }
     }
     install(Koin) {
-        modules(appKoinModule, clientKoinModule, userKoinModule, songKoinModule)
+        modules(
+            appKoinModule,
+            clientKoinModule,
+            userKoinModule,
+            authKoinModule,
+            songKoinModule
+        )
     }
 }

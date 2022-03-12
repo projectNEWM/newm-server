@@ -37,6 +37,8 @@ dependencies {
     implementation(Dependencies.Expose.CORE)
     implementation(Dependencies.Expose.DAO)
 
+    implementation(Dependencies.JBCrypt.ALL)
+
     testImplementation(Dependencies.JUnit.JUPITER)
     testImplementation(Dependencies.Mockk.MOCKK)
     testImplementation(Dependencies.GoogleTruth.TRUTH)

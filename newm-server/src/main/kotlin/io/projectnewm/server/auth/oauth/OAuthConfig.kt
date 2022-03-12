@@ -10,7 +10,6 @@ import io.ktor.server.util.url
 import io.projectnewm.server.ext.getConfigString
 import io.projectnewm.server.ext.getConfigStrings
 import io.projectnewm.server.koin.inject
-import io.projectnewm.server.oauth.OAuthType
 
 fun Authentication.Configuration.configureOAuth(type: OAuthType) {
     val environment: ApplicationEnvironment by inject()
