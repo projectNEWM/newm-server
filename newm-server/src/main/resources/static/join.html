@@ -1,0 +1,34 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Join NEWM</title>
+</head>
+<body>
+<h2>Join NEWM</h2>
+
+<form action="javascript:onJoin()">
+    <p><input id="firstName" placeholder="First Name" required="required" type="firstName"/></p>
+    <p><input id="lastName" placeholder="Last Name" required="required" type="firstName"/></p>
+    <p><input id="pictureUrl" placeholder="Picture URL" type="url"/></p>
+    <p>
+        <input id="email" placeholder="Email" required="required" type="email"/>
+        <button onclick="onVerificationCode()">Send Verification Code</button>
+    </p>
+    <p><input id="password" placeholder="Password" required="required" type="password"/></p>
+    <p><input id="authCode" placeholder="Verification Code" required="required" type="number"/></p>
+    <p>
+        <button type="submit">Join</button>
+    </p>
+</form>
+<hr>
+<form>
+    <p>
+        <input type="button" value="Go Back" onclick="history.back()">
+    </p>
+</form>
+
+<script src="https://unpkg.com/axios/dist/axios.min.js" async></script>
+<script src="js/main.js" async></script>
+
+</body>
+</html>

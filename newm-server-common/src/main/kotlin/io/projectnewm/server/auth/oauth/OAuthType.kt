@@ -1,4 +1,4 @@
-package io.projectnewm.server.oauth
+package io.projectnewm.server.auth.oauth
 
 enum class OAuthType {
     Google,

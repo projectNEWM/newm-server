@@ -24,7 +24,7 @@ suspend inline fun PipelineContext<Unit, ApplicationCall>.restrictToMe(
         if (isMe) {
             body(userId)
         } else {
-            call.respond(HttpStatusCode.Unauthorized)
+            call.respond(HttpStatusCode.Forbidden)
         }
     }
 }
