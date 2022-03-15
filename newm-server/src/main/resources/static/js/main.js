@@ -1,18 +1,5 @@
 function onLoadHome() {
-    axios.get('/auth/jwt', {
-        withCredentials: true
-    })
-    .then(function (response) {
-        console.log(response);
-        document.getElementById('loggedInDiv').style.display = 'initial';
-    })
-    .catch(function (error) {
-        console.log(error);
-        document.getElementById('loggedOutDiv').style.display = 'initial';
-        if (error.response.status != 401) {
-            alert(error);
-        }
-    });
+    document.getElementById('loggedOutDiv').style.display = 'initial';
 }
 
 function onLogin() {
@@ -22,7 +9,7 @@ function onLogin() {
     })
     .then(function (response) {
         console.log(response);
-        location.reload();
+        alert("Fake login ok");
     })
     .catch(function (error) {
         console.log(error);
