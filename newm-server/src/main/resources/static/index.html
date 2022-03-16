@@ -6,12 +6,22 @@
 <body onload="onLoadHome()">
 <h2>NEWM Server Debug Page</h2>
 
-<div id="loggedOutDiv" style="display:none">
+<div id="loggedOutDiv" >
     <form action="javascript:onLogin()">
         <p><input id="email" placeholder="Email" required="required" type="email"/></p>
         <p><input id="password" placeholder="Password" required="required" type="password"/></p>
         <p>
-            <button type="submit">Login</button>
+            <button type="submit">Test POST</button>
+        </p>
+    </form>
+</div>
+<hr>
+<div id="loggedOutDiv2" >
+    <form action="javascript:onLogin2()" >
+        <p><input id="email2" placeholder="Email" required="required" type="email"/></p>
+        <p><input id="password2" placeholder="Password" required="required" type="password"/></p>
+        <p>
+            <button type="submit">Test GET</button>
         </p>
     </form>
     <hr/>
@@ -20,7 +30,6 @@
     <p><a href="/login/linkedin">Login with LinkedIn</a></p>
     <p><a href="/join.html">Join</a></p>
 </div>
-
 <div id="loggedInDiv" style="display:none">
     <p><a href="/jwt.html">JWT</a></p>
     <p><a href="/profile.html">Profile</a></p>

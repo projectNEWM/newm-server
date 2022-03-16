@@ -1,5 +1,4 @@
 function onLoadHome() {
-    document.getElementById('loggedOutDiv').style.display = 'initial';
 }
 
 function onLogin() {
@@ -9,7 +8,24 @@ function onLogin() {
     })
     .then(function (response) {
         console.log(response);
-        alert("Fake login ok");
+        alert("Fake login using Post ok");
+    })
+    .catch(function (error) {
+        console.log(error);
+        alert(error);
+    });
+}
+
+function onLogin2() {
+    axios.get('/login2?session', {
+        params: {
+            email: document.getElementById('email2').value,
+            password: document.getElementById('password2').value
+        }
+    })
+    .then(function (response) {
+        console.log(response);
+        alert("Fake login using Get ok");
     })
     .catch(function (error) {
         console.log(error);
