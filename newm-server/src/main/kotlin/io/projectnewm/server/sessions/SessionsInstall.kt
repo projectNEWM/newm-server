@@ -8,5 +8,6 @@ import io.ktor.server.sessions.cookie
 fun Application.installSessions() {
     install(Sessions) {
         cookie<UserSession>("user-session")
+        cookie<RedirectSession>("redirect-session")
     }
 }

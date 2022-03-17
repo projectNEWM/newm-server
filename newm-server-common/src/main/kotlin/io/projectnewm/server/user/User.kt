@@ -15,8 +15,8 @@ data class User(
     val lastName: String? = null,
     val pictureUrl: String? = null,
     val email: String? = null,
-    val password: String? = null
-) {
-    override fun toString(): String =
-        if (password.isNullOrEmpty() || password == "***") super.toString() else copy(password = "***").toString()
-}
+    val newPassword: Password? = null,
+    val confirmPassword: Password? = null,
+    val currentPassword: Password? = null,
+    val authCode: String? = null
+)

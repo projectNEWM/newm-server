@@ -50,13 +50,31 @@ function onJoin() {
         lastName: document.getElementById('lastName').value,
         pictureUrl: document.getElementById('pictureUrl').value.nullIfEmpty(),
         email: document.getElementById('email').value,
-        password: document.getElementById('password').value
-    }, {
-        params: { authCode: document.getElementById('authCode').value }
+        newPassword: document.getElementById('newPassword').value,
+        confirmPassword: document.getElementById('confirmPassword').value,
+        authCode: document.getElementById('authCode').value
     })
     .then(function (response) {
         console.log(response);
         alert("Successfully Joined!!!")
+        window.location.href = '/';
+    })
+    .catch(function (error) {
+        console.log(error);
+        alert(error);
+    });
+}
+
+function onRecover() {
+    axios.put('/v1/users/password', {
+        email: document.getElementById('email').value,
+        newPassword: document.getElementById('newPassword').value,
+        confirmPassword: document.getElementById('confirmPassword').value,
+        authCode: document.getElementById('authCode').value
+    })
+    .then(function (response) {
+        console.log(response);
+        alert("Successfully Recovered!!!")
         window.location.href = '/';
     })
     .catch(function (error) {

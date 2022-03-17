@@ -18,17 +18,14 @@ fun Routing.createPasswordAuthRoutes() {
     post("/login") {
         with(call) {
             val req: LoginRequest = receive()
-            val userId = repository.find(req.email, req.password)
-            if (userId != null) {
-                val token = application.createJwt(userId)
-                if (request.queryParameters.contains("session")) {
-                    sessions.token = token
-                    respond(HttpStatusCode.NoContent)
-                } else {
-                    respond(LoginResponse(token))
-                }
+            val token = application.createJwt(
+                userId = repository.find(req.email, req.password)
+            )
+            if (request.queryParameters.contains("session")) {
+                sessions.token = token
+                respond(HttpStatusCode.NoContent)
             } else {
-                respond(HttpStatusCode.Unauthorized)
+                respond(LoginResponse(token))
             }
         }
     }
