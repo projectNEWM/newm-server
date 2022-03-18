@@ -9,6 +9,4 @@ data class UserSession(val token: String)
 
 var CurrentSession.token: String?
     get() = get<UserSession>()?.token
-    set(value) = set(UserSession(value!!))
-
-fun CurrentSession.clear() = clear<UserSession>()
+    set(value) = value?.let { set(UserSession(it)) } ?: clear<UserSession>()

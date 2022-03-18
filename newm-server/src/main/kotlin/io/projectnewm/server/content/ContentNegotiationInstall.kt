@@ -9,7 +9,10 @@ import kotlinx.serialization.json.Json
 fun Application.installContentNegotiation() {
     install(ContentNegotiation) {
         json(
-            json = Json { explicitNulls = false }
+            json = Json {
+                ignoreUnknownKeys = true
+                explicitNulls = false
+            }
         )
     }
 }

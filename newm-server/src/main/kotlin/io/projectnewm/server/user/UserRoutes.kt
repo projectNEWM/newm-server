@@ -12,12 +12,10 @@ import io.ktor.server.routing.patch
 import io.ktor.server.routing.put
 import io.ktor.server.routing.route
 import io.projectnewm.server.ext.identifyUser
-import io.projectnewm.server.ext.requiredQueryParam
 import io.projectnewm.server.ext.restrictToMe
 import io.projectnewm.server.koin.inject
 
 private const val USERS_PATH = "v1/users"
-private const val AUTH_CODE = "authCode"
 
 fun Routing.createUserRoutes() {
     val repository: UserRepository by inject()
@@ -32,7 +30,7 @@ fun Routing.createUserRoutes() {
             patch {
                 restrictToMe { myUserId ->
                     with(call) {
-                        repository.update(myUserId, receive(), request.queryParameters[AUTH_CODE])
+                        repository.update(myUserId, receive())
                         respond(HttpStatusCode.NoContent)
                     }
                 }
@@ -49,7 +47,13 @@ fun Routing.createUserRoutes() {
     route(USERS_PATH) {
         put {
             with(call) {
-                repository.add(receive(), request.requiredQueryParam(AUTH_CODE))
+                repository.add(receive())
+                respond(HttpStatusCode.NoContent)
+            }
+        }
+        put("/password") {
+            with(call) {
+                repository.recover(receive())
                 respond(HttpStatusCode.NoContent)
             }
         }
