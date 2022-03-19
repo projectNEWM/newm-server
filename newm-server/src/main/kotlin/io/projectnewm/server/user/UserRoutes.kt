@@ -51,7 +51,7 @@ fun Routing.createUserRoutes() {
                 respond(HttpStatusCode.NoContent)
             }
         }
-        put("/password") {
+        put("password") {
             with(call) {
                 repository.recover(receive())
                 respond(HttpStatusCode.NoContent)
