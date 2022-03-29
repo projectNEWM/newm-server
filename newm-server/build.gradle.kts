@@ -57,7 +57,7 @@ dependencies {
     implementation(Dependencies.HikariCP.ALL)
 
     implementation(Dependencies.PostgreSQL.ALL)
-
+    implementation(Dependencies.Sentry.ALL)
     implementation(Dependencies.ApacheCommonsEmail.ALL)
 
     testImplementation(Dependencies.JUnit.JUPITER)

@@ -115,4 +115,9 @@ object Dependencies {
 
         const val TRUTH = "com.google.truth:truth:$VERSION"
     }
+
+    object Sentry {
+        private const val VERSION = "5.7.0"
+        const val ALL = "io.sentry:sentry:$VERSION"
+    }
 }
