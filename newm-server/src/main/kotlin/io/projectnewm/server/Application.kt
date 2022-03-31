@@ -7,10 +7,8 @@ import io.projectnewm.server.auth.installAuthentication
 import io.projectnewm.server.content.installContentNegotiation
 import io.projectnewm.server.cors.installCORS
 import io.projectnewm.server.database.initializeDatabase
-import io.projectnewm.server.debug.createDebugRoutes
 import io.projectnewm.server.koin.installDependencyInjection
 import io.projectnewm.server.logging.installCallLogging
-import io.projectnewm.server.sessions.installSessions
 import io.projectnewm.server.statuspages.installStatusPages
 import io.projectnewm.server.user.createUserRoutes
 
@@ -21,7 +19,6 @@ fun Application.mainModule() {
     installCallLogging()
     installDependencyInjection()
     installContentNegotiation()
-    installSessions()
     installAuthentication()
     installStatusPages()
     installCORS()
@@ -31,6 +28,5 @@ fun Application.mainModule() {
     routing {
         createAuthenticationRoutes()
         createUserRoutes()
-        createDebugRoutes()
     }
 }
