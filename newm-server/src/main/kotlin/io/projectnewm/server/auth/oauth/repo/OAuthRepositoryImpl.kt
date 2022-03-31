@@ -9,11 +9,15 @@ import io.ktor.util.logging.Logger
 import io.projectnewm.server.auth.oauth.OAuthRepository
 import io.projectnewm.server.auth.oauth.OAuthType
 import io.projectnewm.server.ext.getConfigString
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.slf4j.MarkerFactory
 
 @Serializable
-private data class TokenResponse(val accessToken: String)
+private data class TokenResponse(
+    @SerialName("access_token")
+    val accessToken: String
+)
 
 class OAuthRepositoryImpl(
     private val environment: ApplicationEnvironment,
