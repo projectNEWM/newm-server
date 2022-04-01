@@ -4,23 +4,23 @@ import at.favre.lib.crypto.bcrypt.BCrypt
 import java.net.URL
 import java.util.UUID
 
-// https://owasp.org/www-community/OWASP_Validation_Regex_Repository
+// Based on android.util.Patterns.EMAIL_ADDRESS
 private val EMAIL_REGEX = Regex(
-    "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$"
-)
-
-// https://owasp.org/www-community/OWASP_Validation_Regex_Repository
-private val URL_REGEX = Regex(
-    "^((((https?|ftps?|gopher|telnet|nntp)://)|(mailto:|news:))(%[0-9A-Fa-f]{2}|[-()_.!~*';/?:@&=+$,A-Za-z0-9])+)([).!';/?:,][[:blank:]])?$"
+    """[a-zA-Z0-9+._%\-]{1,256}@[a-zA-Z0-9][a-zA-Z0-9\-]{0,64}(\.[a-zA-Z0-9][a-zA-Z0-9\-]{0,25})+"""
 )
 
 fun String.toUUID(): UUID = UUID.fromString(this)
 
-fun String.isValidEmail() = EMAIL_REGEX.matches(this)
+fun String.isValidEmail(): Boolean = EMAIL_REGEX.matches(this)
 
-fun String.isValidUrl() = URL_REGEX.matches(this)
+fun String.isValidUrl(): Boolean = try {
+    URL(this).toURI()
+    true
+} catch (_: Exception) {
+    false
+}
 
-fun String.toUrl(): URL = URL_REGEX.javaClass.getResource(this) ?: URL(this)
+fun String.toUrl(): URL = EMAIL_REGEX.javaClass.getResource(this) ?: URL(this)
 
 fun String.toHash(): String = BCrypt.withDefaults().hashToString(12, toCharArray())
 
