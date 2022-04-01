@@ -11,6 +11,7 @@ import io.projectnewm.server.exception.HttpUnauthorizedException
 import io.projectnewm.server.exception.HttpUnprocessableEntityException
 import io.projectnewm.server.ext.exists
 import io.projectnewm.server.ext.isValidEmail
+import io.projectnewm.server.ext.isValidUrl
 import io.projectnewm.server.user.Password
 import io.projectnewm.server.user.User
 import io.projectnewm.server.user.UserRepository
@@ -161,8 +162,7 @@ internal class UserRepositoryImpl(
 
     private fun String?.asValidUrl(): String {
         if (isNullOrBlank()) throw HttpBadRequestException("Missing url")
-        // TODO: temporarily disabling URL validation
-        // if (!isValidUrl()) throw HttpUnprocessableEntityException("Invalid url: $this")
+        if (!isValidUrl()) throw HttpUnprocessableEntityException("Invalid url: $this")
         return this
     }
 
