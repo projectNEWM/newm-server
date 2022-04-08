@@ -2,7 +2,6 @@ package io.projectnewm.server.auth.twofactor.repo
 
 import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.util.logging.Logger
-import io.projectnewm.server.auth.twofactor.TwoFactorAuthRepository
 import io.projectnewm.server.auth.twofactor.database.TwoFactorAuthEntity
 import io.projectnewm.server.ext.getConfigBoolean
 import io.projectnewm.server.ext.getConfigInt

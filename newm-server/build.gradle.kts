@@ -14,10 +14,6 @@ application {
 }
 
 dependencies {
-    implementation(project(":newm-server-common"))
-    implementation(project(":newm-server-portal"))
-    implementation(project(":newm-server-mobile"))
-
     compileOnly(Dependencies.Kotlin.REFLECTION)
     implementation(Dependencies.Kotlin.STDLIB_JDK8)
 
@@ -55,10 +51,10 @@ dependencies {
     implementation(Dependencies.Expose.TIME)
 
     implementation(Dependencies.HikariCP.ALL)
-
     implementation(Dependencies.PostgreSQL.ALL)
     implementation(Dependencies.Sentry.ALL)
     implementation(Dependencies.ApacheCommonsEmail.ALL)
+    implementation(Dependencies.JBCrypt.ALL)
 
     testImplementation(Dependencies.JUnit.JUPITER)
     testImplementation(Dependencies.Mockk.MOCKK)

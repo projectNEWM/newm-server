@@ -6,7 +6,6 @@ import io.ktor.client.request.forms.submitForm
 import io.ktor.http.Parameters
 import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.util.logging.Logger
-import io.projectnewm.server.auth.oauth.OAuthRepository
 import io.projectnewm.server.auth.oauth.OAuthType
 import io.projectnewm.server.ext.getConfigString
 import kotlinx.serialization.SerialName

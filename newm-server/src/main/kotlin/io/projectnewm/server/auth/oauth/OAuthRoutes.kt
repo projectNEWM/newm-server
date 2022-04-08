@@ -6,9 +6,10 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.Routing
 import io.ktor.server.routing.post
 import io.projectnewm.server.auth.jwt.createJwt
+import io.projectnewm.server.auth.oauth.repo.OAuthRepository
+import io.projectnewm.server.di.inject
 import io.projectnewm.server.exception.HttpBadRequestException
-import io.projectnewm.server.koin.inject
-import io.projectnewm.server.user.UserRepository
+import io.projectnewm.server.features.user.repo.UserRepository
 
 fun Routing.createOAuthRoutes(type: OAuthType) {
     val userRepository: UserRepository by inject()
@@ -16,7 +17,7 @@ fun Routing.createOAuthRoutes(type: OAuthType) {
 
     post("/login/${type.name.lowercase()}") {
         with(call) {
-            val req: OAuthLoginRequest = receive()
+            val req = receive<OAuthLoginRequest>()
             val accessToken = req.accessToken ?: req.code?.let { code ->
                 req.redirectUri?.let { redirectUri ->
                     oAuthRepository.getAccessToken(type, code, redirectUri)
