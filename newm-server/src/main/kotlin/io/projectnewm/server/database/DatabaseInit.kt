@@ -4,7 +4,7 @@ import com.zaxxer.hikari.HikariDataSource
 import io.ktor.server.application.Application
 import io.projectnewm.server.auth.twofactor.database.TwoFactorAuthTable
 import io.projectnewm.server.ext.getConfigString
-import io.projectnewm.server.user.database.UserTable
+import io.projectnewm.server.features.user.database.UserTable
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction

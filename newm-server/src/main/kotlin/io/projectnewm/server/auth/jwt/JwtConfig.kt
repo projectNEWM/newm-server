@@ -6,10 +6,12 @@ import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.server.auth.Authentication
 import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.auth.jwt.jwt
+import io.projectnewm.server.di.inject
 import io.projectnewm.server.ext.getConfigString
 import io.projectnewm.server.ext.toUUID
-import io.projectnewm.server.koin.inject
-import io.projectnewm.server.user.UserRepository
+import io.projectnewm.server.features.user.repo.UserRepository
+
+const val AUTH_JWT = "auth-jwt"
 
 fun Authentication.Configuration.configureJwt() {
     val repository: UserRepository by inject()
@@ -20,7 +22,7 @@ fun Authentication.Configuration.configureJwt() {
     val audience = environment.getConfigString("jwt.audience")
     val secret = environment.getConfigString("jwt.secret")
 
-    jwt("auth-jwt") {
+    jwt(AUTH_JWT) {
         this.realm = realm
         verifier(
             verifier = JWT.require(Algorithm.HMAC256(secret))

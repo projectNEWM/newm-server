@@ -9,7 +9,7 @@ import io.ktor.server.routing.Routing
 import io.ktor.server.routing.get
 
 fun Routing.createJwtRoutes() {
-    authenticate("auth-jwt") {
+    authenticate(AUTH_JWT) {
         get("/auth/jwt") {
             val principal = call.principal<JWTPrincipal>()!!
             call.respond(
