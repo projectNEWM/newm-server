@@ -12,6 +12,7 @@ import io.projectnewm.server.features.song.createSongRoutes
 import io.projectnewm.server.features.user.createUserRoutes
 import io.projectnewm.server.logging.initializeSentry
 import io.projectnewm.server.logging.installCallLogging
+import io.projectnewm.server.staticcontent.createStaticContentRoutes
 import io.projectnewm.server.statuspages.installStatusPages
 
 fun main(args: Array<String>) = io.ktor.server.cio.EngineMain.main(args)
@@ -29,6 +30,7 @@ fun Application.module() {
     installCORS()
 
     routing {
+        createStaticContentRoutes()
         createAuthenticationRoutes()
         createUserRoutes()
         createSongRoutes()
