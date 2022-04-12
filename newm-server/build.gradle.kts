@@ -52,7 +52,8 @@ dependencies {
 
     implementation(Dependencies.HikariCP.ALL)
     implementation(Dependencies.PostgreSQL.ALL)
-    implementation(Dependencies.Sentry.ALL)
+    implementation(Dependencies.Sentry.CORE)
+    implementation(Dependencies.Sentry.LOGBACK)
     implementation(Dependencies.ApacheCommonsEmail.ALL)
     implementation(Dependencies.JBCrypt.ALL)
 

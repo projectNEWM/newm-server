@@ -1,22 +1,23 @@
 package io.projectnewm.server.statuspages
 
-import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.Application
-import io.ktor.server.application.ApplicationCall
-import io.ktor.server.application.install
-import io.ktor.server.plugins.StatusPages
-import io.ktor.server.response.respond
+import io.ktor.http.*
+import io.ktor.server.application.*
+import io.ktor.server.plugins.*
+import io.ktor.server.response.*
 import io.projectnewm.server.exception.HttpStatusException
 import io.projectnewm.server.logging.captureToSentry
+import io.sentry.Sentry
 import org.jetbrains.exposed.dao.exceptions.EntityNotFoundException
 
 fun Application.installStatusPages() {
     install(StatusPages) {
         exception<HttpStatusException> { call, cause ->
+            Sentry.addBreadcrumb(cause.message.orEmpty())
             call.respondStatus(cause.statusCode, cause)
         }
 
         exception<EntityNotFoundException> { call, cause ->
+            Sentry.addBreadcrumb(cause.message.orEmpty())
             call.respondStatus(HttpStatusCode.NotFound, cause)
         }
 

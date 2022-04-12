@@ -4,6 +4,14 @@
             <pattern>%d{YYYY-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
+    <appender name="Sentry" class="io.sentry.logback.SentryAppender">
+        <options>
+            <!-- NOTE: Replace the test DSN below with YOUR OWN DSN to see the events from this app in your Sentry project/dashboard -->
+            <!--            <dsn>https://examplePublicKey@o0.ingest.sentry.io/0</dsn>-->
+        </options>
+        <minimumEventLevel>WARN</minimumEventLevel>
+        <minimumBreadcrumbLevel>DEBUG</minimumBreadcrumbLevel>
+    </appender>
     <root level="trace">
         <appender-ref ref="STDOUT"/>
     </root>

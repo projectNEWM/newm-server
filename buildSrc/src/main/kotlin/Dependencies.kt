@@ -118,6 +118,7 @@ object Dependencies {
 
     object Sentry {
         private const val VERSION = "5.7.0"
-        const val ALL = "io.sentry:sentry:$VERSION"
+        const val CORE = "io.sentry:sentry:$VERSION"
+        const val LOGBACK = "io.sentry:sentry-logback:$VERSION"
     }
 }
