@@ -60,13 +60,13 @@ internal class UserRepositoryImpl(
         entity.id.value
     }
 
-    override suspend fun findOrAdd(oauthType: OAuthType, accessToken: String): UUID {
+    override suspend fun findOrAdd(oauthType: OAuthType, oauthAccessToken: String): UUID {
         logger.debug(marker, "findOrAdd: oauthType = $oauthType")
 
         val user = when (oauthType) {
-            OAuthType.Google -> googleUserProvider.getUser(accessToken)
-            OAuthType.Facebook -> facebookUserProvider.getUser(accessToken)
-            OAuthType.LinkedIn -> linkedInUserProvider.getUser(accessToken)
+            OAuthType.Google -> googleUserProvider.getUser(oauthAccessToken)
+            OAuthType.Facebook -> facebookUserProvider.getUser(oauthAccessToken)
+            OAuthType.LinkedIn -> linkedInUserProvider.getUser(oauthAccessToken)
         }
         logger.debug(marker, "findOrAdd: oauthUser = $user")
 

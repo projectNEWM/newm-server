@@ -5,20 +5,19 @@ import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Routing
 import io.ktor.server.routing.post
-import io.projectnewm.server.auth.jwt.createJwt
+import io.projectnewm.server.auth.AUTH_PATH
+import io.projectnewm.server.auth.jwt.repo.JwtRepository
 import io.projectnewm.server.di.inject
 import io.projectnewm.server.features.user.repo.UserRepository
 
 fun Routing.createPasswordAuthRoutes() {
-    val repository: UserRepository by inject()
+    val userRepository: UserRepository by inject()
+    val jwtRepository: JwtRepository by inject()
 
-    post("/login") {
+    post("$AUTH_PATH/login") {
         with(call) {
-            val req = receive<LoginRequest>()
-            val token = application.createJwt(
-                userId = repository.find(req.email, req.password)
-            )
-            respond(LoginResponse(token))
+            val (email, password) = receive<LoginRequest>()
+            respond(jwtRepository.createLoginResponse(userRepository.find(email, password)))
         }
     }
 }

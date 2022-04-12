@@ -6,33 +6,39 @@ import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.server.auth.Authentication
 import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.auth.jwt.jwt
+import io.projectnewm.server.auth.jwt.repo.JwtRepository
 import io.projectnewm.server.di.inject
 import io.projectnewm.server.ext.getConfigString
 import io.projectnewm.server.ext.toUUID
-import io.projectnewm.server.features.user.repo.UserRepository
 
 const val AUTH_JWT = "auth-jwt"
+const val AUTH_JWT_REFRESH = "auth-jwt-refresh"
 
 fun Authentication.Configuration.configureJwt() {
-    val repository: UserRepository by inject()
+    configureJwt(AUTH_JWT, JwtType.Access)
+    configureJwt(AUTH_JWT_REFRESH, JwtType.Refresh)
+}
+
+private fun Authentication.Configuration.configureJwt(name: String, type: JwtType) {
     val environment: ApplicationEnvironment by inject()
+    val repository: JwtRepository by inject()
 
-    val realm = environment.getConfigString("jwt.realm")
-    val issuer = environment.getConfigString("jwt.issuer")
-    val audience = environment.getConfigString("jwt.audience")
-    val secret = environment.getConfigString("jwt.secret")
-
-    jwt(AUTH_JWT) {
-        this.realm = realm
+    jwt(name) {
+        this.realm = environment.getConfigString("jwt.realm")
         verifier(
-            verifier = JWT.require(Algorithm.HMAC256(secret))
-                .withAudience(audience)
-                .withIssuer(issuer)
+            JWT.require(Algorithm.HMAC256(environment.getConfigString("jwt.secret")))
+                .withAudience(environment.getConfigString("jwt.audience"))
+                .withIssuer(environment.getConfigString("jwt.issuer"))
+                .withClaim("type", type.name)
                 .build()
         )
         validate { credential ->
-            credential.payload.subject?.takeIf { repository.exists(it.toUUID()) }?.let {
-                JWTPrincipal(credential.payload)
+            with(credential) {
+                payload.id?.takeIf { jwkId ->
+                    repository.exists(jwkId.toUUID())
+                }?.let {
+                    JWTPrincipal(payload)
+                }
             }
         }
     }
