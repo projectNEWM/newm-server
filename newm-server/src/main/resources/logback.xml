@@ -4,8 +4,13 @@
             <pattern>%d{YYYY-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
+    <appender name="Sentry" class="io.sentry.logback.SentryAppender">
+        <minimumEventLevel>WARN</minimumEventLevel>
+        <minimumBreadcrumbLevel>DEBUG</minimumBreadcrumbLevel>
+    </appender>
     <root level="trace">
         <appender-ref ref="STDOUT"/>
+        <appender-ref ref="Sentry" />
     </root>
     <logger name="org.eclipse.jetty" level="INFO"/>
     <logger name="io.netty" level="INFO"/>
