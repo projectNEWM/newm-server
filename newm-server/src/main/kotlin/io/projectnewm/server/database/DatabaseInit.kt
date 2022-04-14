@@ -2,6 +2,7 @@ package io.projectnewm.server.database
 
 import com.zaxxer.hikari.HikariDataSource
 import io.ktor.server.application.Application
+import io.projectnewm.server.auth.jwt.database.JwtTable
 import io.projectnewm.server.auth.twofactor.database.TwoFactorAuthTable
 import io.projectnewm.server.ext.getConfigString
 import io.projectnewm.server.features.user.database.UserTable
@@ -24,7 +25,8 @@ fun Application.initializeDatabase() {
     transaction {
         SchemaUtils.create(
             UserTable,
-            TwoFactorAuthTable
+            TwoFactorAuthTable,
+            JwtTable
         )
     }
 }

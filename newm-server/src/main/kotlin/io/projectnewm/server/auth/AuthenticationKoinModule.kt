@@ -1,5 +1,7 @@
 package io.projectnewm.server.auth
 
+import io.projectnewm.server.auth.jwt.repo.JwtRepository
+import io.projectnewm.server.auth.jwt.repo.JwtRepositoryImpl
 import io.projectnewm.server.auth.oauth.repo.OAuthRepository
 import io.projectnewm.server.auth.oauth.repo.OAuthRepositoryImpl
 import io.projectnewm.server.auth.twofactor.repo.TwoFactorAuthRepository
@@ -9,4 +11,5 @@ import org.koin.dsl.module
 val authKoinModule = module {
     single<TwoFactorAuthRepository> { TwoFactorAuthRepositoryImpl(get(), get()) }
     single<OAuthRepository> { OAuthRepositoryImpl(get(), get(), get()) }
+    single<JwtRepository> { JwtRepositoryImpl(get(), get()) }
 }
