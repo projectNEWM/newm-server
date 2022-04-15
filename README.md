@@ -1,7 +1,10 @@
-# newm-server
-Backend components for mobile apps and the artist portal. 
+# NEWM Server
+Backend components to support mobile apps and the artist portal. The code is written 100% in [Kotlin](https://kotlinlang.org).
 
 ## Setup Environment
+### IntelliJ IDEA
+[IntelliJ IDEA](https://www.jetbrains.com/idea) is used for development.  
+
 ### Ktlint
 [Ktlint]("https://ktlint.github.io/") is used in CI to lint the codebase for every PR.
 Before opening a PR, it would be beneficial to run Ktlint locally. 
@@ -10,6 +13,12 @@ The project contains a pre-commit hook to run Ktlint for every commit. To enable
 install Ktlint and then run the following command:
 
 `git config core.hooksPath .githooks`
+
+## Documentation
+
+[REST API Documentation](api-docs/README.md)
+
+[Ktor Server Documentation](https://ktor.io/docs/ktor-server.html)
 
 ## ⚖️ License
 
