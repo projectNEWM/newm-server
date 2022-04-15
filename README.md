@@ -16,7 +16,7 @@ install Ktlint and then run the following command:
 
 ## Documentation
 
-[REST API Documentation](api-docs/README.md)
+[REST API Wiki](https://github.com/projectNEWM/newm-server/wiki)
 
 [Ktor Server Documentation](https://ktor.io/docs/ktor-server.html)
 
