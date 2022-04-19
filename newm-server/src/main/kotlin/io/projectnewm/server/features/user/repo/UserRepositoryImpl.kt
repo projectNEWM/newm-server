@@ -35,8 +35,6 @@ internal class UserRepositoryImpl(
     override suspend fun add(user: User) {
         logger.debug(marker, "add: user = $user")
 
-        val firstName = user.firstName.asValidName()
-        val lastName = user.lastName.asValidName()
         val pictureUrl = user.pictureUrl?.asValidUrl()
         val email = user.email.asValidEmail().asVerifiedEmail(user.authCode)
         val passwordHash = user.newPassword.asValidPassword(user.confirmPassword).toHash()
@@ -44,9 +42,12 @@ internal class UserRepositoryImpl(
         transaction {
             email.checkEmailUnique()
             UserEntity.new {
-                this.firstName = firstName
-                this.lastName = lastName
+                this.firstName = user.firstName
+                this.lastName = user.lastName
+                this.nickname = user.nickname
                 this.pictureUrl = pictureUrl
+                this.role = user.role
+                this.genres = user.genres?.toTypedArray()
                 this.email = email
                 this.passwordHash = passwordHash
             }
@@ -70,8 +71,6 @@ internal class UserRepositoryImpl(
         }
         logger.debug(marker, "findOrAdd: oauthUser = $user")
 
-        val firstName = user.firstName.asValidName()
-        val lastName = user.lastName.asValidName()
         val pictureUrl = user.pictureUrl?.asValidUrl()
         val email = user.email.asValidEmail()
 
@@ -84,8 +83,8 @@ internal class UserRepositoryImpl(
                 UserEntity.new {
                     this.oauthType = oauthType
                     this.oauthId = user.id
-                    this.firstName = firstName
-                    this.lastName = lastName
+                    this.firstName = user.firstName
+                    this.lastName = user.lastName
                     this.pictureUrl = pictureUrl
                     this.email = email
                 }.id.value
@@ -105,17 +104,18 @@ internal class UserRepositoryImpl(
     override suspend fun update(userId: UUID, user: User) {
         logger.debug(marker, "update: userId = $userId, user = $user")
 
-        val firstName = user.firstName?.asValidName()
-        val lastName = user.lastName?.asValidName()
         val pictureUrl = user.pictureUrl?.asValidUrl()
         val email = user.email?.asValidEmail()?.asVerifiedEmail(user.authCode)
         val passwordHash = user.newPassword?.asValidPassword(user.confirmPassword)?.toHash()
 
         transaction {
             val entity = UserEntity[userId]
-            firstName?.let { entity.firstName = it }
-            lastName?.let { entity.lastName = it }
+            user.firstName?.let { entity.firstName = it }
+            user.lastName?.let { entity.lastName = it }
+            user.nickname?.let { entity.lastName = it }
             pictureUrl?.let { entity.pictureUrl = it }
+            user.role?.let { entity.role = it }
+            user.genres?.let { entity.genres = it.toTypedArray() }
             email?.let {
                 it.checkEmailUnique()
                 entity.email = it
@@ -147,11 +147,6 @@ internal class UserRepositoryImpl(
 
     private fun getUserEntityByEmail(email: String): UserEntity =
         UserEntity.getByEmail(email) ?: throw HttpNotFoundException("Doesn't exist: $email")
-
-    private fun String?.asValidName(): String {
-        if (isNullOrBlank()) throw HttpBadRequestException("Missing name")
-        return this
-    }
 
     private fun String?.asValidEmail(): String {
         if (isNullOrBlank()) throw HttpBadRequestException("Missing email")
