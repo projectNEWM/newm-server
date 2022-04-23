@@ -13,12 +13,6 @@ object Dependencies {
         const val JSON = "org.jetbrains.kotlinx:kotlinx-serialization-json:$VERSION"
     }
 
-    object KotlinDateTime {
-        private const val VERSION = "0.3.2"
-
-        const val ALL = "org.jetbrains.kotlinx:kotlinx-datetime:$VERSION"
-    }
-
     object Coroutines {
         private const val VERSION = "1.6.0"
 
@@ -64,7 +58,7 @@ object Dependencies {
     }
 
     object Expose {
-        private const val VERSION = "0.37.3"
+        private const val VERSION = "0.38.2"
 
         const val CORE = "org.jetbrains.exposed:exposed-core:$VERSION"
         const val DAO = "org.jetbrains.exposed:exposed-dao:$VERSION"

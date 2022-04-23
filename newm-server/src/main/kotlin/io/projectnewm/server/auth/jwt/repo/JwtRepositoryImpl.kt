@@ -29,7 +29,7 @@ class JwtRepositoryImpl(
 
         val expiresAt = LocalDateTime
             .now()
-            .plusMinutes(environment.getConfigLong("jwt.${type.name.lowercase()}.timeToLive"))
+            .plusSeconds(environment.getConfigLong("jwt.${type.name.lowercase()}.timeToLive"))
 
         val jwtId = transaction {
             JwtEntity.deleteAllExpired()
@@ -49,15 +49,13 @@ class JwtRepositoryImpl(
             .sign(Algorithm.HMAC256(environment.getConfigString("jwt.secret")))
     }
 
-    override suspend fun delete(jwtId: UUID): Unit = transaction {
+    override suspend fun delete(jwtId: UUID) {
         logger.debug(marker, "delete: jwtId = $jwtId")
-        JwtEntity.deleteAllExpired()
-        JwtEntity[jwtId].delete()
+        transaction { JwtEntity[jwtId].delete() }
     }
 
-    override suspend fun exists(jwtId: UUID): Boolean = transaction {
+    override suspend fun exists(jwtId: UUID): Boolean {
         logger.debug(marker, "exists: jwtId = $jwtId")
-        JwtEntity.deleteAllExpired()
-        JwtEntity.exists(jwtId)
+        return transaction { JwtEntity.exists(jwtId) }
     }
 }

@@ -1,4 +1,4 @@
-package io.projectnewm.server.features.song
+package io.projectnewm.server.features.playlist
 
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
@@ -14,18 +14,20 @@ import io.ktor.server.routing.route
 import io.projectnewm.server.auth.jwt.AUTH_JWT
 import io.projectnewm.server.di.inject
 import io.projectnewm.server.ext.myUserId
+import io.projectnewm.server.ext.playlistId
 import io.projectnewm.server.ext.songId
 import io.projectnewm.server.ext.toUUID
-import io.projectnewm.server.features.song.repo.SongRepository
+import io.projectnewm.server.features.playlist.model.SongIdRequest
+import io.projectnewm.server.features.playlist.repo.PlaylistRepository
 
-private const val SONGS_PATH = "v1/songs"
+private const val PLAYLISTS_PATH = "v1/playlists"
 
 @Suppress("unused")
-fun Routing.createSongRoutes() {
-    val repository: SongRepository by inject()
+fun Routing.createPlaylistRoutes() {
+    val repository: PlaylistRepository by inject()
 
     authenticate(AUTH_JWT) {
-        route(SONGS_PATH) {
+        route(PLAYLISTS_PATH) {
             put {
                 with(call) {
                     repository.add(receive(), myUserId)
@@ -38,22 +40,37 @@ fun Routing.createSongRoutes() {
                     respond(repository.getAllByOwnerId(ownerId))
                 }
             }
-            route("{songId}") {
+            route("{playlistId}") {
                 get {
-                    with(call) {
-                        respond(repository.get(songId))
-                    }
+                    call.respond(repository.get(call.playlistId))
                 }
                 patch {
                     with(call) {
-                        repository.update(receive(), songId, myUserId)
+                        repository.update(receive(), playlistId, myUserId)
                         respond(HttpStatusCode.NoContent)
                     }
                 }
                 delete {
                     with(call) {
-                        repository.delete(songId, myUserId)
+                        repository.delete(playlistId, myUserId)
                         respond(HttpStatusCode.NoContent)
+                    }
+                }
+                route("songs") {
+                    put {
+                        with(call) {
+                            repository.addSong(playlistId, receive<SongIdRequest>().songId, myUserId)
+                            respond(HttpStatusCode.NoContent)
+                        }
+                    }
+                    get {
+                        call.respond(repository.getSongs(call.playlistId))
+                    }
+                    delete("{songId}") {
+                        with(call) {
+                            repository.deleteSong(playlistId, songId, myUserId)
+                            respond(HttpStatusCode.NoContent)
+                        }
                     }
                 }
             }

@@ -54,11 +54,13 @@ internal class UserRepositoryImpl(
         }
     }
 
-    override suspend fun find(email: String, password: Password): UUID = transaction {
+    override suspend fun find(email: String, password: Password): UUID {
         logger.debug(marker, "find: email = $email")
-        val entity = getUserEntityByEmail(email)
-        password.checkAuth(entity.passwordHash)
-        entity.id.value
+        return transaction {
+            val entity = getUserEntityByEmail(email)
+            password.checkAuth(entity.passwordHash)
+            entity.id.value
+        }
     }
 
     override suspend fun findOrAdd(oauthType: OAuthType, oauthAccessToken: String): UUID {
@@ -96,9 +98,11 @@ internal class UserRepositoryImpl(
         UserEntity.exists(userId)
     }
 
-    override suspend fun get(userId: UUID, includeAll: Boolean): User = transaction {
+    override suspend fun get(userId: UUID, includeAll: Boolean): User {
         logger.debug(marker, "get: userId = $userId, includeAll = $includeAll")
-        UserEntity[userId].toModel(includeAll)
+        return transaction {
+            UserEntity[userId].toModel(includeAll)
+        }
     }
 
     override suspend fun update(userId: UUID, user: User) {
@@ -112,7 +116,7 @@ internal class UserRepositoryImpl(
             val entity = UserEntity[userId]
             user.firstName?.let { entity.firstName = it }
             user.lastName?.let { entity.lastName = it }
-            user.nickname?.let { entity.lastName = it }
+            user.nickname?.let { entity.nickname = it }
             pictureUrl?.let { entity.pictureUrl = it }
             user.role?.let { entity.role = it }
             user.genres?.let { entity.genres = it.toTypedArray() }
@@ -140,9 +144,11 @@ internal class UserRepositoryImpl(
         }
     }
 
-    override suspend fun delete(userId: UUID) = transaction {
+    override suspend fun delete(userId: UUID) {
         logger.debug(marker, "delete: userId = $userId")
-        UserEntity[userId].delete()
+        transaction {
+            UserEntity[userId].delete()
+        }
     }
 
     private fun getUserEntityByEmail(email: String): UserEntity =

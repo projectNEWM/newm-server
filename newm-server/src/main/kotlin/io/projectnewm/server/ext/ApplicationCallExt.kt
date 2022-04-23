@@ -19,3 +19,9 @@ val ApplicationCall.userId: UUID
         val id = parameters["userId"]!!
         return if (id == "me") myUserId else id.toUUID()
     }
+
+val ApplicationCall.songId: UUID
+    get() = parameters["songId"]!!.toUUID()
+
+val ApplicationCall.playlistId: UUID
+    get() = parameters["playlistId"]!!.toUUID()
