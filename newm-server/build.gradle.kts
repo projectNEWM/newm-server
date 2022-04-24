@@ -22,8 +22,6 @@ dependencies {
 
     implementation(Dependencies.KotlinSerialization.JSON)
 
-    implementation(Dependencies.KotlinDateTime.ALL)
-
     implementation(Dependencies.Ktor.SERVER_CORE)
     implementation(Dependencies.Ktor.SERVER_CIO)
     implementation(Dependencies.Ktor.SERVER_CONTENT_NEGOTIATION)

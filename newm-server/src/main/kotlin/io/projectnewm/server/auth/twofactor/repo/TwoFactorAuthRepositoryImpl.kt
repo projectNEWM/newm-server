@@ -53,7 +53,7 @@ internal class TwoFactorAuthRepositoryImpl(
         }.send()
 
         val codeHash = code.toHash()
-        val expiresAt = LocalDateTime.now().plusMinutes(environment.getConfigLong("emailAuth.timeToLive"))
+        val expiresAt = LocalDateTime.now().plusSeconds(environment.getConfigLong("emailAuth.timeToLive"))
         transaction {
             TwoFactorAuthEntity.deleteByEmail(email)
             TwoFactorAuthEntity.new {

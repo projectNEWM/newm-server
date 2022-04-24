@@ -9,6 +9,7 @@ import io.ktor.server.response.respond
 import io.projectnewm.server.exception.HttpStatusException
 import io.projectnewm.server.logging.captureToSentry
 import org.jetbrains.exposed.dao.exceptions.EntityNotFoundException
+import org.jetbrains.exposed.exceptions.ExposedSQLException
 
 fun Application.installStatusPages() {
     install(StatusPages) {
@@ -16,6 +17,8 @@ fun Application.installStatusPages() {
             when (cause) {
                 is HttpStatusException -> call.respondStatus(cause.statusCode, cause)
                 is EntityNotFoundException -> call.respondStatus(HttpStatusCode.NotFound, cause)
+                is IllegalArgumentException,
+                is ExposedSQLException -> call.respondStatus(HttpStatusCode.UnprocessableEntity, cause)
                 else -> {
                     call.respondStatus(HttpStatusCode.InternalServerError, cause)
                     cause.captureToSentry()

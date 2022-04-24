@@ -5,6 +5,9 @@ import io.ktor.server.application.Application
 import io.projectnewm.server.auth.jwt.database.JwtTable
 import io.projectnewm.server.auth.twofactor.database.TwoFactorAuthTable
 import io.projectnewm.server.ext.getConfigString
+import io.projectnewm.server.features.playlist.database.PlaylistTable
+import io.projectnewm.server.features.playlist.database.SongsInPlaylistsTable
+import io.projectnewm.server.features.song.database.SongTable
 import io.projectnewm.server.features.user.database.UserTable
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
@@ -26,7 +29,10 @@ fun Application.initializeDatabase() {
         SchemaUtils.create(
             UserTable,
             TwoFactorAuthTable,
-            JwtTable
+            JwtTable,
+            SongTable,
+            PlaylistTable,
+            SongsInPlaylistsTable
         )
     }
 }

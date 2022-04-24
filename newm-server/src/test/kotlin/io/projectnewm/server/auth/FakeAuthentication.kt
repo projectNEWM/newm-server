@@ -1,4 +1,4 @@
-package io.projectnewm.server.portal
+package io.projectnewm.server.auth
 
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
