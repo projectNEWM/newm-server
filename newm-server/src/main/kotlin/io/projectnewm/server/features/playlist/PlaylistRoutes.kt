@@ -9,6 +9,7 @@ import io.ktor.server.routing.Routing
 import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.patch
+import io.ktor.server.routing.post
 import io.ktor.server.routing.put
 import io.ktor.server.routing.route
 import io.projectnewm.server.auth.jwt.AUTH_JWT
@@ -17,7 +18,8 @@ import io.projectnewm.server.ext.myUserId
 import io.projectnewm.server.ext.playlistId
 import io.projectnewm.server.ext.songId
 import io.projectnewm.server.ext.toUUID
-import io.projectnewm.server.features.playlist.model.SongIdRequest
+import io.projectnewm.server.features.playlist.model.PlaylistIdBody
+import io.projectnewm.server.features.song.model.SongIdBody
 import io.projectnewm.server.features.playlist.repo.PlaylistRepository
 
 private const val PLAYLISTS_PATH = "v1/playlists"
@@ -28,10 +30,9 @@ fun Routing.createPlaylistRoutes() {
 
     authenticate(AUTH_JWT) {
         route(PLAYLISTS_PATH) {
-            put {
+            post {
                 with(call) {
-                    repository.add(receive(), myUserId)
-                    respond(HttpStatusCode.NoContent)
+                    respond(PlaylistIdBody(repository.add(receive(), myUserId)))
                 }
             }
             get {
@@ -59,7 +60,7 @@ fun Routing.createPlaylistRoutes() {
                 route("songs") {
                     put {
                         with(call) {
-                            repository.addSong(playlistId, receive<SongIdRequest>().songId, myUserId)
+                            repository.addSong(playlistId, receive<SongIdBody>().songId, myUserId)
                             respond(HttpStatusCode.NoContent)
                         }
                     }

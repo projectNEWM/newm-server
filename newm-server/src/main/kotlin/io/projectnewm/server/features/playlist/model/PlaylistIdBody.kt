@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 import java.util.UUID
 
 @Serializable
-data class SongIdRequest(
+data class PlaylistIdBody(
     @Serializable(with = UUIDSerializer::class)
-    val songId: UUID
+    val playlistId: UUID
 )

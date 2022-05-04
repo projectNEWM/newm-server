@@ -9,13 +9,14 @@ import io.ktor.server.routing.Routing
 import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.patch
-import io.ktor.server.routing.put
+import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.projectnewm.server.auth.jwt.AUTH_JWT
 import io.projectnewm.server.di.inject
 import io.projectnewm.server.ext.myUserId
 import io.projectnewm.server.ext.songId
 import io.projectnewm.server.ext.toUUID
+import io.projectnewm.server.features.song.model.SongIdBody
 import io.projectnewm.server.features.song.repo.SongRepository
 
 private const val SONGS_PATH = "v1/songs"
@@ -26,10 +27,9 @@ fun Routing.createSongRoutes() {
 
     authenticate(AUTH_JWT) {
         route(SONGS_PATH) {
-            put {
+            post {
                 with(call) {
-                    repository.add(receive(), myUserId)
-                    respond(HttpStatusCode.NoContent)
+                    respond(SongIdBody(repository.add(receive(), myUserId)))
                 }
             }
             get {

@@ -61,6 +61,9 @@ dependencies {
     testImplementation(Dependencies.Ktor.SERVER_TESTS)
     testImplementation(Dependencies.Coroutines.TEST)
     testImplementation(Dependencies.Koin.JUNIT)
+    testImplementation(Dependencies.TestContainers.CORE)
+    testImplementation(Dependencies.TestContainers.JUINT)
+    testImplementation(Dependencies.TestContainers.POSTGRESQL)
 }
 
 tasks {

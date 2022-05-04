@@ -17,10 +17,10 @@ internal class SongRepositoryImpl(
 
     private val marker = MarkerFactory.getMarker(javaClass.simpleName)
 
-    override suspend fun add(song: Song, ownerId: UUID) {
+    override suspend fun add(song: Song, ownerId: UUID): UUID {
         logger.debug(marker, "add: song = $song")
         val title = song.title ?: throw HttpUnprocessableEntityException("missing title")
-        transaction {
+        return transaction {
             SongEntity.new {
                 this.ownerId = EntityID(ownerId, UserTable)
                 this.title = title
@@ -28,7 +28,7 @@ internal class SongRepositoryImpl(
                 covertArtUrl = song.covertArtUrl
                 description = song.description
                 credits = song.credits
-            }
+            }.id.value
         }
     }
 

@@ -5,7 +5,7 @@ import io.projectnewm.server.features.song.model.Song
 import java.util.UUID
 
 interface PlaylistRepository {
-    suspend fun add(playlist: Playlist, ownerId: UUID)
+    suspend fun add(playlist: Playlist, ownerId: UUID): UUID
     suspend fun update(playlist: Playlist, playlistId: UUID, requesterId: UUID)
     suspend fun delete(playlistId: UUID, requesterId: UUID)
     suspend fun get(playlistId: UUID): Playlist

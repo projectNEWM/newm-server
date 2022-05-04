@@ -112,7 +112,16 @@ object Dependencies {
 
     object Sentry {
         private const val VERSION = "5.7.0"
+
         const val CORE = "io.sentry:sentry:$VERSION"
         const val LOGBACK = "io.sentry:sentry-logback:$VERSION"
+    }
+
+    object TestContainers {
+        private const val VERSION = "1.17.1"
+
+        const val CORE = "org.testcontainers:testcontainers:$VERSION"
+        const val JUINT = "org.testcontainers:junit-jupiter:$VERSION"
+        const val POSTGRESQL = "org.testcontainers:postgresql:$VERSION"
     }
 }
