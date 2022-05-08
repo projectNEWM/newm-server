@@ -19,14 +19,14 @@ internal class PlaylistRepositoryImpl(
 
     private val marker = MarkerFactory.getMarker(javaClass.simpleName)
 
-    override suspend fun add(playlist: Playlist, ownerId: UUID) {
+    override suspend fun add(playlist: Playlist, ownerId: UUID): UUID {
         logger.debug(marker, "add: playlist = $playlist")
         val name = playlist.name ?: throw HttpUnprocessableEntityException("missing name")
-        transaction {
+        return transaction {
             PlaylistEntity.new {
                 this.ownerId = EntityID(ownerId, UserTable)
                 this.name = name
-            }
+            }.id.value
         }
     }
 

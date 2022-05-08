@@ -22,7 +22,6 @@ fun Application.initializeDatabase() {
             password = environment.getConfigString("database.password")
             isAutoCommit = false
             transactionIsolation = "TRANSACTION_REPEATABLE_READ"
-            schema
         }
     )
     transaction {

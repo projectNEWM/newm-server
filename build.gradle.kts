@@ -88,6 +88,25 @@ subprojects {
 
     tasks.withType<Test> {
         maxHeapSize = "8192m"
+        environment = mapOf(
+            "CORS_HOSTS" to "",
+            "NEWM_JWT_SECRET" to "",
+            "DATABASE_JDBC_URL" to "",
+            "DATABASE_USERNAME" to ",",
+            "DATABASE_PASSWORD" to "",
+            "GOOGLE_CLIENT_ID" to "",
+            "GOOGLE_CLIENT_SECRET" to "",
+            "FACEBOOK_CLIENT_ID" to "",
+            "FACEBOOK_CLIENT_SECRET" to "",
+            "LINKEDIN_CLIENT_ID" to "",
+            "LINKEDIN_CLIENT_SECRET" to "",
+            "EMAIL_AUTH_SMTP_HOST" to "",
+            "EMAIL_AUTH_SMTP_PORT" to "",
+            "EMAIL_AUTH_USERNAME" to "",
+            "EMAIL_AUTH_PASSWORD" to "",
+            "EMAIL_AUTH_FROM" to "",
+            "SENTRY_DNS" to ""
+        )
     }
 }
 
