@@ -22,7 +22,7 @@ import io.projectnewm.server.features.user.database.UserTable
 import java.time.LocalDateTime
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.deleteWhere
+import org.jetbrains.exposed.sql.deleteAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -32,7 +32,7 @@ class SongRouteTests : BaseApplicationTests() {
     @BeforeEach
     fun beforeEach() {
         transaction {
-            SongTable.deleteWhere { SongTable.ownerId eq testUserId }
+            SongTable.deleteAll()
         }
     }
 

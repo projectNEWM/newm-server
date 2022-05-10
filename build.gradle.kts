@@ -92,7 +92,7 @@ subprojects {
             "CORS_HOSTS" to "",
             "NEWM_JWT_SECRET" to "",
             "DATABASE_JDBC_URL" to "",
-            "DATABASE_USERNAME" to ",",
+            "DATABASE_USERNAME" to "",
             "DATABASE_PASSWORD" to "",
             "GOOGLE_CLIENT_ID" to "",
             "GOOGLE_CLIENT_SECRET" to "",
