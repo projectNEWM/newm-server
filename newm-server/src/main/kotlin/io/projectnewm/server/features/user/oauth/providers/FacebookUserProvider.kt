@@ -10,6 +10,8 @@ import io.ktor.client.request.parameter
 import io.ktor.http.ContentType
 import io.projectnewm.server.features.user.oauth.OAuthUser
 import io.projectnewm.server.features.user.oauth.OAuthUserProvider
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -25,36 +27,48 @@ private data class FacebookUser(
     override val lastName: String? = null,
     @SerialName("email")
     override val email: String? = null,
-    @SerialName("picture")
-    val picture: Picture? = null
-) : OAuthUser {
 
-    @SerialName("picture-url")
-    override val pictureUrl: String?
-        get() = picture?.data?.url
+    override var pictureUrl: String? = null
+) : OAuthUser
 
+@Serializable
+private data class Picture(
+    @SerialName("data")
+    val data: Data?
+) {
     @Serializable
-    data class Picture(
-        @SerialName("data")
-        val data: Data?
-    ) {
-        @Serializable
-        data class Data(
-            @SerialName("url")
-            val url: String?
-        )
-    }
+    data class Data(
+        @SerialName("url")
+        val url: String?
+    )
 }
 
 internal class FacebookUserProvider(private val httpClient: HttpClient) : OAuthUserProvider {
-    override suspend fun getUser(token: String): OAuthUser = httpClient.get(ENDPOINT_URL) {
-        parameter(
-            key = "fields",
-            value = "id,first_name,last_name,picture,email"
-        )
-        headers {
-            accept(ContentType.Application.Json)
-            bearerAuth(token)
+    override suspend fun getUser(token: String): OAuthUser = coroutineScope {
+        val pictureJob = async {
+            httpClient.get("$ENDPOINT_URL/picture") {
+                parameter(key = "type", value = "large")
+                parameter(key = "redirect", value = false)
+                headers {
+                    accept(ContentType.Application.Json)
+                    bearerAuth(token)
+                }
+            }.body<Picture>()
         }
-    }.body<FacebookUser>()
+        val userJob = async {
+            httpClient.get(ENDPOINT_URL) {
+                parameter(
+                    key = "fields",
+                    value = "id,first_name,last_name,email"
+                )
+                headers {
+                    accept(ContentType.Application.Json)
+                    bearerAuth(token)
+                }
+            }.body<FacebookUser>()
+        }
+        userJob.await().apply {
+            pictureUrl = pictureJob.await().data?.url.orEmpty()
+        }
+    }
 }

@@ -21,6 +21,7 @@ import io.projectnewm.server.features.playlist.database.SongsInPlaylistsTable
 import io.projectnewm.server.features.playlist.model.Playlist
 import io.projectnewm.server.features.playlist.model.PlaylistIdBody
 import io.projectnewm.server.features.song.database.SongEntity
+import io.projectnewm.server.features.song.database.SongTable
 import io.projectnewm.server.features.song.model.Song
 import io.projectnewm.server.features.song.model.SongIdBody
 import io.projectnewm.server.features.song.testSong1
@@ -30,7 +31,7 @@ import java.time.LocalDateTime
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.deleteWhere
+import org.jetbrains.exposed.sql.deleteAll
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.junit.jupiter.api.BeforeEach
@@ -41,7 +42,8 @@ class PlaylistRouteTests : BaseApplicationTests() {
     @BeforeEach
     fun beforeEach() {
         transaction {
-            PlaylistTable.deleteWhere { PlaylistTable.ownerId eq testUserId }
+            PlaylistTable.deleteAll()
+            SongTable.deleteAll()
         }
     }
 

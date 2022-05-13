@@ -30,8 +30,10 @@ private data class LinkedInUser(
     val picture: Picture? = null
 ) : OAuthUser {
 
-    override val pictureUrl: String
-        get() = picture?.image?.elements?.firstOrNull()?.identifiers?.firstOrNull()?.identifier.orEmpty()
+    override val pictureUrl: String?
+        get() = picture?.image?.elements?.run {
+            firstOrNull { it.isPreferred } ?: firstOrNull()
+        }?.identifiers?.firstOrNull()?.identifier
 
     override var email: String? = null
 
@@ -47,14 +49,39 @@ private data class LinkedInUser(
         ) {
             @Serializable
             data class Element(
+                @SerialName("data")
+                val data: Data?,
                 @SerialName("identifiers")
                 val identifiers: List<Identifier>?
             ) {
+                @Serializable
+                data class Data(
+                    @SerialName("com.linkedin.digitalmedia.mediaartifact.StillImage")
+                    val stillImage: StillImage?
+                )
+
+                @Serializable
+                data class StillImage(
+                    @SerialName("displaySize")
+                    val displaySize: DisplaySize?
+                )
+
+                @Serializable
+                data class DisplaySize(
+                    @SerialName("width")
+                    val with: Double?,
+                    @SerialName("height")
+                    val height: Double?
+                )
+
                 @Serializable
                 data class Identifier(
                     @SerialName("identifier")
                     val identifier: String?
                 )
+
+                val isPreferred: Boolean
+                    get() = data?.stillImage?.displaySize?.run { with == 200.0 && height == 200.0 } == true
             }
         }
     }
