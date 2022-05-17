@@ -7,7 +7,7 @@ import io.ktor.http.auth.HttpAuthHeader
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.auth.Authentication
-import io.ktor.server.auth.AuthenticationPipeline
+import io.ktor.server.auth.AuthenticationContext
 import io.ktor.server.auth.AuthenticationProvider
 import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.auth.parseAuthorizationHeader
@@ -16,18 +16,15 @@ import java.util.Date
 // Fake JWK authentication using User ID passed as access token
 fun Application.installFakeAuthentication() {
     install(Authentication) {
-        fakeJwtAuthProvider("auth-jwt")
-        fakeJwtAuthProvider("auth-jwt-refresh")
+        register(FakeAuthProvider("auth-jwt"))
+        register(FakeAuthProvider("auth-jwt-refresh"))
     }
 }
 
-private fun Authentication.Configuration.fakeJwtAuthProvider(name: String) {
-    AuthenticationProvider(object : AuthenticationProvider.Configuration(name) {}).apply {
-        pipeline.intercept(AuthenticationPipeline.RequestAuthentication) { context ->
-            val authHeader = context.call.request.parseAuthorizationHeader() as HttpAuthHeader.Single
-            context.principal(JWTPrincipal(FakePayload(authHeader.blob)))
-        }
-        register(this)
+private class FakeAuthProvider(name: String) : AuthenticationProvider(object : Config(name) {}) {
+    override suspend fun onAuthenticate(context: AuthenticationContext) = context.run {
+        val authHeader = call.request.parseAuthorizationHeader() as HttpAuthHeader.Single
+        principal(JWTPrincipal(FakePayload(authHeader.blob)))
     }
 }
 

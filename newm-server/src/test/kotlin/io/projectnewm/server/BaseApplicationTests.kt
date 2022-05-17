@@ -2,7 +2,7 @@ package io.projectnewm.server
 
 import com.zaxxer.hikari.HikariDataSource
 import io.ktor.client.HttpClient
-import io.ktor.client.plugins.ContentNegotiation
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.config.ApplicationConfig
 import io.ktor.server.testing.TestApplication

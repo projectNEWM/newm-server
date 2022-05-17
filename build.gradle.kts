@@ -14,8 +14,8 @@ buildscript {
 plugins {
     id("com.github.ben-manes.versions") version "0.41.0" apply false
     id("com.github.johnrengelman.shadow") version "7.1.2" apply false
-    kotlin("jvm") version "1.6.10" apply false
-    kotlin("plugin.serialization") version "1.6.10" apply false
+    kotlin("jvm") version Dependencies.Kotlin.VERSION apply false
+    kotlin("plugin.serialization") version Dependencies.Kotlin.VERSION apply false
 }
 
 allprojects {

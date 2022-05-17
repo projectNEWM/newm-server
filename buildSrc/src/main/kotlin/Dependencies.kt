@@ -1,20 +1,20 @@
 object Dependencies {
 
     object Kotlin {
-        private const val VERSION = "1.6.10"
+        const val VERSION = "1.6.21"
 
         const val STDLIB_JDK8 = "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$VERSION"
         const val REFLECTION = "org.jetbrains.kotlin:kotlin-reflect:$VERSION"
     }
 
     object KotlinSerialization {
-        private const val VERSION = "1.3.2"
+        private const val VERSION = "1.3.3"
 
         const val JSON = "org.jetbrains.kotlinx:kotlinx-serialization-json:$VERSION"
     }
 
     object Coroutines {
-        private const val VERSION = "1.6.0"
+        private const val VERSION = "1.6.1"
 
         const val CORE = "org.jetbrains.kotlinx:kotlinx-coroutines-core:$VERSION"
         const val JDK8 = "org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:$VERSION"
@@ -22,7 +22,7 @@ object Dependencies {
     }
 
     object Ktor {
-        private const val VERSION = "2.0.0-beta-1"
+        private const val VERSION = "2.0.1"
 
         const val SERVER_CORE = "io.ktor:ktor-server-core:$VERSION"
         const val SERVER_CIO = "io.ktor:ktor-server-cio:$VERSION"
@@ -44,13 +44,13 @@ object Dependencies {
     }
 
     object LogBack {
-        private const val VERSION = "1.2.10"
+        private const val VERSION = "1.2.11"
 
         const val CLASSIC = "ch.qos.logback:logback-classic:$VERSION"
     }
 
     object Koin {
-        private const val VERSION = "3.2.0-beta-1"
+        private const val VERSION = "3.2.0"
 
         const val KTOR = "io.insert-koin:koin-ktor:$VERSION"
         const val TEST = "io.insert-koin:koin-test:$VERSION"
@@ -67,13 +67,13 @@ object Dependencies {
     }
 
     object HikariCP {
-        private const val VERSION = "3.4.2"
+        private const val VERSION = "5.0.1"
 
         const val ALL = "com.zaxxer:HikariCP:$VERSION"
     }
 
     object PostgreSQL {
-        private const val VERSION = "42.2.2"
+        private const val VERSION = "42.3.5"
 
         const val ALL = "org.postgresql:postgresql:$VERSION"
     }
@@ -99,7 +99,7 @@ object Dependencies {
     }
 
     object Mockk {
-        private const val VERSION = "1.12.2"
+        private const val VERSION = "1.12.4"
 
         const val MOCKK = "io.mockk:mockk:$VERSION"
     }
@@ -111,7 +111,7 @@ object Dependencies {
     }
 
     object Sentry {
-        private const val VERSION = "5.7.0"
+        private const val VERSION = "5.7.4"
 
         const val CORE = "io.sentry:sentry:$VERSION"
         const val LOGBACK = "io.sentry:sentry-logback:$VERSION"

@@ -9,6 +9,7 @@ import io.projectnewm.server.features.playlist.playlistKoinModule
 import io.projectnewm.server.features.song.songKoinModule
 import io.projectnewm.server.features.user.userKoinModule
 import org.koin.dsl.module
+import org.koin.ktor.plugin.Koin
 
 fun Application.installDependencyInjection() {
     val appKoinModule = module {
