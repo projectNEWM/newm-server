@@ -55,6 +55,8 @@ dependencies {
     implementation(Dependencies.ApacheCommonsEmail.ALL)
     implementation(Dependencies.JBCrypt.ALL)
 
+    implementation(Dependencies.Cloudinary.ALL)
+
     testImplementation(Dependencies.JUnit.JUPITER)
     testImplementation(Dependencies.Mockk.MOCKK)
     testImplementation(Dependencies.GoogleTruth.TRUTH)

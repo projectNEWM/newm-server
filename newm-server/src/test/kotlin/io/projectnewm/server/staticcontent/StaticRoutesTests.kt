@@ -11,7 +11,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 
 @Suppress("RECEIVER_NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
-class StaticRouteTests : BaseApplicationTests() {
+class StaticRoutesTests : BaseApplicationTests() {
 
     @Test
     fun testGetPredefinedRoles() = runBlocking {

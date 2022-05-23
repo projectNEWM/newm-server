@@ -5,6 +5,7 @@ import io.ktor.server.application.install
 import io.ktor.server.application.log
 import io.projectnewm.server.auth.authKoinModule
 import io.projectnewm.server.client.clientKoinModule
+import io.projectnewm.server.features.cloudinary.cloudinaryKoinModule
 import io.projectnewm.server.features.playlist.playlistKoinModule
 import io.projectnewm.server.features.song.songKoinModule
 import io.projectnewm.server.features.user.userKoinModule
@@ -24,7 +25,8 @@ fun Application.installDependencyInjection() {
             userKoinModule,
             authKoinModule,
             songKoinModule,
-            playlistKoinModule
+            playlistKoinModule,
+            cloudinaryKoinModule
         )
     }
 }

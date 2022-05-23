@@ -37,7 +37,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
-class PlaylistRouteTests : BaseApplicationTests() {
+class PlaylistRoutesTests : BaseApplicationTests() {
 
     @BeforeEach
     fun beforeEach() {

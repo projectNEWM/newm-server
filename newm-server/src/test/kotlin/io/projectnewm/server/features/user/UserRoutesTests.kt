@@ -27,7 +27,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
-class UserRouteTests : BaseApplicationTests() {
+class UserRoutesTests : BaseApplicationTests() {
 
     @BeforeEach
     fun beforeEach() {

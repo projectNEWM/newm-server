@@ -105,7 +105,8 @@ subprojects {
             "EMAIL_AUTH_USERNAME" to "",
             "EMAIL_AUTH_PASSWORD" to "",
             "EMAIL_AUTH_FROM" to "",
-            "SENTRY_DNS" to ""
+            "SENTRY_DNS" to "",
+            "CLOUDINARY_URL" to ""
         )
     }
 }
