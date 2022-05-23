@@ -8,6 +8,7 @@ import io.projectnewm.server.content.installContentNegotiation
 import io.projectnewm.server.cors.installCORS
 import io.projectnewm.server.database.initializeDatabase
 import io.projectnewm.server.di.installDependencyInjection
+import io.projectnewm.server.features.cloudinary.createCloudinaryRoutes
 import io.projectnewm.server.features.playlist.createPlaylistRoutes
 import io.projectnewm.server.features.song.createSongRoutes
 import io.projectnewm.server.features.user.createUserRoutes
@@ -36,5 +37,6 @@ fun Application.module() {
         createUserRoutes()
         createSongRoutes()
         createPlaylistRoutes()
+        createCloudinaryRoutes()
     }
 }

@@ -92,6 +92,13 @@ object Dependencies {
         const val ALL = "org.apache.commons:commons-email:$VERSION"
     }
 
+    // https://github.com/cloudinary/cloudinary_java
+    object Cloudinary {
+        private const val VERSION = "1.32.2"
+
+        const val ALL = "com.cloudinary:cloudinary-http44:$VERSION"
+    }
+
     object JUnit {
         private const val VERSION = "5.8.2"
 
