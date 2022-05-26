@@ -17,7 +17,7 @@ private val passwords = listOf(
     "D:yKfCh9>6X>XCYZ"
 )
 
-class VerifyHashTest {
+class VerifyHashTests {
 
     @Test
     fun testVerifyValid() {

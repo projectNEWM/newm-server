@@ -11,9 +11,11 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.projectnewm.server.BaseApplicationTests
 import io.projectnewm.server.di.inject
+import io.projectnewm.server.ext.value
 import io.projectnewm.server.features.cloudinary.model.CloudinarySignResponse
 import java.time.Instant
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.JsonPrimitive
 import org.junit.jupiter.api.Test
 
 class CloudinaryRoutesTests : BaseApplicationTests() {
@@ -24,9 +26,11 @@ class CloudinaryRoutesTests : BaseApplicationTests() {
         val start = Instant.now().epochSecond
 
         val params = mapOf(
-            "folder" to "test",
-            "format" to "jpg",
-            "eager" to "c_pad,h_300,w_400|c_crop,h_200,w_260"
+            "string1" to JsonPrimitive("test"),
+            "double1" to JsonPrimitive(Math.PI),
+            "long1" to JsonPrimitive(Long.MAX_VALUE),
+            "bool1" to JsonPrimitive(true),
+            "bool2" to JsonPrimitive(false)
         )
 
         val response = client.post("v1/cloudinary/sign") {
@@ -44,7 +48,7 @@ class CloudinaryRoutesTests : BaseApplicationTests() {
 
         val expSignature = cloudinary.apiSignRequest(
             mutableMapOf<String, Any>().apply {
-                putAll(params)
+                params.mapValuesTo(this) { it.value.value }
                 put("timestamp", resp.timestamp)
             },
             cloudinary.config.apiSecret

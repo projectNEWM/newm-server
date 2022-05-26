@@ -62,7 +62,7 @@ private val invalidUrls = listOf(
     "ftps://foo.bar/"
 )
 
-class IsValidUrlTest {
+class IsValidUrlTests {
 
     @Test
     fun testIsValidUrlWithValidUrls() {
