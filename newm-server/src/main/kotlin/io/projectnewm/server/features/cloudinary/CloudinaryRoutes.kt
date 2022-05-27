@@ -9,8 +9,10 @@ import io.ktor.server.routing.Routing
 import io.ktor.server.routing.post
 import io.projectnewm.server.auth.jwt.AUTH_JWT
 import io.projectnewm.server.di.inject
+import io.projectnewm.server.ext.value
 import io.projectnewm.server.features.cloudinary.model.CloudinarySignResponse
 import java.time.Instant
+import kotlinx.serialization.json.JsonPrimitive
 
 fun Routing.createCloudinaryRoutes() {
     val cloudinary by inject<Cloudinary>()
@@ -20,7 +22,7 @@ fun Routing.createCloudinaryRoutes() {
             with(call) {
                 val timestamp = Instant.now().epochSecond
                 val params = mutableMapOf<String, Any>().apply {
-                    putAll(receive<Map<String, String>>())
+                    receive<Map<String, JsonPrimitive>>().mapValuesTo(this) { it.value.value }
                     put("timestamp", timestamp)
                 }
                 respond(

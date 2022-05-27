@@ -36,7 +36,7 @@ private val invalidEmails = listOf(
     "this\\ is\"really\"not\\\\allowed@example.com"
 )
 
-class IsValidEmailTest {
+class IsValidEmailTests {
 
     @Test
     fun testIsValidUrlWithValidUrls() {
