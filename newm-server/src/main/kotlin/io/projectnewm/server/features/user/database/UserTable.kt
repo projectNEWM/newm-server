@@ -1,7 +1,6 @@
 package io.projectnewm.server.features.user.database
 
 import io.projectnewm.server.auth.oauth.OAuthType
-import io.projectnewm.server.database.textArray
 import org.jetbrains.exposed.dao.id.UUIDTable
 
 object UserTable : UUIDTable(name = "users") {
@@ -12,7 +11,7 @@ object UserTable : UUIDTable(name = "users") {
     val nickname = text("nickname").nullable()
     val pictureUrl = text("picture_url").nullable()
     val role = text("role").nullable()
-    val genres = textArray("genres").nullable()
+    val genre = text("genre").nullable()
     val email = text("email")
     val passwordHash = text("password_hash").nullable()
 }

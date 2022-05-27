@@ -65,7 +65,7 @@ class UserRoutesTests : BaseApplicationTests() {
         assertThat(user.nickname).isEqualTo(testUser1.nickname)
         assertThat(user.pictureUrl).isEqualTo(testUser1.pictureUrl)
         assertThat(user.role).isEqualTo(testUser1.role)
-        assertThat(user.genres).isEqualTo(testUser1.genres)
+        assertThat(user.genre).isEqualTo(testUser1.genre)
         assertThat(user.email).isEqualTo(testUser1.email)
         assertThat(testUser1.newPassword!!.verify(passwordHash)).isTrue()
     }
@@ -80,7 +80,7 @@ class UserRoutesTests : BaseApplicationTests() {
                 nickname = testUser1.nickname
                 pictureUrl = testUser1.pictureUrl
                 role = testUser1.role
-                genres = testUser1.genres!!.toTypedArray()
+                genre = testUser1.genre
                 email = testUser1.email!!
             }
         }.id.value
@@ -100,7 +100,7 @@ class UserRoutesTests : BaseApplicationTests() {
         assertThat(user.nickname).isEqualTo(testUser1.nickname)
         assertThat(user.pictureUrl).isEqualTo(testUser1.pictureUrl)
         assertThat(user.role).isEqualTo(testUser1.role)
-        assertThat(user.genres).isEqualTo(testUser1.genres)
+        assertThat(user.genre).isEqualTo(testUser1.genre)
         assertThat(user.email).isEqualTo(testUser1.email)
     }
 
@@ -114,7 +114,7 @@ class UserRoutesTests : BaseApplicationTests() {
                 nickname = testUser1.nickname
                 pictureUrl = testUser1.pictureUrl
                 role = testUser1.role
-                genres = testUser1.genres!!.toTypedArray()
+                genre = testUser1.genre
                 email = testUser1.email!!
                 passwordHash = testUser1.newPassword!!.toHash()
             }
@@ -147,7 +147,7 @@ class UserRoutesTests : BaseApplicationTests() {
         assertThat(user.nickname).isEqualTo(testUser2.nickname)
         assertThat(user.pictureUrl).isEqualTo(testUser2.pictureUrl)
         assertThat(user.role).isEqualTo(testUser2.role)
-        assertThat(user.genres).isEqualTo(testUser2.genres)
+        assertThat(user.genre).isEqualTo(testUser2.genre)
         assertThat(user.email).isEqualTo(testUser2.email)
         assertThat(testUser2.newPassword!!.verify(passwordHash)).isTrue()
     }
@@ -162,7 +162,7 @@ class UserRoutesTests : BaseApplicationTests() {
                 nickname = testUser1.nickname
                 pictureUrl = testUser1.pictureUrl
                 role = testUser1.role
-                genres = testUser1.genres!!.toTypedArray()
+                genre = testUser1.genre
                 email = testUser1.email!!
             }
         }.id.value
