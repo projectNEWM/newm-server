@@ -24,7 +24,7 @@ internal class SongRepositoryImpl(
             SongEntity.new {
                 this.ownerId = EntityID(ownerId, UserTable)
                 this.title = title
-                genres = song.genres?.toTypedArray()
+                genre = song.genre
                 covertArtUrl = song.covertArtUrl
                 description = song.description
                 credits = song.credits
@@ -38,7 +38,7 @@ internal class SongRepositoryImpl(
             val entity = SongEntity[songId]
             entity.checkRequester(requesterId)
             song.title?.let { entity.title = it }
-            song.genres?.let { entity.genres = it.toTypedArray() }
+            song.genre?.let { entity.genre = it }
             song.covertArtUrl?.let { entity.covertArtUrl = it }
             song.description?.let { entity.description = it }
             song.credits?.let { entity.credits = it }

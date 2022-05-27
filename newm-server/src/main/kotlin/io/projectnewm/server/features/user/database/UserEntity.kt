@@ -20,7 +20,7 @@ class UserEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var nickname by UserTable.nickname
     var pictureUrl by UserTable.pictureUrl
     var role by UserTable.role
-    var genres by UserTable.genres
+    var genre by UserTable.genre
     var email by UserTable.email
     var passwordHash by UserTable.passwordHash
 
@@ -33,7 +33,7 @@ class UserEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         nickname = nickname,
         pictureUrl = pictureUrl,
         role = role,
-        genres = genres?.toList(),
+        genre = genre,
         email = email.takeIf { includeAll }
     )
 

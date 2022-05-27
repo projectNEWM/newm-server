@@ -11,7 +11,7 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     val createdAt by SongTable.createdAt
     var ownerId by SongTable.ownerId
     var title by SongTable.title
-    var genres by SongTable.genres
+    var genre by SongTable.genre
     var covertArtUrl by SongTable.covertArtUrl
     var description by SongTable.description
     var credits by SongTable.credits
@@ -21,7 +21,7 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         ownerId = ownerId.value,
         createdAt = createdAt,
         title = title,
-        genres = genres?.toList(),
+        genre = genre,
         covertArtUrl = covertArtUrl,
         description = description,
         credits = credits

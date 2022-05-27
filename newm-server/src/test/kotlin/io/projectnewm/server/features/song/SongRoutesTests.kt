@@ -55,7 +55,7 @@ class SongRoutesTests : BaseApplicationTests() {
         assertThat(song.ownerId).isEqualTo(testUserId)
         assertThat(song.createdAt).isAtLeast(startTime)
         assertThat(song.title).isEqualTo(testSong1.title)
-        assertThat(song.genres).isEqualTo(testSong1.genres)
+        assertThat(song.genre).isEqualTo(testSong1.genre)
         assertThat(song.description).isEqualTo(testSong1.description)
         assertThat(song.credits).isEqualTo(testSong1.credits)
     }
@@ -67,7 +67,7 @@ class SongRoutesTests : BaseApplicationTests() {
             SongEntity.new {
                 ownerId = EntityID(testUserId, UserTable)
                 title = testSong1.title!!
-                genres = testSong1.genres!!.toTypedArray()
+                genre = testSong1.genre
                 covertArtUrl = testSong1.covertArtUrl
                 description = testSong1.description
                 credits = testSong1.credits
@@ -92,7 +92,7 @@ class SongRoutesTests : BaseApplicationTests() {
                 SongEntity.new {
                     ownerId = EntityID(testUserId, UserTable)
                     title = song.title!!
-                    genres = song.genres!!.toTypedArray()
+                    genre = song.genre
                     covertArtUrl = song.covertArtUrl
                     description = song.description
                     credits = song.credits
@@ -116,7 +116,7 @@ class SongRoutesTests : BaseApplicationTests() {
             SongEntity.new {
                 ownerId = EntityID(testUserId, UserTable)
                 title = testSong1.title!!
-                genres = testSong1.genres!!.toTypedArray()
+                genre = testSong1.genre
                 covertArtUrl = testSong1.covertArtUrl
                 description = testSong1.description
                 credits = testSong1.credits
@@ -136,7 +136,7 @@ class SongRoutesTests : BaseApplicationTests() {
         assertThat(song.id).isEqualTo(songId)
         assertThat(song.ownerId).isEqualTo(testUserId)
         assertThat(song.title).isEqualTo(testSong2.title)
-        assertThat(song.genres).isEqualTo(testSong2.genres)
+        assertThat(song.genre).isEqualTo(testSong2.genre)
         assertThat(song.description).isEqualTo(testSong2.description)
         assertThat(song.credits).isEqualTo(testSong2.credits)
     }
@@ -148,7 +148,7 @@ class SongRoutesTests : BaseApplicationTests() {
             SongEntity.new {
                 ownerId = EntityID(testUserId, UserTable)
                 title = testSong1.title!!
-                genres = testSong1.genres!!.toTypedArray()
+                genre = testSong1.genre
                 covertArtUrl = testSong1.covertArtUrl
                 description = testSong1.description
                 credits = testSong1.credits
