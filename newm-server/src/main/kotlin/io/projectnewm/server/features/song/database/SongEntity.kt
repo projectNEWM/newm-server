@@ -12,7 +12,7 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var ownerId by SongTable.ownerId
     var title by SongTable.title
     var genre by SongTable.genre
-    var covertArtUrl by SongTable.covertArtUrl
+    var coverArtUrl by SongTable.coverArtUrl
     var description by SongTable.description
     var credits by SongTable.credits
 
@@ -22,7 +22,7 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         createdAt = createdAt,
         title = title,
         genre = genre,
-        covertArtUrl = covertArtUrl,
+        coverArtUrl = coverArtUrl,
         description = description,
         credits = credits
     )

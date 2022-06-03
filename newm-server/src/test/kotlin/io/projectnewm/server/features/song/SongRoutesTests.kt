@@ -68,7 +68,7 @@ class SongRoutesTests : BaseApplicationTests() {
                 ownerId = EntityID(testUserId, UserTable)
                 title = testSong1.title!!
                 genre = testSong1.genre
-                covertArtUrl = testSong1.covertArtUrl
+                coverArtUrl = testSong1.coverArtUrl
                 description = testSong1.description
                 credits = testSong1.credits
             }
@@ -93,7 +93,7 @@ class SongRoutesTests : BaseApplicationTests() {
                     ownerId = EntityID(testUserId, UserTable)
                     title = song.title!!
                     genre = song.genre
-                    covertArtUrl = song.covertArtUrl
+                    coverArtUrl = song.coverArtUrl
                     description = song.description
                     credits = song.credits
                 }
@@ -117,7 +117,7 @@ class SongRoutesTests : BaseApplicationTests() {
                 ownerId = EntityID(testUserId, UserTable)
                 title = testSong1.title!!
                 genre = testSong1.genre
-                covertArtUrl = testSong1.covertArtUrl
+                coverArtUrl = testSong1.coverArtUrl
                 description = testSong1.description
                 credits = testSong1.credits
             }
@@ -149,7 +149,7 @@ class SongRoutesTests : BaseApplicationTests() {
                 ownerId = EntityID(testUserId, UserTable)
                 title = testSong1.title!!
                 genre = testSong1.genre
-                covertArtUrl = testSong1.covertArtUrl
+                coverArtUrl = testSong1.coverArtUrl
                 description = testSong1.description
                 credits = testSong1.credits
             }

@@ -25,7 +25,7 @@ internal class SongRepositoryImpl(
                 this.ownerId = EntityID(ownerId, UserTable)
                 this.title = title
                 genre = song.genre
-                covertArtUrl = song.covertArtUrl
+                coverArtUrl = song.coverArtUrl
                 description = song.description
                 credits = song.credits
             }.id.value
@@ -39,7 +39,7 @@ internal class SongRepositoryImpl(
             entity.checkRequester(requesterId)
             song.title?.let { entity.title = it }
             song.genre?.let { entity.genre = it }
-            song.covertArtUrl?.let { entity.covertArtUrl = it }
+            song.coverArtUrl?.let { entity.coverArtUrl = it }
             song.description?.let { entity.description = it }
             song.credits?.let { entity.credits = it }
         }
