@@ -11,7 +11,7 @@ object SongTable : UUIDTable(name = "songs") {
     val ownerId = reference("owner_id", UserTable, onDelete = ReferenceOption.CASCADE)
     val title = text("title")
     val genre = text("genre").nullable()
-    val covertArtUrl = text("covert_art_url").nullable()
+    val coverArtUrl = text("cover_art_url").nullable()
     val description = text("description").nullable()
     val credits = text("credits").nullable()
 }
