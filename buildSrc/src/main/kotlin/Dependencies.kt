@@ -99,6 +99,13 @@ object Dependencies {
         const val ALL = "com.cloudinary:cloudinary-http44:$VERSION"
     }
 
+    object Aws {
+        private const val VERSION = "1.11.1000"
+
+        const val BOM = "com.amazonaws:aws-java-sdk-bom:$VERSION"
+        const val S3 = "com.amazonaws:aws-java-sdk-s3"
+    }
+
     object JUnit {
         private const val VERSION = "5.8.2"
 

@@ -1,18 +1,27 @@
 package io.projectnewm.server.features.song.repo
 
+import com.amazonaws.HttpMethod
+import com.amazonaws.services.s3.AmazonS3
+import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.util.logging.Logger
 import io.projectnewm.server.exception.HttpForbiddenException
 import io.projectnewm.server.exception.HttpUnprocessableEntityException
+import io.projectnewm.server.ext.getConfigLong
+import io.projectnewm.server.ext.getConfigString
+import io.projectnewm.server.ext.toDate
 import io.projectnewm.server.features.song.database.SongEntity
 import io.projectnewm.server.features.song.model.Song
 import io.projectnewm.server.features.user.database.UserTable
+import java.time.Instant
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.MarkerFactory
 import java.util.UUID
 
 internal class SongRepositoryImpl(
-    private val logger: Logger
+    private val logger: Logger,
+    private val environment: ApplicationEnvironment,
+    private val s3: AmazonS3
 ) : SongRepository {
 
     private val marker = MarkerFactory.getMarker(javaClass.simpleName)
@@ -66,6 +75,27 @@ internal class SongRepositoryImpl(
         return transaction {
             SongEntity.getAllByOwnerId(ownerId).map(SongEntity::toModel)
         }
+    }
+
+    override suspend fun generateUploadUrl(songId: UUID, requesterId: UUID, fileName: String): String {
+        logger.debug(marker, "generateUploadUrl: songId = $songId, fileName = $fileName")
+
+        if ('/' in fileName) throw HttpUnprocessableEntityException("Invalid fileName: $fileName")
+
+        transaction {
+            SongEntity[songId].checkRequester(requesterId)
+        }
+
+        val expiration = Instant.now()
+            .plusSeconds(environment.getConfigLong("aws.s3.audioUpload.timeToLive"))
+            .toDate()
+
+        return s3.generatePresignedUrl(
+            environment.getConfigString("aws.s3.audioUpload.bucketName"),
+            "$songId/$fileName",
+            expiration,
+            HttpMethod.PUT
+        ).toString()
     }
 
     private fun SongEntity.checkRequester(requesterId: UUID) {

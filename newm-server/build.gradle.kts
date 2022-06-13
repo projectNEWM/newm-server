@@ -57,6 +57,9 @@ dependencies {
 
     implementation(Dependencies.Cloudinary.ALL)
 
+    implementation(platform(Dependencies.Aws.BOM))
+    implementation(Dependencies.Aws.S3)
+
     testImplementation(Dependencies.JUnit.JUPITER)
     testImplementation(Dependencies.Mockk.MOCKK)
     testImplementation(Dependencies.GoogleTruth.TRUTH)
