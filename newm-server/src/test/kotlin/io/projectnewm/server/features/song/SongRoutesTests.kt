@@ -1,5 +1,7 @@
 package io.projectnewm.server.features.song
 
+import com.amazonaws.HttpMethod
+import com.amazonaws.services.s3.AmazonS3
 import com.google.common.truth.Truth.assertThat
 import io.ktor.client.call.body
 import io.ktor.client.request.accept
@@ -13,12 +15,17 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.projectnewm.server.BaseApplicationTests
+import io.projectnewm.server.di.inject
 import io.projectnewm.server.ext.exists
+import io.projectnewm.server.ext.toDate
 import io.projectnewm.server.features.song.database.SongEntity
 import io.projectnewm.server.features.song.database.SongTable
 import io.projectnewm.server.features.song.model.Song
 import io.projectnewm.server.features.song.model.SongIdBody
+import io.projectnewm.server.features.song.model.UploadRequest
+import io.projectnewm.server.features.song.model.UploadResponse
 import io.projectnewm.server.features.user.database.UserTable
+import java.time.Instant
 import java.time.LocalDateTime
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.dao.id.EntityID
@@ -164,5 +171,44 @@ class SongRoutesTests : BaseApplicationTests() {
         // make sure doesn't exist in database
         val exists = transaction { SongEntity.exists(songId) }
         assertThat(exists).isFalse()
+    }
+
+    @Test
+    fun testRequestUpload() = runBlocking {
+        // Add song directly into database
+        val songId = transaction {
+            SongEntity.new {
+                ownerId = EntityID(testUserId, UserTable)
+                title = testSong1.title!!
+                genre = testSong1.genre
+                coverArtUrl = testSong1.coverArtUrl
+                description = testSong1.description
+                credits = testSong1.credits
+            }
+        }.id.value
+
+        val start = Instant.now()
+
+        // Request upload
+        val response = client.post("v1/songs/$songId/upload") {
+            bearerAuth(testUserToken)
+            contentType(ContentType.Application.Json)
+            setBody(UploadRequest("test1.mp3"))
+        }
+        assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+        val resp = response.body<UploadResponse>()
+
+        // allow for some variation on ttl
+        val s3 by inject<AmazonS3>()
+        val validUrls = mutableListOf<String>()
+        for (ttl in 180L..182L) {
+            validUrls += s3.generatePresignedUrl(
+                "newm-test",
+                "$songId/test1.mp3",
+                start.plusSeconds(ttl).toDate(),
+                HttpMethod.PUT
+            ).toString()
+        }
+        assertThat(resp.uploadUrl).isIn(validUrls)
     }
 }

@@ -17,6 +17,8 @@ import io.projectnewm.server.ext.myUserId
 import io.projectnewm.server.ext.songId
 import io.projectnewm.server.ext.toUUID
 import io.projectnewm.server.features.song.model.SongIdBody
+import io.projectnewm.server.features.song.model.UploadRequest
+import io.projectnewm.server.features.song.model.UploadResponse
 import io.projectnewm.server.features.song.repo.SongRepository
 
 private const val SONGS_PATH = "v1/songs"
@@ -54,6 +56,14 @@ fun Routing.createSongRoutes() {
                     with(call) {
                         repository.delete(songId, myUserId)
                         respond(HttpStatusCode.NoContent)
+                    }
+                }
+                post("upload") {
+                    with(call) {
+                        val req = receive<UploadRequest>()
+                        respond(
+                            UploadResponse(repository.generateUploadUrl(songId, myUserId, req.fileName))
+                        )
                     }
                 }
             }
