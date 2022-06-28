@@ -37,6 +37,9 @@ internal class SongRepositoryImpl(
                 coverArtUrl = song.coverArtUrl
                 description = song.description
                 credits = song.credits
+                audioUrl = song.audioUrl
+                nftPolicyId = song.nftPolicyId
+                nftName = song.nftName
             }.id.value
         }
     }
@@ -51,6 +54,9 @@ internal class SongRepositoryImpl(
             song.coverArtUrl?.let { entity.coverArtUrl = it }
             song.description?.let { entity.description = it }
             song.credits?.let { entity.credits = it }
+            song.audioUrl?.let { entity.audioUrl = it }
+            song.nftPolicyId?.let { entity.nftPolicyId = it }
+            song.nftName?.let { entity.nftName = it }
         }
     }
 
