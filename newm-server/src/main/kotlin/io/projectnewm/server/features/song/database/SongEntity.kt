@@ -15,6 +15,9 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var coverArtUrl by SongTable.coverArtUrl
     var description by SongTable.description
     var credits by SongTable.credits
+    var audioUrl by SongTable.audioUrl
+    var nftPolicyId by SongTable.nftPolicyId
+    var nftName by SongTable.nftName
 
     fun toModel(): Song = Song(
         id = id.value,
@@ -24,7 +27,10 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         genre = genre,
         coverArtUrl = coverArtUrl,
         description = description,
-        credits = credits
+        credits = credits,
+        audioUrl = audioUrl,
+        nftPolicyId = nftPolicyId,
+        nftName = nftName
     )
 
     companion object : UUIDEntityClass<SongEntity>(SongTable) {

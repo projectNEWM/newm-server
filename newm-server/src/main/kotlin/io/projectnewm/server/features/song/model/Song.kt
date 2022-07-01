@@ -18,5 +18,8 @@ data class Song(
     val genre: String? = null,
     val coverArtUrl: String? = null,
     val description: String? = null,
-    val credits: String? = null
+    val credits: String? = null,
+    val audioUrl: String? = null,
+    val nftPolicyId: String? = null,
+    val nftName: String? = null
 )
