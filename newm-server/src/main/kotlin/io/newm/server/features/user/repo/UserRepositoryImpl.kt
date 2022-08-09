@@ -166,12 +166,18 @@ internal class UserRepositoryImpl(
         return this
     }
 
+    private val passwordRequirementRegex = Regex("^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z]).{8,}\$")
+
     private fun Password?.asValidPassword(confirm: Password?): Password {
-        if (this == null || value.isBlank()) throw HttpBadRequestException("Missing password")
-        if (confirm?.value.isNullOrBlank()) throw HttpBadRequestException("Missing password confirmation")
+        if (this == null || !this.isValid()) throw HttpBadRequestException("Invalid Password")
+        if (confirm == null || !confirm.isValid()) throw HttpBadRequestException("Invalid Password Confirmation")
         if (this != confirm) throw HttpUnprocessableEntityException("Password confirmation failed")
-        if (value.length < 8) throw HttpUnprocessableEntityException("Password too short")
         return this
+    }
+
+    private fun Password.isValid(): Boolean {
+        if (!this.value.matches(passwordRequirementRegex)) throw HttpUnprocessableEntityException("Password must contain at least 8 characters, 1 uppercase letter, 1 lowercase letter and 1 number.")
+        return true
     }
 
     private suspend fun String.asVerifiedEmail(code: String?): String {
