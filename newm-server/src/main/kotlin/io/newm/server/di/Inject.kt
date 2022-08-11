@@ -1,4 +1,4 @@
-package io.projectnewm.server.di
+package io.newm.server.di
 
 import org.koin.core.context.GlobalContext
 import org.koin.core.parameter.ParametersDefinition

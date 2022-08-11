@@ -1,11 +1,11 @@
-package io.projectnewm.server.auth
+package io.newm.server.auth
 
 import io.ktor.server.routing.Routing
-import io.projectnewm.server.auth.jwt.createJwtRoutes
-import io.projectnewm.server.auth.oauth.OAuthType
-import io.projectnewm.server.auth.oauth.createOAuthRoutes
-import io.projectnewm.server.auth.password.createPasswordAuthRoutes
-import io.projectnewm.server.auth.twofactor.createTwoFactorAuthRoutes
+import io.newm.server.auth.jwt.createJwtRoutes
+import io.newm.server.auth.oauth.OAuthType
+import io.newm.server.auth.oauth.createOAuthRoutes
+import io.newm.server.auth.password.createPasswordAuthRoutes
+import io.newm.server.auth.twofactor.createTwoFactorAuthRoutes
 
 const val AUTH_PATH = "v1/auth"
 

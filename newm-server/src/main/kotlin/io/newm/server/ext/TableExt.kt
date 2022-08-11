@@ -1,4 +1,4 @@
-package io.projectnewm.server.ext
+package io.newm.server.ext
 
 import org.jetbrains.exposed.dao.id.IdTable
 import org.jetbrains.exposed.sql.*

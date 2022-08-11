@@ -1,4 +1,4 @@
-package io.projectnewm.server.features.cloudinary
+package io.newm.server.features.cloudinary
 
 import com.cloudinary.Cloudinary
 import com.google.common.truth.Truth.assertThat
@@ -9,10 +9,10 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
-import io.projectnewm.server.BaseApplicationTests
-import io.projectnewm.server.di.inject
-import io.projectnewm.server.ext.value
-import io.projectnewm.server.features.cloudinary.model.CloudinarySignResponse
+import io.newm.server.BaseApplicationTests
+import io.newm.server.di.inject
+import io.newm.server.ext.value
+import io.newm.server.features.cloudinary.model.CloudinarySignResponse
 import java.time.Instant
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonPrimitive

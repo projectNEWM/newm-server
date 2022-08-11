@@ -1,4 +1,4 @@
-package io.projectnewm.server.auth.jwt
+package io.newm.server.auth.jwt
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
@@ -6,10 +6,10 @@ import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.server.auth.AuthenticationConfig
 import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.auth.jwt.jwt
-import io.projectnewm.server.auth.jwt.repo.JwtRepository
-import io.projectnewm.server.di.inject
-import io.projectnewm.server.ext.getConfigString
-import io.projectnewm.server.ext.toUUID
+import io.newm.server.auth.jwt.repo.JwtRepository
+import io.newm.server.di.inject
+import io.newm.server.ext.getConfigString
+import io.newm.server.ext.toUUID
 
 const val AUTH_JWT = "auth-jwt"
 const val AUTH_JWT_REFRESH = "auth-jwt-refresh"

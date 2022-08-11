@@ -1,6 +1,6 @@
-package io.projectnewm.server.features.user.database
+package io.newm.server.features.user.database
 
-import io.projectnewm.server.auth.oauth.OAuthType
+import io.newm.server.auth.oauth.OAuthType
 import org.jetbrains.exposed.dao.id.UUIDTable
 
 object UserTable : UUIDTable(name = "users") {

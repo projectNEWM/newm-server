@@ -1,7 +1,7 @@
-package io.projectnewm.server.features.playlist.repo
+package io.newm.server.features.playlist.repo
 
-import io.projectnewm.server.features.playlist.model.Playlist
-import io.projectnewm.server.features.song.model.Song
+import io.newm.server.features.playlist.model.Playlist
+import io.newm.server.features.song.model.Song
 import java.util.UUID
 
 interface PlaylistRepository {

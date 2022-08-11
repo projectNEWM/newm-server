@@ -1,7 +1,7 @@
-package io.projectnewm.server.features.user
+package io.newm.server.features.user
 
-import io.projectnewm.server.auth.password.Password
-import io.projectnewm.server.features.user.model.User
+import io.newm.server.auth.password.Password
+import io.newm.server.features.user.model.User
 
 val testUser1 = User(
     firstName = "FirstName1",

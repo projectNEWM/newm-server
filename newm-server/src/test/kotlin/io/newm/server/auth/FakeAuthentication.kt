@@ -1,4 +1,4 @@
-package io.projectnewm.server.auth
+package io.newm.server.auth
 
 import com.auth0.jwt.impl.NullClaim
 import com.auth0.jwt.interfaces.Claim

@@ -1,4 +1,4 @@
-package io.projectnewm.server.features.user
+package io.newm.server.features.user
 
 import com.google.common.truth.Truth.assertThat
 import io.ktor.client.call.body
@@ -12,14 +12,14 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
-import io.projectnewm.server.BaseApplicationTests
-import io.projectnewm.server.auth.twofactor.database.TwoFactorAuthEntity
-import io.projectnewm.server.auth.twofactor.database.TwoFactorAuthTable
-import io.projectnewm.server.ext.existsHavingId
-import io.projectnewm.server.ext.toHash
-import io.projectnewm.server.features.user.database.UserEntity
-import io.projectnewm.server.features.user.database.UserTable
-import io.projectnewm.server.features.user.model.User
+import io.newm.server.BaseApplicationTests
+import io.newm.server.auth.twofactor.database.TwoFactorAuthEntity
+import io.newm.server.auth.twofactor.database.TwoFactorAuthTable
+import io.newm.server.ext.existsHavingId
+import io.newm.server.ext.toHash
+import io.newm.server.features.user.database.UserEntity
+import io.newm.server.features.user.database.UserTable
+import io.newm.server.features.user.model.User
 import java.time.LocalDateTime
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.sql.deleteWhere

@@ -1,4 +1,4 @@
-package io.projectnewm.server.ext
+package io.newm.server.ext
 
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall

@@ -19,7 +19,7 @@ plugins {
 }
 
 allprojects {
-    group = "io.projectnewm.server"
+    group = "io.newm.server"
     version = "0.0.1-SNAPSHOT"
 }
 
@@ -82,7 +82,7 @@ subprojects {
 
     tasks.withType<Jar> {
         manifest {
-            attributes["Main-Class"] = "io.projectnewm.server.ApplicationKt"
+            attributes["Main-Class"] = "io.newm.server.ApplicationKt"
         }
     }
 

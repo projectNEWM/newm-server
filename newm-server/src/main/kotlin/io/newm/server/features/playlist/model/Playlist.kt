@@ -1,7 +1,7 @@
-package io.projectnewm.server.features.playlist.model
+package io.newm.server.features.playlist.model
 
-import io.projectnewm.server.serialization.LocalDateTimeSerializer
-import io.projectnewm.server.serialization.UUIDSerializer
+import io.newm.server.serialization.LocalDateTimeSerializer
+import io.newm.server.serialization.UUIDSerializer
 import kotlinx.serialization.Serializable
 import java.time.LocalDateTime
 import java.util.UUID

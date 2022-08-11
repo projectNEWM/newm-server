@@ -1,6 +1,6 @@
-package io.projectnewm.server.features.song.repo
+package io.newm.server.features.song.repo
 
-import io.projectnewm.server.features.song.model.Song
+import io.newm.server.features.song.model.Song
 import java.util.UUID
 
 interface SongRepository {

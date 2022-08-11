@@ -1,6 +1,6 @@
-package io.projectnewm.server.features.song
+package io.newm.server.features.song
 
-import io.projectnewm.server.features.song.model.Song
+import io.newm.server.features.song.model.Song
 
 val testSong1 = Song(
     title = "Test Song 1",

@@ -1,7 +1,7 @@
-package io.projectnewm.server.features.song
+package io.newm.server.features.song
 
-import io.projectnewm.server.features.song.repo.SongRepository
-import io.projectnewm.server.features.song.repo.SongRepositoryImpl
+import io.newm.server.features.song.repo.SongRepository
+import io.newm.server.features.song.repo.SongRepositoryImpl
 import org.koin.dsl.module
 
 val songKoinModule = module {

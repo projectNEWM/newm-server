@@ -1,16 +1,16 @@
-package io.projectnewm.server.auth.twofactor.repo
+package io.newm.server.auth.twofactor.repo
 
 import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.util.logging.Logger
-import io.projectnewm.server.auth.twofactor.database.TwoFactorAuthEntity
-import io.projectnewm.server.ext.getConfigBoolean
-import io.projectnewm.server.ext.getConfigInt
-import io.projectnewm.server.ext.getConfigLong
-import io.projectnewm.server.ext.getConfigString
-import io.projectnewm.server.ext.nextDigitCode
-import io.projectnewm.server.ext.toHash
-import io.projectnewm.server.ext.toUrl
-import io.projectnewm.server.ext.verify
+import io.newm.server.auth.twofactor.database.TwoFactorAuthEntity
+import io.newm.server.ext.getConfigBoolean
+import io.newm.server.ext.getConfigInt
+import io.newm.server.ext.getConfigLong
+import io.newm.server.ext.getConfigString
+import io.newm.server.ext.nextDigitCode
+import io.newm.server.ext.toHash
+import io.newm.server.ext.toUrl
+import io.newm.server.ext.verify
 import org.apache.commons.mail.DefaultAuthenticator
 import org.apache.commons.mail.HtmlEmail
 import org.jetbrains.exposed.sql.transactions.transaction

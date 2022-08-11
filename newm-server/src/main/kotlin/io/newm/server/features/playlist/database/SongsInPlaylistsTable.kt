@@ -1,6 +1,6 @@
-package io.projectnewm.server.features.playlist.database
+package io.newm.server.features.playlist.database
 
-import io.projectnewm.server.features.song.database.SongTable
+import io.newm.server.features.song.database.SongTable
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.Table
 

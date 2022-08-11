@@ -1,4 +1,4 @@
-package io.projectnewm.server.auth.password
+package io.newm.server.auth.password
 
 import kotlinx.serialization.Serializable
 

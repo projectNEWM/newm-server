@@ -1,4 +1,4 @@
-package io.projectnewm.server.features.user.oauth.providers
+package io.newm.server.features.user.oauth.providers
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -8,8 +8,8 @@ import io.ktor.client.request.get
 import io.ktor.client.request.headers
 import io.ktor.client.request.parameter
 import io.ktor.http.ContentType
-import io.projectnewm.server.features.user.oauth.OAuthUser
-import io.projectnewm.server.features.user.oauth.OAuthUserProvider
+import io.newm.server.features.user.oauth.OAuthUser
+import io.newm.server.features.user.oauth.OAuthUserProvider
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

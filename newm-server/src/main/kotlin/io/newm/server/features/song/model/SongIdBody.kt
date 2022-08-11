@@ -1,6 +1,6 @@
-package io.projectnewm.server.features.song.model
+package io.newm.server.features.song.model
 
-import io.projectnewm.server.serialization.UUIDSerializer
+import io.newm.server.serialization.UUIDSerializer
 import kotlinx.serialization.Serializable
 import java.util.UUID
 

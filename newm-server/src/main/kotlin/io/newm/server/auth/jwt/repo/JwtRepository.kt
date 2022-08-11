@@ -1,6 +1,6 @@
-package io.projectnewm.server.auth.jwt.repo
+package io.newm.server.auth.jwt.repo
 
-import io.projectnewm.server.auth.jwt.JwtType
+import io.newm.server.auth.jwt.JwtType
 import java.util.UUID
 
 interface JwtRepository {

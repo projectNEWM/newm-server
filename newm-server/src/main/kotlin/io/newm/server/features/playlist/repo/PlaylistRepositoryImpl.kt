@@ -1,13 +1,13 @@
-package io.projectnewm.server.features.playlist.repo
+package io.newm.server.features.playlist.repo
 
 import io.ktor.util.logging.Logger
-import io.projectnewm.server.exception.HttpForbiddenException
-import io.projectnewm.server.exception.HttpUnprocessableEntityException
-import io.projectnewm.server.features.playlist.database.PlaylistEntity
-import io.projectnewm.server.features.playlist.model.Playlist
-import io.projectnewm.server.features.song.database.SongEntity
-import io.projectnewm.server.features.song.model.Song
-import io.projectnewm.server.features.user.database.UserTable
+import io.newm.server.exception.HttpForbiddenException
+import io.newm.server.exception.HttpUnprocessableEntityException
+import io.newm.server.features.playlist.database.PlaylistEntity
+import io.newm.server.features.playlist.model.Playlist
+import io.newm.server.features.song.database.SongEntity
+import io.newm.server.features.song.model.Song
+import io.newm.server.features.user.database.UserTable
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.MarkerFactory

@@ -1,4 +1,4 @@
-package io.projectnewm.server
+package io.newm.server
 
 import com.zaxxer.hikari.HikariDataSource
 import io.ktor.client.HttpClient
@@ -6,13 +6,13 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.config.ApplicationConfig
 import io.ktor.server.testing.TestApplication
-import io.projectnewm.server.auth.jwt.database.JwtTable
-import io.projectnewm.server.auth.twofactor.database.TwoFactorAuthTable
-import io.projectnewm.server.features.playlist.database.PlaylistTable
-import io.projectnewm.server.features.playlist.database.SongsInPlaylistsTable
-import io.projectnewm.server.features.song.database.SongTable
-import io.projectnewm.server.features.user.database.UserEntity
-import io.projectnewm.server.features.user.database.UserTable
+import io.newm.server.auth.jwt.database.JwtTable
+import io.newm.server.auth.twofactor.database.TwoFactorAuthTable
+import io.newm.server.features.playlist.database.PlaylistTable
+import io.newm.server.features.playlist.database.SongsInPlaylistsTable
+import io.newm.server.features.song.database.SongTable
+import io.newm.server.features.user.database.UserEntity
+import io.newm.server.features.user.database.UserTable
 import java.util.UUID
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils

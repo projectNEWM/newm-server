@@ -1,4 +1,4 @@
-package io.projectnewm.server.auth.jwt
+package io.newm.server.auth.jwt
 
 enum class JwtType {
     Access,

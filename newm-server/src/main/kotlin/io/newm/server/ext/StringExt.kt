@@ -1,4 +1,4 @@
-package io.projectnewm.server.ext
+package io.newm.server.ext
 
 import at.favre.lib.crypto.bcrypt.BCrypt
 import java.net.URL

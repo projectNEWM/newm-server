@@ -1,14 +1,14 @@
-package io.projectnewm.server.database
+package io.newm.server.database
 
 import com.zaxxer.hikari.HikariDataSource
 import io.ktor.server.application.Application
-import io.projectnewm.server.auth.jwt.database.JwtTable
-import io.projectnewm.server.auth.twofactor.database.TwoFactorAuthTable
-import io.projectnewm.server.ext.getConfigString
-import io.projectnewm.server.features.playlist.database.PlaylistTable
-import io.projectnewm.server.features.playlist.database.SongsInPlaylistsTable
-import io.projectnewm.server.features.song.database.SongTable
-import io.projectnewm.server.features.user.database.UserTable
+import io.newm.server.auth.jwt.database.JwtTable
+import io.newm.server.auth.twofactor.database.TwoFactorAuthTable
+import io.newm.server.ext.getConfigString
+import io.newm.server.features.playlist.database.PlaylistTable
+import io.newm.server.features.playlist.database.SongsInPlaylistsTable
+import io.newm.server.features.song.database.SongTable
+import io.newm.server.features.user.database.UserTable
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction

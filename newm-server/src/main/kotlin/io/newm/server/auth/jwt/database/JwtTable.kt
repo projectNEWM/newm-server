@@ -1,6 +1,6 @@
-package io.projectnewm.server.auth.jwt.database
+package io.newm.server.auth.jwt.database
 
-import io.projectnewm.server.features.user.database.UserTable
+import io.newm.server.features.user.database.UserTable
 import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.javatime.datetime

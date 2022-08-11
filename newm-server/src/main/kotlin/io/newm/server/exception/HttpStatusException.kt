@@ -1,4 +1,4 @@
-package io.projectnewm.server.exception
+package io.newm.server.exception
 
 import io.ktor.http.HttpStatusCode
 import java.lang.Exception

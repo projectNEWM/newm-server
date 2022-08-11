@@ -1,7 +1,7 @@
-package io.projectnewm.server.auth.password
+package io.newm.server.auth.password
 
-import io.projectnewm.server.auth.jwt.JwtType
-import io.projectnewm.server.auth.jwt.repo.JwtRepository
+import io.newm.server.auth.jwt.JwtType
+import io.newm.server.auth.jwt.repo.JwtRepository
 import kotlinx.serialization.Serializable
 import java.util.UUID
 

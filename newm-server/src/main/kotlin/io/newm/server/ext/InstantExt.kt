@@ -1,4 +1,4 @@
-package io.projectnewm.server.ext
+package io.newm.server.ext
 
 import java.time.Instant
 import java.util.Date

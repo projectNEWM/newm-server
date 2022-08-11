@@ -1,4 +1,4 @@
-package io.projectnewm.server.features.song.model
+package io.newm.server.features.song.model
 
 import kotlinx.serialization.Serializable
 

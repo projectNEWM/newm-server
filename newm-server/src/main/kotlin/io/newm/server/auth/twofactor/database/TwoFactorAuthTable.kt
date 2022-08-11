@@ -1,4 +1,4 @@
-package io.projectnewm.server.auth.twofactor.database
+package io.newm.server.auth.twofactor.database
 
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.javatime.datetime

@@ -1,7 +1,7 @@
-package io.projectnewm.server.features.playlist.database
+package io.newm.server.features.playlist.database
 
-import io.projectnewm.server.features.playlist.model.Playlist
-import io.projectnewm.server.features.song.database.SongEntity
+import io.newm.server.features.playlist.model.Playlist
+import io.newm.server.features.song.database.SongEntity
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
