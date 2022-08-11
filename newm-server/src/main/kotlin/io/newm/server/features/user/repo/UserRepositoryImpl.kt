@@ -12,6 +12,7 @@ import io.newm.server.exception.HttpUnauthorizedException
 import io.newm.server.exception.HttpUnprocessableEntityException
 import io.newm.server.ext.existsHavingId
 import io.newm.server.ext.isValidEmail
+import io.newm.server.ext.isValidPassword
 import io.newm.server.ext.isValidUrl
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.model.User
@@ -95,7 +96,7 @@ internal class UserRepositoryImpl(
     }
 
     override suspend fun exists(userId: UUID): Boolean = transaction {
-        UserEntity.exists(userId)
+        UserEntity.existsHavingId(userId)
     }
 
     override suspend fun get(userId: UUID, includeAll: Boolean): User {
@@ -166,18 +167,12 @@ internal class UserRepositoryImpl(
         return this
     }
 
-    private val passwordRequirementRegex = Regex("^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z]).{8,}\$")
-
     private fun Password?.asValidPassword(confirm: Password?): Password {
-        if (this == null || !this.isValid()) throw HttpBadRequestException("Invalid Password")
-        if (confirm == null || !confirm.isValid()) throw HttpBadRequestException("Invalid Password Confirmation")
+        if (this == null || value.isBlank()) throw HttpBadRequestException("Missing password")
+        if (confirm?.value.isNullOrBlank()) throw HttpBadRequestException("Missing password confirmation")
         if (this != confirm) throw HttpUnprocessableEntityException("Password confirmation failed")
+        if (!this.value.isValidPassword()) throw HttpUnprocessableEntityException("Password must contain at least 8 characters, 1 uppercase letter, 1 lowercase letter and 1 number.")
         return this
-    }
-
-    private fun Password.isValid(): Boolean {
-        if (!this.value.matches(passwordRequirementRegex)) throw HttpUnprocessableEntityException("Password must contain at least 8 characters, 1 uppercase letter, 1 lowercase letter and 1 number.")
-        return true
     }
 
     private suspend fun String.asVerifiedEmail(code: String?): String {
