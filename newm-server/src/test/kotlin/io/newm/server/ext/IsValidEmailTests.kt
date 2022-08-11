@@ -39,14 +39,14 @@ private val invalidEmails = listOf(
 class IsValidEmailTests {
 
     @Test
-    fun testIsValidUrlWithValidUrls() {
+    fun testIsValidEmailWithValidEmails() {
         for (email in validEmails) {
             assertWithMessage(email).that(email.isValidEmail()).isTrue()
         }
     }
 
     @Test
-    fun testIsValidUrlWithInvalidUrls() {
+    fun testIsValidEmailWithInvalidEmails() {
         for (email in invalidEmails) {
             assertWithMessage(email).that(email.isValidEmail()).isFalse()
         }

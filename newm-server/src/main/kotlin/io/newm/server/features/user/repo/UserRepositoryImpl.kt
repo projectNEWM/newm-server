@@ -95,7 +95,7 @@ internal class UserRepositoryImpl(
     }
 
     override suspend fun exists(userId: UUID): Boolean = transaction {
-        UserEntity.existsHavingId(userId)
+        UserEntity.exists(userId)
     }
 
     override suspend fun get(userId: UUID, includeAll: Boolean): User {
