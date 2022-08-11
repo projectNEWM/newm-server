@@ -10,7 +10,7 @@ import io.projectnewm.server.exception.HttpForbiddenException
 import io.projectnewm.server.exception.HttpNotFoundException
 import io.projectnewm.server.exception.HttpUnauthorizedException
 import io.projectnewm.server.exception.HttpUnprocessableEntityException
-import io.projectnewm.server.ext.exists
+import io.projectnewm.server.ext.existsHavingId
 import io.projectnewm.server.ext.isValidEmail
 import io.projectnewm.server.ext.isValidUrl
 import io.projectnewm.server.features.user.database.UserEntity
@@ -95,7 +95,7 @@ internal class UserRepositoryImpl(
     }
 
     override suspend fun exists(userId: UUID): Boolean = transaction {
-        UserEntity.exists(userId)
+        UserEntity.existsHavingId(userId)
     }
 
     override suspend fun get(userId: UUID, includeAll: Boolean): User {
