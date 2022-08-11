@@ -11,9 +11,9 @@ val testUser1 = User(
     role = "Role1",
     genre = "Genre1",
     email = "testuser1@projectnewm.io",
-    newPassword = Password("password1"),
-    confirmPassword = Password("password1"),
-    currentPassword = Password("password2"),
+    newPassword = Password("Password1"),
+    confirmPassword = Password("Password1"),
+    currentPassword = Password("Password2"),
     authCode = "123456"
 )
 
@@ -25,9 +25,9 @@ val testUser2 = User(
     role = "Role2",
     genre = "Genre2",
     email = "testuser2@projectnewm.io",
-    newPassword = Password("password2"),
-    confirmPassword = Password("password2"),
-    currentPassword = Password("password1"),
+    newPassword = Password("Password2"),
+    confirmPassword = Password("Password2"),
+    currentPassword = Password("Password1"),
     authCode = "123456"
 )
 
@@ -39,9 +39,9 @@ val testUser3 = User(
     role = "Role3",
     genre = "Genre3",
     email = "testuser3@projectnewm.io",
-    newPassword = Password("password3"),
-    confirmPassword = Password("password3"),
-    currentPassword = Password("password2"),
+    newPassword = Password("Password3"),
+    confirmPassword = Password("Password3"),
+    currentPassword = Password("Password2"),
     authCode = "123456"
 )
 
