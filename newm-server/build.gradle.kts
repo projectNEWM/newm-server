@@ -2,12 +2,17 @@ plugins {
     application
     id("com.github.ben-manes.versions")
     id("com.github.johnrengelman.shadow")
+    id("org.jlleitschuh.gradle.ktlint")
     kotlin("jvm")
     kotlin("plugin.serialization")
 }
 
 java.sourceCompatibility = JavaVersion.VERSION_17
 java.targetCompatibility = JavaVersion.VERSION_17
+
+ktlint {
+    version.set("0.42.1")
+}
 
 application {
     mainClass.set("io.newm.server.ApplicationKt")
@@ -50,6 +55,8 @@ dependencies {
 
     implementation(Dependencies.HikariCP.ALL)
     implementation(Dependencies.PostgreSQL.ALL)
+    implementation(Dependencies.KtorFlyway.ALL)
+    implementation(Dependencies.FlywayDB.ALL)
     implementation(Dependencies.Sentry.CORE)
     implementation(Dependencies.Sentry.LOGBACK)
     implementation(Dependencies.ApacheCommonsEmail.ALL)

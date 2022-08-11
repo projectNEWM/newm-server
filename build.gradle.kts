@@ -14,6 +14,7 @@ buildscript {
 plugins {
     id("com.github.ben-manes.versions") version "0.41.0" apply false
     id("com.github.johnrengelman.shadow") version "7.1.2" apply false
+    id("org.jlleitschuh.gradle.ktlint") version "10.3.0" apply false
     kotlin("jvm") version Dependencies.Kotlin.VERSION apply false
     kotlin("plugin.serialization") version Dependencies.Kotlin.VERSION apply false
 }
@@ -26,10 +27,6 @@ allprojects {
 subprojects {
     repositories {
         mavenLocal()
-        maven {
-            name = "jitpack.io"
-            url = uri("https://jitpack.io")
-        }
         mavenCentral()
     }
 

@@ -1,37 +1,40 @@
 package io.newm.server.database
 
+import com.viartemev.ktor.flyway.FlywayPlugin
+import com.viartemev.ktor.flyway.Info
+import com.viartemev.ktor.flyway.Migrate
+import com.viartemev.ktor.flyway.Validate
 import com.zaxxer.hikari.HikariDataSource
-import io.ktor.server.application.Application
-import io.newm.server.auth.jwt.database.JwtTable
-import io.newm.server.auth.twofactor.database.TwoFactorAuthTable
+import io.ktor.server.application.*
 import io.newm.server.ext.getConfigString
-import io.newm.server.features.playlist.database.PlaylistTable
-import io.newm.server.features.playlist.database.SongsInPlaylistsTable
-import io.newm.server.features.song.database.SongTable
-import io.newm.server.features.user.database.UserTable
 import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.SchemaUtils
-import org.jetbrains.exposed.sql.transactions.transaction
 
 fun Application.initializeDatabase() {
-    Database.connect(
-        HikariDataSource().apply {
-            driverClassName = environment.getConfigString("database.driverClassName")
-            jdbcUrl = environment.getConfigString("database.jdbcUrl")
-            username = environment.getConfigString("database.username")
-            password = environment.getConfigString("database.password")
-            isAutoCommit = false
-            transactionIsolation = "TRANSACTION_REPEATABLE_READ"
-        }
-    )
-    transaction {
-        SchemaUtils.create(
-            UserTable,
-            TwoFactorAuthTable,
-            JwtTable,
-            SongTable,
-            PlaylistTable,
-            SongsInPlaylistsTable
+    val ds = HikariDataSource().apply {
+        driverClassName = environment.getConfigString("database.driverClassName")
+        jdbcUrl = environment.getConfigString("database.jdbcUrl")
+        username = environment.getConfigString("database.username")
+        password = environment.getConfigString("database.password")
+        isAutoCommit = false
+        transactionIsolation = "TRANSACTION_REPEATABLE_READ"
+        connectionTimeout = 40_000L
+        maximumPoolSize = 30
+        minimumIdle = 5
+        maxLifetime = 600_000L // 10 minutes
+        validationTimeout = 12_000L
+        idleTimeout = 12_000L
+        leakDetectionThreshold = 60_000L
+    }
+    Database.connect(ds)
+    install(FlywayPlugin) {
+        dataSource = ds
+        locations = arrayOf("io/newm/server/database/migration")
+        commands(
+            *listOf(
+                Info,
+                Migrate,
+                Validate
+            ).toTypedArray()
         )
     }
 }
