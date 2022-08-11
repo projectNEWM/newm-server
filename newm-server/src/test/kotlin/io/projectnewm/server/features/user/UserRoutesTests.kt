@@ -15,7 +15,7 @@ import io.ktor.http.contentType
 import io.projectnewm.server.BaseApplicationTests
 import io.projectnewm.server.auth.twofactor.database.TwoFactorAuthEntity
 import io.projectnewm.server.auth.twofactor.database.TwoFactorAuthTable
-import io.projectnewm.server.ext.exists
+import io.projectnewm.server.ext.existsHavingId
 import io.projectnewm.server.ext.toHash
 import io.projectnewm.server.features.user.database.UserEntity
 import io.projectnewm.server.features.user.database.UserTable
@@ -174,7 +174,7 @@ class UserRoutesTests : BaseApplicationTests() {
         assertThat(response.status).isEqualTo(HttpStatusCode.NoContent)
 
         // verify that is gone directly form the database
-        val exists = transaction { UserEntity.exists(userId) }
+        val exists = transaction { UserEntity.existsHavingId(userId) }
         assertThat(exists).isFalse()
     }
 

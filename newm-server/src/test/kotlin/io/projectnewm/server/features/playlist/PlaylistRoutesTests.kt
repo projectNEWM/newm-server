@@ -14,6 +14,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.projectnewm.server.BaseApplicationTests
+import io.projectnewm.server.ext.existsHavingId
 import io.projectnewm.server.ext.exists
 import io.projectnewm.server.features.playlist.database.PlaylistEntity
 import io.projectnewm.server.features.playlist.database.PlaylistTable
@@ -151,7 +152,7 @@ class PlaylistRoutesTests : BaseApplicationTests() {
         assertThat(response.status).isEqualTo(HttpStatusCode.NoContent)
 
         // make sure doesn't exist in database
-        val exists = transaction { PlaylistEntity.exists(playlistId) }
+        val exists = transaction { PlaylistEntity.existsHavingId(playlistId) }
         assertThat(exists).isFalse()
     }
 

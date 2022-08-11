@@ -1,7 +1,7 @@
 object Dependencies {
 
     object Kotlin {
-        const val VERSION = "1.6.21"
+        const val VERSION = "1.7.10"
 
         const val STDLIB_JDK8 = "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$VERSION"
         const val REFLECTION = "org.jetbrains.kotlin:kotlin-reflect:$VERSION"
@@ -14,7 +14,7 @@ object Dependencies {
     }
 
     object Coroutines {
-        private const val VERSION = "1.6.1"
+        private const val VERSION = "1.6.4"
 
         const val CORE = "org.jetbrains.kotlinx:kotlinx-coroutines-core:$VERSION"
         const val JDK8 = "org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:$VERSION"
@@ -22,7 +22,7 @@ object Dependencies {
     }
 
     object Ktor {
-        private const val VERSION = "2.0.1"
+        private const val VERSION = "2.1.0"
 
         const val SERVER_CORE = "io.ktor:ktor-server-core:$VERSION"
         const val SERVER_CIO = "io.ktor:ktor-server-cio:$VERSION"
@@ -58,7 +58,7 @@ object Dependencies {
     }
 
     object Expose {
-        private const val VERSION = "0.38.2"
+        private const val VERSION = "0.39.2"
 
         const val CORE = "org.jetbrains.exposed:exposed-core:$VERSION"
         const val DAO = "org.jetbrains.exposed:exposed-dao:$VERSION"
@@ -73,7 +73,7 @@ object Dependencies {
     }
 
     object PostgreSQL {
-        private const val VERSION = "42.3.5"
+        private const val VERSION = "42.4.1"
 
         const val ALL = "org.postgresql:postgresql:$VERSION"
     }
@@ -100,20 +100,20 @@ object Dependencies {
     }
 
     object Aws {
-        private const val VERSION = "1.11.1000"
+        private const val VERSION = "1.12.279"
 
         const val BOM = "com.amazonaws:aws-java-sdk-bom:$VERSION"
         const val S3 = "com.amazonaws:aws-java-sdk-s3"
     }
 
     object JUnit {
-        private const val VERSION = "5.8.2"
+        private const val VERSION = "5.9.0"
 
         const val JUPITER = "org.junit.jupiter:junit-jupiter:$VERSION"
     }
 
     object Mockk {
-        private const val VERSION = "1.12.4"
+        private const val VERSION = "1.12.5"
 
         const val MOCKK = "io.mockk:mockk:$VERSION"
     }
@@ -125,14 +125,14 @@ object Dependencies {
     }
 
     object Sentry {
-        private const val VERSION = "5.7.4"
+        private const val VERSION = "6.3.1"
 
         const val CORE = "io.sentry:sentry:$VERSION"
         const val LOGBACK = "io.sentry:sentry-logback:$VERSION"
     }
 
     object TestContainers {
-        private const val VERSION = "1.17.1"
+        private const val VERSION = "1.17.3"
 
         const val CORE = "org.testcontainers:testcontainers:$VERSION"
         const val JUINT = "org.testcontainers:junit-jupiter:$VERSION"

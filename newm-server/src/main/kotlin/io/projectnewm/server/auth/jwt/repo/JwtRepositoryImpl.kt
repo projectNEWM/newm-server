@@ -6,7 +6,7 @@ import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.util.logging.Logger
 import io.projectnewm.server.auth.jwt.JwtType
 import io.projectnewm.server.auth.jwt.database.JwtEntity
-import io.projectnewm.server.ext.exists
+import io.projectnewm.server.ext.existsHavingId
 import io.projectnewm.server.ext.getConfigLong
 import io.projectnewm.server.ext.getConfigString
 import io.projectnewm.server.ext.toDate
@@ -56,6 +56,6 @@ class JwtRepositoryImpl(
 
     override suspend fun exists(jwtId: UUID): Boolean {
         logger.debug(marker, "exists: jwtId = $jwtId")
-        return transaction { JwtEntity.exists(jwtId) }
+        return transaction { JwtEntity.existsHavingId(jwtId) }
     }
 }

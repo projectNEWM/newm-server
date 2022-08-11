@@ -1,7 +1,7 @@
 package io.projectnewm.server.features.user.database
 
 import io.projectnewm.server.auth.oauth.OAuthType
-import io.projectnewm.server.ext.exists
+import io.projectnewm.server.ext.existsHavingId
 import io.projectnewm.server.ext.getId
 import io.projectnewm.server.features.user.model.User
 import org.jetbrains.exposed.dao.UUIDEntity
@@ -43,7 +43,7 @@ class UserEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             UserTable.email.lowerCase() eq email.lowercase()
         }.firstOrNull()
 
-        fun existsByEmail(email: String): Boolean = exists {
+        fun existsByEmail(email: String): Boolean = existsHavingId {
             UserTable.email.lowerCase() eq email.lowercase()
         }
 
