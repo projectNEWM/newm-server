@@ -78,6 +78,18 @@ object Dependencies {
         const val ALL = "org.postgresql:postgresql:$VERSION"
     }
 
+    object KtorFlyway {
+        private const val VERSION = "2.0.0"
+
+        const val ALL = "io.newm:ktor-flyway-feature:$VERSION"
+    }
+
+    object FlywayDB {
+        private const val VERSION = "9.1.3"
+
+        const val ALL = "org.flywaydb:flyway-core:$VERSION"
+    }
+
     // https://github.com/patrickfav/bcrypt
     object JBCrypt {
         private const val VERSION = "0.9.0"
@@ -100,7 +112,7 @@ object Dependencies {
     }
 
     object Aws {
-        private const val VERSION = "1.12.279"
+        private const val VERSION = "1.12.280"
 
         const val BOM = "com.amazonaws:aws-java-sdk-bom:$VERSION"
         const val S3 = "com.amazonaws:aws-java-sdk-s3"

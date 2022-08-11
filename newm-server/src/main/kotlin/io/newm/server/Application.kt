@@ -1,7 +1,7 @@
 package io.newm.server
 
-import io.ktor.server.application.Application
-import io.ktor.server.routing.routing
+import io.ktor.server.application.*
+import io.ktor.server.routing.*
 import io.newm.server.auth.createAuthenticationRoutes
 import io.newm.server.auth.installAuthentication
 import io.newm.server.content.installContentNegotiation
