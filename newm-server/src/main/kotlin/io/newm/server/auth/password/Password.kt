@@ -1,8 +1,8 @@
-package io.projectnewm.server.auth.password
+package io.newm.server.auth.password
 
-import io.projectnewm.server.ext.toHash
-import io.projectnewm.server.ext.verify
-import io.projectnewm.server.serialization.PasswordSerializer
+import io.newm.server.ext.toHash
+import io.newm.server.ext.verify
+import io.newm.server.serialization.PasswordSerializer
 import kotlinx.serialization.Serializable
 
 @Serializable(with = PasswordSerializer::class)

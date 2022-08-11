@@ -1,4 +1,4 @@
-package io.projectnewm.server.content
+package io.newm.server.content
 
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application

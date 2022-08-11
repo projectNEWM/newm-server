@@ -1,9 +1,9 @@
-package io.projectnewm.server.features.user.database
+package io.newm.server.features.user.database
 
-import io.projectnewm.server.auth.oauth.OAuthType
-import io.projectnewm.server.ext.existsHavingId
-import io.projectnewm.server.ext.getId
-import io.projectnewm.server.features.user.model.User
+import io.newm.server.auth.oauth.OAuthType
+import io.newm.server.ext.existsHavingId
+import io.newm.server.ext.getId
+import io.newm.server.features.user.model.User
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID

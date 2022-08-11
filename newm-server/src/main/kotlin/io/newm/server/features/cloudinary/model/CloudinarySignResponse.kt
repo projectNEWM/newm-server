@@ -1,4 +1,4 @@
-package io.projectnewm.server.features.cloudinary.model
+package io.newm.server.features.cloudinary.model
 
 import kotlinx.serialization.Serializable
 

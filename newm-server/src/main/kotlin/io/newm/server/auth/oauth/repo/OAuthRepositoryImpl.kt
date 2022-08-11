@@ -1,4 +1,4 @@
-package io.projectnewm.server.auth.oauth.repo
+package io.newm.server.auth.oauth.repo
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -6,8 +6,8 @@ import io.ktor.client.request.forms.submitForm
 import io.ktor.http.Parameters
 import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.util.logging.Logger
-import io.projectnewm.server.auth.oauth.OAuthType
-import io.projectnewm.server.ext.getConfigString
+import io.newm.server.auth.oauth.OAuthType
+import io.newm.server.ext.getConfigString
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.slf4j.MarkerFactory

@@ -1,4 +1,4 @@
-package io.projectnewm.server.features.user.oauth
+package io.newm.server.features.user.oauth
 
 interface OAuthUser {
     val id: String

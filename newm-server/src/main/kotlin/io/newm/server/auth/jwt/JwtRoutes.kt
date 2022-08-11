@@ -1,17 +1,17 @@
-package io.projectnewm.server.auth.jwt
+package io.newm.server.auth.jwt
 
 import io.ktor.server.application.call
 import io.ktor.server.auth.authenticate
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Routing
 import io.ktor.server.routing.get
-import io.projectnewm.server.auth.AUTH_PATH
-import io.projectnewm.server.auth.jwt.repo.JwtRepository
-import io.projectnewm.server.auth.password.createLoginResponse
-import io.projectnewm.server.di.inject
-import io.projectnewm.server.ext.jwtId
-import io.projectnewm.server.ext.jwtPrincipal
-import io.projectnewm.server.ext.myUserId
+import io.newm.server.auth.AUTH_PATH
+import io.newm.server.auth.jwt.repo.JwtRepository
+import io.newm.server.auth.password.createLoginResponse
+import io.newm.server.di.inject
+import io.newm.server.ext.jwtId
+import io.newm.server.ext.jwtPrincipal
+import io.newm.server.ext.myUserId
 
 fun Routing.createJwtRoutes() {
     val jwtRepository: JwtRepository by inject()

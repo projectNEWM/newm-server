@@ -1,4 +1,4 @@
-package io.projectnewm.server.auth.twofactor.repo
+package io.newm.server.auth.twofactor.repo
 
 interface TwoFactorAuthRepository {
     suspend fun sendCode(email: String)

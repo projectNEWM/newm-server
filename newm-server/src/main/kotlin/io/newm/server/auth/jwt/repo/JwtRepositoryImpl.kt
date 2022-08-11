@@ -1,16 +1,16 @@
-package io.projectnewm.server.auth.jwt.repo
+package io.newm.server.auth.jwt.repo
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.util.logging.Logger
-import io.projectnewm.server.auth.jwt.JwtType
-import io.projectnewm.server.auth.jwt.database.JwtEntity
-import io.projectnewm.server.ext.existsHavingId
-import io.projectnewm.server.ext.getConfigLong
-import io.projectnewm.server.ext.getConfigString
-import io.projectnewm.server.ext.toDate
-import io.projectnewm.server.features.user.database.UserTable
+import io.newm.server.auth.jwt.JwtType
+import io.newm.server.auth.jwt.database.JwtEntity
+import io.newm.server.ext.existsHavingId
+import io.newm.server.ext.getConfigLong
+import io.newm.server.ext.getConfigString
+import io.newm.server.ext.toDate
+import io.newm.server.features.user.database.UserTable
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.MarkerFactory

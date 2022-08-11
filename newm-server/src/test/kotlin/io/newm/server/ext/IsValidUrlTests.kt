@@ -1,4 +1,4 @@
-package io.projectnewm.server.ext
+package io.newm.server.ext
 
 import com.google.common.truth.Truth.assertWithMessage
 import org.junit.jupiter.api.Test

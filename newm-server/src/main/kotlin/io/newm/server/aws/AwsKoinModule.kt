@@ -1,11 +1,11 @@
-package io.projectnewm.server.aws
+package io.newm.server.aws
 
 import com.amazonaws.auth.AWSCredentialsProvider
 import com.amazonaws.regions.Regions
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import io.ktor.server.application.ApplicationEnvironment
-import io.projectnewm.server.ext.getConfigString
+import io.newm.server.ext.getConfigString
 import org.koin.dsl.module
 
 val awsKoinModule = module {

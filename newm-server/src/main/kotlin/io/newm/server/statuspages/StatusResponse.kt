@@ -1,4 +1,4 @@
-package io.projectnewm.server.statuspages
+package io.newm.server.statuspages
 
 import kotlinx.serialization.Serializable
 

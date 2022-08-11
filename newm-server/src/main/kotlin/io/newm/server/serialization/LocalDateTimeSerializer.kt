@@ -1,4 +1,4 @@
-package io.projectnewm.server.serialization
+package io.newm.server.serialization
 
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.PrimitiveKind

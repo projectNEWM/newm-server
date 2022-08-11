@@ -1,4 +1,4 @@
-package io.projectnewm.server.client
+package io.newm.server.client
 
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO

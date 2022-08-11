@@ -1,7 +1,7 @@
-package io.projectnewm.server.features.playlist
+package io.newm.server.features.playlist
 
-import io.projectnewm.server.features.playlist.repo.PlaylistRepository
-import io.projectnewm.server.features.playlist.repo.PlaylistRepositoryImpl
+import io.newm.server.features.playlist.repo.PlaylistRepository
+import io.newm.server.features.playlist.repo.PlaylistRepositoryImpl
 import org.koin.dsl.module
 
 val playlistKoinModule = module {

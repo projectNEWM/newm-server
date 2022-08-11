@@ -1,4 +1,4 @@
-package io.projectnewm.server.logging
+package io.newm.server.logging
 
 import io.ktor.server.application.Application
 import io.ktor.server.application.install

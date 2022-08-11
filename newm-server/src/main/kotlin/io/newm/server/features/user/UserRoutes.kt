@@ -1,4 +1,4 @@
-package io.projectnewm.server.features.user
+package io.newm.server.features.user
 
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
@@ -11,11 +11,11 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.patch
 import io.ktor.server.routing.put
 import io.ktor.server.routing.route
-import io.projectnewm.server.auth.jwt.AUTH_JWT
-import io.projectnewm.server.di.inject
-import io.projectnewm.server.ext.identifyUser
-import io.projectnewm.server.ext.restrictToMe
-import io.projectnewm.server.features.user.repo.UserRepository
+import io.newm.server.auth.jwt.AUTH_JWT
+import io.newm.server.di.inject
+import io.newm.server.ext.identifyUser
+import io.newm.server.ext.restrictToMe
+import io.newm.server.features.user.repo.UserRepository
 
 private const val USERS_PATH = "v1/users"
 

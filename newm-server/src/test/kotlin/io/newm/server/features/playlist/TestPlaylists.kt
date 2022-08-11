@@ -1,6 +1,6 @@
-package io.projectnewm.server.features.playlist
+package io.newm.server.features.playlist
 
-import io.projectnewm.server.features.playlist.model.Playlist
+import io.newm.server.features.playlist.model.Playlist
 
 val testPlaylist1 = Playlist(
     name = "Test Playlist 1"

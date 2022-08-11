@@ -1,4 +1,4 @@
-package io.projectnewm.server.features.song
+package io.newm.server.features.song
 
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
@@ -11,15 +11,15 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.patch
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
-import io.projectnewm.server.auth.jwt.AUTH_JWT
-import io.projectnewm.server.di.inject
-import io.projectnewm.server.ext.myUserId
-import io.projectnewm.server.ext.songId
-import io.projectnewm.server.ext.toUUID
-import io.projectnewm.server.features.song.model.SongIdBody
-import io.projectnewm.server.features.song.model.UploadRequest
-import io.projectnewm.server.features.song.model.UploadResponse
-import io.projectnewm.server.features.song.repo.SongRepository
+import io.newm.server.auth.jwt.AUTH_JWT
+import io.newm.server.di.inject
+import io.newm.server.ext.myUserId
+import io.newm.server.ext.songId
+import io.newm.server.ext.toUUID
+import io.newm.server.features.song.model.SongIdBody
+import io.newm.server.features.song.model.UploadRequest
+import io.newm.server.features.song.model.UploadResponse
+import io.newm.server.features.song.repo.SongRepository
 
 private const val SONGS_PATH = "v1/songs"
 

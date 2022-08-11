@@ -1,4 +1,4 @@
-package io.projectnewm.server.cors
+package io.newm.server.cors
 
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -6,7 +6,7 @@ import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.application.log
 import io.ktor.server.plugins.cors.routing.CORS
-import io.projectnewm.server.ext.getConfigSplitStrings
+import io.newm.server.ext.getConfigSplitStrings
 
 fun Application.installCORS() {
     install(CORS) {

@@ -1,4 +1,4 @@
-package io.projectnewm.server.staticcontent
+package io.newm.server.staticcontent
 
 import com.google.common.truth.Truth.assertThat
 import io.ktor.client.call.body
@@ -6,7 +6,7 @@ import io.ktor.client.request.get
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
-import io.projectnewm.server.BaseApplicationTests
+import io.newm.server.BaseApplicationTests
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 

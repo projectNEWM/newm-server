@@ -1,6 +1,6 @@
-package io.projectnewm.server.serialization
+package io.newm.server.serialization
 
-import io.projectnewm.server.auth.password.Password
+import io.newm.server.auth.password.Password
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor

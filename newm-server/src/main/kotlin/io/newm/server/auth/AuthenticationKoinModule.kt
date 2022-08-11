@@ -1,11 +1,11 @@
-package io.projectnewm.server.auth
+package io.newm.server.auth
 
-import io.projectnewm.server.auth.jwt.repo.JwtRepository
-import io.projectnewm.server.auth.jwt.repo.JwtRepositoryImpl
-import io.projectnewm.server.auth.oauth.repo.OAuthRepository
-import io.projectnewm.server.auth.oauth.repo.OAuthRepositoryImpl
-import io.projectnewm.server.auth.twofactor.repo.TwoFactorAuthRepository
-import io.projectnewm.server.auth.twofactor.repo.TwoFactorAuthRepositoryImpl
+import io.newm.server.auth.jwt.repo.JwtRepository
+import io.newm.server.auth.jwt.repo.JwtRepositoryImpl
+import io.newm.server.auth.oauth.repo.OAuthRepository
+import io.newm.server.auth.oauth.repo.OAuthRepositoryImpl
+import io.newm.server.auth.twofactor.repo.TwoFactorAuthRepository
+import io.newm.server.auth.twofactor.repo.TwoFactorAuthRepositoryImpl
 import org.koin.dsl.module
 
 val authKoinModule = module {

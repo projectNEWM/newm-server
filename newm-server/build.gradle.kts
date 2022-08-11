@@ -10,7 +10,7 @@ java.sourceCompatibility = JavaVersion.VERSION_17
 java.targetCompatibility = JavaVersion.VERSION_17
 
 application {
-    mainClass.set("io.projectnewm.server.ApplicationKt")
+    mainClass.set("io.newm.server.ApplicationKt")
 }
 
 dependencies {

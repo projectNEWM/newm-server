@@ -1,8 +1,8 @@
-package io.projectnewm.server.features.user.repo
+package io.newm.server.features.user.repo
 
-import io.projectnewm.server.auth.oauth.OAuthType
-import io.projectnewm.server.auth.password.Password
-import io.projectnewm.server.features.user.model.User
+import io.newm.server.auth.oauth.OAuthType
+import io.newm.server.auth.password.Password
+import io.newm.server.features.user.model.User
 import java.util.UUID
 
 interface UserRepository {

@@ -1,4 +1,4 @@
-package io.projectnewm.server.auth.oauth
+package io.newm.server.auth.oauth
 
 import kotlinx.serialization.Serializable
 

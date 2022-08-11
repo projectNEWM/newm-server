@@ -1,4 +1,4 @@
-package io.projectnewm.server.features.song
+package io.newm.server.features.song
 
 import com.amazonaws.HttpMethod
 import com.amazonaws.services.s3.AmazonS3
@@ -14,17 +14,17 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
-import io.projectnewm.server.BaseApplicationTests
-import io.projectnewm.server.di.inject
-import io.projectnewm.server.ext.existsHavingId
-import io.projectnewm.server.ext.toDate
-import io.projectnewm.server.features.song.database.SongEntity
-import io.projectnewm.server.features.song.database.SongTable
-import io.projectnewm.server.features.song.model.Song
-import io.projectnewm.server.features.song.model.SongIdBody
-import io.projectnewm.server.features.song.model.UploadRequest
-import io.projectnewm.server.features.song.model.UploadResponse
-import io.projectnewm.server.features.user.database.UserTable
+import io.newm.server.BaseApplicationTests
+import io.newm.server.di.inject
+import io.newm.server.ext.existsHavingId
+import io.newm.server.ext.toDate
+import io.newm.server.features.song.database.SongEntity
+import io.newm.server.features.song.database.SongTable
+import io.newm.server.features.song.model.Song
+import io.newm.server.features.song.model.SongIdBody
+import io.newm.server.features.song.model.UploadRequest
+import io.newm.server.features.song.model.UploadResponse
+import io.newm.server.features.user.database.UserTable
 import java.time.Instant
 import java.time.LocalDateTime
 import kotlinx.coroutines.runBlocking

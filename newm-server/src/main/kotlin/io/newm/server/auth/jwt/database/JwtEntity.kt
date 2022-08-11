@@ -1,4 +1,4 @@
-package io.projectnewm.server.auth.jwt.database
+package io.newm.server.auth.jwt.database
 
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass

@@ -1,9 +1,9 @@
-package io.projectnewm.server.aws
+package io.newm.server.aws
 
 import com.amazonaws.auth.AWSCredentials
 import com.amazonaws.auth.AWSCredentialsProvider
 import io.ktor.server.application.ApplicationEnvironment
-import io.projectnewm.server.ext.getConfigString
+import io.newm.server.ext.getConfigString
 
 internal class CredentialsProvider(
     private val environment: ApplicationEnvironment

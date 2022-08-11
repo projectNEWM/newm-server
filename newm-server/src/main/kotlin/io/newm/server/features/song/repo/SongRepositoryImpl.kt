@@ -1,17 +1,17 @@
-package io.projectnewm.server.features.song.repo
+package io.newm.server.features.song.repo
 
 import com.amazonaws.HttpMethod
 import com.amazonaws.services.s3.AmazonS3
 import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.util.logging.Logger
-import io.projectnewm.server.exception.HttpForbiddenException
-import io.projectnewm.server.exception.HttpUnprocessableEntityException
-import io.projectnewm.server.ext.getConfigLong
-import io.projectnewm.server.ext.getConfigString
-import io.projectnewm.server.ext.toDate
-import io.projectnewm.server.features.song.database.SongEntity
-import io.projectnewm.server.features.song.model.Song
-import io.projectnewm.server.features.user.database.UserTable
+import io.newm.server.exception.HttpForbiddenException
+import io.newm.server.exception.HttpUnprocessableEntityException
+import io.newm.server.ext.getConfigLong
+import io.newm.server.ext.getConfigString
+import io.newm.server.ext.toDate
+import io.newm.server.features.song.database.SongEntity
+import io.newm.server.features.song.model.Song
+import io.newm.server.features.user.database.UserTable
 import java.time.Instant
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.transactions.transaction

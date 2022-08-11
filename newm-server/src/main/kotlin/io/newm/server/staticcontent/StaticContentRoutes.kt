@@ -1,4 +1,4 @@
-package io.projectnewm.server.staticcontent
+package io.newm.server.staticcontent
 
 import io.ktor.server.http.content.resources
 import io.ktor.server.http.content.static

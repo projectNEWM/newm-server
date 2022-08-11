@@ -1,4 +1,4 @@
-package io.projectnewm.server.features.playlist
+package io.newm.server.features.playlist
 
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
@@ -12,15 +12,15 @@ import io.ktor.server.routing.patch
 import io.ktor.server.routing.post
 import io.ktor.server.routing.put
 import io.ktor.server.routing.route
-import io.projectnewm.server.auth.jwt.AUTH_JWT
-import io.projectnewm.server.di.inject
-import io.projectnewm.server.ext.myUserId
-import io.projectnewm.server.ext.playlistId
-import io.projectnewm.server.ext.songId
-import io.projectnewm.server.ext.toUUID
-import io.projectnewm.server.features.playlist.model.PlaylistIdBody
-import io.projectnewm.server.features.song.model.SongIdBody
-import io.projectnewm.server.features.playlist.repo.PlaylistRepository
+import io.newm.server.auth.jwt.AUTH_JWT
+import io.newm.server.di.inject
+import io.newm.server.ext.myUserId
+import io.newm.server.ext.playlistId
+import io.newm.server.ext.songId
+import io.newm.server.ext.toUUID
+import io.newm.server.features.playlist.model.PlaylistIdBody
+import io.newm.server.features.song.model.SongIdBody
+import io.newm.server.features.playlist.repo.PlaylistRepository
 
 private const val PLAYLISTS_PATH = "v1/playlists"
 
