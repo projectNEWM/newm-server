@@ -15,10 +15,20 @@ ktlint {
 }
 
 application {
-    mainClass.set("io.newm.server.ApplicationKt")
+    mainClass.set("io.newm.chain.ApplicationKt")
+}
+
+repositories {
+    maven {
+        name = "sonatypeSnapshots"
+        url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
+    }
 }
 
 dependencies {
+    implementation(project(":newm-chain-db"))
+    implementation(Dependencies.Newm.KOGMIOS)
+
     compileOnly(Dependencies.Kotlin.REFLECTION)
     implementation(Dependencies.Kotlin.STDLIB_JDK8)
 
@@ -29,20 +39,20 @@ dependencies {
 
     implementation(Dependencies.Ktor.SERVER_CORE)
     implementation(Dependencies.Ktor.SERVER_CIO)
-    implementation(Dependencies.Ktor.SERVER_CONTENT_NEGOTIATION)
-    implementation(Dependencies.Ktor.SERVER_LOCATIONS)
-    implementation(Dependencies.Ktor.SERVER_CALL_LOGGING)
-    implementation(Dependencies.Ktor.SERVER_AUTH)
-    implementation(Dependencies.Ktor.SERVER_AUTH_JWT)
-    implementation(Dependencies.Ktor.SERVER_HTML_BUILDER)
-    implementation(Dependencies.Ktor.CLIENT_CORE)
-    implementation(Dependencies.Ktor.CLIENT_CIO)
-    implementation(Dependencies.Ktor.CLIENT_CONTENT_NEGOTIATION)
-    implementation(Dependencies.Ktor.CLIENT_SERIALIZATION)
-    implementation(Dependencies.Ktor.SERIALIZATION)
-    implementation(Dependencies.Ktor.SERIALIZATION_JSON)
-    implementation(Dependencies.Ktor.SERVER_STATUS_PAGES)
-    implementation(Dependencies.Ktor.SERVER_CORS)
+//    implementation(Dependencies.Ktor.SERVER_CONTENT_NEGOTIATION)
+//    implementation(Dependencies.Ktor.SERVER_LOCATIONS)
+//    implementation(Dependencies.Ktor.SERVER_CALL_LOGGING)
+//    implementation(Dependencies.Ktor.SERVER_AUTH)
+//    implementation(Dependencies.Ktor.SERVER_AUTH_JWT)
+//    implementation(Dependencies.Ktor.SERVER_HTML_BUILDER)
+//    implementation(Dependencies.Ktor.CLIENT_CORE)
+//    implementation(Dependencies.Ktor.CLIENT_CIO)
+//    implementation(Dependencies.Ktor.CLIENT_CONTENT_NEGOTIATION)
+//    implementation(Dependencies.Ktor.CLIENT_SERIALIZATION)
+//    implementation(Dependencies.Ktor.SERIALIZATION)
+//    implementation(Dependencies.Ktor.SERIALIZATION_JSON)
+//    implementation(Dependencies.Ktor.SERVER_STATUS_PAGES)
+//    implementation(Dependencies.Ktor.SERVER_CORS)
 
     implementation(Dependencies.Koin.KTOR)
 
@@ -61,12 +71,6 @@ dependencies {
     implementation(Dependencies.Sentry.LOGBACK)
     implementation(Dependencies.ApacheCommonsEmail.ALL)
     implementation(Dependencies.JBCrypt.ALL)
-
-    implementation(Dependencies.Cloudinary.ALL)
-
-    implementation(platform(Dependencies.Aws.BOM))
-    implementation(Dependencies.Aws.S3)
-    implementation(Dependencies.Aws.SQS)
 
     testImplementation(Dependencies.JUnit.JUPITER)
     testImplementation(Dependencies.Mockk.MOCKK)
