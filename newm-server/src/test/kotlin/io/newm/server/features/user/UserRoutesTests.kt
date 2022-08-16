@@ -1,11 +1,9 @@
 package io.newm.server.features.user
 
 import com.google.common.truth.Truth.assertThat
-import io.ktor.client.call.body
+import io.ktor.client.call.*
 import io.ktor.client.request.*
-import io.ktor.http.ContentType
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.contentType
+import io.ktor.http.*
 import io.newm.server.BaseApplicationTests
 import io.newm.server.auth.twofactor.database.TwoFactorAuthEntity
 import io.newm.server.auth.twofactor.database.TwoFactorAuthTable
@@ -14,13 +12,13 @@ import io.newm.server.ext.toHash
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
 import io.newm.server.features.user.model.User
-import java.time.LocalDateTime
 import kotlinx.coroutines.runBlocking
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import java.util.*
+import java.time.LocalDateTime
 
 class UserRoutesTests : BaseApplicationTests() {
 

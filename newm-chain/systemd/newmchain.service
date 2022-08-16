@@ -1,0 +1,21 @@
+[Unit]
+Description=NewmChain - ChainSync and APIs for Cardano
+After=syslog.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=5
+User=westbam
+LimitNOFILE=131072
+WorkingDirectory=/home/westbam/haskell/newmchain
+EnvironmentFile=/home/westbam/haskell/newmchain/.env
+ExecStart=/usr/bin/java -XX:+DisableAttachMechanism -XX:+UnlockExperimentalVMOptions -XX:+UseZGC -Xmx8192m -jar newm-chain.jar
+SuccessExitStatus=143
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=newmchain
+                
+[Install]
+WantedBy=multi-user.target
