@@ -6,10 +6,11 @@ import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.SizedIterable
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
-import java.util.UUID
+import java.util.*
 
 class PlaylistEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     val createdAt by PlaylistTable.createdAt
