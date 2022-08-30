@@ -65,7 +65,7 @@ class SongRoutesTests : BaseApplicationTests() {
         assertThat(song.genre).isEqualTo(testSong1.genre)
         assertThat(song.description).isEqualTo(testSong1.description)
         assertThat(song.credits).isEqualTo(testSong1.credits)
-        assertThat(song.audioUrl).isEqualTo(testSong1.audioUrl)
+        assertThat(song.streamUrl).isEqualTo(testSong1.streamUrl)
         assertThat(song.nftPolicyId).isEqualTo(testSong1.nftPolicyId)
         assertThat(song.nftName).isEqualTo(testSong1.nftName)
     }
@@ -81,7 +81,7 @@ class SongRoutesTests : BaseApplicationTests() {
                 coverArtUrl = testSong1.coverArtUrl
                 description = testSong1.description
                 credits = testSong1.credits
-                audioUrl = testSong1.audioUrl
+                streamUrl = testSong1.streamUrl
                 nftPolicyId = testSong1.nftPolicyId
                 nftName = testSong1.nftName
             }
@@ -109,7 +109,7 @@ class SongRoutesTests : BaseApplicationTests() {
                     coverArtUrl = song.coverArtUrl
                     description = song.description
                     credits = song.credits
-                    audioUrl = song.audioUrl
+                    streamUrl = song.streamUrl
                     nftPolicyId = song.nftPolicyId
                     nftName = song.nftName
                 }
@@ -136,7 +136,7 @@ class SongRoutesTests : BaseApplicationTests() {
                 coverArtUrl = testSong1.coverArtUrl
                 description = testSong1.description
                 credits = testSong1.credits
-                audioUrl = testSong1.audioUrl
+                streamUrl = testSong1.streamUrl
                 nftPolicyId = testSong1.nftPolicyId
                 nftName = testSong1.nftName
             }
@@ -158,7 +158,7 @@ class SongRoutesTests : BaseApplicationTests() {
         assertThat(song.genre).isEqualTo(testSong2.genre)
         assertThat(song.description).isEqualTo(testSong2.description)
         assertThat(song.credits).isEqualTo(testSong2.credits)
-        assertThat(song.audioUrl).isEqualTo(testSong2.audioUrl)
+        assertThat(song.streamUrl).isEqualTo(testSong2.streamUrl)
         assertThat(song.nftPolicyId).isEqualTo(testSong2.nftPolicyId)
         assertThat(song.nftName).isEqualTo(testSong2.nftName)
     }
@@ -174,7 +174,7 @@ class SongRoutesTests : BaseApplicationTests() {
                 coverArtUrl = testSong1.coverArtUrl
                 description = testSong1.description
                 credits = testSong1.credits
-                audioUrl = testSong1.audioUrl
+                streamUrl = testSong1.streamUrl
                 nftPolicyId = testSong1.nftPolicyId
                 nftName = testSong1.nftName
             }
@@ -202,7 +202,7 @@ class SongRoutesTests : BaseApplicationTests() {
                 coverArtUrl = testSong1.coverArtUrl
                 description = testSong1.description
                 credits = testSong1.credits
-                audioUrl = testSong1.audioUrl
+                streamUrl = testSong1.streamUrl
                 nftPolicyId = testSong1.nftPolicyId
                 nftName = testSong1.nftName
             }

@@ -66,6 +66,7 @@ dependencies {
 
     implementation(platform(Dependencies.Aws.BOM))
     implementation(Dependencies.Aws.S3)
+    implementation(Dependencies.Aws.SQS)
 
     testImplementation(Dependencies.JUnit.JUPITER)
     testImplementation(Dependencies.Mockk.MOCKK)

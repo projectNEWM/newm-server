@@ -107,7 +107,9 @@ subprojects {
             "AWS_ACCESS_KEY_ID" to "",
             "AWS_SECRET_KEY" to "",
             "AWS_REGION" to "",
-            "AWS_AUDIO_BUCKET" to ""
+            "AWS_AUDIO_BUCKET" to "",
+            "AWS_AUDIO_SQS_QUEUE_URL" to "",
+            "AWS_AUDIO_CLOUDFRONT_HOST_URL" to ""
         )
     }
 }

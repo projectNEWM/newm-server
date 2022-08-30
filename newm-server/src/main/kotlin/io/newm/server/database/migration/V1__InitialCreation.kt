@@ -55,7 +55,7 @@ class V1__InitialCreation : BaseJavaMigration() {
                             cover_art_url text,
                             description text,
                             credits text,
-                            audio_url text,
+                            stream_url text,
                             nft_policy_id text,
                             nft_name text,
                             CONSTRAINT fk_songs_owner_id__id FOREIGN KEY (owner_id) REFERENCES users (id) ON UPDATE RESTRICT ON DELETE CASCADE

@@ -9,7 +9,7 @@ fun Application.initializeSentry() {
         options.dsn = environment.getConfigString("sentry.dns")
 //        options.tracesSampleRate = if (environment.developmentMode) 1.0 else 0.5
         options.tracesSampleRate = 1.0
-        options.setDebug(environment.developmentMode)
+        options.isDebug = environment.developmentMode
     }
 }
 
