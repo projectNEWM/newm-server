@@ -4,6 +4,7 @@ import io.ktor.server.application.*
 import io.ktor.server.routing.*
 import io.newm.server.auth.createAuthenticationRoutes
 import io.newm.server.auth.installAuthentication
+import io.newm.server.aws.initializeAws
 import io.newm.server.content.installContentNegotiation
 import io.newm.server.cors.installCORS
 import io.newm.server.database.initializeDatabase
@@ -30,6 +31,8 @@ fun Application.module() {
     installAuthentication()
     installStatusPages()
     installCORS()
+
+    initializeAws()
 
     routing {
         createStaticContentRoutes()

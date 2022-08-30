@@ -4,6 +4,8 @@ import com.amazonaws.auth.AWSCredentialsProvider
 import com.amazonaws.regions.Regions
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.AmazonS3ClientBuilder
+import com.amazonaws.services.sqs.AmazonSQSAsync
+import com.amazonaws.services.sqs.AmazonSQSAsyncClientBuilder
 import io.ktor.server.application.ApplicationEnvironment
 import io.newm.server.ext.getConfigString
 import org.koin.dsl.module
@@ -12,6 +14,13 @@ val awsKoinModule = module {
 
     single<AmazonS3> {
         AmazonS3ClientBuilder.standard()
+            .withRegion(get<Regions>())
+            .withCredentials(get())
+            .build()
+    }
+
+    single<AmazonSQSAsync> {
+        AmazonSQSAsyncClientBuilder.standard()
             .withRegion(get<Regions>())
             .withCredentials(get())
             .build()

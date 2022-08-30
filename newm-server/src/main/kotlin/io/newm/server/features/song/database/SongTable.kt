@@ -14,7 +14,7 @@ object SongTable : UUIDTable(name = "songs") {
     val coverArtUrl = text("cover_art_url").nullable()
     val description = text("description").nullable()
     val credits = text("credits").nullable()
-    val audioUrl = text("audio_url").nullable()
+    val streamUrl = text("stream_url").nullable()
     val nftPolicyId = text("nft_policy_id").nullable()
     val nftName = text("nft_name").nullable()
 }

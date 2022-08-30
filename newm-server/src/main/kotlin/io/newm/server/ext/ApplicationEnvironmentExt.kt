@@ -1,16 +1,21 @@
 package io.newm.server.ext
 
 import io.ktor.server.application.ApplicationEnvironment
+import io.ktor.server.config.ApplicationConfig
 
-fun ApplicationEnvironment.getConfigString(path: String) = config.property(path).getString()
+fun ApplicationEnvironment.getConfigChild(path: String): ApplicationConfig = config.config(path)
 
-fun ApplicationEnvironment.getConfigStrings(path: String) = config.property(path).getList()
+fun ApplicationEnvironment.getConfigChildren(path: String): List<ApplicationConfig> = config.getChildren(path)
 
-fun ApplicationEnvironment.getConfigSplitStrings(path: String, delimiter: String = ",") =
-    getConfigStrings(path).flatMap { it.split(delimiter) }
+fun ApplicationEnvironment.getConfigString(path: String): String = config.getString(path)
 
-fun ApplicationEnvironment.getConfigInt(path: String): Int = getConfigString(path).toInt()
+fun ApplicationEnvironment.getConfigStrings(path: String): List<String> = config.getStrings(path)
 
-fun ApplicationEnvironment.getConfigLong(path: String): Long = getConfigString(path).toLong()
+fun ApplicationEnvironment.getConfigSplitStrings(path: String, delimiter: String = ","): List<String> =
+    config.getSplitStrings(path, delimiter)
 
-fun ApplicationEnvironment.getConfigBoolean(path: String): Boolean = getConfigString(path).toBoolean()
+fun ApplicationEnvironment.getConfigInt(path: String): Int = config.getInt(path)
+
+fun ApplicationEnvironment.getConfigLong(path: String): Long = config.getLong(path)
+
+fun ApplicationEnvironment.getConfigBoolean(path: String): Boolean = config.getBoolean(path)

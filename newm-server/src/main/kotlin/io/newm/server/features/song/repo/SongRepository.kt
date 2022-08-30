@@ -10,4 +10,5 @@ interface SongRepository {
     suspend fun get(songId: UUID): Song
     suspend fun getAllByOwnerId(ownerId: UUID): List<Song>
     suspend fun generateUploadUrl(songId: UUID, requesterId: UUID, fileName: String): String
+    suspend fun updateStreamUrl(songId: UUID, streamUrl: String)
 }

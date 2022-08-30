@@ -37,7 +37,7 @@ internal class SongRepositoryImpl(
                 coverArtUrl = song.coverArtUrl
                 description = song.description
                 credits = song.credits
-                audioUrl = song.audioUrl
+                streamUrl = song.streamUrl
                 nftPolicyId = song.nftPolicyId
                 nftName = song.nftName
             }.id.value
@@ -54,7 +54,7 @@ internal class SongRepositoryImpl(
             song.coverArtUrl?.let { entity.coverArtUrl = it }
             song.description?.let { entity.description = it }
             song.credits?.let { entity.credits = it }
-            song.audioUrl?.let { entity.audioUrl = it }
+            song.streamUrl?.let { entity.streamUrl = it }
             song.nftPolicyId?.let { entity.nftPolicyId = it }
             song.nftName?.let { entity.nftName = it }
         }
@@ -102,6 +102,14 @@ internal class SongRepositoryImpl(
             expiration,
             HttpMethod.PUT
         ).toString()
+    }
+
+    override suspend fun updateStreamUrl(songId: UUID, streamUrl: String) {
+        logger.debug(marker, "updateStreamUrl: songId = $songId, streamUrl = $streamUrl")
+        transaction {
+            val entity = SongEntity[songId]
+            entity.streamUrl = streamUrl
+        }
     }
 
     private fun SongEntity.checkRequester(requesterId: UUID) {

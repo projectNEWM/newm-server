@@ -7,7 +7,8 @@ import io.ktor.http.Parameters
 import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.util.logging.Logger
 import io.newm.server.auth.oauth.OAuthType
-import io.newm.server.ext.getConfigString
+import io.newm.server.ext.getConfigChild
+import io.newm.server.ext.getString
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.slf4j.MarkerFactory
@@ -28,15 +29,15 @@ class OAuthRepositoryImpl(
     override suspend fun getAccessToken(type: OAuthType, code: String, redirectUri: String): String {
         logger.debug(marker, "getAccessToken: type = $type, redirectUri=$redirectUri")
 
-        val pathPrefix = "oauth.${type.name.lowercase()}"
+        val config = environment.getConfigChild("oauth.${type.name.lowercase()}")
         return httpClient.submitForm(
-            url = environment.getConfigString("$pathPrefix.accessTokenUrl"),
+            url = config.getString("accessTokenUrl"),
             formParameters = Parameters.build {
                 append("grant_type", "authorization_code")
                 append("code", code)
                 append("redirect_uri", redirectUri)
-                append("client_id", environment.getConfigString("$pathPrefix.clientId"))
-                append("client_secret", environment.getConfigString("$pathPrefix.clientSecret"))
+                append("client_id", config.getString("clientId"))
+                append("client_secret", config.getString("clientSecret"))
             }
         ).body<TokenResponse>().accessToken
     }
