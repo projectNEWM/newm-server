@@ -18,6 +18,7 @@ data class User(
     val pictureUrl: String? = null,
     val role: String? = null,
     val genre: String? = null,
+    val walletAddress: String? = null,
     val email: String? = null,
     val newPassword: Password? = null,
     val confirmPassword: Password? = null,

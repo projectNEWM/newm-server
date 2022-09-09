@@ -21,6 +21,7 @@ class UserEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var pictureUrl by UserTable.pictureUrl
     var role by UserTable.role
     var genre by UserTable.genre
+    var walletAddress by UserTable.walletAddress
     var email by UserTable.email
     var passwordHash by UserTable.passwordHash
 
@@ -34,6 +35,7 @@ class UserEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         pictureUrl = pictureUrl,
         role = role,
         genre = genre,
+        walletAddress = walletAddress.takeIf { includeAll },
         email = email.takeIf { includeAll }
     )
 

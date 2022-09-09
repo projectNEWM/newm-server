@@ -12,6 +12,7 @@ object UserTable : UUIDTable(name = "users") {
     val pictureUrl = text("picture_url").nullable()
     val role = text("role").nullable()
     val genre = text("genre").nullable()
+    val walletAddress = text("wallet_address").nullable()
     val email = text("email")
     val passwordHash = text("password_hash").nullable()
 }
