@@ -49,6 +49,7 @@ internal class UserRepositoryImpl(
                 this.pictureUrl = pictureUrl
                 this.role = user.role
                 this.genre = user.genre
+                this.walletAddress = user.walletAddress
                 this.email = email
                 this.passwordHash = passwordHash
             }
@@ -121,6 +122,7 @@ internal class UserRepositoryImpl(
             pictureUrl?.let { entity.pictureUrl = it }
             user.role?.let { entity.role = it }
             user.genre?.let { entity.genre = it }
+            user.walletAddress?.let { entity.walletAddress = it }
             email?.let {
                 it.checkEmailUnique()
                 entity.email = it

@@ -22,6 +22,7 @@ class V1__InitialCreation : BaseJavaMigration() {
                             picture_url text,
                             role text,
                             genre text,
+                            wallet_address text,
                             email text NOT NULL,
                             password_hash text
                         )

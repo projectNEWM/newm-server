@@ -66,6 +66,7 @@ class UserRoutesTests : BaseApplicationTests() {
         assertThat(user.pictureUrl).isEqualTo(testUser1.pictureUrl)
         assertThat(user.role).isEqualTo(testUser1.role)
         assertThat(user.genre).isEqualTo(testUser1.genre)
+        assertThat(user.walletAddress).isEqualTo(testUser1.walletAddress)
         assertThat(user.email).isEqualTo(testUser1.email)
         assertThat(testUser1.newPassword!!.verify(passwordHash)).isTrue()
     }
@@ -81,6 +82,7 @@ class UserRoutesTests : BaseApplicationTests() {
                 pictureUrl = testUser1.pictureUrl
                 role = testUser1.role
                 genre = testUser1.genre
+                walletAddress = testUser1.walletAddress
                 email = testUser1.email!!
             }
         }.id.value
@@ -101,6 +103,7 @@ class UserRoutesTests : BaseApplicationTests() {
         assertThat(user.pictureUrl).isEqualTo(testUser1.pictureUrl)
         assertThat(user.role).isEqualTo(testUser1.role)
         assertThat(user.genre).isEqualTo(testUser1.genre)
+        assertThat(user.walletAddress).isEqualTo(testUser1.walletAddress)
         assertThat(user.email).isEqualTo(testUser1.email)
     }
 
@@ -115,6 +118,7 @@ class UserRoutesTests : BaseApplicationTests() {
                 pictureUrl = testUser1.pictureUrl
                 role = testUser1.role
                 genre = testUser1.genre
+                walletAddress = testUser1.walletAddress
                 email = testUser1.email!!
                 passwordHash = testUser1.newPassword!!.toHash()
             }
@@ -148,6 +152,7 @@ class UserRoutesTests : BaseApplicationTests() {
         assertThat(user.pictureUrl).isEqualTo(testUser2.pictureUrl)
         assertThat(user.role).isEqualTo(testUser2.role)
         assertThat(user.genre).isEqualTo(testUser2.genre)
+        assertThat(user.walletAddress).isEqualTo(testUser2.walletAddress)
         assertThat(user.email).isEqualTo(testUser2.email)
         assertThat(testUser2.newPassword!!.verify(passwordHash)).isTrue()
     }
@@ -163,6 +168,7 @@ class UserRoutesTests : BaseApplicationTests() {
                 pictureUrl = testUser1.pictureUrl
                 role = testUser1.role
                 genre = testUser1.genre
+                walletAddress = testUser1.walletAddress
                 email = testUser1.email!!
             }
         }.id.value
