@@ -1,5 +1,4 @@
 plugins {
-    application
     id("com.github.ben-manes.versions")
     id("com.github.johnrengelman.shadow")
     id("org.jlleitschuh.gradle.ktlint")
@@ -12,10 +11,6 @@ java.targetCompatibility = JavaVersion.VERSION_17
 
 ktlint {
     version.set("0.42.1")
-}
-
-application {
-    mainClass.set("io.newm.server.ApplicationKt")
 }
 
 dependencies {

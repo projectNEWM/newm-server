@@ -12,11 +12,17 @@ buildscript {
 }
 
 plugins {
+    application
     id("com.github.ben-manes.versions") version "0.41.0" apply false
     id("com.github.johnrengelman.shadow") version "7.1.2" apply false
     id("org.jlleitschuh.gradle.ktlint") version "10.3.0" apply false
+    id("io.ktor.plugin") version "2.1.1"
     kotlin("jvm") version Dependencies.Kotlin.VERSION apply false
     kotlin("plugin.serialization") version Dependencies.Kotlin.VERSION apply false
+}
+
+application {
+    mainClass.set("io.newm.server.ApplicationKt")
 }
 
 allprojects {
