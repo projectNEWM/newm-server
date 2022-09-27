@@ -8,7 +8,7 @@ object Dependencies {
     }
 
     object KotlinSerialization {
-        private const val VERSION = "1.3.3"
+        private const val VERSION = "1.4.0"
 
         const val JSON = "org.jetbrains.kotlinx:kotlinx-serialization-json:$VERSION"
     }
@@ -22,7 +22,7 @@ object Dependencies {
     }
 
     object Ktor {
-        private const val VERSION = "2.1.0"
+        private const val VERSION = "2.1.1"
 
         const val SERVER_CORE = "io.ktor:ktor-server-core:$VERSION"
         const val SERVER_CIO = "io.ktor:ktor-server-cio:$VERSION"
@@ -50,7 +50,7 @@ object Dependencies {
     }
 
     object Koin {
-        private const val VERSION = "3.2.0"
+        private const val VERSION = "3.2.2"
 
         const val KTOR = "io.insert-koin:koin-ktor:$VERSION"
         const val TEST = "io.insert-koin:koin-test:$VERSION"
@@ -73,7 +73,7 @@ object Dependencies {
     }
 
     object PostgreSQL {
-        private const val VERSION = "42.4.1"
+        private const val VERSION = "42.5.0"
 
         const val ALL = "org.postgresql:postgresql:$VERSION"
     }
@@ -85,7 +85,7 @@ object Dependencies {
     }
 
     object FlywayDB {
-        private const val VERSION = "9.1.3"
+        private const val VERSION = "9.3.1"
 
         const val ALL = "org.flywaydb:flyway-core:$VERSION"
     }
@@ -106,13 +106,13 @@ object Dependencies {
 
     // https://github.com/cloudinary/cloudinary_java
     object Cloudinary {
-        private const val VERSION = "1.32.2"
+        private const val VERSION = "1.33.0"
 
         const val ALL = "com.cloudinary:cloudinary-http44:$VERSION"
     }
 
     object Aws {
-        private const val VERSION = "1.12.280"
+        private const val VERSION = "1.12.311"
 
         const val BOM = "com.amazonaws:aws-java-sdk-bom:$VERSION"
         const val S3 = "com.amazonaws:aws-java-sdk-s3"
@@ -120,13 +120,13 @@ object Dependencies {
     }
 
     object JUnit {
-        private const val VERSION = "5.9.0"
+        private const val VERSION = "5.9.1"
 
         const val JUPITER = "org.junit.jupiter:junit-jupiter:$VERSION"
     }
 
     object Mockk {
-        private const val VERSION = "1.12.5"
+        private const val VERSION = "1.13.1"
 
         const val MOCKK = "io.mockk:mockk:$VERSION"
     }
@@ -138,7 +138,7 @@ object Dependencies {
     }
 
     object Sentry {
-        private const val VERSION = "6.3.1"
+        private const val VERSION = "6.4.2"
 
         const val CORE = "io.sentry:sentry:$VERSION"
         const val LOGBACK = "io.sentry:sentry-logback:$VERSION"
