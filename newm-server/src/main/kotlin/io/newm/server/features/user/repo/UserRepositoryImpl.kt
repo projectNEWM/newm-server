@@ -107,6 +107,13 @@ internal class UserRepositoryImpl(
         }
     }
 
+    override suspend fun getAll(offset: Int, limit: Int): List<User> {
+        logger.debug(marker, "getAll: offset = $offset, limit = $limit")
+        return transaction {
+            UserEntity.all().limit(n = limit, offset = offset.toLong()).map { it.toModel(includeAll = false) }
+        }
+    }
+
     override suspend fun update(userId: UUID, user: User) {
         logger.debug(marker, "update: userId = $userId, user = $user")
 

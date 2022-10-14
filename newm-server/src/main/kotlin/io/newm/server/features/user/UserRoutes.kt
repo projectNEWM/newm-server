@@ -14,6 +14,8 @@ import io.ktor.server.routing.route
 import io.newm.server.auth.jwt.AUTH_JWT
 import io.newm.server.di.inject
 import io.newm.server.ext.identifyUser
+import io.newm.server.ext.limit
+import io.newm.server.ext.offset
 import io.newm.server.ext.restrictToMe
 import io.newm.server.features.user.repo.UserRepository
 
@@ -47,6 +49,11 @@ fun Routing.createUserRoutes() {
     }
 
     route(USERS_PATH) {
+        get {
+            with(call) {
+                respond(repository.getAll(offset, limit))
+            }
+        }
         put {
             with(call) {
                 repository.add(receive())

@@ -34,8 +34,11 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     )
 
     companion object : UUIDEntityClass<SongEntity>(SongTable) {
-        fun getAllByOwnerId(ownerId: UUID): SizedIterable<SongEntity> = SongEntity.find {
+        fun allByOwnerId(ownerId: UUID): SizedIterable<SongEntity> = SongEntity.find {
             SongTable.ownerId eq ownerId
+        }
+        fun allByGenre(genre: String): SizedIterable<SongEntity> = SongEntity.find {
+            SongTable.genre eq genre
         }
     }
 }

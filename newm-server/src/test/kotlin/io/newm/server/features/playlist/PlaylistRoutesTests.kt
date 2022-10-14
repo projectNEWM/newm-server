@@ -1,21 +1,12 @@
 package io.newm.server.features.playlist
 
 import com.google.common.truth.Truth.assertThat
-import io.ktor.client.call.body
-import io.ktor.client.request.accept
-import io.ktor.client.request.bearerAuth
-import io.ktor.client.request.delete
-import io.ktor.client.request.get
-import io.ktor.client.request.patch
-import io.ktor.client.request.post
-import io.ktor.client.request.put
-import io.ktor.client.request.setBody
-import io.ktor.http.ContentType
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.contentType
+import io.ktor.client.call.*
+import io.ktor.client.request.*
+import io.ktor.http.*
 import io.newm.server.BaseApplicationTests
-import io.newm.server.ext.existsHavingId
 import io.newm.server.ext.exists
+import io.newm.server.ext.existsHavingId
 import io.newm.server.features.playlist.database.PlaylistEntity
 import io.newm.server.features.playlist.database.PlaylistTable
 import io.newm.server.features.playlist.database.SongsInPlaylistsTable
@@ -26,9 +17,7 @@ import io.newm.server.features.song.database.SongTable
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongIdBody
 import io.newm.server.features.song.testSong1
-import io.newm.server.features.song.testSongs
 import io.newm.server.features.user.database.UserTable
-import java.time.LocalDateTime
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.and
@@ -37,6 +26,7 @@ import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.time.LocalDateTime
 
 class PlaylistRoutesTests : BaseApplicationTests() {
 
@@ -89,25 +79,38 @@ class PlaylistRoutesTests : BaseApplicationTests() {
     }
 
     @Test
-    fun testGetPlaylists() = runBlocking {
+    fun testGetAllPlaylists() = runBlocking {
         // Add Playlists directly into database
-        val playlists = mutableListOf<Playlist>()
-        for (playlist in testPlaylists) {
-            playlists += transaction {
+        val expectedPlaylists = mutableListOf<Playlist>()
+        for (offset in 0..30) {
+            expectedPlaylists += transaction {
                 PlaylistEntity.new {
                     ownerId = EntityID(testUserId, UserTable)
-                    name = playlist.name!!
+                    name = "name$offset"
                 }
             }.toModel()
         }
 
-        // Get all playlists & verify
-        val response = client.get("v1/playlists") {
-            bearerAuth(testUserToken)
-            accept(ContentType.Application.Json)
+        // Get all playlists forcing pagination
+        var offset = 0
+        val limit = 5
+        val actualPlaylists = mutableListOf<Playlist>()
+        while (true) {
+            val response = client.get("v1/playlists") {
+                bearerAuth(testUserToken)
+                accept(ContentType.Application.Json)
+                parameter("offset", offset)
+                parameter("limit", limit)
+            }
+            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+            val songs = response.body<List<Playlist>>()
+            if (songs.isEmpty()) break
+            actualPlaylists += songs
+            offset += limit
         }
-        assertThat(response.status).isEqualTo(HttpStatusCode.OK)
-        assertThat(response.body<List<Playlist>>()).isEqualTo(playlists)
+
+        // verify all
+        assertThat(actualPlaylists).isEqualTo(expectedPlaylists)
     }
 
     @Test
@@ -251,23 +254,26 @@ class PlaylistRoutesTests : BaseApplicationTests() {
         }.id.value
 
         // Create songs directly into database
-        val songs = mutableListOf<Song>()
-        for (song in testSongs) {
-            songs += transaction {
+        val expectedSongs = mutableListOf<Song>()
+        for (offset in 0..30) {
+            expectedSongs += transaction {
                 SongEntity.new {
                     ownerId = EntityID(testUserId, UserTable)
-                    title = song.title!!
-                    genre = song.genre
-                    coverArtUrl = song.coverArtUrl
-                    description = song.description
-                    credits = song.credits
+                    title = "title$offset"
+                    genre = "genre$offset"
+                    coverArtUrl = "coverArtUrl$offset"
+                    description = "description$offset"
+                    credits = "credits$offset"
+                    streamUrl = "streamUrl$offset"
+                    nftPolicyId = "nftPolicyId$offset"
+                    nftName = "nftName$offset"
                 }
             }.toModel()
         }
 
         // add songs to playlist directly into database
         transaction {
-            for (song in songs) {
+            for (song in expectedSongs) {
                 SongsInPlaylistsTable.insert {
                     it[this.songId] = song.id!!
                     it[this.playlistId] = playlistId
@@ -275,12 +281,25 @@ class PlaylistRoutesTests : BaseApplicationTests() {
             }
         }
 
-        // Get playlist songs and verify
-        val response = client.get("v1/playlists/$playlistId/songs") {
-            bearerAuth(testUserToken)
-            accept(ContentType.Application.Json)
+        // Get playlist songs forcing pagination
+        var offset = 0
+        val limit = 5
+        val actualSongs = mutableListOf<Song>()
+        while (true) {
+            val response = client.get("v1/playlists/$playlistId/songs") {
+                bearerAuth(testUserToken)
+                accept(ContentType.Application.Json)
+                parameter("offset", offset)
+                parameter("limit", limit)
+            }
+            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+            val songs = response.body<List<Song>>()
+            if (songs.isEmpty()) break
+            actualSongs += songs
+            offset += limit
         }
-        assertThat(response.status).isEqualTo(HttpStatusCode.OK)
-        assertThat(response.body<List<Song>>()).isEqualTo(songs)
+
+        // verify all
+        assertThat(actualSongs).isEqualTo(expectedSongs)
     }
 }
