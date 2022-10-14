@@ -2,13 +2,7 @@ package io.newm.server.features.user
 
 import com.google.common.truth.Truth.assertThat
 import io.ktor.client.call.body
-import io.ktor.client.request.accept
-import io.ktor.client.request.bearerAuth
-import io.ktor.client.request.delete
-import io.ktor.client.request.get
-import io.ktor.client.request.patch
-import io.ktor.client.request.put
-import io.ktor.client.request.setBody
+import io.ktor.client.request.*
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
@@ -26,6 +20,7 @@ import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.util.*
 
 class UserRoutesTests : BaseApplicationTests() {
 
@@ -220,5 +215,56 @@ class UserRoutesTests : BaseApplicationTests() {
         // verify it
         val passwordHash = transaction { UserEntity[userId].passwordHash!! }
         assertThat(testUser2.newPassword!!.verify(passwordHash)).isTrue()
+    }
+
+    @Test
+    fun testGetAllUsers() = runBlocking {
+        // Put Users directly into database
+        val expectedUsers = mutableListOf<User>()
+        for (offset in 0..30) {
+            expectedUsers += transaction {
+                UserEntity.new {
+                    firstName = "firstName$offset"
+                    lastName = "lastName$offset"
+                    nickname = "nickname$offset"
+                    pictureUrl = "pictureUrl$offset"
+                    role = "role$offset"
+                    genre = "genre$offset"
+                    email = "email$offset"
+                }
+            }.toModel(includeAll = false)
+        }
+
+        // read back all Users forcing pagination
+        var offset = 0
+        val limit = 5
+        val actualUsers = mutableListOf<User>()
+        val token = expectedUsers.first().id.toString()
+        while (true) {
+            val response = client.get("v1/users") {
+                bearerAuth(token)
+                accept(ContentType.Application.Json)
+                parameter("offset", offset)
+                parameter("limit", limit)
+            }
+            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+            val users = response.body<List<User>>()
+            if (users.isEmpty()) break
+            actualUsers += users
+            offset += limit
+        }
+
+        // verify all
+        assertThat(actualUsers.size).isEqualTo(expectedUsers.size)
+        expectedUsers.forEachIndexed { i, expectedUser ->
+            val actualUser = actualUsers[i]
+            assertThat(actualUser.id).isEqualTo(expectedUser.id)
+            assertThat(actualUser.firstName).isEqualTo(expectedUser.firstName)
+            assertThat(actualUser.lastName).isEqualTo(expectedUser.lastName)
+            assertThat(actualUser.nickname).isEqualTo(expectedUser.nickname)
+            assertThat(actualUser.pictureUrl).isEqualTo(expectedUser.pictureUrl)
+            assertThat(actualUser.role).isEqualTo(expectedUser.role)
+            assertThat(actualUser.genre).isEqualTo(expectedUser.genre)
+        }
     }
 }

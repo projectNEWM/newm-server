@@ -11,6 +11,7 @@ import io.newm.server.ext.getConfigString
 import io.newm.server.ext.toDate
 import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.model.Song
+import io.newm.server.features.song.model.SongFilter
 import io.newm.server.features.user.database.UserTable
 import java.time.Instant
 import org.jetbrains.exposed.dao.id.EntityID
@@ -76,10 +77,14 @@ internal class SongRepositoryImpl(
         }
     }
 
-    override suspend fun getAllByOwnerId(ownerId: UUID): List<Song> {
-        logger.debug(marker, "getAll: ownerId = $ownerId")
+    override suspend fun getAll(filter: SongFilter, offset: Int, limit: Int): List<Song> {
+        logger.debug(marker, "getAll: filter = $filter, offset = $offset, limit = $limit")
         return transaction {
-            SongEntity.getAllByOwnerId(ownerId).map(SongEntity::toModel)
+            when (filter) {
+                is SongFilter.All -> SongEntity.all()
+                is SongFilter.OwnerId -> SongEntity.allByOwnerId(filter.value)
+                is SongFilter.Genre -> SongEntity.allByGenre(filter.value)
+            }.limit(n = limit, offset = offset.toLong()).map(SongEntity::toModel)
         }
     }
 

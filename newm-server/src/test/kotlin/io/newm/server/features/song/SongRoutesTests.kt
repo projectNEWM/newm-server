@@ -4,13 +4,7 @@ import com.amazonaws.HttpMethod
 import com.amazonaws.services.s3.AmazonS3
 import com.google.common.truth.Truth.assertThat
 import io.ktor.client.call.body
-import io.ktor.client.request.accept
-import io.ktor.client.request.bearerAuth
-import io.ktor.client.request.delete
-import io.ktor.client.request.get
-import io.ktor.client.request.patch
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
+import io.ktor.client.request.*
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
@@ -97,32 +91,45 @@ class SongRoutesTests : BaseApplicationTests() {
     }
 
     @Test
-    fun testGetSongs() = runBlocking {
+    fun testGetAllSongs() = runBlocking {
         // Add Songs directly into database
-        val songs = mutableListOf<Song>()
-        for (song in testSongs) {
-            songs += transaction {
+        val expectedSongs = mutableListOf<Song>()
+        for (offset in 0..30) {
+            expectedSongs += transaction {
                 SongEntity.new {
                     ownerId = EntityID(testUserId, UserTable)
-                    title = song.title!!
-                    genre = song.genre
-                    coverArtUrl = song.coverArtUrl
-                    description = song.description
-                    credits = song.credits
-                    streamUrl = song.streamUrl
-                    nftPolicyId = song.nftPolicyId
-                    nftName = song.nftName
+                    title = "title$offset"
+                    genre = "genre$offset"
+                    coverArtUrl = "coverArtUrl$offset"
+                    description = "description$offset"
+                    credits = "credits$offset"
+                    streamUrl = "streamUrl$offset"
+                    nftPolicyId = "nftPolicyId$offset"
+                    nftName = "nftName$offset"
                 }
             }.toModel()
         }
 
-        // Get all songs & verify
-        val response = client.get("v1/songs") {
-            bearerAuth(testUserToken)
-            accept(ContentType.Application.Json)
+        // Get all songs forcing pagination
+        var offset = 0
+        val limit = 5
+        val actualSongs = mutableListOf<Song>()
+        while (true) {
+            val response = client.get("v1/songs") {
+                bearerAuth(testUserToken)
+                accept(ContentType.Application.Json)
+                parameter("offset", offset)
+                parameter("limit", limit)
+            }
+            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+            val songs = response.body<List<Song>>()
+            if (songs.isEmpty()) break
+            actualSongs += songs
+            offset += limit
         }
-        assertThat(response.status).isEqualTo(HttpStatusCode.OK)
-        assertThat(response.body<List<Song>>()).isEqualTo(songs)
+
+        // verify all
+        assertThat(actualSongs).isEqualTo(expectedSongs)
     }
 
     @Test

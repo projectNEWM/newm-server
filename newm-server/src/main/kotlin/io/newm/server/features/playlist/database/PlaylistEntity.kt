@@ -38,7 +38,7 @@ class PlaylistEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     )
 
     companion object : UUIDEntityClass<PlaylistEntity>(PlaylistTable) {
-        fun getAllByOwnerId(ownerId: UUID): SizedIterable<PlaylistEntity> = PlaylistEntity.find {
+        fun allByOwnerId(ownerId: UUID): SizedIterable<PlaylistEntity> = PlaylistEntity.find {
             PlaylistTable.ownerId eq ownerId
         }
     }
