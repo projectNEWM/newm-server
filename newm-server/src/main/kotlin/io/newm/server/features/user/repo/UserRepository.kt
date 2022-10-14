@@ -11,6 +11,7 @@ interface UserRepository {
     suspend fun findOrAdd(oauthType: OAuthType, oauthAccessToken: String): UUID
     suspend fun exists(userId: UUID): Boolean
     suspend fun get(userId: UUID, includeAll: Boolean = true): User
+    suspend fun getAll(offset: Int, limit: Int): List<User>
     suspend fun update(userId: UUID, user: User)
     suspend fun recover(user: User)
     suspend fun delete(userId: UUID)

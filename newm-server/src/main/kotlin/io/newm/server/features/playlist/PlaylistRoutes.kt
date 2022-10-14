@@ -14,10 +14,8 @@ import io.ktor.server.routing.put
 import io.ktor.server.routing.route
 import io.newm.server.auth.jwt.AUTH_JWT
 import io.newm.server.di.inject
-import io.newm.server.ext.myUserId
-import io.newm.server.ext.playlistId
-import io.newm.server.ext.songId
-import io.newm.server.ext.toUUID
+import io.newm.server.ext.*
+import io.newm.server.features.playlist.model.PlaylistFilter
 import io.newm.server.features.playlist.model.PlaylistIdBody
 import io.newm.server.features.song.model.SongIdBody
 import io.newm.server.features.playlist.repo.PlaylistRepository
@@ -37,8 +35,10 @@ fun Routing.createPlaylistRoutes() {
             }
             get {
                 with(call) {
-                    val ownerId = request.queryParameters["ownerId"]?.toUUID() ?: myUserId
-                    respond(repository.getAllByOwnerId(ownerId))
+                    val filter = ownerId?.let { PlaylistFilter.OwnerId(it) } ?: PlaylistFilter.All
+                    respond(
+                        repository.getAll(filter, offset, limit)
+                    )
                 }
             }
             route("{playlistId}") {
@@ -65,7 +65,11 @@ fun Routing.createPlaylistRoutes() {
                         }
                     }
                     get {
-                        call.respond(repository.getSongs(call.playlistId))
+                        with(call) {
+                            respond(
+                                repository.getSongs(playlistId, offset, limit)
+                            )
+                        }
                     }
                     delete("{songId}") {
                         with(call) {

@@ -25,3 +25,18 @@ val ApplicationCall.songId: UUID
 
 val ApplicationCall.playlistId: UUID
     get() = parameters["playlistId"]!!.toUUID()
+
+val ApplicationCall.ownerId: UUID?
+    get() {
+        val id = parameters["ownerId"]
+        return if (id == "me") myUserId else id?.toUUID()
+    }
+
+val ApplicationCall.genre: String?
+    get() = parameters["genre"]
+
+val ApplicationCall.offset: Int
+    get() = parameters["offset"]?.toInt() ?: 0
+
+val ApplicationCall.limit: Int
+    get() = parameters["limit"]?.toInt() ?: 25
