@@ -54,5 +54,9 @@ fun ApplicationConfig.startSqsMessageReceiver() {
             }
         )
     }
-    receive()
+    if (queueUrl.isNotBlank()) {
+        receive()
+    } else {
+        logger.warn("Empty SQS url. disabling...")
+    }
 }

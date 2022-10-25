@@ -36,21 +36,28 @@ internal class TwoFactorAuthRepositoryImpl(
             .readText()
             .replaceFirst("{{code}}", code)
 
-        HtmlEmail().apply {
-            hostName = environment.getConfigString("emailAuth.smtpHost")
-            setSmtpPort(environment.getConfigInt("emailAuth.smtpPort"))
-            isSSLOnConnect = environment.getConfigBoolean("emailAuth.sslOnConnect")
-            setAuthenticator(
-                DefaultAuthenticator(
-                    environment.getConfigString("emailAuth.userName"),
-                    environment.getConfigString("emailAuth.password")
+        val smtpHost = environment.getConfigString("emailAuth.smtpHost")
+
+        if (smtpHost.isNotBlank()) {
+            HtmlEmail().apply {
+                hostName = smtpHost
+                setSmtpPort(environment.getConfigInt("emailAuth.smtpPort"))
+                isSSLOnConnect = environment.getConfigBoolean("emailAuth.sslOnConnect")
+                setAuthenticator(
+                    DefaultAuthenticator(
+                        environment.getConfigString("emailAuth.userName"),
+                        environment.getConfigString("emailAuth.password")
+                    )
                 )
-            )
-            setFrom(environment.getConfigString("emailAuth.from"))
-            addTo(email)
-            subject = environment.getConfigString("emailAuth.subject")
-            setHtmlMsg(message)
-        }.send()
+                setFrom(environment.getConfigString("emailAuth.from"))
+                addTo(email)
+                subject = environment.getConfigString("emailAuth.subject")
+                setHtmlMsg(message)
+            }.send()
+        } else {
+            // debugging locally, not sending email, so dump a trace message of the email
+            logger.trace(marker, "email -> $message")
+        }
 
         val codeHash = code.toHash()
         val expiresAt = LocalDateTime.now().plusSeconds(environment.getConfigLong("emailAuth.timeToLive"))

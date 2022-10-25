@@ -7,10 +7,16 @@ import com.viartemev.ktor.flyway.Validate
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import io.ktor.server.application.*
+import io.newm.chain.config.Config
 import org.jetbrains.exposed.sql.Database
 import java.util.*
 
 fun Application.initializeDatabase() {
+    // Init database key encryptor
+    Config.S = environment.config.property("database.s").getString()
+    Config.spendingPassword = environment.config.property("database.spendingPassword").getString()
+    Config.shelleyGenesisHash = environment.config.property("database.shelleyGenesisHash").getString()
+
     val ds = HikariDataSource(
         HikariConfig(
             Properties().apply {

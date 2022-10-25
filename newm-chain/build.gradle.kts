@@ -35,7 +35,8 @@ dependencies {
     implementation(Dependencies.Coroutines.CORE)
     implementation(Dependencies.Coroutines.JDK8)
 
-    implementation(Dependencies.KotlinSerialization.JSON)
+    implementation(Dependencies.KotlinXSerialization.JSON)
+    implementation(Dependencies.KotlinXDateTime.DATETIME)
 
     implementation(Dependencies.Ktor.SERVER_CORE)
     implementation(Dependencies.Ktor.SERVER_CIO)
