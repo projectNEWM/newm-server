@@ -22,7 +22,7 @@ object Dependencies {
     }
 
     object Ktor {
-        private const val VERSION = "2.1.2"
+        private const val VERSION = "2.1.3"
 
         const val SERVER_CORE = "io.ktor:ktor-server-core:$VERSION"
         const val SERVER_CIO = "io.ktor:ktor-server-cio:$VERSION"
@@ -85,7 +85,7 @@ object Dependencies {
     }
 
     object FlywayDB {
-        private const val VERSION = "9.4.0"
+        private const val VERSION = "9.7.0"
 
         const val ALL = "org.flywaydb:flyway-core:$VERSION"
     }
@@ -112,7 +112,7 @@ object Dependencies {
     }
 
     object Aws {
-        private const val VERSION = "1.12.323"
+        private const val VERSION = "1.12.336"
 
         const val BOM = "com.amazonaws:aws-java-sdk-bom:$VERSION"
         const val S3 = "com.amazonaws:aws-java-sdk-s3"
@@ -138,7 +138,7 @@ object Dependencies {
     }
 
     object Sentry {
-        private const val VERSION = "6.5.0"
+        private const val VERSION = "6.7.0"
 
         const val CORE = "io.sentry:sentry:$VERSION"
         const val LOGBACK = "io.sentry:sentry-logback:$VERSION"
