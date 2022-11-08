@@ -34,3 +34,5 @@ build
 # test files
 startServer.sh
 stopServer.sh
+
+.elasticbeanstalk
