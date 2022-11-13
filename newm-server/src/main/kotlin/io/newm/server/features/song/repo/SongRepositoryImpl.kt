@@ -30,11 +30,12 @@ internal class SongRepositoryImpl(
     override suspend fun add(song: Song, ownerId: UUID): UUID {
         logger.debug(marker, "add: song = $song")
         val title = song.title ?: throw HttpUnprocessableEntityException("missing title")
+        val genre = song.genre ?: throw HttpUnprocessableEntityException("missing genre")
         return transaction {
             SongEntity.new {
                 this.ownerId = EntityID(ownerId, UserTable)
                 this.title = title
-                genre = song.genre
+                this.genre = genre
                 coverArtUrl = song.coverArtUrl
                 description = song.description
                 credits = song.credits
@@ -85,6 +86,13 @@ internal class SongRepositoryImpl(
                 is SongFilter.OwnerId -> SongEntity.allByOwnerId(filter.value)
                 is SongFilter.Genre -> SongEntity.allByGenre(filter.value)
             }.limit(n = limit, offset = offset.toLong()).map(SongEntity::toModel)
+        }
+    }
+
+    override suspend fun getGenres(ownerId: UUID?, offset: Int, limit: Int): List<String> {
+        logger.debug(marker, "getGenres: ownerId = $ownerId, offset = $offset, limit = $limit")
+        return transaction {
+            SongEntity.genres(ownerId).limit(n = limit, offset = offset.toLong()).toList()
         }
     }
 
