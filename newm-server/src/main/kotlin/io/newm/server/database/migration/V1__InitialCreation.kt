@@ -52,7 +52,7 @@ class V1__InitialCreation : BaseJavaMigration() {
                             created_at timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
                             owner_id uuid NOT NULL,
                             title text NOT NULL,
-                            genre text,
+                            genre text NOT NULL,
                             cover_art_url text,
                             description text,
                             credits text,
