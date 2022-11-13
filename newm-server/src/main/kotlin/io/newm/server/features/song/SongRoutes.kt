@@ -43,6 +43,11 @@ fun Routing.createSongRoutes() {
                     )
                 }
             }
+            get("genres") {
+                with(call) {
+                    respond(repository.getGenres(ownerId, offset, limit))
+                }
+            }
             route("{songId}") {
                 get {
                     with(call) {

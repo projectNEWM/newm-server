@@ -4,7 +4,7 @@ import io.newm.server.features.song.model.Song
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.SizedIterable
+import org.jetbrains.exposed.sql.*
 import java.util.UUID
 
 class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
@@ -37,8 +37,19 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         fun allByOwnerId(ownerId: UUID): SizedIterable<SongEntity> = SongEntity.find {
             SongTable.ownerId eq ownerId
         }
+
         fun allByGenre(genre: String): SizedIterable<SongEntity> = SongEntity.find {
             SongTable.genre eq genre
+        }
+
+        fun genres(ownerId: UUID?): SizedIterable<String> {
+            val fields = SongTable.slice(SongTable.id.count(), SongTable.genre)
+            val query = ownerId?.let {
+                fields.select { SongTable.ownerId eq ownerId }
+            } ?: fields.selectAll()
+            return query.groupBy(SongTable.genre)
+                .orderBy(SongTable.genre.count(), SortOrder.DESC)
+                .mapLazy { it[SongTable.genre] }
         }
     }
 }

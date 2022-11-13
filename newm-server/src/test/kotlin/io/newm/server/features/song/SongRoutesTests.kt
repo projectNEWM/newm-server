@@ -18,6 +18,7 @@ import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongIdBody
 import io.newm.server.features.song.model.UploadRequest
 import io.newm.server.features.song.model.UploadResponse
+import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
 import java.time.Instant
 import java.time.LocalDateTime
@@ -71,7 +72,7 @@ class SongRoutesTests : BaseApplicationTests() {
             SongEntity.new {
                 ownerId = EntityID(testUserId, UserTable)
                 title = testSong1.title!!
-                genre = testSong1.genre
+                genre = testSong1.genre!!
                 coverArtUrl = testSong1.coverArtUrl
                 description = testSong1.description
                 credits = testSong1.credits
@@ -139,7 +140,7 @@ class SongRoutesTests : BaseApplicationTests() {
             SongEntity.new {
                 ownerId = EntityID(testUserId, UserTable)
                 title = testSong1.title!!
-                genre = testSong1.genre
+                genre = testSong1.genre!!
                 coverArtUrl = testSong1.coverArtUrl
                 description = testSong1.description
                 credits = testSong1.credits
@@ -177,7 +178,7 @@ class SongRoutesTests : BaseApplicationTests() {
             SongEntity.new {
                 ownerId = EntityID(testUserId, UserTable)
                 title = testSong1.title!!
-                genre = testSong1.genre
+                genre = testSong1.genre!!
                 coverArtUrl = testSong1.coverArtUrl
                 description = testSong1.description
                 credits = testSong1.credits
@@ -205,7 +206,7 @@ class SongRoutesTests : BaseApplicationTests() {
             SongEntity.new {
                 ownerId = EntityID(testUserId, UserTable)
                 title = testSong1.title!!
-                genre = testSong1.genre
+                genre = testSong1.genre!!
                 coverArtUrl = testSong1.coverArtUrl
                 description = testSong1.description
                 credits = testSong1.credits
@@ -238,5 +239,117 @@ class SongRoutesTests : BaseApplicationTests() {
             ).toString()
         }
         assertThat(resp.uploadUrl).isIn(validUrls)
+    }
+
+    @Test
+    fun testGetAllGenres() = runBlocking {
+
+        val ownerId = transaction {
+            UserEntity.new {
+                email = "artist1@newm.io"
+            }
+        }.id.value
+
+        // Add Songs directly into database generating genres histogram
+        val expectedGenres = listOf("genreG", "genreF", "genreE", "genreD", "genreC", "genreB", "genreA")
+        var frequency = expectedGenres.size
+        for (genre in expectedGenres) {
+            for (i in 1..frequency) {
+                transaction {
+                    SongEntity.new {
+                        this.ownerId = EntityID(ownerId, UserTable)
+                        title = "title_${genre}_$i"
+                        this.genre = genre
+                    }
+                }
+            }
+            frequency--
+        }
+
+        // Get all genres forcing pagination
+        var offset = 0
+        val limit = 3
+        val actualGenres = mutableListOf<String>()
+        while (true) {
+            val response = client.get("v1/songs/genres") {
+                bearerAuth(testUserToken)
+                accept(ContentType.Application.Json)
+                parameter("offset", offset)
+                parameter("limit", limit)
+            }
+            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+            val genres = response.body<List<String>>()
+            if (genres.isEmpty()) break
+            actualGenres += genres
+            offset += limit
+        }
+
+        // verify all
+        assertThat(actualGenres).isEqualTo(expectedGenres)
+    }
+
+    @Test
+    fun testGetGenresByOwner() = runBlocking {
+
+        val ownerId1 = transaction {
+            UserEntity.new {
+                email = "artist1@newm.io"
+            }
+        }.id.value
+
+        val ownerId2 = transaction {
+            UserEntity.new {
+                email = "artist2@newm.io"
+            }
+        }.id.value
+
+        // Add Songs directly into database generating genres histogram
+        val expectedGenres = listOf("genreG", "genreF", "genreE", "genreD", "genreC", "genreB", "genreA")
+        var frequency = expectedGenres.size
+        for (genre in expectedGenres) {
+            // Owner 1 - this is what we will verify
+            for (i in 1..frequency) {
+                transaction {
+                    SongEntity.new {
+                        this.ownerId = EntityID(ownerId1, UserTable)
+                        title = "title_${genre}_$i"
+                        this.genre = genre
+                    }
+                }
+            }
+            // Owner 2 - this is what we should filter out
+            for (i in (frequency + 1)..expectedGenres.size) {
+                transaction {
+                    SongEntity.new {
+                        this.ownerId = EntityID(ownerId2, UserTable)
+                        title = "title_${genre}_$i"
+                        this.genre = genre
+                    }
+                }
+            }
+            frequency--
+        }
+
+        // Get Owner 1 genres forcing pagination
+        var offset = 0
+        val limit = 3
+        val actualGenres = mutableListOf<String>()
+        while (true) {
+            val response = client.get("v1/songs/genres") {
+                bearerAuth(testUserToken)
+                accept(ContentType.Application.Json)
+                parameter("offset", offset)
+                parameter("limit", limit)
+                parameter("ownerId", ownerId1)
+            }
+            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+            val genres = response.body<List<String>>()
+            if (genres.isEmpty()) break
+            actualGenres += genres
+            offset += limit
+        }
+
+        // verify all
+        assertThat(actualGenres).isEqualTo(expectedGenres)
     }
 }
