@@ -5,6 +5,8 @@ import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.neq
 import java.util.UUID
 
 class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
@@ -43,13 +45,14 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         }
 
         fun genres(ownerId: UUID?): SizedIterable<String> {
-            val fields = SongTable.slice(SongTable.id.count(), SongTable.genre)
-            val query = ownerId?.let {
-                fields.select { SongTable.ownerId eq ownerId }
-            } ?: fields.selectAll()
-            return query.groupBy(SongTable.genre)
+            val where = ownerId?.let {
+                (SongTable.ownerId eq ownerId) and (SongTable.genre neq null)
+            } ?: (SongTable.genre neq null)
+            return SongTable.slice(SongTable.id.count(), SongTable.genre)
+                .select(where)
+                .groupBy(SongTable.genre)
                 .orderBy(SongTable.genre.count(), SortOrder.DESC)
-                .mapLazy { it[SongTable.genre] }
+                .mapLazy { it[SongTable.genre]!! }
         }
     }
 }
