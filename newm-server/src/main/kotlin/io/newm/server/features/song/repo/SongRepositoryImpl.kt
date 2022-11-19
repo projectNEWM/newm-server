@@ -30,17 +30,20 @@ internal class SongRepositoryImpl(
     override suspend fun add(song: Song, ownerId: UUID): UUID {
         logger.debug(marker, "add: song = $song")
         val title = song.title ?: throw HttpUnprocessableEntityException("missing title")
+        val genre = song.genre ?: throw HttpUnprocessableEntityException("missing genre")
         return transaction {
             SongEntity.new {
                 this.ownerId = EntityID(ownerId, UserTable)
                 this.title = title
-                genre = song.genre
+                this.genre = genre
                 coverArtUrl = song.coverArtUrl
                 description = song.description
                 credits = song.credits
                 streamUrl = song.streamUrl
                 nftPolicyId = song.nftPolicyId
                 nftName = song.nftName
+                mintingStatus = song.mintingStatus
+                marketplaceStatus = song.marketplaceStatus
             }.id.value
         }
     }
@@ -58,6 +61,8 @@ internal class SongRepositoryImpl(
             song.streamUrl?.let { entity.streamUrl = it }
             song.nftPolicyId?.let { entity.nftPolicyId = it }
             song.nftName?.let { entity.nftName = it }
+            song.mintingStatus?.let { entity.mintingStatus = it }
+            song.marketplaceStatus?.let { entity.marketplaceStatus = it }
         }
     }
 

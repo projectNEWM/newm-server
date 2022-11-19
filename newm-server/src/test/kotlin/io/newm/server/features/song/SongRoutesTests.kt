@@ -14,6 +14,8 @@ import io.newm.server.ext.existsHavingId
 import io.newm.server.ext.toDate
 import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.database.SongTable
+import io.newm.server.features.song.model.MarketplaceStatus
+import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongIdBody
 import io.newm.server.features.song.model.UploadRequest
@@ -63,6 +65,8 @@ class SongRoutesTests : BaseApplicationTests() {
         assertThat(song.streamUrl).isEqualTo(testSong1.streamUrl)
         assertThat(song.nftPolicyId).isEqualTo(testSong1.nftPolicyId)
         assertThat(song.nftName).isEqualTo(testSong1.nftName)
+        assertThat(song.mintingStatus).isEqualTo(testSong1.mintingStatus)
+        assertThat(song.marketplaceStatus).isEqualTo(testSong1.marketplaceStatus)
     }
 
     @Test
@@ -72,13 +76,15 @@ class SongRoutesTests : BaseApplicationTests() {
             SongEntity.new {
                 ownerId = EntityID(testUserId, UserTable)
                 title = testSong1.title!!
-                genre = testSong1.genre
+                genre = testSong1.genre!!
                 coverArtUrl = testSong1.coverArtUrl
                 description = testSong1.description
                 credits = testSong1.credits
                 streamUrl = testSong1.streamUrl
                 nftPolicyId = testSong1.nftPolicyId
                 nftName = testSong1.nftName
+                mintingStatus = testSong1.mintingStatus
+                marketplaceStatus = testSong1.marketplaceStatus
             }
         }.toModel()
 
@@ -107,6 +113,8 @@ class SongRoutesTests : BaseApplicationTests() {
                     streamUrl = "streamUrl$offset"
                     nftPolicyId = "nftPolicyId$offset"
                     nftName = "nftName$offset"
+                    mintingStatus = MintingStatus.values()[offset % MintingStatus.values().size]
+                    marketplaceStatus = MarketplaceStatus.values()[offset % MarketplaceStatus.values().size]
                 }
             }.toModel()
         }
@@ -140,13 +148,15 @@ class SongRoutesTests : BaseApplicationTests() {
             SongEntity.new {
                 ownerId = EntityID(testUserId, UserTable)
                 title = testSong1.title!!
-                genre = testSong1.genre
+                genre = testSong1.genre!!
                 coverArtUrl = testSong1.coverArtUrl
                 description = testSong1.description
                 credits = testSong1.credits
                 streamUrl = testSong1.streamUrl
                 nftPolicyId = testSong1.nftPolicyId
                 nftName = testSong1.nftName
+                mintingStatus = testSong1.mintingStatus
+                marketplaceStatus = testSong1.marketplaceStatus
             }
         }.id.value
 
@@ -169,6 +179,8 @@ class SongRoutesTests : BaseApplicationTests() {
         assertThat(song.streamUrl).isEqualTo(testSong2.streamUrl)
         assertThat(song.nftPolicyId).isEqualTo(testSong2.nftPolicyId)
         assertThat(song.nftName).isEqualTo(testSong2.nftName)
+        assertThat(song.mintingStatus).isEqualTo(testSong2.mintingStatus)
+        assertThat(song.marketplaceStatus).isEqualTo(testSong2.marketplaceStatus)
     }
 
     @Test
@@ -178,13 +190,15 @@ class SongRoutesTests : BaseApplicationTests() {
             SongEntity.new {
                 ownerId = EntityID(testUserId, UserTable)
                 title = testSong1.title!!
-                genre = testSong1.genre
+                genre = testSong1.genre!!
                 coverArtUrl = testSong1.coverArtUrl
                 description = testSong1.description
                 credits = testSong1.credits
                 streamUrl = testSong1.streamUrl
                 nftPolicyId = testSong1.nftPolicyId
                 nftName = testSong1.nftName
+                mintingStatus = testSong1.mintingStatus
+                marketplaceStatus = testSong1.marketplaceStatus
             }
         }.id.value
 
@@ -206,13 +220,15 @@ class SongRoutesTests : BaseApplicationTests() {
             SongEntity.new {
                 ownerId = EntityID(testUserId, UserTable)
                 title = testSong1.title!!
-                genre = testSong1.genre
+                genre = testSong1.genre!!
                 coverArtUrl = testSong1.coverArtUrl
                 description = testSong1.description
                 credits = testSong1.credits
                 streamUrl = testSong1.streamUrl
                 nftPolicyId = testSong1.nftPolicyId
                 nftName = testSong1.nftName
+                mintingStatus = testSong1.mintingStatus
+                marketplaceStatus = testSong1.marketplaceStatus
             }
         }.id.value
 
