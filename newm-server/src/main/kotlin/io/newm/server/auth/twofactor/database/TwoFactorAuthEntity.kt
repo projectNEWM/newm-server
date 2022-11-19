@@ -22,11 +22,11 @@ class TwoFactorAuthEntity(id: EntityID<Long>) : Entity<Long>(id) {
         }.firstOrNull()
 
         fun deleteByEmail(email: String) = TwoFactorAuthTable.deleteWhere {
-            TwoFactorAuthTable.email.lowerCase() eq email.lowercase()
+            this.email.lowerCase() eq email.lowercase()
         }
 
         fun deleteAllExpired() = TwoFactorAuthTable.deleteWhere {
-            TwoFactorAuthTable.expiresAt lessEq LocalDateTime.now()
+            expiresAt lessEq LocalDateTime.now()
         }
     }
 }

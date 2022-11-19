@@ -21,5 +21,7 @@ data class Song(
     val credits: String? = null,
     val streamUrl: String? = null,
     val nftPolicyId: String? = null,
-    val nftName: String? = null
+    val nftName: String? = null,
+    val mintingStatus: MintingStatus? = null,
+    val marketplaceStatus: MarketplaceStatus? = null
 )

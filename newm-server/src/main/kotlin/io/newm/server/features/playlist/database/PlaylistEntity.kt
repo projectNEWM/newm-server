@@ -27,7 +27,7 @@ class PlaylistEntity(id: EntityID<UUID>) : UUIDEntity(id) {
 
     fun deleteSong(songId: UUID) {
         SongsInPlaylistsTable.deleteWhere {
-            (SongsInPlaylistsTable.songId eq songId) and (SongsInPlaylistsTable.playlistId eq id)
+            (this.songId eq songId) and (playlistId eq id)
         }
     }
 
