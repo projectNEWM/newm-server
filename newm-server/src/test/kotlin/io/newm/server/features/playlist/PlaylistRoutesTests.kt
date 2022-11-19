@@ -14,6 +14,8 @@ import io.newm.server.features.playlist.model.Playlist
 import io.newm.server.features.playlist.model.PlaylistIdBody
 import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.database.SongTable
+import io.newm.server.features.song.model.MarketplaceStatus
+import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongIdBody
 import io.newm.server.features.song.testSong1
@@ -267,6 +269,8 @@ class PlaylistRoutesTests : BaseApplicationTests() {
                     streamUrl = "streamUrl$offset"
                     nftPolicyId = "nftPolicyId$offset"
                     nftName = "nftName$offset"
+                    mintingStatus = MintingStatus.values()[offset % MintingStatus.values().size]
+                    marketplaceStatus = MarketplaceStatus.values()[offset % MarketplaceStatus.values().size]
                 }
             }.toModel()
         }

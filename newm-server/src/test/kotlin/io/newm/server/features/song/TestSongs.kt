@@ -1,5 +1,7 @@
 package io.newm.server.features.song
 
+import io.newm.server.features.song.model.MarketplaceStatus
+import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Song
 
 val testSong1 = Song(
@@ -10,7 +12,9 @@ val testSong1 = Song(
     credits = "Song 1 credits",
     streamUrl = "https://projectnewm.io/song1.mp3",
     nftPolicyId = "NFT Policy ID 1",
-    nftName = "NFT Name 1"
+    nftName = "NFT Name 1",
+    mintingStatus = MintingStatus.NotEarning,
+    marketplaceStatus = MarketplaceStatus.NotSelling,
 )
 
 val testSong2 = Song(
@@ -21,7 +25,9 @@ val testSong2 = Song(
     credits = "Song 2 credits",
     streamUrl = "https://projectnewm.io/song2.mp3",
     nftPolicyId = "NFT Policy ID 2",
-    nftName = "NFT Name 2"
+    nftName = "NFT Name 2",
+    mintingStatus = MintingStatus.Earning,
+    marketplaceStatus = MarketplaceStatus.Selling
 )
 
 val testSong3 = Song(
@@ -32,7 +38,9 @@ val testSong3 = Song(
     credits = "Song 3 credits",
     streamUrl = "https://projectnewm.io/song3.mp3",
     nftPolicyId = "NFT Policy ID 3",
-    nftName = "NFT Name 3"
+    nftName = "NFT Name 3",
+    mintingStatus = MintingStatus.Pending,
+    marketplaceStatus = MarketplaceStatus.NotSelling
 )
 
 val testSongs = listOf(testSong1, testSong2, testSong3)
