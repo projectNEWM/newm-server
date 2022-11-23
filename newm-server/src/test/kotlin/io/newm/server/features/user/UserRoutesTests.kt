@@ -13,8 +13,7 @@ import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
 import io.newm.server.features.user.model.User
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
-import org.jetbrains.exposed.sql.deleteWhere
+import org.jetbrains.exposed.sql.deleteAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -24,10 +23,9 @@ class UserRoutesTests : BaseApplicationTests() {
 
     @BeforeEach
     fun beforeEach() {
-        val emails = testUsers.map { it.email!! }
         transaction {
-            UserTable.deleteWhere { UserTable.email inList emails }
-            TwoFactorAuthTable.deleteWhere { TwoFactorAuthTable.email inList emails }
+            UserTable.deleteAll()
+            TwoFactorAuthTable.deleteAll()
         }
     }
 
@@ -244,6 +242,174 @@ class UserRoutesTests : BaseApplicationTests() {
                 accept(ContentType.Application.Json)
                 parameter("offset", offset)
                 parameter("limit", limit)
+            }
+            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+            val users = response.body<List<User>>()
+            if (users.isEmpty()) break
+            actualUsers += users
+            offset += limit
+        }
+
+        // verify all
+        assertThat(actualUsers.size).isEqualTo(expectedUsers.size)
+        expectedUsers.forEachIndexed { i, expectedUser ->
+            val actualUser = actualUsers[i]
+            assertThat(actualUser.id).isEqualTo(expectedUser.id)
+            assertThat(actualUser.firstName).isEqualTo(expectedUser.firstName)
+            assertThat(actualUser.lastName).isEqualTo(expectedUser.lastName)
+            assertThat(actualUser.nickname).isEqualTo(expectedUser.nickname)
+            assertThat(actualUser.pictureUrl).isEqualTo(expectedUser.pictureUrl)
+            assertThat(actualUser.role).isEqualTo(expectedUser.role)
+            assertThat(actualUser.genre).isEqualTo(expectedUser.genre)
+        }
+    }
+
+    @Test
+    fun testGetUsersByIds() = runBlocking {
+        // Put Users directly into database
+        val allUsers = mutableListOf<User>()
+        for (offset in 0..30) {
+            allUsers += transaction {
+                UserEntity.new {
+                    firstName = "firstName$offset"
+                    lastName = "lastName$offset"
+                    nickname = "nickname$offset"
+                    pictureUrl = "pictureUrl$offset"
+                    role = "role$offset"
+                    genre = "genre$offset"
+                    email = "email$offset"
+                }
+            }.toModel(includeAll = false)
+        }
+
+        // filter out 1st and last
+        val expectedUsers = allUsers.subList(1, allUsers.size - 1)
+        val ids = expectedUsers.map { it.id }.joinToString()
+
+        // read back all Users forcing pagination
+        var offset = 0
+        val limit = 5
+        val actualUsers = mutableListOf<User>()
+        val token = expectedUsers.first().id.toString()
+        while (true) {
+            val response = client.get("v1/users") {
+                bearerAuth(token)
+                accept(ContentType.Application.Json)
+                parameter("offset", offset)
+                parameter("limit", limit)
+                parameter("ids", ids)
+            }
+            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+            val users = response.body<List<User>>()
+            if (users.isEmpty()) break
+            actualUsers += users
+            offset += limit
+        }
+
+        // verify all
+        assertThat(actualUsers.size).isEqualTo(expectedUsers.size)
+        expectedUsers.forEachIndexed { i, expectedUser ->
+            val actualUser = actualUsers[i]
+            assertThat(actualUser.id).isEqualTo(expectedUser.id)
+            assertThat(actualUser.firstName).isEqualTo(expectedUser.firstName)
+            assertThat(actualUser.lastName).isEqualTo(expectedUser.lastName)
+            assertThat(actualUser.nickname).isEqualTo(expectedUser.nickname)
+            assertThat(actualUser.pictureUrl).isEqualTo(expectedUser.pictureUrl)
+            assertThat(actualUser.role).isEqualTo(expectedUser.role)
+            assertThat(actualUser.genre).isEqualTo(expectedUser.genre)
+        }
+    }
+
+    @Test
+    fun testGetUsersByRoles() = runBlocking {
+        // Put Users directly into database
+        val allUsers = mutableListOf<User>()
+        for (offset in 0..30) {
+            allUsers += transaction {
+                UserEntity.new {
+                    firstName = "firstName$offset"
+                    lastName = "lastName$offset"
+                    nickname = "nickname$offset"
+                    pictureUrl = "pictureUrl$offset"
+                    role = "role$offset"
+                    genre = "genre$offset"
+                    email = "email$offset"
+                }
+            }.toModel(includeAll = false)
+        }
+
+        // filter out 1st and last
+        val expectedUsers = allUsers.subList(1, allUsers.size - 1)
+        val roles = expectedUsers.map { it.role }.joinToString()
+
+        // read back all Users forcing pagination
+        var offset = 0
+        val limit = 5
+        val actualUsers = mutableListOf<User>()
+        val token = expectedUsers.first().id.toString()
+        while (true) {
+            val response = client.get("v1/users") {
+                bearerAuth(token)
+                accept(ContentType.Application.Json)
+                parameter("offset", offset)
+                parameter("limit", limit)
+                parameter("roles", roles)
+            }
+            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+            val users = response.body<List<User>>()
+            if (users.isEmpty()) break
+            actualUsers += users
+            offset += limit
+        }
+
+        // verify all
+        assertThat(actualUsers.size).isEqualTo(expectedUsers.size)
+        expectedUsers.forEachIndexed { i, expectedUser ->
+            val actualUser = actualUsers[i]
+            assertThat(actualUser.id).isEqualTo(expectedUser.id)
+            assertThat(actualUser.firstName).isEqualTo(expectedUser.firstName)
+            assertThat(actualUser.lastName).isEqualTo(expectedUser.lastName)
+            assertThat(actualUser.nickname).isEqualTo(expectedUser.nickname)
+            assertThat(actualUser.pictureUrl).isEqualTo(expectedUser.pictureUrl)
+            assertThat(actualUser.role).isEqualTo(expectedUser.role)
+            assertThat(actualUser.genre).isEqualTo(expectedUser.genre)
+        }
+    }
+
+    @Test
+    fun testGetUsersByGenres() = runBlocking {
+        // Put Users directly into database
+        val allUsers = mutableListOf<User>()
+        for (offset in 0..30) {
+            allUsers += transaction {
+                UserEntity.new {
+                    firstName = "firstName$offset"
+                    lastName = "lastName$offset"
+                    nickname = "nickname$offset"
+                    pictureUrl = "pictureUrl$offset"
+                    role = "role$offset"
+                    genre = "genre$offset"
+                    email = "email$offset"
+                }
+            }.toModel(includeAll = false)
+        }
+
+        // filter out 1st and last
+        val expectedUsers = allUsers.subList(1, allUsers.size - 1)
+        val genres = expectedUsers.map { it.genre }.joinToString()
+
+        // read back all Users forcing pagination
+        var offset = 0
+        val limit = 5
+        val actualUsers = mutableListOf<User>()
+        val token = expectedUsers.first().id.toString()
+        while (true) {
+            val response = client.get("v1/users") {
+                bearerAuth(token)
+                accept(ContentType.Application.Json)
+                parameter("offset", offset)
+                parameter("limit", limit)
+                parameter("genres", genres)
             }
             assertThat(response.status).isEqualTo(HttpStatusCode.OK)
             val users = response.body<List<User>>()

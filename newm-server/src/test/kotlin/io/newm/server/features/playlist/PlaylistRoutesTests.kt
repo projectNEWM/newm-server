@@ -19,6 +19,7 @@ import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongIdBody
 import io.newm.server.features.song.testSong1
+import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.dao.id.EntityID
@@ -82,12 +83,18 @@ class PlaylistRoutesTests : BaseApplicationTests() {
 
     @Test
     fun testGetAllPlaylists() = runBlocking {
-        // Add Playlists directly into database
+        // Add Users + Playlists directly into database
         val expectedPlaylists = mutableListOf<Playlist>()
         for (offset in 0..30) {
+            val ownerId = transaction {
+                UserEntity.new {
+                    email = "artist$offset@newm.io"
+                }
+            }.id.value
+
             expectedPlaylists += transaction {
                 PlaylistEntity.new {
-                    ownerId = EntityID(testUserId, UserTable)
+                    this.ownerId = EntityID(ownerId, UserTable)
                     name = "name$offset"
                 }
             }.toModel()
@@ -103,6 +110,190 @@ class PlaylistRoutesTests : BaseApplicationTests() {
                 accept(ContentType.Application.Json)
                 parameter("offset", offset)
                 parameter("limit", limit)
+            }
+            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+            val songs = response.body<List<Playlist>>()
+            if (songs.isEmpty()) break
+            actualPlaylists += songs
+            offset += limit
+        }
+
+        // verify all
+        assertThat(actualPlaylists).isEqualTo(expectedPlaylists)
+    }
+
+    @Test
+    fun testGetPlaylistsByIds() = runBlocking {
+        // Add Users + Playlists directly into database
+        val allPlaylists = mutableListOf<Playlist>()
+        for (offset in 0..30) {
+            val ownerId = transaction {
+                UserEntity.new {
+                    email = "artist$offset@newm.io"
+                }
+            }.id.value
+
+            allPlaylists += transaction {
+                PlaylistEntity.new {
+                    this.ownerId = EntityID(ownerId, UserTable)
+                    name = "name$offset"
+                }
+            }.toModel()
+        }
+
+        // filter out 1st and last
+        val expectedPlaylists = allPlaylists.subList(1, allPlaylists.size - 1)
+        val ids = expectedPlaylists.map { it.id }.joinToString()
+
+        // Get all playlists forcing pagination
+        var offset = 0
+        val limit = 5
+        val actualPlaylists = mutableListOf<Playlist>()
+        while (true) {
+            val response = client.get("v1/playlists") {
+                bearerAuth(testUserToken)
+                accept(ContentType.Application.Json)
+                parameter("offset", offset)
+                parameter("limit", limit)
+                parameter("ids", ids)
+            }
+            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+            val songs = response.body<List<Playlist>>()
+            if (songs.isEmpty()) break
+            actualPlaylists += songs
+            offset += limit
+        }
+
+        // verify all
+        assertThat(actualPlaylists).isEqualTo(expectedPlaylists)
+    }
+
+    @Test
+    fun testGetPlaylistsByOwnerIds() = runBlocking {
+        // Add Users + Playlists directly into database
+        val allPlaylists = mutableListOf<Playlist>()
+        for (offset in 0..30) {
+            val ownerId = transaction {
+                UserEntity.new {
+                    email = "artist$offset@newm.io"
+                }
+            }.id.value
+
+            allPlaylists += transaction {
+                PlaylistEntity.new {
+                    this.ownerId = EntityID(ownerId, UserTable)
+                    name = "name$offset"
+                }
+            }.toModel()
+        }
+
+        // filter out 1st and last
+        val expectedPlaylists = allPlaylists.subList(1, allPlaylists.size - 1)
+        val ownerIds = expectedPlaylists.map { it.ownerId }.joinToString()
+
+        // Get all playlists forcing pagination
+        var offset = 0
+        val limit = 5
+        val actualPlaylists = mutableListOf<Playlist>()
+        while (true) {
+            val response = client.get("v1/playlists") {
+                bearerAuth(testUserToken)
+                accept(ContentType.Application.Json)
+                parameter("offset", offset)
+                parameter("limit", limit)
+                parameter("ownerIds", ownerIds)
+            }
+            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+            val songs = response.body<List<Playlist>>()
+            if (songs.isEmpty()) break
+            actualPlaylists += songs
+            offset += limit
+        }
+
+        // verify all
+        assertThat(actualPlaylists).isEqualTo(expectedPlaylists)
+    }
+
+    @Test
+    fun testGetPlaylistsByOlderThan() = runBlocking {
+        // Add Users + Playlists directly into database
+        val allPlaylists = mutableListOf<Playlist>()
+        for (offset in 0..30) {
+            val ownerId = transaction {
+                UserEntity.new {
+                    email = "artist$offset@newm.io"
+                }
+            }.id.value
+
+            allPlaylists += transaction {
+                PlaylistEntity.new {
+                    this.ownerId = EntityID(ownerId, UserTable)
+                    name = "name$offset"
+                }
+            }.toModel()
+        }
+
+        // filter out newest one
+        val expectedPlaylists = allPlaylists.subList(0, allPlaylists.size - 1)
+        val olderThan = allPlaylists.last().createdAt
+
+        // Get all playlists forcing pagination
+        var offset = 0
+        val limit = 5
+        val actualPlaylists = mutableListOf<Playlist>()
+        while (true) {
+            val response = client.get("v1/playlists") {
+                bearerAuth(testUserToken)
+                accept(ContentType.Application.Json)
+                parameter("offset", offset)
+                parameter("limit", limit)
+                parameter("olderThan", olderThan)
+            }
+            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+            val songs = response.body<List<Playlist>>()
+            if (songs.isEmpty()) break
+            actualPlaylists += songs
+            offset += limit
+        }
+
+        // verify all
+        assertThat(actualPlaylists).isEqualTo(expectedPlaylists)
+    }
+
+    @Test
+    fun testGetPlaylistsByNewerThan() = runBlocking {
+        // Add Users + Playlists directly into database
+        val allPlaylists = mutableListOf<Playlist>()
+        for (offset in 0..30) {
+            val ownerId = transaction {
+                UserEntity.new {
+                    email = "artist$offset@newm.io"
+                }
+            }.id.value
+
+            allPlaylists += transaction {
+                PlaylistEntity.new {
+                    this.ownerId = EntityID(ownerId, UserTable)
+                    name = "name$offset"
+                }
+            }.toModel()
+        }
+
+        // filter out newest one
+        val expectedPlaylists = allPlaylists.subList(1, allPlaylists.size)
+        val newerThan = allPlaylists.first().createdAt
+
+        // Get all playlists forcing pagination
+        var offset = 0
+        val limit = 5
+        val actualPlaylists = mutableListOf<Playlist>()
+        while (true) {
+            val response = client.get("v1/playlists") {
+                bearerAuth(testUserToken)
+                accept(ContentType.Application.Json)
+                parameter("offset", offset)
+                parameter("limit", limit)
+                parameter("newerThan", newerThan)
             }
             assertThat(response.status).isEqualTo(HttpStatusCode.OK)
             val songs = response.body<List<Playlist>>()

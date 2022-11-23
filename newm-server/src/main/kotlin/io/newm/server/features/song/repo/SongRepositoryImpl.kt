@@ -11,7 +11,7 @@ import io.newm.server.ext.getConfigString
 import io.newm.server.ext.toDate
 import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.model.Song
-import io.newm.server.features.song.model.SongFilter
+import io.newm.server.features.song.model.SongFilters
 import io.newm.server.features.user.database.UserTable
 import java.time.Instant
 import org.jetbrains.exposed.dao.id.EntityID
@@ -82,21 +82,21 @@ internal class SongRepositoryImpl(
         }
     }
 
-    override suspend fun getAll(filter: SongFilter, offset: Int, limit: Int): List<Song> {
-        logger.debug(marker, "getAll: filter = $filter, offset = $offset, limit = $limit")
+    override suspend fun getAll(filters: SongFilters, offset: Int, limit: Int): List<Song> {
+        logger.debug(marker, "getAll: filters = $filters, offset = $offset, limit = $limit")
         return transaction {
-            when (filter) {
-                is SongFilter.All -> SongEntity.all()
-                is SongFilter.OwnerId -> SongEntity.allByOwnerId(filter.value)
-                is SongFilter.Genre -> SongEntity.allByGenre(filter.value)
-            }.limit(n = limit, offset = offset.toLong()).map(SongEntity::toModel)
+            SongEntity.all(filters)
+                .limit(n = limit, offset = offset.toLong())
+                .map(SongEntity::toModel)
         }
     }
 
-    override suspend fun getGenres(ownerId: UUID?, offset: Int, limit: Int): List<String> {
-        logger.debug(marker, "getGenres: ownerId = $ownerId, offset = $offset, limit = $limit")
+    override suspend fun getGenres(filters: SongFilters, offset: Int, limit: Int): List<String> {
+        logger.debug(marker, "getGenres: filters = $filters, offset = $offset, limit = $limit")
         return transaction {
-            SongEntity.genres(ownerId).limit(n = limit, offset = offset.toLong()).toList()
+            SongEntity.genres(filters)
+                .limit(n = limit, offset = offset.toLong())
+                .toList()
         }
     }
 

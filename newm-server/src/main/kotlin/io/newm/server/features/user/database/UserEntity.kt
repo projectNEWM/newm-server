@@ -4,26 +4,27 @@ import io.newm.server.auth.oauth.OAuthType
 import io.newm.server.ext.existsHavingId
 import io.newm.server.ext.getId
 import io.newm.server.features.user.model.User
+import io.newm.server.features.user.model.UserFilters
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.lowerCase
+import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import java.util.UUID
 
 class UserEntity(id: EntityID<UUID>) : UUIDEntity(id) {
 
-    var oauthType by UserTable.oauthType
-    var oauthId by UserTable.oauthId
-    var firstName by UserTable.firstName
-    var lastName by UserTable.lastName
-    var nickname by UserTable.nickname
-    var pictureUrl by UserTable.pictureUrl
-    var role by UserTable.role
-    var genre by UserTable.genre
-    var walletAddress by UserTable.walletAddress
-    var email by UserTable.email
-    var passwordHash by UserTable.passwordHash
+    var oauthType: OAuthType? by UserTable.oauthType
+    var oauthId: String? by UserTable.oauthId
+    var firstName: String? by UserTable.firstName
+    var lastName: String? by UserTable.lastName
+    var nickname: String? by UserTable.nickname
+    var pictureUrl: String? by UserTable.pictureUrl
+    var role: String? by UserTable.role
+    var genre: String? by UserTable.genre
+    var walletAddress: String? by UserTable.walletAddress
+    var email: String by UserTable.email
+    var passwordHash: String? by UserTable.passwordHash
 
     fun toModel(includeAll: Boolean = true) = User(
         id = id.value,
@@ -40,6 +41,21 @@ class UserEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     )
 
     companion object : UUIDEntityClass<UserEntity>(UserTable) {
+        fun all(filters: UserFilters): SizedIterable<UserEntity> {
+            val ops = mutableListOf<Op<Boolean>>()
+            with(filters) {
+                ids?.let {
+                    ops += UserTable.id inList it
+                }
+                roles?.let {
+                    ops += UserTable.role inList it
+                }
+                genres?.let {
+                    ops += UserTable.genre inList it
+                }
+            }
+            return if (ops.isEmpty()) all() else find(AndOp(ops))
+        }
 
         fun getByEmail(email: String): UserEntity? = find {
             UserTable.email.lowerCase() eq email.lowercase()

@@ -2,6 +2,7 @@ package io.newm.server.ext
 
 import at.favre.lib.crypto.bcrypt.BCrypt
 import java.net.URL
+import java.time.LocalDateTime
 import java.util.UUID
 
 /**
@@ -37,3 +38,7 @@ fun String.toUrl(): URL = EMAIL_REGEX.javaClass.getResource(this) ?: URL(this)
 fun String.toHash(): String = BCrypt.withDefaults().hashToString(12, toCharArray())
 
 fun String.verify(hash: String): Boolean = BCrypt.verifyer().verify(toCharArray(), hash).verified
+
+fun String.splitAndTrim(): List<String> = split(',').map { it.trim() }
+
+fun String.toLocalDateTime(): LocalDateTime = LocalDateTime.parse(this)
