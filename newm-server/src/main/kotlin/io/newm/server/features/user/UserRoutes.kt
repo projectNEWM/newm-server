@@ -17,6 +17,7 @@ import io.newm.server.ext.identifyUser
 import io.newm.server.ext.limit
 import io.newm.server.ext.offset
 import io.newm.server.ext.restrictToMe
+import io.newm.server.features.user.model.userFilters
 import io.newm.server.features.user.repo.UserRepository
 
 private const val USERS_PATH = "v1/users"
@@ -51,7 +52,7 @@ fun Routing.createUserRoutes() {
     route(USERS_PATH) {
         get {
             with(call) {
-                respond(repository.getAll(offset, limit))
+                respond(repository.getAll(userFilters, offset, limit))
             }
         }
         put {

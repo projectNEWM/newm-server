@@ -11,9 +11,9 @@ import java.time.LocalDateTime
 
 class TwoFactorAuthEntity(id: EntityID<Long>) : Entity<Long>(id) {
 
-    var email by TwoFactorAuthTable.email
-    var codeHash by TwoFactorAuthTable.codeHash
-    var expiresAt by TwoFactorAuthTable.expiresAt
+    var email: String by TwoFactorAuthTable.email
+    var codeHash: String by TwoFactorAuthTable.codeHash
+    var expiresAt: LocalDateTime by TwoFactorAuthTable.expiresAt
 
     companion object : EntityClass<Long, TwoFactorAuthEntity>(TwoFactorAuthTable) {
 

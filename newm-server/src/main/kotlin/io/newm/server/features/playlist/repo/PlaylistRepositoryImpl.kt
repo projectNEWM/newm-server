@@ -5,7 +5,7 @@ import io.newm.server.exception.HttpForbiddenException
 import io.newm.server.exception.HttpUnprocessableEntityException
 import io.newm.server.features.playlist.database.PlaylistEntity
 import io.newm.server.features.playlist.model.Playlist
-import io.newm.server.features.playlist.model.PlaylistFilter
+import io.newm.server.features.playlist.model.PlaylistFilters
 import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.user.database.UserTable
@@ -56,13 +56,12 @@ internal class PlaylistRepositoryImpl(
         }
     }
 
-    override suspend fun getAll(filter: PlaylistFilter, offset: Int, limit: Int): List<Playlist> {
-        logger.debug(marker, "getAll: filter = $filter, offset = $offset, limit = $limit")
+    override suspend fun getAll(filters: PlaylistFilters, offset: Int, limit: Int): List<Playlist> {
+        logger.debug(marker, "getAll: filters = $filters, offset = $offset, limit = $limit")
         return transaction {
-            when (filter) {
-                is PlaylistFilter.All -> PlaylistEntity.all()
-                is PlaylistFilter.OwnerId -> PlaylistEntity.allByOwnerId(filter.value)
-            }.limit(n = limit, offset = offset.toLong()).map(PlaylistEntity::toModel)
+            PlaylistEntity.all(filters)
+                .limit(n = limit, offset = offset.toLong())
+                .map(PlaylistEntity::toModel)
         }
     }
 

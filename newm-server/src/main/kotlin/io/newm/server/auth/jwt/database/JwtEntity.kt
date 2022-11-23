@@ -6,11 +6,11 @@ import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.lessEq
 import org.jetbrains.exposed.sql.deleteWhere
 import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
 
 class JwtEntity(id: EntityID<UUID>) : UUIDEntity(id) {
-    var userId by JwtTable.userId
-    var expiresAt by JwtTable.expiresAt
+    var userId: EntityID<UUID> by JwtTable.userId
+    var expiresAt: LocalDateTime by JwtTable.expiresAt
 
     companion object : UUIDEntityClass<JwtEntity>(JwtTable) {
         fun deleteAllExpired() = JwtTable.deleteWhere {
