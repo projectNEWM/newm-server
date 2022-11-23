@@ -16,6 +16,7 @@ import io.newm.server.ext.isValidPassword
 import io.newm.server.ext.isValidUrl
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.model.User
+import io.newm.server.features.user.model.UserFilters
 import io.newm.server.features.user.oauth.providers.FacebookUserProvider
 import io.newm.server.features.user.oauth.providers.GoogleUserProvider
 import io.newm.server.features.user.oauth.providers.LinkedInUserProvider
@@ -107,10 +108,12 @@ internal class UserRepositoryImpl(
         }
     }
 
-    override suspend fun getAll(offset: Int, limit: Int): List<User> {
-        logger.debug(marker, "getAll: offset = $offset, limit = $limit")
+    override suspend fun getAll(filters: UserFilters, offset: Int, limit: Int): List<User> {
+        logger.debug(marker, "getAll: filters = $filters, offset = $offset, limit = $limit")
         return transaction {
-            UserEntity.all().limit(n = limit, offset = offset.toLong()).map { it.toModel(includeAll = false) }
+            UserEntity.all(filters)
+                .limit(n = limit, offset = offset.toLong())
+                .map { it.toModel(includeAll = false) }
         }
     }
 

@@ -14,10 +14,10 @@ import io.ktor.server.routing.route
 import io.newm.server.auth.jwt.AUTH_JWT
 import io.newm.server.di.inject
 import io.newm.server.ext.*
-import io.newm.server.features.song.model.SongFilter
 import io.newm.server.features.song.model.SongIdBody
 import io.newm.server.features.song.model.UploadRequest
 import io.newm.server.features.song.model.UploadResponse
+import io.newm.server.features.song.model.songFilters
 import io.newm.server.features.song.repo.SongRepository
 
 private const val SONGS_PATH = "v1/songs"
@@ -35,17 +35,12 @@ fun Routing.createSongRoutes() {
             }
             get {
                 with(call) {
-                    val filter = ownerId?.let { SongFilter.OwnerId(it) }
-                        ?: genre?.let { SongFilter.Genre(it) }
-                        ?: SongFilter.All
-                    respond(
-                        repository.getAll(filter, offset, limit)
-                    )
+                    respond(repository.getAll(songFilters, offset, limit))
                 }
             }
             get("genres") {
                 with(call) {
-                    respond(repository.getGenres(ownerId, offset, limit))
+                    respond(repository.getGenres(songFilters, offset, limit))
                 }
             }
             route("{songId}") {

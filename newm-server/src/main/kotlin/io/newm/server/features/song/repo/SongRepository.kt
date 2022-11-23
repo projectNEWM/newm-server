@@ -1,7 +1,7 @@
 package io.newm.server.features.song.repo
 
 import io.newm.server.features.song.model.Song
-import io.newm.server.features.song.model.SongFilter
+import io.newm.server.features.song.model.SongFilters
 import java.util.UUID
 
 interface SongRepository {
@@ -9,8 +9,8 @@ interface SongRepository {
     suspend fun update(song: Song, songId: UUID, requesterId: UUID)
     suspend fun delete(songId: UUID, requesterId: UUID)
     suspend fun get(songId: UUID): Song
-    suspend fun getAll(filter: SongFilter, offset: Int, limit: Int): List<Song>
-    suspend fun getGenres(ownerId: UUID?, offset: Int, limit: Int): List<String>
+    suspend fun getAll(filters: SongFilters, offset: Int, limit: Int): List<Song>
+    suspend fun getGenres(filters: SongFilters, offset: Int, limit: Int): List<String>
     suspend fun generateUploadUrl(songId: UUID, requesterId: UUID, fileName: String): String
     suspend fun updateStreamUrl(songId: UUID, streamUrl: String)
 }

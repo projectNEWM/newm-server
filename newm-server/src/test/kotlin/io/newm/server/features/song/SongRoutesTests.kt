@@ -30,6 +30,7 @@ import org.jetbrains.exposed.sql.deleteAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.util.*
 
 class SongRoutesTests : BaseApplicationTests() {
 
@@ -99,12 +100,18 @@ class SongRoutesTests : BaseApplicationTests() {
 
     @Test
     fun testGetAllSongs() = runBlocking {
-        // Add Songs directly into database
+        // Add Users + Songs directly into database
         val expectedSongs = mutableListOf<Song>()
         for (offset in 0..30) {
+            val ownerId = transaction {
+                UserEntity.new {
+                    email = "artist$offset@newm.io"
+                }
+            }.id.value
+
             expectedSongs += transaction {
                 SongEntity.new {
-                    ownerId = EntityID(testUserId, UserTable)
+                    this.ownerId = EntityID(ownerId, UserTable)
                     title = "title$offset"
                     genre = "genre$offset"
                     coverArtUrl = "coverArtUrl$offset"
@@ -129,6 +136,281 @@ class SongRoutesTests : BaseApplicationTests() {
                 accept(ContentType.Application.Json)
                 parameter("offset", offset)
                 parameter("limit", limit)
+            }
+            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+            val songs = response.body<List<Song>>()
+            if (songs.isEmpty()) break
+            actualSongs += songs
+            offset += limit
+        }
+
+        // verify all
+        assertThat(actualSongs).isEqualTo(expectedSongs)
+    }
+
+    @Test
+    fun testGetSongsByIds() = runBlocking {
+        // Add Users + Songs directly into database
+        val allSongs = mutableListOf<Song>()
+        for (offset in 0..30) {
+            val ownerId = transaction {
+                UserEntity.new {
+                    email = "artist$offset@newm.io"
+                }
+            }.id.value
+
+            allSongs += transaction {
+                SongEntity.new {
+                    this.ownerId = EntityID(ownerId, UserTable)
+                    title = "title$offset"
+                    genre = "genre$offset"
+                    coverArtUrl = "coverArtUrl$offset"
+                    description = "description$offset"
+                    credits = "credits$offset"
+                    streamUrl = "streamUrl$offset"
+                    nftPolicyId = "nftPolicyId$offset"
+                    nftName = "nftName$offset"
+                    mintingStatus = MintingStatus.values()[offset % MintingStatus.values().size]
+                    marketplaceStatus = MarketplaceStatus.values()[offset % MarketplaceStatus.values().size]
+                }
+            }.toModel()
+        }
+
+        // filter out 1st and last
+        val expectedSongs = allSongs.subList(1, allSongs.size - 1)
+        val ids = expectedSongs.map { it.id }.joinToString()
+
+        // Get all songs forcing pagination
+        var offset = 0
+        val limit = 5
+        val actualSongs = mutableListOf<Song>()
+        while (true) {
+            val response = client.get("v1/songs") {
+                bearerAuth(testUserToken)
+                accept(ContentType.Application.Json)
+                parameter("offset", offset)
+                parameter("limit", limit)
+                parameter("ids", ids)
+            }
+            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+            val songs = response.body<List<Song>>()
+            if (songs.isEmpty()) break
+            actualSongs += songs
+            offset += limit
+        }
+
+        // verify all
+        assertThat(actualSongs).isEqualTo(expectedSongs)
+    }
+
+    @Test
+    fun testGetSongsByOwnerIds() = runBlocking {
+        // Add Users + Songs directly into database
+        val allSongs = mutableListOf<Song>()
+        for (offset in 0..30) {
+            val ownerId = transaction {
+                UserEntity.new {
+                    email = "artist$offset@newm.io"
+                }
+            }.id.value
+
+            allSongs += transaction {
+                SongEntity.new {
+                    this.ownerId = EntityID(ownerId, UserTable)
+                    title = "title$offset"
+                    genre = "genre$offset"
+                    coverArtUrl = "coverArtUrl$offset"
+                    description = "description$offset"
+                    credits = "credits$offset"
+                    streamUrl = "streamUrl$offset"
+                    nftPolicyId = "nftPolicyId$offset"
+                    nftName = "nftName$offset"
+                    mintingStatus = MintingStatus.values()[offset % MintingStatus.values().size]
+                    marketplaceStatus = MarketplaceStatus.values()[offset % MarketplaceStatus.values().size]
+                }
+            }.toModel()
+        }
+
+        // filter out 1st and last
+        val expectedSongs = allSongs.subList(1, allSongs.size - 1)
+        val ownerIds = expectedSongs.map { it.ownerId }.joinToString()
+
+        // Get all songs forcing pagination
+        var offset = 0
+        val limit = 5
+        val actualSongs = mutableListOf<Song>()
+        while (true) {
+            val response = client.get("v1/songs") {
+                bearerAuth(testUserToken)
+                accept(ContentType.Application.Json)
+                parameter("offset", offset)
+                parameter("limit", limit)
+                parameter("ownerIds", ownerIds)
+            }
+            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+            val songs = response.body<List<Song>>()
+            if (songs.isEmpty()) break
+            actualSongs += songs
+            offset += limit
+        }
+
+        // verify all
+        assertThat(actualSongs).isEqualTo(expectedSongs)
+    }
+
+    @Test
+    fun testGetSongsByGenres() = runBlocking {
+        // Add Users + Songs directly into database
+        val allSongs = mutableListOf<Song>()
+        for (offset in 0..30) {
+            val ownerId = transaction {
+                UserEntity.new {
+                    email = "artist$offset@newm.io"
+                }
+            }.id.value
+
+            allSongs += transaction {
+                SongEntity.new {
+                    this.ownerId = EntityID(ownerId, UserTable)
+                    title = "title$offset"
+                    genre = "genre$offset"
+                    coverArtUrl = "coverArtUrl$offset"
+                    description = "description$offset"
+                    credits = "credits$offset"
+                    streamUrl = "streamUrl$offset"
+                    nftPolicyId = "nftPolicyId$offset"
+                    nftName = "nftName$offset"
+                    mintingStatus = MintingStatus.values()[offset % MintingStatus.values().size]
+                    marketplaceStatus = MarketplaceStatus.values()[offset % MarketplaceStatus.values().size]
+                }
+            }.toModel()
+        }
+
+        // filter out 1st and last
+        val expectedSongs = allSongs.subList(1, allSongs.size - 1)
+        val genres = expectedSongs.map { it.genre }.joinToString()
+
+        // Get all songs forcing pagination
+        var offset = 0
+        val limit = 5
+        val actualSongs = mutableListOf<Song>()
+        while (true) {
+            val response = client.get("v1/songs") {
+                bearerAuth(testUserToken)
+                accept(ContentType.Application.Json)
+                parameter("offset", offset)
+                parameter("limit", limit)
+                parameter("genres", genres)
+            }
+            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+            val songs = response.body<List<Song>>()
+            if (songs.isEmpty()) break
+            actualSongs += songs
+            offset += limit
+        }
+
+        // verify all
+        assertThat(actualSongs).isEqualTo(expectedSongs)
+    }
+
+    @Test
+    fun testGetSongsByOlderThan() = runBlocking {
+        // Add Users + Songs directly into database
+        val allSongs = mutableListOf<Song>()
+        for (offset in 0..30) {
+            val ownerId = transaction {
+                UserEntity.new {
+                    email = "artist$offset@newm.io"
+                }
+            }.id.value
+
+            allSongs += transaction {
+                SongEntity.new {
+                    this.ownerId = EntityID(ownerId, UserTable)
+                    title = "title$offset"
+                    genre = "genre$offset"
+                    coverArtUrl = "coverArtUrl$offset"
+                    description = "description$offset"
+                    credits = "credits$offset"
+                    streamUrl = "streamUrl$offset"
+                    nftPolicyId = "nftPolicyId$offset"
+                    nftName = "nftName$offset"
+                    mintingStatus = MintingStatus.values()[offset % MintingStatus.values().size]
+                    marketplaceStatus = MarketplaceStatus.values()[offset % MarketplaceStatus.values().size]
+                }
+            }.toModel()
+        }
+
+        // filter out newest one
+        val expectedSongs = allSongs.subList(0, allSongs.size - 1)
+        val olderThan = allSongs.last().createdAt
+
+        // Get all songs forcing pagination
+        var offset = 0
+        val limit = 5
+        val actualSongs = mutableListOf<Song>()
+        while (true) {
+            val response = client.get("v1/songs") {
+                bearerAuth(testUserToken)
+                accept(ContentType.Application.Json)
+                parameter("offset", offset)
+                parameter("limit", limit)
+                parameter("olderThan", olderThan)
+            }
+            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+            val songs = response.body<List<Song>>()
+            if (songs.isEmpty()) break
+            actualSongs += songs
+            offset += limit
+        }
+
+        // verify all
+        assertThat(actualSongs).isEqualTo(expectedSongs)
+    }
+
+    @Test
+    fun testGetSongsByNewerThan() = runBlocking {
+        // Add Users + Songs directly into database
+        val allSongs = mutableListOf<Song>()
+        for (offset in 0..30) {
+            val ownerId = transaction {
+                UserEntity.new {
+                    email = "artist$offset@newm.io"
+                }
+            }.id.value
+
+            allSongs += transaction {
+                SongEntity.new {
+                    this.ownerId = EntityID(ownerId, UserTable)
+                    title = "title$offset"
+                    genre = "genre$offset"
+                    coverArtUrl = "coverArtUrl$offset"
+                    description = "description$offset"
+                    credits = "credits$offset"
+                    streamUrl = "streamUrl$offset"
+                    nftPolicyId = "nftPolicyId$offset"
+                    nftName = "nftName$offset"
+                    mintingStatus = MintingStatus.values()[offset % MintingStatus.values().size]
+                    marketplaceStatus = MarketplaceStatus.values()[offset % MarketplaceStatus.values().size]
+                }
+            }.toModel()
+        }
+
+        // filter out oldest one
+        val expectedSongs = allSongs.subList(1, allSongs.size)
+        val newerThan = allSongs.first().createdAt
+
+        // Get all songs forcing pagination
+        var offset = 0
+        val limit = 5
+        val actualSongs = mutableListOf<Song>()
+        while (true) {
+            val response = client.get("v1/songs") {
+                bearerAuth(testUserToken)
+                accept(ContentType.Application.Json)
+                parameter("offset", offset)
+                parameter("limit", limit)
+                parameter("newerThan", newerThan)
             }
             assertThat(response.status).isEqualTo(HttpStatusCode.OK)
             val songs = response.body<List<Song>>()
@@ -356,7 +638,7 @@ class SongRoutesTests : BaseApplicationTests() {
                 accept(ContentType.Application.Json)
                 parameter("offset", offset)
                 parameter("limit", limit)
-                parameter("ownerId", ownerId1)
+                parameter("ownerIds", ownerId1)
             }
             assertThat(response.status).isEqualTo(HttpStatusCode.OK)
             val genres = response.body<List<String>>()

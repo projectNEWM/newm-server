@@ -1,22 +1,24 @@
 package io.newm.server.features.playlist.database
 
 import io.newm.server.features.playlist.model.Playlist
+import io.newm.server.features.playlist.model.PlaylistFilters
 import io.newm.server.features.song.database.SongEntity
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.SizedIterable
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.insert
-import java.util.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
+import java.time.LocalDateTime
+import java.util.UUID
 
 class PlaylistEntity(id: EntityID<UUID>) : UUIDEntity(id) {
-    val createdAt by PlaylistTable.createdAt
-    var ownerId by PlaylistTable.ownerId
-    var name by PlaylistTable.name
-    val songs by SongEntity via SongsInPlaylistsTable
+    val createdAt: LocalDateTime by PlaylistTable.createdAt
+    var ownerId: EntityID<UUID> by PlaylistTable.ownerId
+    var name: String by PlaylistTable.name
+    val songs: SizedIterable<SongEntity> by SongEntity via SongsInPlaylistsTable
 
     fun addSong(songId: UUID) {
         SongsInPlaylistsTable.insert {
@@ -39,8 +41,23 @@ class PlaylistEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     )
 
     companion object : UUIDEntityClass<PlaylistEntity>(PlaylistTable) {
-        fun allByOwnerId(ownerId: UUID): SizedIterable<PlaylistEntity> = PlaylistEntity.find {
-            PlaylistTable.ownerId eq ownerId
+        fun all(filters: PlaylistFilters): SizedIterable<PlaylistEntity> {
+            val ops = mutableListOf<Op<Boolean>>()
+            with(filters) {
+                olderThan?.let {
+                    ops += PlaylistTable.createdAt less it
+                }
+                newerThan?.let {
+                    ops += PlaylistTable.createdAt greater it
+                }
+                ids?.let {
+                    ops += PlaylistTable.id inList it
+                }
+                ownerIds?.let {
+                    ops += PlaylistTable.ownerId inList it
+                }
+            }
+            return if (ops.isEmpty()) all() else find(AndOp(ops))
         }
     }
 }
