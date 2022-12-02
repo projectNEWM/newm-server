@@ -20,6 +20,7 @@ object SongTable : UUIDTable(name = "songs") {
     val coverArtUrl: Column<String?> = text("cover_art_url").nullable()
     val description: Column<String?> = text("description").nullable()
     val credits: Column<String?> = text("credits").nullable()
+    val duration: Column<Int?> = integer("duration").nullable()
     val streamUrl: Column<String?> = text("stream_url").nullable()
     val nftPolicyId: Column<String?> = text("nft_policy_id").nullable()
     val nftName: Column<String?> = text("nft_name").nullable()

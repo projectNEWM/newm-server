@@ -11,6 +11,9 @@ data class SongEncodeMessage(
     val status: String?
         get() = detail?.status
 
+    val durationInMs: Int?
+        get() = detail?.outputGroupDetails?.firstOrNull()?.outputDetails?.firstOrNull()?.durationInMs
+
     val outputFilePath: String?
         get() = detail?.outputGroupDetails?.firstOrNull()?.outputDetails?.firstOrNull()?.outputFilePaths?.firstOrNull()
 
@@ -29,7 +32,9 @@ data class SongEncodeMessage(
             @Serializable
             data class OutputDetail(
                 @SerialName("outputFilePaths")
-                val outputFilePaths: List<String>?
+                val outputFilePaths: List<String>?,
+                @SerialName("durationInMs")
+                val durationInMs: Int?
             )
         }
     }

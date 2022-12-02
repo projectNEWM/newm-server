@@ -7,6 +7,7 @@ import io.newm.server.aws.SqsMessageReceiver
 import io.newm.server.di.inject
 import io.newm.server.ext.getConfigString
 import io.newm.server.ext.toUUID
+import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongEncodeMessage
 import io.newm.server.features.song.repo.SongRepository
 import kotlinx.coroutines.runBlocking
@@ -31,7 +32,9 @@ class SongEncodeMessageReceiver : SqsMessageReceiver {
 
         if (msg.status != "COMPLETE") return
 
+        val duration = msg.durationInMs ?: return
         val fullPath = msg.outputFilePath ?: return
+
         val shortPath = fullPath
             .substringAfter("://")
             .substringAfter('/')
@@ -45,7 +48,7 @@ class SongEncodeMessageReceiver : SqsMessageReceiver {
         val streamUrl = "$hostUrl/$shortPath"
 
         runBlocking {
-            repository.updateStreamUrl(songId, streamUrl)
+            repository.update(songId, Song(duration = duration, streamUrl = streamUrl))
         }
     }
 }

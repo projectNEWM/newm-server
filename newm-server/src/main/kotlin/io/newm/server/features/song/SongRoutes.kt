@@ -51,7 +51,7 @@ fun Routing.createSongRoutes() {
                 }
                 patch {
                     with(call) {
-                        repository.update(receive(), songId, myUserId)
+                        repository.update(songId, receive(), myUserId)
                         respond(HttpStatusCode.NoContent)
                     }
                 }

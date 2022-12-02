@@ -39,6 +39,7 @@ internal class SongRepositoryImpl(
                 coverArtUrl = song.coverArtUrl
                 description = song.description
                 credits = song.credits
+                duration = song.duration
                 streamUrl = song.streamUrl
                 nftPolicyId = song.nftPolicyId
                 nftName = song.nftName
@@ -48,26 +49,29 @@ internal class SongRepositoryImpl(
         }
     }
 
-    override suspend fun update(song: Song, songId: UUID, requesterId: UUID) {
-        logger.debug(marker, "update: song = $song")
+    override suspend fun update(songId: UUID, song: Song, requesterId: UUID?) {
+        logger.debug(marker, "update: songId = $songId, song = $song, requesterId = $requesterId")
         transaction {
             val entity = SongEntity[songId]
-            entity.checkRequester(requesterId)
-            song.title?.let { entity.title = it }
-            song.genre?.let { entity.genre = it }
-            song.coverArtUrl?.let { entity.coverArtUrl = it }
-            song.description?.let { entity.description = it }
-            song.credits?.let { entity.credits = it }
-            song.streamUrl?.let { entity.streamUrl = it }
-            song.nftPolicyId?.let { entity.nftPolicyId = it }
-            song.nftName?.let { entity.nftName = it }
-            song.mintingStatus?.let { entity.mintingStatus = it }
-            song.marketplaceStatus?.let { entity.marketplaceStatus = it }
+            requesterId?.let { entity.checkRequester(it) }
+            with(song) {
+                title?.let { entity.title = it }
+                genre?.let { entity.genre = it }
+                coverArtUrl?.let { entity.coverArtUrl = it }
+                description?.let { entity.description = it }
+                credits?.let { entity.credits = it }
+                duration?.let { entity.duration = it }
+                streamUrl?.let { entity.streamUrl = it }
+                nftPolicyId?.let { entity.nftPolicyId = it }
+                nftName?.let { entity.nftName = it }
+                mintingStatus?.let { entity.mintingStatus = it }
+                marketplaceStatus?.let { entity.marketplaceStatus = it }
+            }
         }
     }
 
     override suspend fun delete(songId: UUID, requesterId: UUID) {
-        logger.debug(marker, "delete: songId = $songId")
+        logger.debug(marker, "delete: songId = $songId, requesterId = $requesterId")
         transaction {
             val entity = SongEntity[songId]
             entity.checkRequester(requesterId)
@@ -119,14 +123,6 @@ internal class SongRepositoryImpl(
             expiration,
             HttpMethod.PUT
         ).toString()
-    }
-
-    override suspend fun updateStreamUrl(songId: UUID, streamUrl: String) {
-        logger.debug(marker, "updateStreamUrl: songId = $songId, streamUrl = $streamUrl")
-        transaction {
-            val entity = SongEntity[songId]
-            entity.streamUrl = streamUrl
-        }
     }
 
     private fun SongEntity.checkRequester(requesterId: UUID) {
