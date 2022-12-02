@@ -30,7 +30,6 @@ import org.jetbrains.exposed.sql.deleteAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import java.util.*
 
 class SongRoutesTests : BaseApplicationTests() {
 
@@ -63,6 +62,7 @@ class SongRoutesTests : BaseApplicationTests() {
         assertThat(song.genre).isEqualTo(testSong1.genre)
         assertThat(song.description).isEqualTo(testSong1.description)
         assertThat(song.credits).isEqualTo(testSong1.credits)
+        assertThat(song.duration).isEqualTo(testSong1.duration)
         assertThat(song.streamUrl).isEqualTo(testSong1.streamUrl)
         assertThat(song.nftPolicyId).isEqualTo(testSong1.nftPolicyId)
         assertThat(song.nftName).isEqualTo(testSong1.nftName)
@@ -81,6 +81,7 @@ class SongRoutesTests : BaseApplicationTests() {
                 coverArtUrl = testSong1.coverArtUrl
                 description = testSong1.description
                 credits = testSong1.credits
+                duration = testSong1.duration
                 streamUrl = testSong1.streamUrl
                 nftPolicyId = testSong1.nftPolicyId
                 nftName = testSong1.nftName
@@ -117,6 +118,7 @@ class SongRoutesTests : BaseApplicationTests() {
                     coverArtUrl = "coverArtUrl$offset"
                     description = "description$offset"
                     credits = "credits$offset"
+                    duration = offset
                     streamUrl = "streamUrl$offset"
                     nftPolicyId = "nftPolicyId$offset"
                     nftName = "nftName$offset"
@@ -167,6 +169,7 @@ class SongRoutesTests : BaseApplicationTests() {
                     coverArtUrl = "coverArtUrl$offset"
                     description = "description$offset"
                     credits = "credits$offset"
+                    duration = offset
                     streamUrl = "streamUrl$offset"
                     nftPolicyId = "nftPolicyId$offset"
                     nftName = "nftName$offset"
@@ -222,6 +225,7 @@ class SongRoutesTests : BaseApplicationTests() {
                     coverArtUrl = "coverArtUrl$offset"
                     description = "description$offset"
                     credits = "credits$offset"
+                    duration = offset
                     streamUrl = "streamUrl$offset"
                     nftPolicyId = "nftPolicyId$offset"
                     nftName = "nftName$offset"
@@ -277,6 +281,7 @@ class SongRoutesTests : BaseApplicationTests() {
                     coverArtUrl = "coverArtUrl$offset"
                     description = "description$offset"
                     credits = "credits$offset"
+                    duration = offset
                     streamUrl = "streamUrl$offset"
                     nftPolicyId = "nftPolicyId$offset"
                     nftName = "nftName$offset"
@@ -332,6 +337,7 @@ class SongRoutesTests : BaseApplicationTests() {
                     coverArtUrl = "coverArtUrl$offset"
                     description = "description$offset"
                     credits = "credits$offset"
+                    duration = offset
                     streamUrl = "streamUrl$offset"
                     nftPolicyId = "nftPolicyId$offset"
                     nftName = "nftName$offset"
@@ -387,6 +393,7 @@ class SongRoutesTests : BaseApplicationTests() {
                     coverArtUrl = "coverArtUrl$offset"
                     description = "description$offset"
                     credits = "credits$offset"
+                    duration = offset
                     streamUrl = "streamUrl$offset"
                     nftPolicyId = "nftPolicyId$offset"
                     nftName = "nftName$offset"
@@ -434,6 +441,7 @@ class SongRoutesTests : BaseApplicationTests() {
                 coverArtUrl = testSong1.coverArtUrl
                 description = testSong1.description
                 credits = testSong1.credits
+                duration = testSong1.duration
                 streamUrl = testSong1.streamUrl
                 nftPolicyId = testSong1.nftPolicyId
                 nftName = testSong1.nftName
@@ -458,6 +466,7 @@ class SongRoutesTests : BaseApplicationTests() {
         assertThat(song.genre).isEqualTo(testSong2.genre)
         assertThat(song.description).isEqualTo(testSong2.description)
         assertThat(song.credits).isEqualTo(testSong2.credits)
+        assertThat(song.duration).isEqualTo(testSong2.duration)
         assertThat(song.streamUrl).isEqualTo(testSong2.streamUrl)
         assertThat(song.nftPolicyId).isEqualTo(testSong2.nftPolicyId)
         assertThat(song.nftName).isEqualTo(testSong2.nftName)
@@ -476,6 +485,7 @@ class SongRoutesTests : BaseApplicationTests() {
                 coverArtUrl = testSong1.coverArtUrl
                 description = testSong1.description
                 credits = testSong1.credits
+                duration = testSong1.duration
                 streamUrl = testSong1.streamUrl
                 nftPolicyId = testSong1.nftPolicyId
                 nftName = testSong1.nftName
@@ -506,6 +516,7 @@ class SongRoutesTests : BaseApplicationTests() {
                 coverArtUrl = testSong1.coverArtUrl
                 description = testSong1.description
                 credits = testSong1.credits
+                duration = testSong1.duration
                 streamUrl = testSong1.streamUrl
                 nftPolicyId = testSong1.nftPolicyId
                 nftName = testSong1.nftName

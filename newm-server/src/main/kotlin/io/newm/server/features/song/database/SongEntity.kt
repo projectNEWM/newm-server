@@ -22,6 +22,7 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var coverArtUrl: String? by SongTable.coverArtUrl
     var description: String? by SongTable.description
     var credits: String? by SongTable.credits
+    var duration: Int? by SongTable.duration
     var streamUrl: String? by SongTable.streamUrl
     var nftPolicyId: String? by SongTable.nftPolicyId
     var nftName: String? by SongTable.nftName
@@ -37,6 +38,7 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         coverArtUrl = coverArtUrl,
         description = description,
         credits = credits,
+        duration = duration,
         streamUrl = streamUrl,
         nftPolicyId = nftPolicyId,
         nftName = nftName,

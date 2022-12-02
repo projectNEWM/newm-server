@@ -457,6 +457,7 @@ class PlaylistRoutesTests : BaseApplicationTests() {
                     coverArtUrl = "coverArtUrl$offset"
                     description = "description$offset"
                     credits = "credits$offset"
+                    duration = offset
                     streamUrl = "streamUrl$offset"
                     nftPolicyId = "nftPolicyId$offset"
                     nftName = "nftName$offset"
