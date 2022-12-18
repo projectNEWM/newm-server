@@ -85,8 +85,8 @@ class SongRoutesTests : BaseApplicationTests() {
                 streamUrl = testSong1.streamUrl
                 nftPolicyId = testSong1.nftPolicyId
                 nftName = testSong1.nftName
-                mintingStatus = testSong1.mintingStatus
-                marketplaceStatus = testSong1.marketplaceStatus
+                mintingStatus = testSong1.mintingStatus!!
+                marketplaceStatus = testSong1.marketplaceStatus!!
             }
         }.toModel()
 
@@ -445,8 +445,8 @@ class SongRoutesTests : BaseApplicationTests() {
                 streamUrl = testSong1.streamUrl
                 nftPolicyId = testSong1.nftPolicyId
                 nftName = testSong1.nftName
-                mintingStatus = testSong1.mintingStatus
-                marketplaceStatus = testSong1.marketplaceStatus
+                mintingStatus = testSong1.mintingStatus!!
+                marketplaceStatus = testSong1.marketplaceStatus!!
             }
         }.id.value
 
@@ -489,8 +489,8 @@ class SongRoutesTests : BaseApplicationTests() {
                 streamUrl = testSong1.streamUrl
                 nftPolicyId = testSong1.nftPolicyId
                 nftName = testSong1.nftName
-                mintingStatus = testSong1.mintingStatus
-                marketplaceStatus = testSong1.marketplaceStatus
+                mintingStatus = testSong1.mintingStatus!!
+                marketplaceStatus = testSong1.marketplaceStatus!!
             }
         }.id.value
 
@@ -520,8 +520,8 @@ class SongRoutesTests : BaseApplicationTests() {
                 streamUrl = testSong1.streamUrl
                 nftPolicyId = testSong1.nftPolicyId
                 nftName = testSong1.nftName
-                mintingStatus = testSong1.mintingStatus
-                marketplaceStatus = testSong1.marketplaceStatus
+                mintingStatus = testSong1.mintingStatus!!
+                marketplaceStatus = testSong1.marketplaceStatus!!
             }
         }.id.value
 

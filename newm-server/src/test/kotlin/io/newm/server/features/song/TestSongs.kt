@@ -14,7 +14,7 @@ val testSong1 = Song(
     streamUrl = "https://projectnewm.io/song1.mp3",
     nftPolicyId = "NFT Policy ID 1",
     nftName = "NFT Name 1",
-    mintingStatus = MintingStatus.NotEarning,
+    mintingStatus = MintingStatus.Undistributed,
     marketplaceStatus = MarketplaceStatus.NotSelling,
 )
 
@@ -28,7 +28,7 @@ val testSong2 = Song(
     streamUrl = "https://projectnewm.io/song2.mp3",
     nftPolicyId = "NFT Policy ID 2",
     nftName = "NFT Name 2",
-    mintingStatus = MintingStatus.Earning,
+    mintingStatus = MintingStatus.Distributed,
     marketplaceStatus = MarketplaceStatus.Selling
 )
 

@@ -1,7 +1,28 @@
 object Dependencies {
 
-    object Kotlin {
+    object VersionsPlugin {
+        const val VERSION = "0.41.0"
+        const val ID = "com.github.ben-manes.versions"
+    }
+
+    object ShadowPlugin {
+        const val VERSION = "7.1.2"
+        const val ID = "com.github.johnrengelman.shadow"
+    }
+
+    object KlintPlugin {
+        const val VERSION = "10.3.0"
+        const val ID = "org.jlleitschuh.gradle.ktlint"
+    }
+
+    object KotlinPlugin {
         const val VERSION = "1.7.22"
+        const val JVM_ID = "jvm"
+        const val SERIALIZATION_ID = "plugin.serialization"
+    }
+
+    object Kotlin {
+        private const val VERSION = KotlinPlugin.VERSION
 
         const val STDLIB_JDK8 = "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$VERSION"
         const val REFLECTION = "org.jetbrains.kotlin:kotlin-reflect:$VERSION"

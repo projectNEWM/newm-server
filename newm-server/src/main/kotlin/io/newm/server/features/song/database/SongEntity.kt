@@ -26,8 +26,8 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var streamUrl: String? by SongTable.streamUrl
     var nftPolicyId: String? by SongTable.nftPolicyId
     var nftName: String? by SongTable.nftName
-    var mintingStatus: MintingStatus? by SongTable.mintingStatus
-    var marketplaceStatus: MarketplaceStatus? by SongTable.marketplaceStatus
+    var mintingStatus: MintingStatus by SongTable.mintingStatus
+    var marketplaceStatus: MarketplaceStatus by SongTable.marketplaceStatus
 
     fun toModel(): Song = Song(
         id = id.value,

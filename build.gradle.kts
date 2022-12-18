@@ -12,11 +12,11 @@ buildscript {
 }
 
 plugins {
-    id("com.github.ben-manes.versions") version "0.41.0" apply false
-    id("com.github.johnrengelman.shadow") version "7.1.2" apply false
-    id("org.jlleitschuh.gradle.ktlint") version "10.3.0" apply false
-    kotlin("jvm") version Dependencies.Kotlin.VERSION apply false
-    kotlin("plugin.serialization") version Dependencies.Kotlin.VERSION apply false
+    id(Dependencies.VersionsPlugin.ID) version Dependencies.VersionsPlugin.VERSION apply false
+    id(Dependencies.ShadowPlugin.ID) version Dependencies.ShadowPlugin.VERSION apply false
+    id(Dependencies.KlintPlugin.ID) version Dependencies.KlintPlugin.VERSION apply false
+    kotlin(Dependencies.KotlinPlugin.JVM_ID) version Dependencies.KotlinPlugin.VERSION apply false
+    kotlin(Dependencies.KotlinPlugin.SERIALIZATION_ID) version Dependencies.KotlinPlugin.VERSION apply false
 }
 
 allprojects {

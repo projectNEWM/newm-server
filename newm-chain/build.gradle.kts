@@ -1,10 +1,10 @@
 plugins {
     application
-    id("com.github.ben-manes.versions")
-    id("com.github.johnrengelman.shadow")
-    id("org.jlleitschuh.gradle.ktlint")
-    kotlin("jvm")
-    kotlin("plugin.serialization")
+    id(Dependencies.VersionsPlugin.ID)
+    id(Dependencies.ShadowPlugin.ID)
+    id(Dependencies.KlintPlugin.ID)
+    kotlin(Dependencies.KotlinPlugin.JVM_ID)
+    kotlin(Dependencies.KotlinPlugin.SERIALIZATION_ID)
 }
 
 java.sourceCompatibility = JavaVersion.VERSION_17

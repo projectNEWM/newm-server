@@ -43,8 +43,8 @@ internal class SongRepositoryImpl(
                 streamUrl = song.streamUrl
                 nftPolicyId = song.nftPolicyId
                 nftName = song.nftName
-                mintingStatus = song.mintingStatus
-                marketplaceStatus = song.marketplaceStatus
+                mintingStatus = song.mintingStatus ?: mintingStatus
+                marketplaceStatus = song.marketplaceStatus ?: marketplaceStatus
             }.id.value
         }
     }
