@@ -24,7 +24,8 @@ object SongTable : UUIDTable(name = "songs") {
     val streamUrl: Column<String?> = text("stream_url").nullable()
     val nftPolicyId: Column<String?> = text("nft_policy_id").nullable()
     val nftName: Column<String?> = text("nft_name").nullable()
-    val mintingStatus: Column<MintingStatus?> = enumeration("minting_status", MintingStatus::class).nullable()
-    val marketplaceStatus: Column<MarketplaceStatus?> =
-        enumeration("marketplace_status", MarketplaceStatus::class).nullable()
+    val mintingStatus: Column<MintingStatus> =
+        enumeration("minting_status", MintingStatus::class).default(MintingStatus.Undistributed)
+    val marketplaceStatus: Column<MarketplaceStatus> =
+        enumeration("marketplace_status", MarketplaceStatus::class).default(MarketplaceStatus.NotSelling)
 }

@@ -1,9 +1,9 @@
 plugins {
     `java-library`
-    id("com.github.ben-manes.versions")
-    id("org.jlleitschuh.gradle.ktlint")
-    kotlin("jvm")
-    kotlin("plugin.serialization")
+    id(Dependencies.VersionsPlugin.ID)
+    id(Dependencies.KlintPlugin.ID)
+    kotlin(Dependencies.KotlinPlugin.JVM_ID)
+    kotlin(Dependencies.KotlinPlugin.SERIALIZATION_ID)
 }
 
 java.sourceCompatibility = JavaVersion.VERSION_17
