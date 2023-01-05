@@ -41,6 +41,7 @@ import io.newm.kogmios.protocols.model.MetadataString
 import io.newm.kogmios.protocols.model.MetadataValue
 import io.newm.kogmios.protocols.model.PointDetail
 import io.newm.server.di.inject
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -103,7 +104,9 @@ class BlockDaemon(
                     }
                 } catch (e: Throwable) {
                     log.error("Error syncing blockchain!", e)
-                    e.captureToSentry()
+                    if (e !is TimeoutCancellationException) {
+                        e.captureToSentry()
+                    }
                     log.info("Wait 10 seconds to retry...")
                     try {
                         // clear out everything so far since we're going to retry...
@@ -153,7 +156,7 @@ class BlockDaemon(
 
     private suspend fun requestBlocks(client: ChainSyncClient) {
         var lastLogged = Instant.EPOCH
-        var isTip = false
+        var isTip = true
         while (true) {
             val response = client.requestNext(
                 timeoutMs = if (isTip) {
@@ -343,7 +346,7 @@ class BlockDaemon(
                 // We have metadata and we actually minted the asset in this tx
                 assetsMinted.find {
                     it.quantity > BigInteger.ZERO && it.policyId == ap &&
-                        (it.name == an || it.name.toByteArray().toHexString() == an)
+                            (it.name == an || it.name.toByteArray().toHexString() == an)
                 }?.let {
                     (value as? MetadataMap)?.let { tokenDetailsMap ->
                         extractNativeAssetDetails(tokenDetailsMap, an, ap, blockHeight)

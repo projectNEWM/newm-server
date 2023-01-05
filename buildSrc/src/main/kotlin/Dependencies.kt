@@ -10,7 +10,7 @@ object Dependencies {
         const val ID = "com.github.johnrengelman.shadow"
     }
 
-    object KlintPlugin {
+    object KtlintPlugin {
         const val VERSION = "10.3.0"
         const val ID = "org.jlleitschuh.gradle.ktlint"
     }
@@ -19,6 +19,11 @@ object Dependencies {
         const val VERSION = "1.7.22"
         const val JVM_ID = "jvm"
         const val SERIALIZATION_ID = "plugin.serialization"
+    }
+
+    object ProtobufPlugin {
+        const val VERSION = "0.8.18"
+        const val ID = "com.google.protobuf"
     }
 
     object Kotlin {
@@ -49,11 +54,12 @@ object Dependencies {
     }
 
     object Ktor {
-        private const val VERSION = "2.2.1"
+        private const val VERSION = "2.2.2"
 
         const val SERVER_CORE = "io.ktor:ktor-server-core:$VERSION"
         const val SERVER_CIO = "io.ktor:ktor-server-cio:$VERSION"
         const val SERVER_CONTENT_NEGOTIATION = "io.ktor:ktor-server-content-negotiation:$VERSION"
+        const val SERVER_HOST_COMMON = "io.ktor:ktor-server-host-common:$VERSION"
         const val SERVER_LOCATIONS = "io.ktor:ktor-server-locations:$VERSION"
         const val SERVER_CALL_LOGGING = "io.ktor:ktor-server-call-logging:$VERSION"
         const val SERVER_STATUS_PAGES = "io.ktor:ktor-server-status-pages:$VERSION"
@@ -112,7 +118,7 @@ object Dependencies {
     }
 
     object FlywayDB {
-        private const val VERSION = "9.10.2"
+        private const val VERSION = "9.11.0"
 
         const val ALL = "org.flywaydb:flyway-core:$VERSION"
     }
@@ -211,6 +217,31 @@ object Dependencies {
         private const val VERSION = "1.0.0"
 
         const val KOGMIOS = "io.newm:kogmios:$VERSION"
+    }
+
+    object Grpc {
+        private const val VERSION = "1.51.1"
+
+        const val STUB = "io.grpc:grpc-stub:$VERSION"
+        const val API = "io.grpc:grpc-api:$VERSION"
+        const val GRPC = "io.grpc:protoc-gen-grpc-java:$VERSION"
+        const val PROTOBUF = "io.grpc:grpc-protobuf:$VERSION"
+        const val NETTY = "io.grpc:grpc-netty:$VERSION"
+    }
+
+    object GrpcKotlin {
+        private const val VERSION = "1.3.0"
+
+        const val STUB = "io.grpc:grpc-kotlin-stub:$VERSION"
+        const val GRPCKT = "io.grpc:protoc-gen-grpc-kotlin:$VERSION:jdk8@jar"
+    }
+
+    object Protobuf {
+        private const val VERSION = "3.21.12"
+
+        const val JAVA_UTIL = "com.google.protobuf:protobuf-java-util:$VERSION"
+        const val KOTLIN = "com.google.protobuf:protobuf-kotlin:$VERSION"
+        const val PROTOC = "com.google.protobuf:protoc:$VERSION"
     }
 
     object TestContainers {

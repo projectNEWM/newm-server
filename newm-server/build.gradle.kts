@@ -2,7 +2,7 @@ plugins {
     application
     id(Dependencies.VersionsPlugin.ID)
     id(Dependencies.ShadowPlugin.ID)
-    id(Dependencies.KlintPlugin.ID)
+    id(Dependencies.KtlintPlugin.ID)
     kotlin(Dependencies.KotlinPlugin.JVM_ID)
     kotlin(Dependencies.KotlinPlugin.SERIALIZATION_ID)
 }
@@ -21,6 +21,9 @@ application {
 dependencies {
     compileOnly(Dependencies.Kotlin.REFLECTION)
     implementation(Dependencies.Kotlin.STDLIB_JDK8)
+
+    implementation(project(":newm-chain-grpc"))
+    implementation(Dependencies.Grpc.NETTY)
 
     implementation(Dependencies.Coroutines.CORE)
     implementation(Dependencies.Coroutines.JDK8)

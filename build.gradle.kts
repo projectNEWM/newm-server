@@ -14,7 +14,8 @@ buildscript {
 plugins {
     id(Dependencies.VersionsPlugin.ID) version Dependencies.VersionsPlugin.VERSION apply false
     id(Dependencies.ShadowPlugin.ID) version Dependencies.ShadowPlugin.VERSION apply false
-    id(Dependencies.KlintPlugin.ID) version Dependencies.KlintPlugin.VERSION apply false
+    id(Dependencies.KtlintPlugin.ID) version Dependencies.KtlintPlugin.VERSION apply false
+    id(Dependencies.ProtobufPlugin.ID) version Dependencies.ProtobufPlugin.VERSION apply false
     kotlin(Dependencies.KotlinPlugin.JVM_ID) version Dependencies.KotlinPlugin.VERSION apply false
     kotlin(Dependencies.KotlinPlugin.SERIALIZATION_ID) version Dependencies.KotlinPlugin.VERSION apply false
 }

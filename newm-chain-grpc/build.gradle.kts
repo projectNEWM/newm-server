@@ -1,7 +1,14 @@
+import com.google.protobuf.gradle.generateProtoTasks
+import com.google.protobuf.gradle.id
+import com.google.protobuf.gradle.plugins
+import com.google.protobuf.gradle.protobuf
+import com.google.protobuf.gradle.protoc
+
 plugins {
     `java-library`
     id(Dependencies.VersionsPlugin.ID)
     id(Dependencies.KtlintPlugin.ID)
+    id(Dependencies.ProtobufPlugin.ID)
     kotlin(Dependencies.KotlinPlugin.JVM_ID)
     kotlin(Dependencies.KotlinPlugin.SERIALIZATION_ID)
 }
@@ -27,31 +34,13 @@ dependencies {
     implementation(Dependencies.Coroutines.CORE)
     implementation(Dependencies.Coroutines.JDK8)
 
-    implementation(Dependencies.KotlinXSerialization.JSON)
-
     implementation(Dependencies.LogBack.CLASSIC)
 
-    implementation(Dependencies.Newm.KOGMIOS)
-
-    implementation(Dependencies.Exposed.CORE)
-    implementation(Dependencies.Exposed.DAO)
-    implementation(Dependencies.Exposed.JDBC)
-    implementation(Dependencies.Exposed.TIME)
-
-    implementation(Dependencies.HikariCP.ALL)
-    implementation(Dependencies.PostgreSQL.ALL)
-    implementation(Dependencies.FlywayDB.ALL)
-    implementation(Dependencies.Caffeine.ALL)
-
-    implementation(Dependencies.LibSodiumJNA.SODIUM)
-    implementation(Dependencies.Cbor.CBOR)
-    implementation(Dependencies.ApacheCommonsCodec.ALL)
-    implementation(Dependencies.BouncyCastle.BCPROV)
-    implementation(Dependencies.SpringSecurity.CORE) {
-        // We don't care about other spring stuff.
-        // We just like using Encryptors.stronger
-        exclude(group = "org.springframework")
-    }
+    api(Dependencies.Grpc.STUB)
+    api(Dependencies.Grpc.PROTOBUF)
+    api(Dependencies.Protobuf.JAVA_UTIL)
+    api(Dependencies.Protobuf.KOTLIN)
+    api(Dependencies.GrpcKotlin.STUB)
 
     testImplementation(Dependencies.JUnit.JUPITER)
     testImplementation(Dependencies.Mockk.MOCKK)
@@ -59,5 +48,29 @@ dependencies {
     testImplementation(Dependencies.Coroutines.TEST)
     testImplementation(Dependencies.TestContainers.CORE)
     testImplementation(Dependencies.TestContainers.JUINT)
-    testImplementation(Dependencies.TestContainers.POSTGRESQL)
+}
+
+protobuf {
+    protoc {
+        artifact = Dependencies.Protobuf.PROTOC
+    }
+    plugins {
+        id("grpc") {
+            artifact = Dependencies.Grpc.GRPC
+        }
+        id("grpckt") {
+            artifact = Dependencies.GrpcKotlin.GRPCKT
+        }
+    }
+    generateProtoTasks {
+        all().forEach { task ->
+            task.plugins {
+                id("grpc")
+                id("grpckt")
+            }
+            task.builtins {
+                id("kotlin")
+            }
+        }
+    }
 }
