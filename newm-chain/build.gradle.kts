@@ -2,7 +2,7 @@ plugins {
     application
     id(Dependencies.VersionsPlugin.ID)
     id(Dependencies.ShadowPlugin.ID)
-    id(Dependencies.KlintPlugin.ID)
+    id(Dependencies.KtlintPlugin.ID)
     kotlin(Dependencies.KotlinPlugin.JVM_ID)
     kotlin(Dependencies.KotlinPlugin.SERIALIZATION_ID)
 }
@@ -26,7 +26,9 @@ repositories {
 }
 
 dependencies {
+    implementation(project(":ktor-grpc"))
     implementation(project(":newm-chain-db"))
+    implementation(project(":newm-chain-grpc"))
     implementation(Dependencies.Newm.KOGMIOS)
 
     compileOnly(Dependencies.Kotlin.REFLECTION)
@@ -58,6 +60,11 @@ dependencies {
     implementation(Dependencies.Koin.KTOR)
 
     implementation(Dependencies.LogBack.CLASSIC)
+
+    implementation(Dependencies.GrpcKotlin.STUB)
+    implementation(Dependencies.Grpc.PROTOBUF)
+    implementation(Dependencies.Grpc.NETTY)
+    implementation(Dependencies.Protobuf.KOTLIN)
 
     implementation(Dependencies.Exposed.CORE)
     implementation(Dependencies.Exposed.DAO)

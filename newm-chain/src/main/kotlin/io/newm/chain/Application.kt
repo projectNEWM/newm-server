@@ -10,6 +10,7 @@ import io.newm.chain.logging.initializeSentry
 import org.jetbrains.exposed.sql.exposedLogger
 import org.slf4j.LoggerFactory
 
+
 fun main(args: Array<String>) {
     // Set root log level to INFO
     val root: Logger = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME) as Logger
@@ -31,7 +32,7 @@ fun main(args: Array<String>) {
     // Detailed SQL logging
     // (exposedLogger as Logger).level = Level.DEBUG
 
-    io.ktor.server.cio.EngineMain.main(args)
+    io.newm.ktor.server.grpc.EngineMain.main(args)
 }
 
 @Suppress("unused")

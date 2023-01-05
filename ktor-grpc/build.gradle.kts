@@ -3,7 +3,6 @@ plugins {
     id(Dependencies.VersionsPlugin.ID)
     id(Dependencies.KtlintPlugin.ID)
     kotlin(Dependencies.KotlinPlugin.JVM_ID)
-    kotlin(Dependencies.KotlinPlugin.SERIALIZATION_ID)
 }
 
 java.sourceCompatibility = JavaVersion.VERSION_17
@@ -27,31 +26,12 @@ dependencies {
     implementation(Dependencies.Coroutines.CORE)
     implementation(Dependencies.Coroutines.JDK8)
 
-    implementation(Dependencies.KotlinXSerialization.JSON)
-
     implementation(Dependencies.LogBack.CLASSIC)
 
-    implementation(Dependencies.Newm.KOGMIOS)
+    implementation(Dependencies.Ktor.SERVER_CORE)
+    implementation(Dependencies.Ktor.SERVER_HOST_COMMON)
 
-    implementation(Dependencies.Exposed.CORE)
-    implementation(Dependencies.Exposed.DAO)
-    implementation(Dependencies.Exposed.JDBC)
-    implementation(Dependencies.Exposed.TIME)
-
-    implementation(Dependencies.HikariCP.ALL)
-    implementation(Dependencies.PostgreSQL.ALL)
-    implementation(Dependencies.FlywayDB.ALL)
-    implementation(Dependencies.Caffeine.ALL)
-
-    implementation(Dependencies.LibSodiumJNA.SODIUM)
-    implementation(Dependencies.Cbor.CBOR)
-    implementation(Dependencies.ApacheCommonsCodec.ALL)
-    implementation(Dependencies.BouncyCastle.BCPROV)
-    implementation(Dependencies.SpringSecurity.CORE) {
-        // We don't care about other spring stuff.
-        // We just like using Encryptors.stronger
-        exclude(group = "org.springframework")
-    }
+    implementation(Dependencies.Grpc.API)
 
     testImplementation(Dependencies.JUnit.JUPITER)
     testImplementation(Dependencies.Mockk.MOCKK)
@@ -59,5 +39,4 @@ dependencies {
     testImplementation(Dependencies.Coroutines.TEST)
     testImplementation(Dependencies.TestContainers.CORE)
     testImplementation(Dependencies.TestContainers.JUINT)
-    testImplementation(Dependencies.TestContainers.POSTGRESQL)
 }
