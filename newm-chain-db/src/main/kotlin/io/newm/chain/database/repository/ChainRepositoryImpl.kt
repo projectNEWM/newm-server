@@ -212,12 +212,12 @@ class ChainRepositoryImpl : ChainRepository {
             // logDebug(log)
             TransactionDestAddressTable.update({
                 TransactionDestAddressTable.processed.eq(false) and
-                        notExists(
-                            KeysTable.slice(KeysTable.id).select {
-                                TransactionDestAddressTable.processed.eq(false) and
-                                        KeysTable.address.eq(TransactionDestAddressTable.address)
-                            }
-                        )
+                    notExists(
+                        KeysTable.slice(KeysTable.id).select {
+                            TransactionDestAddressTable.processed.eq(false) and
+                                KeysTable.address.eq(TransactionDestAddressTable.address)
+                        }
+                    )
             }) {
                 it[processed] = true
             }
@@ -232,17 +232,17 @@ class ChainRepositoryImpl : ChainRepository {
             // logDebug(log)
             val updateCount = TransactionDestAddressTable.update({
                 TransactionDestAddressTable.address.eq(address) and TransactionDestAddressTable.processed.eq(false) and
-                        exists(
-                            (ChainTable innerJoin TransactionDestAddressTable).slice(ChainTable.blockNumber).select {
-                                (TransactionDestAddressTable.address eq address) and
-                                        (TransactionDestAddressTable.processed eq false) and
-                                        (
-                                                ChainTable.blockNumber + STABILITY_WINDOW lessEq wrapAsExpression(
-                                                    ChainTable.slice(ChainTable.blockNumber.max()).selectAll()
-                                                )
-                                                )
-                            }
-                        )
+                    exists(
+                        (ChainTable innerJoin TransactionDestAddressTable).slice(ChainTable.blockNumber).select {
+                            (TransactionDestAddressTable.address eq address) and
+                                (TransactionDestAddressTable.processed eq false) and
+                                (
+                                    ChainTable.blockNumber + STABILITY_WINDOW lessEq wrapAsExpression(
+                                        ChainTable.slice(ChainTable.blockNumber.max()).selectAll()
+                                    )
+                                    )
+                        }
+                    )
             }) {
                 it[processed] = true
             }

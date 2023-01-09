@@ -352,7 +352,7 @@ class BlockDaemon(
                 // We have metadata and we actually minted the asset in this tx
                 assetsMinted.find {
                     it.quantity > BigInteger.ZERO && it.policyId == ap &&
-                            (it.name == an || it.name.toByteArray().toHexString() == an)
+                        (it.name == an || it.name.toByteArray().toHexString() == an)
                 }?.let {
                     (value as? MetadataMap)?.let { tokenDetailsMap ->
                         extractNativeAssetDetails(tokenDetailsMap, an, ap, blockHeight)

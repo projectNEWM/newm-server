@@ -10,7 +10,6 @@ import io.newm.chain.logging.initializeSentry
 import org.jetbrains.exposed.sql.exposedLogger
 import org.slf4j.LoggerFactory
 
-
 fun main(args: Array<String>) {
     // Set root log level to INFO
     val root: Logger = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME) as Logger

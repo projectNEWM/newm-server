@@ -86,7 +86,7 @@ class LedgerRepositoryImpl : LedgerRepository {
         return nativeAssetsMetadata.map { nativeAssetMetadata ->
             LedgerAssetsTable.select {
                 (LedgerAssetsTable.policy eq nativeAssetMetadata.assetPolicy) and
-                        (LedgerAssetsTable.name eq nativeAssetMetadata.assetName)
+                    (LedgerAssetsTable.name eq nativeAssetMetadata.assetName)
             }.firstOrNull()?.let { existingRow ->
                 val id: Long = existingRow[LedgerAssetsTable.id].value
                 // Do update
@@ -146,7 +146,7 @@ class LedgerRepositoryImpl : LedgerRepository {
         spentUtxos.forEach { spentUtxo ->
             count += LedgerUtxosTable.update({
                 (LedgerUtxosTable.txId eq spentUtxo.hash) and
-                        (LedgerUtxosTable.txIx eq spentUtxo.ix.toInt())
+                    (LedgerUtxosTable.txIx eq spentUtxo.ix.toInt())
             }) { row ->
                 row[blockSpent] = blockNumber
                 row[slotSpent] = slotNumber
@@ -240,8 +240,8 @@ class LedgerRepositoryImpl : LedgerRepository {
             transaction {
                 StakeRegistrationsTable.select {
                     (StakeRegistrationsTable.slot eq slot) and
-                            (StakeRegistrationsTable.txIndex eq txIndex) and
-                            (StakeRegistrationsTable.certIndex eq certIndex)
+                        (StakeRegistrationsTable.txIndex eq txIndex) and
+                        (StakeRegistrationsTable.certIndex eq certIndex)
                 }.firstOrNull()?.let { row ->
                     StakeRegistration(
                         id = row[StakeRegistrationsTable.id].value,
@@ -269,8 +269,8 @@ class LedgerRepositoryImpl : LedgerRepository {
     override fun queryPoolLoyalty(stakeAddress: String, poolId: String, currentEpoch: Long): Long = transaction {
         StakeDelegationsTable.select {
             (StakeDelegationsTable.stakeAddress eq stakeAddress) and
-                    (StakeDelegationsTable.epoch lessEq currentEpoch) and
-                    (StakeDelegationsTable.poolId eq poolId)
+                (StakeDelegationsTable.epoch lessEq currentEpoch) and
+                (StakeDelegationsTable.poolId eq poolId)
         }.orderBy(
             Pair(StakeDelegationsTable.blockNumber, SortOrder.DESC),
             Pair(StakeDelegationsTable.id, SortOrder.DESC)
@@ -299,8 +299,8 @@ class LedgerRepositoryImpl : LedgerRepository {
             .slice(LedgerTable.address)
             .select {
                 (LedgerAssetsTable.policy eq ADA_HANDLES_POLICY) and
-                        (LedgerAssetsTable.name eq adaHandleName.toByteArray().toHexString()) and
-                        LedgerUtxosTable.blockSpent.isNull()
+                    (LedgerAssetsTable.name eq adaHandleName.toByteArray().toHexString()) and
+                    LedgerUtxosTable.blockSpent.isNull()
             }
             .firstOrNull()?.let { row -> row[LedgerTable.address] }
     }

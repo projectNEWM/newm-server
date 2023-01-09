@@ -17,6 +17,4 @@ interface ChainRepository {
     fun markNonPurchaseAddressesAsProcessed()
 
     fun shouldProcessAddress(address: String): Boolean
-
-
 }
