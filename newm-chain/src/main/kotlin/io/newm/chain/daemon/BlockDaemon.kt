@@ -54,7 +54,9 @@ import kotlin.math.max
 import kotlin.system.measureTimeMillis
 
 class BlockDaemon(
-    private val environment: ApplicationEnvironment
+    private val environment: ApplicationEnvironment,
+    private val chainRepository: ChainRepository,
+    private val ledgerRepository: LedgerRepository,
 ) : Daemon {
     override val log: Logger by inject { parametersOf("BlockDaemon") }
 
@@ -140,7 +142,7 @@ class BlockDaemon(
     }
 
     private suspend fun findBlockchainIntersect(client: ChainSyncClient) {
-        val intersectPoints = ChainRepository.getFindIntersectPairs().toMutableList()
+        val intersectPoints = chainRepository.getFindIntersectPairs().toMutableList()
         intersectPoints.add(
             PointDetail(
                 slot = environment.config.property("ogmios.startSlot").getString().toLong(),
@@ -219,21 +221,25 @@ class BlockDaemon(
 //                    }
                     // Mark same block number as rolled back
                     rollbackTime += measureTimeMillis {
-                        LedgerRepository.doRollback(block.header.blockHeight)
+                        ledgerRepository.doRollback(block.header.blockHeight)
                     }
 
                     chainTime += measureTimeMillis {
-                        ChainRepository.insert(block.toChainBlock())
+                        chainRepository.insert(block.toChainBlock())
                     }
 
                     // Load any Native asset metadata
                     nativeAssetTime += measureTimeMillis {
                         // Store just name/image/description
                         val nativeAssetMetadataSet =
-                            LedgerRepository.upcertNativeAssets(extractBlockTokenMetadataSet(block))
+                            ledgerRepository.upcertNativeAssets(extractBlockTokenMetadataSet(block))
 
                         // Store ALL nested metadata items
-                        LedgerRepository.insertLedgerAssetMetadataList(block.toAssetMetadataList(nativeAssetMetadataSet))
+                        ledgerRepository.insertLedgerAssetMetadataList(
+                            block.toAssetMetadataList(
+                                nativeAssetMetadataSet
+                            )
+                        )
                     }
 
                     // Insert unspent utxos and stake delegations/de-registrations
@@ -241,21 +247,21 @@ class BlockDaemon(
                         val slotNumber = block.header.slot
                         val blockNumber = block.header.blockHeight
                         val createdUtxos = block.toCreatedUtxoSet()
-                        LedgerRepository.createUtxos(slotNumber, blockNumber, createdUtxos)
+                        ledgerRepository.createUtxos(slotNumber, blockNumber, createdUtxos)
                         val stakeRegistrations = block.toStakeRegistrationList()
-                        LedgerRepository.createStakeRegistrations(stakeRegistrations)
+                        ledgerRepository.createStakeRegistrations(stakeRegistrations)
                         val epoch = getEpochForSlot(block.header.slot)
                         val stakeDelegations = block.toStakeDelegationList(epoch)
-                        LedgerRepository.createStakeDelegations(stakeDelegations)
+                        ledgerRepository.createStakeDelegations(stakeDelegations)
                         if (syncRawTxns) {
                             val rawTransactions = block.toRawTransactionList()
-                            LedgerRepository.createRawTransactions(rawTransactions)
+                            ledgerRepository.createRawTransactions(rawTransactions)
                         }
                     }
 
                     // Mark spent utxos as spent
                     spendTime += measureTimeMillis {
-                        LedgerRepository.spendUtxos(
+                        ledgerRepository.spendUtxos(
                             slotNumber = block.header.slot,
                             blockNumber = block.header.blockHeight,
                             spentUtxos = block.toSpentUtxoSet()
@@ -265,7 +271,7 @@ class BlockDaemon(
 
                 // Prune any old spent utxos we don't need any longer
                 pruneTime = measureTimeMillis {
-                    LedgerRepository.pruneSpent(blocksToCommit.last().header.slot)
+                    ledgerRepository.pruneSpent(blocksToCommit.last().header.slot)
                 }
             }
         }.also { totalTime ->
