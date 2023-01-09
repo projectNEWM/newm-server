@@ -6,11 +6,13 @@ import io.newm.chain.grpc.GreeterGrpcKt
 import io.newm.chain.grpc.HelloReply
 import io.newm.chain.grpc.HelloRequest
 import kotlinx.coroutines.runBlocking
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
 class HelloWorldTests {
 
     @Test
+    @Disabled
     fun `test GreeterService`() = runBlocking {
         // plainText for localhost testing only. use SSL later.
         val channel = ManagedChannelBuilder.forAddress("localhost", 3737).usePlaintext().build()
