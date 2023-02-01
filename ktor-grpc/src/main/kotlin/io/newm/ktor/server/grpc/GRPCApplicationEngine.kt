@@ -40,8 +40,10 @@ class GRPCApplicationEngine(
 
     class Configuration : BaseApplicationEngine.Configuration() {
         var port: Int = 8080
+        var wait: Boolean = false
         var serverConfigurer: ServerBuilder<*>.() -> Unit = {}
         internal var configFileServerConfigurer: ServerBuilder<*>.() -> Unit = {}
+        var startEnvironment: Boolean = true
     }
 
     private val configuration = Configuration().apply(configure)
@@ -72,7 +74,7 @@ class GRPCApplicationEngine(
             startupJob.await()
             environment.monitor.raiseCatching(ServerReady, environment, environment.log)
 
-            if (wait) {
+            if (wait || configuration.wait) {
                 serverJob.get().join()
             }
         }
@@ -119,8 +121,10 @@ class GRPCApplicationEngine(
         ).launch(start = CoroutineStart.LAZY) {
 
             try {
-                withContext(userDispatcher) {
-                    environment.start()
+                if (configuration.startEnvironment) {
+                    withContext(userDispatcher) {
+                        environment.start()
+                    }
                 }
 
                 // Start the GRPC server
@@ -136,6 +140,7 @@ class GRPCApplicationEngine(
                     log.info("Service Ready: ${service.serviceDescriptor.name}")
                 }
             } catch (cause: Throwable) {
+                log.error("Error starting GRPCApplicationEngine!", cause)
                 stopRequest.completeExceptionally(cause)
                 startupJob.completeExceptionally(cause)
                 throw cause

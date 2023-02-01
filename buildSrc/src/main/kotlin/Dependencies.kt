@@ -26,6 +26,14 @@ object Dependencies {
         const val ID = "com.google.protobuf"
     }
 
+    object PublishPlugin {
+        const val SIGNING_ID = "signing"
+        const val MAVEN_PUBLISH_ID = "maven-publish"
+
+        const val MAVEN_REPO_AUTH_VERSION = "3.0.4"
+        const val MAVEN_REPO_AUTH_ID = "org.hibernate.build.maven-repo-auth"
+    }
+
     object Kotlin {
         private const val VERSION = KotlinPlugin.VERSION
 
