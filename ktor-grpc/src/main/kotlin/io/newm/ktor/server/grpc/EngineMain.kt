@@ -2,6 +2,7 @@ package io.newm.ktor.server.grpc
 
 import io.grpc.BindableService
 import io.ktor.server.config.ApplicationConfig
+import io.ktor.server.engine.ApplicationEngineEnvironment
 import io.ktor.server.engine.addShutdownHook
 import io.ktor.server.engine.commandLineEnvironment
 
@@ -10,9 +11,16 @@ object EngineMain {
      * GRPC engine entry point
      */
     @JvmStatic
-    fun main(args: Array<String>) {
-        val applicationEnvironment = commandLineEnvironment(args)
-        val engine = GRPCApplicationEngine(applicationEnvironment) { loadConfiguration(applicationEnvironment.config) }
+    fun main(
+        args: Array<String>,
+        appEnvironment: ApplicationEngineEnvironment? = null,
+        configure: GRPCApplicationEngine.Configuration.() -> Unit = {},
+    ) {
+        val applicationEnvironment = appEnvironment ?: commandLineEnvironment(args)
+        val engine = GRPCApplicationEngine(applicationEnvironment) {
+            loadConfiguration(applicationEnvironment.config)
+            configure.invoke(this)
+        }
         val gracePeriod =
             engine.environment.config.propertyOrNull("ktor.deployment.shutdownGracePeriod")?.getString()?.toLong()
                 ?: 50
@@ -22,7 +30,7 @@ object EngineMain {
         engine.addShutdownHook {
             engine.stop(gracePeriod, timeout)
         }
-        engine.start(true)
+        engine.start()
     }
 
     private fun GRPCApplicationEngine.Configuration.loadConfiguration(config: ApplicationConfig) {
@@ -40,5 +48,7 @@ object EngineMain {
                 }
             }
         }
+        wait = config.propertyOrNull("wait")?.getString()?.toBooleanStrictOrNull() ?: true
+        startEnvironment = config.propertyOrNull("startEnvironment")?.getString()?.toBooleanStrictOrNull() ?: true
     }
 }
