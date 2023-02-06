@@ -1,7 +1,7 @@
 object Dependencies {
 
     object VersionsPlugin {
-        const val VERSION = "0.41.0"
+        const val VERSION = "0.45.0"
         const val ID = "com.github.ben-manes.versions"
     }
 
@@ -16,7 +16,7 @@ object Dependencies {
     }
 
     object KotlinPlugin {
-        const val VERSION = "1.7.22"
+        const val VERSION = "1.8.10"
         const val JVM_ID = "jvm"
         const val SERIALIZATION_ID = "plugin.serialization"
     }
@@ -62,7 +62,7 @@ object Dependencies {
     }
 
     object Ktor {
-        private const val VERSION = "2.2.2"
+        private const val VERSION = "2.2.3"
 
         const val SERVER_CORE = "io.ktor:ktor-server-core:$VERSION"
         const val SERVER_CIO = "io.ktor:ktor-server-cio:$VERSION"
@@ -91,11 +91,12 @@ object Dependencies {
     }
 
     object Koin {
-        private const val VERSION = "3.2.2"
+        private const val VERSION = "3.3.0"
+        private const val TEST_JUNIT_VERSION = "3.3.2"
 
         const val KTOR = "io.insert-koin:koin-ktor:$VERSION"
         const val TEST = "io.insert-koin:koin-test:$VERSION"
-        const val JUNIT = "io.insert-koin:koin-test-junit5:$VERSION"
+        const val JUNIT = "io.insert-koin:koin-test-junit5:$TEST_JUNIT_VERSION"
     }
 
     object Exposed {
@@ -114,7 +115,7 @@ object Dependencies {
     }
 
     object PostgreSQL {
-        private const val VERSION = "42.5.1"
+        private const val VERSION = "42.5.3"
 
         const val ALL = "org.postgresql:postgresql:$VERSION"
     }
@@ -126,7 +127,7 @@ object Dependencies {
     }
 
     object FlywayDB {
-        private const val VERSION = "9.11.0"
+        private const val VERSION = "9.14.1"
 
         const val ALL = "org.flywaydb:flyway-core:$VERSION"
     }
@@ -177,7 +178,7 @@ object Dependencies {
     }
 
     object Aws {
-        private const val VERSION = "1.12.376"
+        private const val VERSION = "1.12.400"
 
         const val BOM = "com.amazonaws:aws-java-sdk-bom:$VERSION"
         const val S3 = "com.amazonaws:aws-java-sdk-s3"
@@ -185,7 +186,7 @@ object Dependencies {
     }
 
     object JUnit {
-        private const val VERSION = "5.9.1"
+        private const val VERSION = "5.9.2"
 
         const val JUPITER = "org.junit.jupiter:junit-jupiter:$VERSION"
     }
@@ -203,7 +204,7 @@ object Dependencies {
     }
 
     object Mockk {
-        private const val VERSION = "1.13.3"
+        private const val VERSION = "1.13.4"
 
         const val MOCKK = "io.mockk:mockk:$VERSION"
     }
@@ -215,20 +216,20 @@ object Dependencies {
     }
 
     object Sentry {
-        private const val VERSION = "6.11.0"
+        private const val VERSION = "6.13.0"
 
         const val CORE = "io.sentry:sentry:$VERSION"
         const val LOGBACK = "io.sentry:sentry-logback:$VERSION"
     }
 
     object Newm {
-        private const val VERSION = "1.0.0"
+        private const val VERSION = "1.0.1"
 
         const val KOGMIOS = "io.newm:kogmios:$VERSION"
     }
 
     object Grpc {
-        private const val VERSION = "1.51.1"
+        private const val VERSION = "1.52.1"
 
         const val STUB = "io.grpc:grpc-stub:$VERSION"
         const val API = "io.grpc:grpc-api:$VERSION"

@@ -76,19 +76,21 @@ protobuf {
 }
 
 // work-around for protobuf plugin not registering generated sources properly.
-sourceSets {
-    main {
-        java {
-            srcDirs(
-                "build/generated/source/proto/main/java",
-                "build/generated/source/proto/main/grpc",
-            )
-        }
-        kotlin {
-            srcDirs(
-                "build/generated/source/proto/main/kotlin",
-                "build/generated/source/proto/main/grpckt",
-            )
+if (tasks.map { it.name }.find { it.contains("ktlint", ignoreCase = true) } == null) {
+    sourceSets {
+        main {
+            java {
+                srcDirs(
+                    "build/generated/source/proto/main/java",
+                    "build/generated/source/proto/main/grpc",
+                )
+            }
+            kotlin {
+                srcDirs(
+                    "build/generated/source/proto/main/kotlin",
+                    "build/generated/source/proto/main/grpckt",
+                )
+            }
         }
     }
 }
