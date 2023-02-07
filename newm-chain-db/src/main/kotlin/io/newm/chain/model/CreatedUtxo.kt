@@ -12,6 +12,8 @@ data class CreatedUtxo(
     val hash: String,
     val ix: Long,
     @Contextual val lovelace: BigInteger,
+    val datumHash: String?,
+    val datum: String?,
     val nativeAssets: List<NativeAsset>,
     val cbor: ByteArray?,
 ) {
@@ -25,7 +27,13 @@ data class CreatedUtxo(
         if (hash != other.hash) return false
         if (ix != other.ix) return false
         if (lovelace != other.lovelace) return false
+        if (datumHash != other.datumHash) return false
+        if (datum != other.datum) return false
         if (nativeAssets != other.nativeAssets) return false
+        if (cbor != null) {
+            if (other.cbor == null) return false
+            if (!cbor.contentEquals(other.cbor)) return false
+        } else if (other.cbor != null) return false
 
         return true
     }
@@ -37,7 +45,10 @@ data class CreatedUtxo(
         result = 31 * result + hash.hashCode()
         result = 31 * result + ix.hashCode()
         result = 31 * result + lovelace.hashCode()
+        result = 31 * result + (datumHash?.hashCode() ?: 0)
+        result = 31 * result + (datum?.hashCode() ?: 0)
         result = 31 * result + nativeAssets.hashCode()
+        result = 31 * result + (cbor?.contentHashCode() ?: 0)
         return result
     }
 }

@@ -261,6 +261,8 @@ private fun List<UtxoOutput>.toCreatedUtxoList(txId: String) = this.mapIndexed {
         hash = txId,
         ix = index.toLong(),
         lovelace = utxoOutput.value.coins,
+        datumHash = utxoOutput.datumHash,
+        datum = utxoOutput.datum,
         nativeAssets = utxoOutput.value.assets?.map { entry ->
             NativeAsset(
                 policy = entry.key.substringBefore('.'),
