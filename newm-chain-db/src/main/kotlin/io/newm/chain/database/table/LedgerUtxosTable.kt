@@ -13,6 +13,12 @@ object LedgerUtxosTable : LongIdTable(name = "ledger_utxos") {
     // transaction index
     val txIx: Column<Int> = integer("tx_ix")
 
+    // datum hash
+    val datumHash: Column<String?> = text("datum_hash").nullable()
+
+    // inline datum value
+    val datum: Column<String?> = text("datum").nullable()
+
     // lovelaces in this utxo
     val lovelace: Column<String> = text("lovelace")
 

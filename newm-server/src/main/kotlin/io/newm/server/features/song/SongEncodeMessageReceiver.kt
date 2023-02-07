@@ -11,6 +11,7 @@ import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongEncodeMessage
 import io.newm.server.features.song.repo.SongRepository
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import org.slf4j.MarkerFactory
@@ -21,6 +22,7 @@ class SongEncodeMessageReceiver : SqsMessageReceiver {
     private val logger: Logger by inject()
     private val marker = MarkerFactory.getMarker(SongEncodeMessageReceiver::class.java.simpleName)
 
+    @OptIn(ExperimentalSerializationApi::class)
     val json = Json {
         ignoreUnknownKeys = true
         explicitNulls = false

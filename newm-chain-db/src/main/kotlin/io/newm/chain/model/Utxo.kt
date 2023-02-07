@@ -1,71 +1,18 @@
 package io.newm.chain.model
 
-import com.google.iot.cbor.CborArray
-import com.google.iot.cbor.CborByteString
-import com.google.iot.cbor.CborInteger
-import com.google.iot.cbor.CborMap
-import io.newm.chain.util.elementToBigInteger
-import io.newm.chain.util.elementToHexString
-import io.newm.chain.util.toHexString
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
-import org.slf4j.LoggerFactory
 import java.math.BigInteger
 
 @Serializable
 data class Utxo(
     val hash: String,
     val ix: Long,
+    val datumHash: String?,
+    val datum: String?,
     @Contextual val lovelace: BigInteger,
     val nativeAssets: List<NativeAsset>,
-) {
-    companion object {
-        private val log by lazy { LoggerFactory.getLogger("Utxo") }
-
-        fun createFromCborArray(cborArray: CborArray): List<Utxo> {
-            try {
-                val utxos = mutableListOf<Utxo>()
-                (cborArray.elementAt(1) as CborArray).apply {
-                    (elementAt(0) as CborMap).entrySet().forEach { entry ->
-                        val (hash, ix) = (entry.key as CborArray).run {
-                            Pair(elementToHexString(0), elementToBigInteger(1).toLong())
-                        }
-                        var lovelace = BigInteger.ZERO
-                        val nativeAssets = mutableListOf<NativeAsset>()
-                        (entry.value as CborArray).apply {
-                            when (val item = elementAt(1)) {
-                                is CborInteger -> {
-                                    lovelace = item.bigIntegerValue()
-                                }
-
-                                is CborArray -> {
-                                    // Native assets exist
-                                    item.apply {
-                                        lovelace = elementToBigInteger(0)
-                                        (elementAt(1) as CborMap).entrySet().forEach { entry ->
-                                            val policy = (entry.key as CborByteString).byteArrayValue()[0].toHexString()
-                                            (entry.value as CborMap).entrySet().forEach { nameAmountEntry ->
-                                                val name = (nameAmountEntry.key as CborByteString).byteArrayValue()[0]
-                                                    .toHexString()
-                                                val amount = (nameAmountEntry.value as CborInteger).bigIntegerValue()
-                                                nativeAssets.add(NativeAsset(name, policy, amount))
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        utxos.add(Utxo(hash, ix, lovelace, nativeAssets))
-                    }
-                }
-                return utxos
-            } catch (e: Throwable) {
-                log.error("Error parsing Utxo Cbor: ${cborArray.toCborByteArray().toHexString()}")
-                throw e
-            }
-        }
-    }
-}
+)
 
 // MsgResult for utxo query
 // [

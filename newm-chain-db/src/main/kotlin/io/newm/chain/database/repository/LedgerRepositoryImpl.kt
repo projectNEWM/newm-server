@@ -66,6 +66,8 @@ class LedgerRepositoryImpl : LedgerRepository {
                     hash = row[LedgerUtxosTable.txId],
                     ix = row[LedgerUtxosTable.txIx].toLong(),
                     lovelace = BigInteger(row[LedgerUtxosTable.lovelace]),
+                    datumHash = row[LedgerUtxosTable.datumHash],
+                    datum = row[LedgerUtxosTable.datum],
                     nativeAssets = nativeAssets
                 )
             }
@@ -180,6 +182,8 @@ class LedgerRepositoryImpl : LedgerRepository {
                 row[ledgerId] = ledgerTableId
                 row[txId] = createdUtxo.hash
                 row[txIx] = createdUtxo.ix.toInt()
+                row[datumHash] = createdUtxo.datumHash
+                row[datum] = createdUtxo.datum
                 row[lovelace] = createdUtxo.lovelace.toString()
                 row[blockCreated] = blockNumber
                 row[slotCreated] = slotNumber
