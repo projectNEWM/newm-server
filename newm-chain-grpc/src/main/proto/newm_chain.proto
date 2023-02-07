@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "io.newm.chain.grpc";
+
+package newmchain;
+
+service NewmChain {
+  rpc SubmitTransaction (SubmitTransactionRequest) returns (SubmitTransactionResponse) {}
+
+  rpc QueryUtxos (QueryUtxosRequest) returns (QueryUtxosResponse) {}
+}
+
+message SubmitTransactionRequest {
+  bytes cbor = 1;
+}
+
+message SubmitTransactionResponse {
+  string result = 1;
+}
+
+message QueryUtxosRequest {
+  string address = 1;
+}
+
+message QueryUtxosResponse {
+  repeated Utxo utxos = 1;
+}
+
+message Utxo {
+  string hash = 1;
+  sint64 ix = 2;
+  string lovelace = 3;
+  string datum_hash = 4;
+  string datum = 5;
+  repeated NativeAsset native_assets = 6;
+}
+
+message NativeAsset {
+  string name = 1;
+  string policy = 2;
+  string amount = 3;
+}
