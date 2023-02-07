@@ -18,6 +18,11 @@ java.targetCompatibility = JavaVersion.VERSION_17
 
 ktlint {
     version.set("0.42.1")
+    filter {
+        exclude { entry ->
+            entry.file.toString().contains("generated")
+        }
+    }
 }
 
 repositories {
@@ -76,21 +81,19 @@ protobuf {
 }
 
 // work-around for protobuf plugin not registering generated sources properly.
-if (tasks.map { it.name }.find { it.contains("ktlint", ignoreCase = true) } == null) {
-    sourceSets {
-        main {
-            java {
-                srcDirs(
-                    "build/generated/source/proto/main/java",
-                    "build/generated/source/proto/main/grpc",
-                )
-            }
-            kotlin {
-                srcDirs(
-                    "build/generated/source/proto/main/kotlin",
-                    "build/generated/source/proto/main/grpckt",
-                )
-            }
+sourceSets {
+    main {
+        java {
+            srcDirs(
+                "build/generated/source/proto/main/java",
+                "build/generated/source/proto/main/grpc",
+            )
+        }
+        kotlin {
+            srcDirs(
+                "build/generated/source/proto/main/kotlin",
+                "build/generated/source/proto/main/grpckt",
+            )
         }
     }
 }
