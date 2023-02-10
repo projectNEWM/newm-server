@@ -30,12 +30,12 @@ internal class SongRepositoryImpl(
     override suspend fun add(song: Song, ownerId: UUID): UUID {
         logger.debug(marker, "add: song = $song")
         val title = song.title ?: throw HttpUnprocessableEntityException("missing title")
-        val genre = song.genre ?: throw HttpUnprocessableEntityException("missing genre")
+        val genres = song.genres ?: throw HttpUnprocessableEntityException("missing genres")
         return transaction {
             SongEntity.new {
                 this.ownerId = EntityID(ownerId, UserTable)
                 this.title = title
-                this.genre = genre
+                this.genres = genres.toTypedArray()
                 coverArtUrl = song.coverArtUrl
                 description = song.description
                 credits = song.credits
@@ -56,7 +56,7 @@ internal class SongRepositoryImpl(
             requesterId?.let { entity.checkRequester(it) }
             with(song) {
                 title?.let { entity.title = it }
-                genre?.let { entity.genre = it }
+                genres?.let { entity.genres = it.toTypedArray() } ?: genre?.let { entity.genres = arrayOf(it) } // TODO: remove genre (CU-8669gyp2a)
                 coverArtUrl?.let { entity.coverArtUrl = it }
                 description?.let { entity.description = it }
                 credits?.let { entity.credits = it }

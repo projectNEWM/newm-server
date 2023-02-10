@@ -1,5 +1,7 @@
 package io.newm.server.features.song.database
 
+import io.newm.server.database.exposed.overlaps
+import io.newm.server.database.exposed.unnest
 import io.newm.server.features.song.model.MarketplaceStatus
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Song
@@ -18,7 +20,7 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     val createdAt: LocalDateTime by SongTable.createdAt
     var ownerId: EntityID<UUID> by SongTable.ownerId
     var title: String by SongTable.title
-    var genre: String by SongTable.genre
+    var genres: Array<String> by SongTable.genres
     var coverArtUrl: String? by SongTable.coverArtUrl
     var description: String? by SongTable.description
     var credits: String? by SongTable.credits
@@ -34,7 +36,8 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         ownerId = ownerId.value,
         createdAt = createdAt,
         title = title,
-        genre = genre,
+        genres = genres.toList(),
+        genre = genres.firstOrNull(), // TODO: remove genre (CU-8669gyp2a)
         coverArtUrl = coverArtUrl,
         description = description,
         credits = credits,
@@ -54,11 +57,12 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
 
         fun genres(filters: SongFilters): SizedIterable<String> {
             val ops = filters.toOps()
-            val fields = SongTable.slice(SongTable.id.count(), SongTable.genre)
+            val genre = SongTable.genres.unnest()
+            val fields = SongTable.slice(SongTable.id.count(), genre)
             val query = if (ops.isEmpty()) fields.selectAll() else fields.select(AndOp(ops))
-            return query.groupBy(SongTable.genre)
-                .orderBy(SongTable.genre.count(), SortOrder.DESC)
-                .mapLazy { it[SongTable.genre] }
+            return query.groupBy(genre)
+                .orderBy(SongTable.id.count(), SortOrder.DESC)
+                .mapLazy { it[genre] }
         }
 
         private fun SongFilters.toOps(): List<Op<Boolean>> {
@@ -76,7 +80,7 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                 ops += SongTable.ownerId inList it
             }
             genres?.let {
-                ops += SongTable.genre inList it
+                ops += SongTable.genres overlaps it.toTypedArray()
             }
             return ops
         }

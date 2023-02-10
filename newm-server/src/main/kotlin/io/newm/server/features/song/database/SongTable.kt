@@ -1,5 +1,6 @@
 package io.newm.server.features.song.database
 
+import io.newm.server.database.exposed.textArray
 import io.newm.server.features.song.model.MarketplaceStatus
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.user.database.UserTable
@@ -16,7 +17,7 @@ object SongTable : UUIDTable(name = "songs") {
     val createdAt: Column<LocalDateTime> = datetime("created_at").defaultExpression(CurrentDateTime)
     val ownerId: Column<EntityID<UUID>> = reference("owner_id", UserTable, onDelete = ReferenceOption.CASCADE)
     val title: Column<String> = text("title")
-    val genre: Column<String> = text("genre")
+    val genres: Column<Array<String>> = textArray("genres")
     val coverArtUrl: Column<String?> = text("cover_art_url").nullable()
     val description: Column<String?> = text("description").nullable()
     val credits: Column<String?> = text("credits").nullable()
