@@ -367,7 +367,7 @@ class PlaylistRoutesTests : BaseApplicationTests() {
             SongEntity.new {
                 ownerId = EntityID(testUserId, UserTable)
                 title = testSong1.title!!
-                genre = testSong1.genre!!
+                genres = testSong1.genres!!.toTypedArray()
                 coverArtUrl = testSong1.coverArtUrl
                 description = testSong1.description
                 credits = testSong1.credits
@@ -406,7 +406,7 @@ class PlaylistRoutesTests : BaseApplicationTests() {
             SongEntity.new {
                 ownerId = EntityID(testUserId, UserTable)
                 title = testSong1.title!!
-                genre = testSong1.genre!!
+                genres = testSong1.genres!!.toTypedArray()
                 coverArtUrl = testSong1.coverArtUrl
                 description = testSong1.description
                 credits = testSong1.credits
@@ -453,7 +453,7 @@ class PlaylistRoutesTests : BaseApplicationTests() {
                 SongEntity.new {
                     ownerId = EntityID(testUserId, UserTable)
                     title = "title$offset"
-                    genre = "genre$offset"
+                    genres = arrayOf("genre${offset}_0", "genre${offset}_1")
                     coverArtUrl = "coverArtUrl$offset"
                     description = "description$offset"
                     credits = "credits$offset"
