@@ -18,7 +18,7 @@ if (!project.hasProperty("isGithubActions")) {
 java.sourceCompatibility = JavaVersion.VERSION_17
 java.targetCompatibility = JavaVersion.VERSION_17
 
-version = "0.1.0-SNAPSHOT"
+version = "0.2.0-SNAPSHOT"
 
 ktlint {
     version.set("0.42.1")

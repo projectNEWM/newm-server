@@ -14,12 +14,12 @@ object EngineMain {
     fun main(
         args: Array<String>,
         appEnvironment: ApplicationEngineEnvironment? = null,
-        configure: GRPCApplicationEngine.Configuration.() -> Unit = {},
+        configure: GRPCApplicationEngine.Configuration.(appConfig: ApplicationConfig) -> Unit = {},
     ) {
         val applicationEnvironment = appEnvironment ?: commandLineEnvironment(args)
         val engine = GRPCApplicationEngine(applicationEnvironment) {
             loadConfiguration(applicationEnvironment.config)
-            configure.invoke(this)
+            configure.invoke(this, applicationEnvironment.config)
         }
         val gracePeriod =
             engine.environment.config.propertyOrNull("ktor.deployment.shutdownGracePeriod")?.getString()?.toLong()
