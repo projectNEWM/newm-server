@@ -30,6 +30,8 @@ dependencies {
     implementation(project(":newm-chain-db"))
     implementation(project(":newm-chain-grpc"))
     implementation(Dependencies.Newm.KOGMIOS)
+    implementation(Dependencies.SSLKickstart.PEM)
+    implementation(Dependencies.SSLKickstart.NETTY)
 
     compileOnly(Dependencies.Kotlin.REFLECTION)
     implementation(Dependencies.Kotlin.STDLIB_JDK8)
@@ -42,20 +44,7 @@ dependencies {
 
     implementation(Dependencies.Ktor.SERVER_CORE)
     implementation(Dependencies.Ktor.SERVER_CIO)
-//    implementation(Dependencies.Ktor.SERVER_CONTENT_NEGOTIATION)
-//    implementation(Dependencies.Ktor.SERVER_LOCATIONS)
-//    implementation(Dependencies.Ktor.SERVER_CALL_LOGGING)
-//    implementation(Dependencies.Ktor.SERVER_AUTH)
-//    implementation(Dependencies.Ktor.SERVER_AUTH_JWT)
-//    implementation(Dependencies.Ktor.SERVER_HTML_BUILDER)
-//    implementation(Dependencies.Ktor.CLIENT_CORE)
-//    implementation(Dependencies.Ktor.CLIENT_CIO)
-//    implementation(Dependencies.Ktor.CLIENT_CONTENT_NEGOTIATION)
-//    implementation(Dependencies.Ktor.CLIENT_SERIALIZATION)
-//    implementation(Dependencies.Ktor.SERIALIZATION)
-//    implementation(Dependencies.Ktor.SERIALIZATION_JSON)
-//    implementation(Dependencies.Ktor.SERVER_STATUS_PAGES)
-//    implementation(Dependencies.Ktor.SERVER_CORS)
+    implementation(Dependencies.Ktor.SERVER_AUTH_JWT)
 
     implementation(Dependencies.Koin.KTOR)
 

@@ -92,9 +92,10 @@ object Dependencies {
 
     object Koin {
         private const val VERSION = "3.3.0"
-        private const val TEST_JUNIT_VERSION = "3.3.2"
+        private const val KTOR_VERSION = "3.3.1"
+        private const val TEST_JUNIT_VERSION = "3.3.3"
 
-        const val KTOR = "io.insert-koin:koin-ktor:$VERSION"
+        const val KTOR = "io.insert-koin:koin-ktor:$KTOR_VERSION"
         const val TEST = "io.insert-koin:koin-test:$VERSION"
         const val JUNIT = "io.insert-koin:koin-test-junit5:$TEST_JUNIT_VERSION"
     }
@@ -140,7 +141,7 @@ object Dependencies {
 
     // https://github.com/patrickfav/bcrypt
     object JBCrypt {
-        private const val VERSION = "0.9.0"
+        private const val VERSION = "0.10.2"
 
         const val ALL = "at.favre.lib:bcrypt:$VERSION"
     }
@@ -178,7 +179,7 @@ object Dependencies {
     }
 
     object Aws {
-        private const val VERSION = "1.12.400"
+        private const val VERSION = "1.12.405"
 
         const val BOM = "com.amazonaws:aws-java-sdk-bom:$VERSION"
         const val S3 = "com.amazonaws:aws-java-sdk-s3"
@@ -216,7 +217,7 @@ object Dependencies {
     }
 
     object Sentry {
-        private const val VERSION = "6.13.0"
+        private const val VERSION = "6.13.1"
 
         const val CORE = "io.sentry:sentry:$VERSION"
         const val LOGBACK = "io.sentry:sentry-logback:$VERSION"
@@ -229,7 +230,7 @@ object Dependencies {
     }
 
     object Grpc {
-        private const val VERSION = "1.52.1"
+        private const val VERSION = "1.53.0"
 
         const val STUB = "io.grpc:grpc-stub:$VERSION"
         const val API = "io.grpc:grpc-api:$VERSION"
@@ -251,6 +252,13 @@ object Dependencies {
         const val JAVA_UTIL = "com.google.protobuf:protobuf-java-util:$VERSION"
         const val KOTLIN = "com.google.protobuf:protobuf-kotlin:$VERSION"
         const val PROTOC = "com.google.protobuf:protoc:$VERSION"
+    }
+
+    object SSLKickstart {
+        private const val VERSION = "7.4.9"
+
+        const val PEM = "io.github.hakky54:sslcontext-kickstart-for-pem:$VERSION"
+        const val NETTY = "io.github.hakky54:sslcontext-kickstart-for-netty:$VERSION"
     }
 
     object TestContainers {

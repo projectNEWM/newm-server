@@ -6,19 +6,24 @@ import io.ktor.server.application.*
 import io.newm.chain.daemon.initializeDaemons
 import io.newm.chain.database.initializeDatabase
 import io.newm.chain.di.installDependencyInjection
+import io.newm.chain.grpc.GrpcConfig
+import io.newm.chain.grpc.JwtAuthorizationServerInterceptor
 import io.newm.chain.logging.initializeSentry
 import org.jetbrains.exposed.sql.exposedLogger
 import org.slf4j.LoggerFactory
+import kotlin.system.exitProcess
+
+private var createJwtUser: String = ""
 
 fun main(args: Array<String>) {
     // Set root log level to INFO
     val root: Logger = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME) as Logger
     when {
-        args.contains("DEBUG") -> {
+        "DEBUG" in args -> {
             root.level = Level.DEBUG
         }
 
-        args.contains("TRACE") -> {
+        "TRACE" in args -> {
             root.level = Level.TRACE
         }
 
@@ -31,7 +36,11 @@ fun main(args: Array<String>) {
     // Detailed SQL logging
     // (exposedLogger as Logger).level = Level.DEBUG
 
-    io.newm.ktor.server.grpc.EngineMain.main(args)
+    if ("JWT" in args) {
+        createJwtUser = args[args.indexOf("JWT") + 1]
+    }
+
+    io.newm.ktor.server.grpc.EngineMain.main(args, null, GrpcConfig.init)
 }
 
 @Suppress("unused")
@@ -40,6 +49,13 @@ fun Application.module() {
     initializeDatabase()
 
     installDependencyInjection()
+
+    if (createJwtUser.isNotBlank()) {
+        JwtAuthorizationServerInterceptor(
+            environment.config.config("jwt")
+        ).createJwtUser(createJwtUser)
+        exitProcess(0)
+    }
 
     initializeDaemons()
 }
