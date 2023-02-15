@@ -1,10 +1,10 @@
 package io.newm.chain.grpc
 
-import io.ktor.utils.io.pool.useInstance
 import io.newm.chain.database.repository.LedgerRepository
 import io.newm.chain.util.toHexString
 import io.newm.kogmios.protocols.messages.SubmitFail
 import io.newm.kogmios.protocols.messages.SubmitSuccess
+import io.newm.objectpool.useInstance
 import io.newm.server.di.inject
 import org.koin.core.parameter.parametersOf
 import org.slf4j.Logger
