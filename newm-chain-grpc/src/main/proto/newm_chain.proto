@@ -17,6 +17,7 @@ message SubmitTransactionRequest {
 
 message SubmitTransactionResponse {
   string result = 1;
+  string tx_id = 2;
 }
 
 message QueryUtxosRequest {
