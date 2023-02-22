@@ -14,11 +14,15 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
     private val ledgerRepository: LedgerRepository by inject()
     private val txSubmitClientPool: TxSubmitClientPool by inject()
 
-    override suspend fun queryUtxos(request: QueryUtxosRequest): QueryUtxosResponse {
-        val utxos = ledgerRepository.queryUtxos(request.address)
+    override suspend fun queryUtxos(request: QueryUtxosRequest): QueryUtxosResponse =
+        ledgerRepository.queryUtxos(request.address).toQueryUtxosResponse()
 
-        return QueryUtxosResponse.newBuilder().apply {
-            utxos.forEach { utxo ->
+    override suspend fun queryLiveUtxos(request: QueryUtxosRequest): QueryUtxosResponse =
+        ledgerRepository.queryLiveUtxos(request.address).toQueryUtxosResponse()
+
+    private fun Set<io.newm.chain.model.Utxo>.toQueryUtxosResponse(): QueryUtxosResponse =
+        QueryUtxosResponse.newBuilder().apply {
+            this@toQueryUtxosResponse.forEach { utxo ->
                 addUtxos(
                     Utxo.newBuilder().apply {
                         hash = utxo.hash
@@ -39,19 +43,19 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                 )
             }
         }.build()
-    }
 
     override suspend fun submitTransaction(request: SubmitTransactionRequest): SubmitTransactionResponse {
-        val cbor = request.cbor.toByteArray().toHexString()
+        val cbor = request.cbor.toByteArray()
         return txSubmitClientPool.useInstance { client ->
-            val response = client.submit(cbor)
+            val response = client.submit(cbor.toHexString())
             when (response.result) {
                 is SubmitSuccess -> {
-                    // TODO: Add results of this successful tx to the Live UTxO state (needed for queryLiveUtxos)
+                    val transactionId = (response.result as SubmitSuccess).txId
+                    ledgerRepository.updateLiveLedgerState(transactionId, cbor)
 
                     SubmitTransactionResponse.newBuilder().apply {
                         result = "MsgAcceptTx"
-                        txId = (response.result as SubmitSuccess).txId
+                        txId = transactionId
                     }.build()
                 }
 

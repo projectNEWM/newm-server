@@ -39,7 +39,9 @@ import io.newm.kogmios.protocols.model.MetadataList
 import io.newm.kogmios.protocols.model.MetadataMap
 import io.newm.kogmios.protocols.model.MetadataString
 import io.newm.kogmios.protocols.model.MetadataValue
+import io.newm.kogmios.protocols.model.OriginString
 import io.newm.kogmios.protocols.model.PointDetail
+import io.newm.kogmios.protocols.model.PointDetailOrOrigin
 import io.newm.server.di.inject
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
@@ -142,13 +144,20 @@ class BlockDaemon(
     }
 
     private suspend fun findBlockchainIntersect(client: ChainSyncClient) {
-        val intersectPoints = chainRepository.getFindIntersectPairs().toMutableList()
-        intersectPoints.add(
-            PointDetail(
-                slot = environment.config.property("ogmios.startSlot").getString().toLong(),
-                hash = environment.config.property("ogmios.startHash").getString()
+        val intersectPoints: MutableList<PointDetailOrOrigin> = chainRepository.getFindIntersectPairs().toMutableList()
+        val startSlot = environment.config.property("ogmios.startSlot").getString().toLong()
+        if (startSlot > -1) {
+            intersectPoints.add(
+                PointDetail(
+                    slot = startSlot,
+                    hash = environment.config.property("ogmios.startHash").getString()
+                )
             )
-        )
+        } else {
+            intersectPoints.add(
+                OriginString()
+            )
+        }
         val msgFindIntersectResponse = client.findIntersect(intersectPoints)
 
         if (msgFindIntersectResponse.result !is IntersectionFound) {

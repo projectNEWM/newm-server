@@ -8,6 +8,9 @@ data class SpentUtxo(
     val hash: String,
     val ix: Long,
 ) {
+    /**
+     * We intentionally ignore transactionSpent for equals()
+     */
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -20,6 +23,9 @@ data class SpentUtxo(
         return true
     }
 
+    /**
+     * We intentionally ignore transactionSpent for hashCode()
+     */
     override fun hashCode(): Int {
         var result = hash.hashCode()
         result = 31 * result + ix.hashCode()

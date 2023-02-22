@@ -8,10 +8,11 @@ import java.math.BigInteger
 data class Utxo(
     val hash: String,
     val ix: Long,
-    val datumHash: String?,
-    val datum: String?,
     @Contextual val lovelace: BigInteger,
     val nativeAssets: List<NativeAsset>,
+    val datumHash: String?,
+    val datum: String?,
+    val scriptRef: String?,
 )
 
 // MsgResult for utxo query

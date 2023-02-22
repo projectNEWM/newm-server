@@ -7,8 +7,8 @@ package newmchain;
 
 service NewmChain {
   rpc SubmitTransaction (SubmitTransactionRequest) returns (SubmitTransactionResponse) {}
-
   rpc QueryUtxos (QueryUtxosRequest) returns (QueryUtxosResponse) {}
+  rpc QueryLiveUtxos (QueryUtxosRequest) returns (QueryUtxosResponse) {}
 }
 
 message SubmitTransactionRequest {
