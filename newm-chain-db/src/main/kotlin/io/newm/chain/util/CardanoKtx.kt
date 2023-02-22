@@ -32,6 +32,7 @@ import io.newm.kogmios.protocols.model.MetadataList
 import io.newm.kogmios.protocols.model.MetadataMap
 import io.newm.kogmios.protocols.model.MetadataString
 import io.newm.kogmios.protocols.model.MetadataValue
+import io.newm.kogmios.protocols.model.ScriptPlutusV2
 import io.newm.kogmios.protocols.model.StakeKeyRegistrationCertificate
 import io.newm.kogmios.protocols.model.UtxoOutput
 import org.apache.commons.codec.binary.Hex
@@ -62,6 +63,14 @@ fun CborArray.elementToHexString(index: Int): String {
 
 fun ByteArray.toHexString(): String {
     return Hex.encodeHexString(this, true)
+}
+
+fun Array<ByteArray>.toHexString(): String {
+    val builder = StringBuilder()
+    this.forEach { bytes ->
+        builder.append(Hex.encodeHex(bytes, true))
+    }
+    return builder.toString()
 }
 
 fun String.hexToByteArray(): ByteArray {
@@ -263,6 +272,7 @@ private fun List<UtxoOutput>.toCreatedUtxoList(txId: String) = this.mapIndexed {
         lovelace = utxoOutput.value.coins,
         datumHash = utxoOutput.datumHash,
         datum = utxoOutput.datum,
+        scriptRef = (utxoOutput.script as? ScriptPlutusV2)?.plutusV2, // we only care about plutus v2
         nativeAssets = utxoOutput.value.assets?.map { entry ->
             NativeAsset(
                 policy = entry.key.substringBefore('.'),

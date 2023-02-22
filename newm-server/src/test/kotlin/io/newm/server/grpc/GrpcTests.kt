@@ -73,4 +73,46 @@ class GrpcTests {
         assertThat(response.result).isEqualTo("MsgAcceptTx")
         assertThat(response.txId).isEqualTo("70a3b6e119004981d275ec637ccc4b2e6afacdf70fede259cd00e34fb75ef433")
     }
+
+    @Test
+    @Disabled
+    fun `test queryLiveUtxos`() = runBlocking {
+        // plainText for localhost testing only. use SSL later.
+        val channel = ManagedChannelBuilder.forAddress("localhost", 3737).usePlaintext().build()
+        val client =
+            NewmChainGrpcKt.NewmChainCoroutineStub(channel).withInterceptors(
+                MetadataUtils.newAttachHeadersInterceptor(
+                    Metadata().apply {
+                        put(
+                            Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER),
+                            "Bearer <JWT_TOKEN_HERE_DO_NOT_COMMIT>"
+                        )
+                    }
+                )
+            )
+        val queryUtxosRequest = QueryUtxosRequest.newBuilder()
+            .setAddress("addr_test1vrdqad0dwcg5stk9pzdknkrsurzkc8z9rqp9vyfrnrsgxkc4r8za2")
+            .build()
+        var queryUtxosResponse = client.queryUtxos(queryUtxosRequest)
+        assertThat(queryUtxosResponse).isInstanceOf(QueryUtxosResponse::class.java)
+
+        var queryLiveUtxosResponse = client.queryLiveUtxos(queryUtxosRequest)
+        assertThat(queryLiveUtxosResponse).isEqualTo(queryUtxosResponse)
+
+        // submit a tx to change the live utxos
+        val request = SubmitTransactionRequest.newBuilder()
+            .setCbor(ByteString.fromHex("84a400868258202a9ed5c889796567d9c0d6607634eb80fc5ba149ddc19481767d1820aa58665c008258207f8f8d0ccbe5abbeefb916561076608e8c3d50a3d41381792b0f005f9983eeff018258208c1169b97131b9fc5f9db8b6841a96bf6f116b3561900f2f306a053f3dd0011d008258208d4549456c34ead1d1c156bc2a5058d86470ae24d2c3868c99202fefc158b30800825820a2df6b85b0fa6b1cff992da297d6df58d4f0870630ee8ab7b014086e4ad5cc3600825820f9028bd3398e3f931790bca5c8a36237b00811c193ebe8a906fd9870d85a0c8f000182a200581d60da0eb5ed7611482ec5089b69d870e0c56c1c45180256112398e0835b011b0000009c4490304ca200581d60da0eb5ed7611482ec5089b69d870e0c56c1c45180256112398e0835b01821a00106026a1581c48664e8d76f2b15606677bd117a3eac9929c378ac547ed295518dfd5a14f74426967546f6b656e4e616d65303202021a0002f4a9031a014c1ce5a100818258204499320a77997987955eadba91721d5be54ca36536c5448009e822ba3f882d695840bb5489659b0e81ac1c9c13e0a4f7338dc86668b3a7962d5748faee6dbf32aee34e2dbc7ed830c2eb3ee6701130897cefe7578c8c2d891eb67f0b2473a547950df5f6"))
+            .build()
+        val response = client.submitTransaction(request)
+        assertThat(response).isInstanceOf(SubmitTransactionResponse::class.java)
+        assertThat(response.result).isEqualTo("MsgAcceptTx")
+        assertThat(response.txId).isEqualTo("b2d31a7c9e86eff32d5c00842bdc316cedf9d01dbb60af0420430eb8cdf0d311")
+
+        queryUtxosResponse = client.queryUtxos(queryUtxosRequest)
+        queryLiveUtxosResponse = client.queryLiveUtxos(queryUtxosRequest)
+        assertThat(queryLiveUtxosResponse).isNotEqualTo(queryUtxosResponse)
+
+        println("utxos: $queryUtxosResponse")
+        println("liveUtxos: $queryLiveUtxosResponse")
+    }
 }

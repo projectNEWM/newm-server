@@ -14,5 +14,5 @@
     </root>
     <logger name="org.eclipse.jetty" level="INFO"/>
     <logger name="io.netty" level="INFO"/>
-    <logger name="io.grpc" level="DEBUG"/>
+    <logger name="io.grpc" level="INFO"/>
 </configuration>

@@ -1,6 +1,12 @@
 package io.newm.chain.database.repository
 
 import com.github.benmanes.caffeine.cache.Caffeine
+import com.google.iot.cbor.CborArray
+import com.google.iot.cbor.CborByteString
+import com.google.iot.cbor.CborInteger
+import com.google.iot.cbor.CborMap
+import com.google.iot.cbor.CborReader
+import io.newm.chain.config.Config
 import io.newm.chain.database.entity.LedgerAssetMetadata
 import io.newm.chain.database.entity.RawTransaction
 import io.newm.chain.database.entity.StakeDelegation
@@ -18,7 +24,19 @@ import io.newm.chain.model.NativeAsset
 import io.newm.chain.model.NativeAssetMetadata
 import io.newm.chain.model.SpentUtxo
 import io.newm.chain.model.Utxo
+import io.newm.chain.util.Bech32
+import io.newm.chain.util.Constants.TX_DEST_UTXOS_INDEX
+import io.newm.chain.util.Constants.TX_SPENT_UTXOS_INDEX
+import io.newm.chain.util.Constants.UTXO_ADDRESS_INDEX
+import io.newm.chain.util.Constants.UTXO_AMOUNT_INDEX
+import io.newm.chain.util.Constants.UTXO_DATUM_INDEX
+import io.newm.chain.util.Constants.UTXO_SCRIPT_REF_INDEX
+import io.newm.chain.util.elementToByteArray
+import io.newm.chain.util.elementToInt
 import io.newm.chain.util.toHexString
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.greaterEq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
@@ -40,8 +58,21 @@ import java.time.Duration
 
 class LedgerRepositoryImpl : LedgerRepository {
     private val log by lazy { LoggerFactory.getLogger("LedgerRepository") }
+    private val utxoMutex = Mutex()
 
-    override fun queryUtxos(address: String): List<Utxo> = transaction {
+    /**
+     * Set of the Utxos that are "spent", but not yet in a block. These should be removed once observed to be
+     * used up in a block.
+     */
+    private val spentUtxoSet = mutableSetOf<SpentUtxo>()
+
+    /**
+     * Map the address to a list of utxos that have been created, but not yet made it into a block. These should be
+     * removed once they are observed to be created in a block.
+     */
+    private val liveUtxoMap = mutableMapOf<String, Set<Utxo>>()
+
+    override fun queryUtxos(address: String): Set<Utxo> = transaction {
         LedgerUtxosTable.innerJoin(LedgerTable, { ledgerId }, { LedgerTable.id }, { LedgerTable.address eq address })
             .select {
                 LedgerUtxosTable.blockSpent.isNull() and LedgerUtxosTable.slotSpent.isNull()
@@ -66,11 +97,268 @@ class LedgerRepositoryImpl : LedgerRepository {
                     hash = row[LedgerUtxosTable.txId],
                     ix = row[LedgerUtxosTable.txIx].toLong(),
                     lovelace = BigInteger(row[LedgerUtxosTable.lovelace]),
+                    nativeAssets = nativeAssets,
                     datumHash = row[LedgerUtxosTable.datumHash],
                     datum = row[LedgerUtxosTable.datum],
-                    nativeAssets = nativeAssets
+                    scriptRef = row[LedgerUtxosTable.scriptRef],
+                )
+            }.toHashSet()
+    }
+
+    override suspend fun queryLiveUtxos(address: String): Set<Utxo> {
+        val chainUtxos = queryUtxos(address)
+        return chainUtxosToLiveUtxos(address, chainUtxos as MutableSet)
+    }
+
+    private suspend fun chainUtxosToLiveUtxos(address: String, chainUtxos: MutableSet<Utxo>): Set<Utxo> {
+        utxoMutex.withLock {
+            return chainUtxos.apply {
+                // add in any liveUtxos from pending transactions
+                liveUtxoMap[address]?.let {
+                    addAll(it)
+                }
+            }.filterNot { chainUtxo ->
+                // remove any chain utxos that are already "spent" in a pending transaction
+                spentUtxoSet.contains(SpentUtxo("dummy", chainUtxo.hash, chainUtxo.ix))
+            }.toSet()
+        }
+    }
+
+    override suspend fun updateLiveLedgerState(transactionId: String, cborByteArray: ByteArray) {
+        utxoMutex.withLock {
+            val tx = CborReader.createFromByteArray(cborByteArray).readDataItem() as CborArray
+            val txBody = tx.elementAt(0) as CborMap
+            val utxosInArray = txBody[TX_SPENT_UTXOS_INDEX] as CborArray
+            utxosInArray.forEach { utxo ->
+                var hash = ""
+                var ix = 0L
+                (utxo as CborArray).forEach { utxoElement ->
+                    when (utxoElement) {
+                        is CborByteString -> hash = utxoElement.byteArrayValue().toHexString()
+                        else -> ix = (utxoElement as CborInteger).longValue()
+                    }
+                }
+                // Mark this utxo as spent even though it's not in a block yet.
+                processSpentUtxoFromSubmitTx(
+                    SpentUtxo(hash = hash, ix = ix, transactionSpent = transactionId).also {
+                        if (log.isDebugEnabled) {
+                            log.debug("SpentUtxo: $it")
+                        }
+                    }
                 )
             }
+            val addressOutArray = txBody[TX_DEST_UTXOS_INDEX] as CborArray
+            addressOutArray.forEachIndexed { ix, txOutput ->
+                val address: String
+                var lovelace = BigInteger.ZERO
+                val nativeAssets = mutableListOf<NativeAsset>()
+                var datumHash: String? = null
+                var datum: String? = null
+                var scriptRef: String? = null
+                when (txOutput) {
+                    is CborArray -> {
+                        // alonzo and earlier
+                        address = Bech32.encode(
+                            if (Config.isMainnet) {
+                                "addr"
+                            } else {
+                                "addr_test"
+                            },
+                            txOutput.elementToByteArray(0)
+                        )
+                        when (val assetsOutput = txOutput.elementAt(1)) {
+                            is CborInteger -> lovelace = assetsOutput.bigIntegerValue()
+                            is CborArray -> {
+                                assetsOutput.forEach { subItem ->
+                                    when (subItem) {
+                                        is CborInteger -> lovelace = subItem.bigIntegerValue()
+                                        is CborMap -> {
+                                            subItem.keySet().forEach { policyId ->
+                                                val policy =
+                                                    (policyId as CborByteString).byteArrayValue().toHexString()
+                                                val token = subItem[policyId] as CborMap
+                                                token.keySet().forEach { tokenName ->
+                                                    val name =
+                                                        (tokenName as CborByteString).byteArrayValue().toHexString()
+                                                    val amount = (token[tokenName] as CborInteger).bigIntegerValue()
+                                                    nativeAssets.add(
+                                                        NativeAsset(
+                                                            name = name,
+                                                            policy = policy,
+                                                            amount = amount
+                                                        )
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if (txOutput.size() > 2) {
+                            datumHash = txOutput.elementToByteArray(2).toHexString()
+                        }
+                    }
+
+                    is CborMap -> {
+                        // babbage
+                        val addressBytes = (txOutput[UTXO_ADDRESS_INDEX] as CborByteString).byteArrayValue()[0]
+                        address = if (Config.isMainnet) {
+                            Bech32.encode("addr", addressBytes)
+                        } else {
+                            Bech32.encode("addr_test", addressBytes)
+                        }
+                        when (val amountCborObject = txOutput[UTXO_AMOUNT_INDEX]) {
+                            is CborInteger -> {
+                                lovelace = amountCborObject.bigIntegerValue()
+                            }
+
+                            is CborArray -> {
+                                amountCborObject.forEach { amountItemCborObject ->
+                                    when (amountItemCborObject) {
+                                        is CborInteger -> {
+                                            lovelace = amountItemCborObject.bigIntegerValue()
+                                        }
+
+                                        is CborMap -> {
+                                            amountItemCborObject.keySet().forEach { policyId ->
+                                                val policy =
+                                                    (policyId as CborByteString).byteArrayValue().toHexString()
+                                                val token = amountItemCborObject[policyId] as CborMap
+                                                token.keySet().forEach { tokenName ->
+                                                    val name =
+                                                        (tokenName as CborByteString).byteArrayValue().toHexString()
+                                                    val amount = (token[tokenName] as CborInteger).bigIntegerValue()
+                                                    nativeAssets.add(
+                                                        NativeAsset(
+                                                            name = name,
+                                                            policy = policy,
+                                                            amount = amount
+                                                        )
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        (txOutput[UTXO_DATUM_INDEX] as? CborArray)?.let { datumHashArray ->
+                            when (datumHashArray.elementToInt(0)) {
+                                0 -> {
+                                    // datum hash
+                                    datumHash = datumHashArray.elementToByteArray(1).toHexString()
+                                }
+
+                                1 -> {
+                                    // inline datum
+                                    datum = datumHashArray.elementToByteArray(1).toHexString()
+                                }
+
+                                else -> throw IllegalStateException("datum is not a hash or inline datum!")
+                            }
+                        }
+                        (txOutput[UTXO_SCRIPT_REF_INDEX] as? CborByteString)?.let { scriptRefCborObject ->
+                            scriptRef = scriptRefCborObject.byteArrayValue().toHexString()
+                        }
+                    }
+
+                    else -> throw IllegalStateException("txOutput is not Array or Map!")
+                }
+                processLiveUtxoFromSubmitTx(
+                    address,
+                    Utxo(
+                        hash = transactionId,
+                        ix = ix.toLong(),
+                        lovelace = lovelace,
+                        nativeAssets = nativeAssets,
+                        datumHash = datumHash,
+                        datum = datum,
+                        scriptRef = scriptRef,
+                    ).also {
+                        if (log.isDebugEnabled) {
+                            log.debug("LiveUtxo: address: $address, $it")
+                        }
+                    }
+                )
+            }
+        }
+    }
+
+    private fun processSpentUtxoFromSubmitTx(spentUtxo: SpentUtxo) {
+        if (log.isDebugEnabled) {
+            log.debug("processSpentUtxoFromSubmitTx: adding: $spentUtxo")
+        }
+        spentUtxoSet.add(spentUtxo)
+
+        // remove any spent utxos from the list of live utxos
+        val newEntries: MutableList<Pair<String, Set<Utxo>>> = mutableListOf()
+        liveUtxoMap.forEach { (address, utxoSet) ->
+            val newUtxoList = utxoSet.filterNot { utxo -> utxo.hash == spentUtxo.hash && utxo.ix == spentUtxo.ix }
+            if (newUtxoList.size < utxoSet.size) {
+                newEntries.add(Pair(address, newUtxoList.toSet()))
+            }
+        }
+        newEntries.forEach { entry -> liveUtxoMap[entry.first] = entry.second }
+    }
+
+    private suspend fun processSpentUtxoFromBlock(spentUtxos: Set<SpentUtxo>) {
+        utxoMutex.withLock {
+            if (spentUtxoSet.removeAll(spentUtxos)) {
+                if (log.isDebugEnabled) {
+                    log.debug("processSpentUtxoFromBlock: removing: $spentUtxos")
+                }
+            }
+        }
+    }
+
+    // Wait until 10 blocks have passed to make sure the blocks are immutable before removing them from live utxo map
+    private val blockQueue = LinkedHashMap<Long, Set<CreatedUtxo>>(11)
+    private suspend fun processLiveUtxoFromBlock(blockNumber: Long, createdUtxos: Set<CreatedUtxo>) {
+        blockQueue[blockNumber] = createdUtxos
+        if (blockQueue.size > 10) {
+            val oldestBlockNumber = blockQueue.keys.minOf { it }
+            blockQueue.remove(oldestBlockNumber)?.let { immutableUtxos ->
+                // now that these utxos are locked on the chain, we can remove them from our "live" list.
+                utxoMutex.withLock {
+                    if (log.isDebugEnabled) {
+                        log.debug("processLiveUtxoFromBlock: $oldestBlockNumber, liveUtxoMap.size: ${liveUtxoMap.size}")
+                    }
+                    immutableUtxos.forEach { immutableUtxo ->
+                        if (liveUtxoMap.containsKey(immutableUtxo.address)) {
+                            val utxoSet = liveUtxoMap[immutableUtxo.address]!!
+                            val newUtxoSet =
+                                utxoSet.filterNot { utxo -> utxo.hash == immutableUtxo.hash && utxo.ix == immutableUtxo.ix }
+                                    .toSet()
+                            if (newUtxoSet.isEmpty()) {
+                                liveUtxoMap.remove(immutableUtxo.address)?.let {
+                                    if (log.isDebugEnabled) {
+                                        log.debug("processLiveUtxoFromBlock: address: ${immutableUtxo.address}, removing: $it")
+                                    }
+                                }
+                            } else {
+                                liveUtxoMap.put(immutableUtxo.address, newUtxoSet)?.let {
+                                    if (log.isDebugEnabled) {
+                                        log.debug("processLiveUtxoFromBlock: address: ${immutableUtxo.address}, removing: $it, saving: $newUtxoSet")
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (log.isDebugEnabled) {
+                        log.debug("processLiveUtxoFromBlock: done, liveUtxoMap.size: ${liveUtxoMap.size}")
+                    }
+                }
+            }
+        }
+    }
+
+    private fun processLiveUtxoFromSubmitTx(address: String, liveUtxo: Utxo) {
+        val newUtxoSet = liveUtxoMap[address]?.toMutableSet()?.apply { add(liveUtxo) } ?: setOf(liveUtxo)
+        if (log.isDebugEnabled) {
+            log.debug("processLiveUtxoFromSubmitTx: address: $address, adding: $newUtxoSet")
+        }
+        liveUtxoMap[address] = newUtxoSet
     }
 
     override fun doRollback(blockNumber: Long) {
@@ -155,13 +443,9 @@ class LedgerRepositoryImpl : LedgerRepository {
                 row[transactionSpent] = spentUtxo.transactionSpent
             }
         }
-//        if (count > 0 && count == spentUtxos.size) {
-//            log.warn("spentUtxo update match: $count")
-//        }
-//        if (count != spentUtxos.size) {
-//            log.warn("spentUtxo update mismatch: spentUtxos.size=${spentUtxos.size}, count=${count}")
-//            log.warn(spentUtxos.toString())
-//        }
+        runBlocking {
+            processSpentUtxoFromBlock(spentUtxos)
+        }
     }
 
     override fun createUtxos(slotNumber: Long, blockNumber: Long, createdUtxos: Set<CreatedUtxo>) {
@@ -184,6 +468,7 @@ class LedgerRepositoryImpl : LedgerRepository {
                 row[txIx] = createdUtxo.ix.toInt()
                 row[datumHash] = createdUtxo.datumHash
                 row[datum] = createdUtxo.datum
+                row[scriptRef] = createdUtxo.scriptRef
                 row[lovelace] = createdUtxo.lovelace.toString()
                 row[blockCreated] = blockNumber
                 row[slotCreated] = slotNumber
@@ -212,6 +497,9 @@ class LedgerRepositoryImpl : LedgerRepository {
                     row[amount] = nativeAsset.amount.toString()
                 }
             }
+        }
+        runBlocking {
+            processLiveUtxoFromBlock(blockNumber, createdUtxos)
         }
     }
 

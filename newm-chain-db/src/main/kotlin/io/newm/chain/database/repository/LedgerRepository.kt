@@ -11,7 +11,11 @@ import io.newm.chain.model.Utxo
 
 interface LedgerRepository {
 
-    fun queryUtxos(address: String): List<Utxo>
+    fun queryUtxos(address: String): Set<Utxo>
+
+    suspend fun queryLiveUtxos(address: String): Set<Utxo>
+
+    suspend fun updateLiveLedgerState(transactionId: String, cborByteArray: ByteArray)
 
     fun doRollback(blockNumber: Long)
 
