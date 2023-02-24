@@ -5,18 +5,14 @@ import io.ktor.server.application.call
 import io.ktor.server.auth.authenticate
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
-import io.ktor.server.routing.Routing
-import io.ktor.server.routing.delete
-import io.ktor.server.routing.get
-import io.ktor.server.routing.patch
-import io.ktor.server.routing.post
-import io.ktor.server.routing.route
+import io.ktor.server.routing.*
 import io.newm.server.auth.jwt.AUTH_JWT
 import io.newm.server.di.inject
 import io.newm.server.ext.*
 import io.newm.server.features.song.model.SongIdBody
 import io.newm.server.features.song.model.UploadRequest
 import io.newm.server.features.song.model.UploadResponse
+import io.newm.server.features.song.model.UploadType
 import io.newm.server.features.song.model.songFilters
 import io.newm.server.features.song.repo.SongRepository
 
@@ -61,15 +57,22 @@ fun Routing.createSongRoutes() {
                         respond(HttpStatusCode.NoContent)
                     }
                 }
-                post("upload") {
-                    with(call) {
-                        val req = receive<UploadRequest>()
-                        respond(
-                            UploadResponse(repository.generateUploadUrl(songId, myUserId, req.fileName))
-                        )
-                    }
+                route("upload") {
+                    createRoute(UploadType.Audio, repository)
+                    createRoute(UploadType.Agreement, repository)
                 }
             }
+        }
+    }
+}
+
+private fun Route.createRoute(type: UploadType, repository: SongRepository) {
+    post(type.name.lowercase()) {
+        with(call) {
+            val req = receive<UploadRequest>()
+            respond(
+                UploadResponse(repository.generateUploadUrl(type, songId, myUserId, req.fileName))
+            )
         }
     }
 }

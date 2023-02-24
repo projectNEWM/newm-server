@@ -4,18 +4,20 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class SongEncodeMessage(
+data class AudioMessage(
     @SerialName("detail")
     val detail: Detail?
 ) {
     val status: String?
         get() = detail?.status
 
-    val durationInMs: Int?
-        get() = detail?.outputGroupDetails?.firstOrNull()?.outputDetails?.firstOrNull()?.durationInMs
+    val durationInMs: Int? by lazy {
+        detail?.outputGroupDetails?.firstOrNull()?.outputDetails?.firstOrNull()?.durationInMs
+    }
 
-    val outputFilePath: String?
-        get() = detail?.outputGroupDetails?.firstOrNull()?.outputDetails?.firstOrNull()?.outputFilePaths?.firstOrNull()
+    val outputFilePath: String? by lazy {
+        detail?.outputGroupDetails?.firstOrNull()?.outputDetails?.firstOrNull()?.outputFilePaths?.firstOrNull()
+    }
 
     @Serializable
     data class Detail(
