@@ -10,6 +10,7 @@ import io.newm.server.features.cloudinary.cloudinaryKoinModule
 import io.newm.server.features.playlist.playlistKoinModule
 import io.newm.server.features.song.songKoinModule
 import io.newm.server.features.user.userKoinModule
+import io.newm.server.serialization.serializationModule
 import org.koin.dsl.module
 import org.koin.ktor.plugin.Koin
 
@@ -22,6 +23,7 @@ fun Application.installDependencyInjection() {
     install(Koin) {
         modules(
             appKoinModule,
+            serializationModule,
             clientKoinModule,
             userKoinModule,
             authKoinModule,

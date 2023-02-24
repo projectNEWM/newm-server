@@ -506,7 +506,7 @@ class SongRoutesTests : BaseApplicationTests() {
     }
 
     @Test
-    fun testRequestUpload() = runBlocking {
+    fun testRequestAudioUpload() = runBlocking {
         // Add song directly into database
         val songId = transaction {
             SongEntity.new {
@@ -528,7 +528,7 @@ class SongRoutesTests : BaseApplicationTests() {
         val start = Instant.now()
 
         // Request upload
-        val response = client.post("v1/songs/$songId/upload") {
+        val response = client.post("v1/songs/$songId/upload/audio") {
             bearerAuth(testUserToken)
             contentType(ContentType.Application.Json)
             setBody(UploadRequest("test1.mp3"))
@@ -543,6 +543,51 @@ class SongRoutesTests : BaseApplicationTests() {
             validUrls += s3.generatePresignedUrl(
                 "newm-test",
                 "$songId/test1.mp3",
+                start.plusSeconds(ttl).toDate(),
+                HttpMethod.PUT
+            ).toString()
+        }
+        assertThat(resp.uploadUrl).isIn(validUrls)
+    }
+
+    @Test
+    fun testRequestAgreementUpload() = runBlocking {
+        // Add song directly into database
+        val songId = transaction {
+            SongEntity.new {
+                ownerId = EntityID(testUserId, UserTable)
+                title = testSong1.title!!
+                genres = testSong1.genres!!.toTypedArray()
+                coverArtUrl = testSong1.coverArtUrl
+                description = testSong1.description
+                credits = testSong1.credits
+                duration = testSong1.duration
+                streamUrl = testSong1.streamUrl
+                nftPolicyId = testSong1.nftPolicyId
+                nftName = testSong1.nftName
+                mintingStatus = testSong1.mintingStatus!!
+                marketplaceStatus = testSong1.marketplaceStatus!!
+            }
+        }.id.value
+
+        val start = Instant.now()
+
+        // Request upload
+        val response = client.post("v1/songs/$songId/upload/agreement") {
+            bearerAuth(testUserToken)
+            contentType(ContentType.Application.Json)
+            setBody(UploadRequest("test1.pdf"))
+        }
+        assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+        val resp = response.body<UploadResponse>()
+
+        // allow for some variation on ttl
+        val s3 by inject<AmazonS3>()
+        val validUrls = mutableListOf<String>()
+        for (ttl in 180L..182L) {
+            validUrls += s3.generatePresignedUrl(
+                "newm-test",
+                "$songId/test1.pdf",
                 start.plusSeconds(ttl).toDate(),
                 HttpMethod.PUT
             ).toString()

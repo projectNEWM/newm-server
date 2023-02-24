@@ -2,21 +2,23 @@ package io.newm.server.features.song.repo
 
 import com.amazonaws.HttpMethod
 import com.amazonaws.services.s3.AmazonS3
-import io.ktor.server.application.ApplicationEnvironment
-import io.ktor.util.logging.Logger
+import io.ktor.server.application.*
+import io.ktor.util.logging.*
 import io.newm.server.exception.HttpForbiddenException
 import io.newm.server.exception.HttpUnprocessableEntityException
-import io.newm.server.ext.getConfigLong
-import io.newm.server.ext.getConfigString
+import io.newm.server.ext.getConfigChild
+import io.newm.server.ext.getLong
+import io.newm.server.ext.getString
 import io.newm.server.ext.toDate
 import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongFilters
+import io.newm.server.features.song.model.UploadType
 import io.newm.server.features.user.database.UserTable
-import java.time.Instant
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.MarkerFactory
+import java.time.Instant
 import java.util.UUID
 
 internal class SongRepositoryImpl(
@@ -104,8 +106,13 @@ internal class SongRepositoryImpl(
         }
     }
 
-    override suspend fun generateUploadUrl(songId: UUID, requesterId: UUID, fileName: String): String {
-        logger.debug(marker, "generateUploadUrl: songId = $songId, fileName = $fileName")
+    override suspend fun generateUploadUrl(
+        uploadType: UploadType,
+        songId: UUID,
+        requesterId: UUID,
+        fileName: String
+    ): String {
+        logger.debug(marker, "generateUploadUrl: uploadType = $uploadType, songId = $songId, fileName = $fileName")
 
         if ('/' in fileName) throw HttpUnprocessableEntityException("Invalid fileName: $fileName")
 
@@ -113,12 +120,13 @@ internal class SongRepositoryImpl(
             SongEntity[songId].checkRequester(requesterId)
         }
 
+        val config = environment.getConfigChild("aws.s3.${uploadType.name.lowercase()}")
         val expiration = Instant.now()
-            .plusSeconds(environment.getConfigLong("aws.s3.audioUpload.timeToLive"))
+            .plusSeconds(config.getLong("timeToLive"))
             .toDate()
 
         return s3.generatePresignedUrl(
-            environment.getConfigString("aws.s3.audioUpload.bucketName"),
+            config.getString("bucketName"),
             "$songId/$fileName",
             expiration,
             HttpMethod.PUT
