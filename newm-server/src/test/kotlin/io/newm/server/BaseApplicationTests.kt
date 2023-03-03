@@ -73,6 +73,7 @@ open class BaseApplicationTests {
                 SongsInPlaylistsTable
             )
         }
+        application.start()
     }
 
     @AfterAll

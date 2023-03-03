@@ -7,6 +7,7 @@ import io.newm.server.auth.authKoinModule
 import io.newm.server.client.clientKoinModule
 import io.newm.server.aws.awsKoinModule
 import io.newm.server.features.cloudinary.cloudinaryKoinModule
+import io.newm.server.features.idenfy.idenfyKoinModule
 import io.newm.server.features.playlist.playlistKoinModule
 import io.newm.server.features.song.songKoinModule
 import io.newm.server.features.user.userKoinModule
@@ -30,7 +31,8 @@ fun Application.installDependencyInjection() {
             songKoinModule,
             playlistKoinModule,
             cloudinaryKoinModule,
-            awsKoinModule
+            awsKoinModule,
+            idenfyKoinModule,
         )
     }
 }

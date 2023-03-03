@@ -7,6 +7,7 @@ import io.newm.server.auth.installFakeAuthentication
 import io.newm.server.content.installContentNegotiation
 import io.newm.server.di.installDependencyInjection
 import io.newm.server.features.cloudinary.createCloudinaryRoutes
+import io.newm.server.features.idenfy.createIdenfyRoutes
 import io.newm.server.features.playlist.createPlaylistRoutes
 import io.newm.server.features.song.createSongRoutes
 import io.newm.server.features.user.createUserRoutes
@@ -29,5 +30,6 @@ fun Application.testModule() {
         createSongRoutes()
         createPlaylistRoutes()
         createCloudinaryRoutes()
+        createIdenfyRoutes()
     }
 }

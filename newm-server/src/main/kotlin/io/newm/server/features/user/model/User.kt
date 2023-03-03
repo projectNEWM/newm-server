@@ -23,5 +23,6 @@ data class User(
     val newPassword: Password? = null,
     val confirmPassword: Password? = null,
     val currentPassword: Password? = null,
-    val authCode: String? = null
+    val authCode: String? = null,
+    val verificationStatus: UserVerificationStatus? = null
 )

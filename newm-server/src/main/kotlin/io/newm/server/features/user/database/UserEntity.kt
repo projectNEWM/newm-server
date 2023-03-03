@@ -5,6 +5,7 @@ import io.newm.server.ext.existsHavingId
 import io.newm.server.ext.getId
 import io.newm.server.features.user.model.User
 import io.newm.server.features.user.model.UserFilters
+import io.newm.server.features.user.model.UserVerificationStatus
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
@@ -25,6 +26,7 @@ class UserEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var walletAddress: String? by UserTable.walletAddress
     var email: String by UserTable.email
     var passwordHash: String? by UserTable.passwordHash
+    var verificationStatus: UserVerificationStatus by UserTable.verificationStatus
 
     fun toModel(includeAll: Boolean = true) = User(
         id = id.value,
@@ -37,7 +39,8 @@ class UserEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         role = role,
         genre = genre,
         walletAddress = walletAddress.takeIf { includeAll },
-        email = email.takeIf { includeAll }
+        email = email.takeIf { includeAll },
+        verificationStatus = verificationStatus.takeIf { includeAll }
     )
 
     companion object : UUIDEntityClass<UserEntity>(UserTable) {
