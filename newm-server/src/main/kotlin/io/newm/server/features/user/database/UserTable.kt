@@ -1,6 +1,7 @@
 package io.newm.server.features.user.database
 
 import io.newm.server.auth.oauth.OAuthType
+import io.newm.server.features.user.model.UserVerificationStatus
 import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.Column
 
@@ -16,4 +17,7 @@ object UserTable : UUIDTable(name = "users") {
     val walletAddress: Column<String?> = text("wallet_address").nullable()
     val email: Column<String> = text("email")
     val passwordHash: Column<String?> = text("password_hash").nullable()
+    val verificationStatus: Column<UserVerificationStatus> =
+        enumeration("verification_status", UserVerificationStatus::class)
+            .default(UserVerificationStatus.Unverified)
 }

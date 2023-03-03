@@ -10,6 +10,7 @@ import io.newm.server.cors.installCORS
 import io.newm.server.database.initializeDatabase
 import io.newm.server.di.installDependencyInjection
 import io.newm.server.features.cloudinary.createCloudinaryRoutes
+import io.newm.server.features.idenfy.createIdenfyRoutes
 import io.newm.server.features.playlist.createPlaylistRoutes
 import io.newm.server.features.song.createSongRoutes
 import io.newm.server.features.user.createUserRoutes
@@ -41,5 +42,6 @@ fun Application.module() {
         createSongRoutes()
         createPlaylistRoutes()
         createCloudinaryRoutes()
+        createIdenfyRoutes()
     }
 }

@@ -111,7 +111,8 @@ subprojects {
             "AWS_AUDIO_SQS_QUEUE_URL" to "",
             "AWS_AUDIO_CLOUDFRONT_HOST_URL" to "",
             "AWS_AGREEMENT_BUCKET" to "",
-            "AWS_AGREEMENT_SQS_QUEUE_URL" to ""
+            "AWS_AGREEMENT_SQS_QUEUE_URL" to "",
+            "IDENFY_SIGNATURE_KEY" to ""
         )
     }
 }
