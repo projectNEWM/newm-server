@@ -1,12 +1,14 @@
 package io.newm.server.features.idenfy
 
 import com.google.common.truth.Truth.assertThat
+import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.newm.server.BaseApplicationTests
 import io.newm.server.di.inject
 import io.newm.server.ext.toHexString
-import io.newm.server.features.idenfy.model.IdenfyRequest
+import io.newm.server.features.idenfy.model.IdenfyCreateSessionResponse
+import io.newm.server.features.idenfy.model.IdenfySessionResult
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.model.UserVerificationStatus
 import kotlinx.coroutines.runBlocking
@@ -20,7 +22,18 @@ import javax.crypto.Mac
 class IdenfyRoutesTests : BaseApplicationTests() {
 
     @Test
-    fun testPostVerified() = runBlocking {
+    fun testCreateSession() = runBlocking {
+        val response = client.get("v1/idenfy/session") {
+            bearerAuth(testUserToken)
+        }
+        assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+        val resp = response.body<IdenfyCreateSessionResponse>()
+        assertThat(resp.authToken).isEqualTo(testUserId.toString())
+        assertThat(resp.expiryTime).isEqualTo(testUserId.toString().hashCode())
+    }
+
+    @Test
+    fun testSessionResultVerified() = runBlocking {
         val json: Json by inject()
         val key: Key by inject(IDENFY_KEY_QUALIFIER)
 
@@ -29,10 +42,10 @@ class IdenfyRoutesTests : BaseApplicationTests() {
         }
 
         val request = json.encodeToString(
-            IdenfyRequest(
+            IdenfySessionResult(
                 clientId = testUserId.toString(),
                 isFinal = false,
-                status = IdenfyRequest.Status(
+                status = IdenfySessionResult.Status(
                     overall = "APPROVED",
                     autoDocument = null,
                     autoFace = null,
@@ -59,7 +72,7 @@ class IdenfyRoutesTests : BaseApplicationTests() {
     }
 
     @Test
-    fun testPostPending() = runBlocking {
+    fun testSessionResultPending() = runBlocking {
         val json: Json by inject()
         val key: Key by inject(IDENFY_KEY_QUALIFIER)
 
@@ -68,10 +81,10 @@ class IdenfyRoutesTests : BaseApplicationTests() {
         }
 
         val request = json.encodeToString(
-            IdenfyRequest(
+            IdenfySessionResult(
                 clientId = testUserId.toString(),
                 isFinal = false,
-                status = IdenfyRequest.Status(
+                status = IdenfySessionResult.Status(
                     overall = "REVIEWING",
                     autoDocument = null,
                     autoFace = null,
@@ -98,7 +111,7 @@ class IdenfyRoutesTests : BaseApplicationTests() {
     }
 
     @Test
-    fun testPostUnverified() = runBlocking {
+    fun testSessionResultUnverified() = runBlocking {
         val json: Json by inject()
         val key: Key by inject(IDENFY_KEY_QUALIFIER)
 
@@ -107,10 +120,10 @@ class IdenfyRoutesTests : BaseApplicationTests() {
         }
 
         val request = json.encodeToString(
-            IdenfyRequest(
+            IdenfySessionResult(
                 clientId = testUserId.toString(),
                 isFinal = true,
-                status = IdenfyRequest.Status(
+                status = IdenfySessionResult.Status(
                     overall = "DENIED",
                     autoDocument = null,
                     autoFace = null,

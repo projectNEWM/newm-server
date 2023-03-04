@@ -4,7 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class IdenfyRequest(
+data class IdenfySessionResult(
     @SerialName("clientId")
     val clientId: String,
     @SerialName("final")
