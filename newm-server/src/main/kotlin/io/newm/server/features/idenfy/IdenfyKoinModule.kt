@@ -22,5 +22,5 @@ val idenfyKoinModule = module {
         }
     }
 
-    single<IdenfyRepository> { IdenfyRepositoryImpl(get(), get()) }
+    single<IdenfyRepository> { IdenfyRepositoryImpl(get(), get(), get()) }
 }

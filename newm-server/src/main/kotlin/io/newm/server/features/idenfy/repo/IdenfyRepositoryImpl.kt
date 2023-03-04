@@ -1,8 +1,14 @@
 package io.newm.server.features.idenfy.repo
 
+import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.request.*
+import io.ktor.http.*
 import io.ktor.server.application.ApplicationEnvironment
 import io.newm.server.ext.*
-import io.newm.server.features.idenfy.model.IdenfyRequest
+import io.newm.server.features.idenfy.model.IdenfyCreateSessionRequest
+import io.newm.server.features.idenfy.model.IdenfyCreateSessionResponse
+import io.newm.server.features.idenfy.model.IdenfySessionResult
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.model.UserVerificationStatus
 import org.apache.commons.mail.DefaultAuthenticator
@@ -10,10 +16,11 @@ import org.apache.commons.mail.HtmlEmail
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.Logger
 import org.slf4j.MarkerFactory
-import java.util.Properties
+import java.util.*
 
 class IdenfyRepositoryImpl(
     private val environment: ApplicationEnvironment,
+    private val httpClient: HttpClient,
     private val logger: Logger
 ) : IdenfyRepository {
 
@@ -22,18 +29,33 @@ class IdenfyRepositoryImpl(
         propertiesFromResource("idenfy-messages.properties")
     }
 
-    override suspend fun processRequest(request: IdenfyRequest) {
-        logger.debug(marker, "processRequest: $request")
+    override suspend fun createSession(userId: UUID): IdenfyCreateSessionResponse {
+        logger.debug(marker, "createSession: $userId")
+
+        return with(environment.getConfigChild("idenfy")) {
+            httpClient.post(getString("sessionUrl")) {
+                contentType(ContentType.Application.Json)
+                basicAuth(
+                    username = getString("apiKey"),
+                    password = getString("apiSecret")
+                )
+                setBody(IdenfyCreateSessionRequest(userId.toString()))
+            }.body()
+        }
+    }
+
+    override suspend fun processSessionResult(result: IdenfySessionResult) {
+        logger.debug(marker, "processSessionResult: $result")
 
         val status = when {
-            request.isApproved -> UserVerificationStatus.Verified
-            !request.isFinal -> UserVerificationStatus.Pending
+            result.isApproved -> UserVerificationStatus.Verified
+            !result.isFinal -> UserVerificationStatus.Pending
             else -> UserVerificationStatus.Unverified
         }
         logger.debug(marker, "processRequest: status = $status")
 
         val email = transaction {
-            with(UserEntity[request.clientId.toUUID()]) {
+            with(UserEntity[result.clientId.toUUID()]) {
                 verificationStatus = status
                 email
             }
@@ -57,7 +79,7 @@ class IdenfyRepositoryImpl(
 
             UserVerificationStatus.Unverified -> {
                 val codes = mutableListOf<String>()
-                with(request.status) {
+                with(result.status) {
                     autoDocument?.let { codes += it }
                     autoFace?.let { codes += it }
                     manualDocument?.let { codes += it }

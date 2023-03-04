@@ -20,6 +20,8 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.TestInstance
+import org.koin.core.context.GlobalContext.loadKoinModules
+import org.koin.dsl.module
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
@@ -39,6 +41,12 @@ open class BaseApplicationTests {
             install(ContentNegotiation) {
                 json()
             }
+        }.also { client ->
+            loadKoinModules(
+                module {
+                    single { client }
+                }
+            )
         }
     }
 

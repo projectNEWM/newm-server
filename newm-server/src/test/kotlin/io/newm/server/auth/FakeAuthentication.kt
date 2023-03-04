@@ -11,6 +11,7 @@ import io.ktor.server.auth.AuthenticationContext
 import io.ktor.server.auth.AuthenticationProvider
 import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.auth.parseAuthorizationHeader
+import io.newm.server.features.idenfy.configIdenfyFakeServerAuth
 import java.util.Date
 
 // Fake JWK authentication using User ID passed as access token
@@ -18,6 +19,7 @@ fun Application.installFakeAuthentication() {
     install(Authentication) {
         register(FakeAuthProvider("auth-jwt"))
         register(FakeAuthProvider("auth-jwt-refresh"))
+        configIdenfyFakeServerAuth()
     }
 }
 

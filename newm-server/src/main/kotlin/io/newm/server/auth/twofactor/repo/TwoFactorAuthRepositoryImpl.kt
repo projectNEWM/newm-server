@@ -22,14 +22,13 @@ internal class TwoFactorAuthRepositoryImpl(
     override suspend fun sendCode(email: String) {
         logger.debug(marker, "sendCode: $email")
 
-        val code = random.nextDigitCode(environment.getConfigInt("emailAuth.codeSize"))
-
-        val message = environment.getConfigString("emailAuth.messageUrl")
+        val config = environment.getConfigChild("emailAuth")
+        val code = random.nextDigitCode(config.getInt("codeSize"))
+        val message = config.getString("messageUrl")
             .toUrl()
             .readText()
             .replaceFirst("{{code}}", code)
 
-        val config = environment.getConfigChild("emailAuth")
         HtmlEmail().apply {
             hostName = config.getString("smtpHost")
             setSmtpPort(config.getInt("smtpPort"))
