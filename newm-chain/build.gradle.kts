@@ -51,6 +51,8 @@ dependencies {
 
     implementation(Dependencies.LogBack.CLASSIC)
 
+    implementation(Dependencies.Caffeine.ALL)
+
     implementation(Dependencies.GrpcKotlin.STUB)
     implementation(Dependencies.Grpc.PROTOBUF)
     implementation(Dependencies.Grpc.NETTY)

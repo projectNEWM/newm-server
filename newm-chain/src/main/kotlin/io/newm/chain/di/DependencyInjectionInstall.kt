@@ -5,6 +5,7 @@ import io.ktor.server.application.install
 import io.newm.chain.daemon.daemonsKoinModule
 import io.newm.chain.database.databaseKoinModule
 import io.newm.chain.grpc.grpcKoinModule
+import io.newm.chain.ledger.ledgerKoinModule
 import org.koin.dsl.module
 import org.koin.ktor.plugin.Koin
 import org.slf4j.LoggerFactory
@@ -21,6 +22,7 @@ fun Application.installDependencyInjection() {
             daemonsKoinModule,
             databaseKoinModule,
             grpcKoinModule,
+            ledgerKoinModule,
         )
     }
 }

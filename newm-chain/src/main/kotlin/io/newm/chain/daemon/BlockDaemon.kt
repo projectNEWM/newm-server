@@ -1,10 +1,16 @@
 package io.newm.chain.daemon
 
+import com.github.benmanes.caffeine.cache.Cache
+import com.github.benmanes.caffeine.cache.Caffeine
+import com.google.protobuf.kotlin.toByteString
 import io.ktor.server.application.ApplicationEnvironment
 import io.newm.chain.cardano.getEpochForSlot
 import io.newm.chain.config.Config
 import io.newm.chain.database.repository.ChainRepository
 import io.newm.chain.database.repository.LedgerRepository
+import io.newm.chain.grpc.NewmChainService
+import io.newm.chain.grpc.SubmitTransactionRequest
+import io.newm.chain.ledger.SubmittedTransactionCache
 import io.newm.chain.logging.captureToSentry
 import io.newm.chain.model.NativeAssetMetadata
 import io.newm.chain.util.b64ToByteArray
@@ -46,11 +52,12 @@ import io.newm.server.di.inject
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.koin.core.parameter.parametersOf
 import org.slf4j.Logger
 import java.io.IOException
 import java.math.BigInteger
+import java.time.Duration
 import java.time.Instant
 import kotlin.math.max
 import kotlin.system.measureTimeMillis
@@ -59,6 +66,7 @@ class BlockDaemon(
     private val environment: ApplicationEnvironment,
     private val chainRepository: ChainRepository,
     private val ledgerRepository: LedgerRepository,
+    private val submittedTransactionCache: SubmittedTransactionCache,
 ) : Daemon {
     override val log: Logger by inject { parametersOf("BlockDaemon") }
 
@@ -70,6 +78,18 @@ class BlockDaemon(
     private val blockBuffer: MutableList<Block> = mutableListOf()
 
     private var tipBlockHeight = 0L
+
+    /**
+     * Store the blocknumber mapped to a map of transactionIds so we can re-submit to the mempool
+     * in the event of a rollback.
+     */
+    private val blockRollbackCache: Cache<Long, Set<String>> = Caffeine.newBuilder()
+        .expireAfterWrite(Duration.ofHours(1))
+        .build()
+
+    // We just need the service to re-submit transactions. We won't be going through GRPC to do it so we can just
+    // create our own local instance.
+    private val newmChainService by lazy { NewmChainService() }
 
     override fun start() {
         log.info("starting...")
@@ -200,7 +220,7 @@ class BlockDaemon(
         }
     }
 
-    private fun processBlock(block: Block, isTip: Boolean) {
+    private suspend fun processBlock(block: Block, isTip: Boolean) {
         blockBuffer.add(block)
         if (blockBuffer.size == BLOCK_BUFFER_SIZE || isTip) {
             // Create a copy of the list
@@ -211,7 +231,7 @@ class BlockDaemon(
     }
 
     private var lastLoggedCommit = Instant.EPOCH
-    private fun commitBlocks(blocksToCommit: List<Block>, isTip: Boolean) {
+    private suspend fun commitBlocks(blocksToCommit: List<Block>, isTip: Boolean) {
 //        if (!isTip) {
 //            log.warn("starting commitBlocks()...")
 //        }
@@ -222,7 +242,7 @@ class BlockDaemon(
         var createTime = 0L
         var pruneTime = 0L
         measureTimeMillis {
-            transaction {
+            newSuspendedTransaction {
 //            warnLongQueriesDuration = 200L
                 blocksToCommit.forEach { block ->
 //                    if (block.header.blockHeight <= 60) {
@@ -231,6 +251,21 @@ class BlockDaemon(
                     // Mark same block number as rolled back
                     rollbackTime += measureTimeMillis {
                         ledgerRepository.doRollback(block.header.blockHeight)
+
+                        // Handle re-submitting any of our own transactions that got rolled back
+                        val tip = isTip && block == blocksToCommit.last()
+                        if (tip || blockRollbackCache.getIfPresent(block.header.blockHeight) != null) {
+                            val ourTransactionIdsInBlock =
+                                block.toCreatedUtxoSet().map { createdUtxo -> createdUtxo.hash }.toSet()
+                                    .filter { transactionId ->
+                                        submittedTransactionCache.get(transactionId)?.also {
+                                            if (log.isDebugEnabled) {
+                                                log.debug("Our transaction $transactionId was seen in a block!")
+                                            }
+                                        } != null
+                                    }.toSet()
+                            checkBlockRollbacks(block.header.blockHeight, ourTransactionIdsInBlock)
+                        }
                     }
 
                     chainTime += measureTimeMillis {
@@ -278,9 +313,13 @@ class BlockDaemon(
                     }
                 }
 
+                val latestBlock = blocksToCommit.last()
                 // Prune any old spent utxos we don't need any longer
                 pruneTime = measureTimeMillis {
-                    ledgerRepository.pruneSpent(blocksToCommit.last().header.slot)
+                    // only prune every 1000 blocks
+                    if (latestBlock.header.blockHeight % 1000L == 0L) {
+                        ledgerRepository.pruneSpent(latestBlock.header.slot)
+                    }
                 }
             }
         }.also { totalTime ->
@@ -455,6 +494,70 @@ class BlockDaemon(
                 log.warn("block: $blockHeight, assetPolicy metadata type was: ${assetPolicyKey.javaClass.name}!: $assetPolicyKey -> ${entry.value}")
                 null
             }
+        }
+    }
+
+    private suspend fun checkBlockRollbacks(blockHeight: Long, transactionIdsInBlock: Set<String>) {
+        // See if we're overwriting an existing block due to a rollback
+        blockRollbackCache.getIfPresent(blockHeight)?.let { rolledBackBlockTransactionList ->
+            handleBlockRollback(rolledBackBlockTransactionList, transactionIdsInBlock)
+        }
+        blockRollbackCache.put(blockHeight, transactionIdsInBlock)
+
+        // Remove any blocks that were pruned due to this rollback.
+        var blockNumber = blockHeight + 1
+        var rolledBackBlockTransactionIds = blockRollbackCache.getIfPresent(blockNumber)
+        while (rolledBackBlockTransactionIds != null) {
+            blockRollbackCache.invalidate(blockNumber)
+            blockNumber++
+            rolledBackBlockTransactionIds = blockRollbackCache.getIfPresent(blockNumber)
+        }
+    }
+
+    private suspend fun handleBlockRollback(
+        rolledBackBlockTransactionList: Set<String>,
+        transactionIdsInBlock: Set<String>,
+    ) {
+        // get the first transactionId in the rolled-back block that isn't in the new block
+        rolledBackBlockTransactionList.find { transactionId -> transactionIdsInBlock.none { it == transactionId } }
+            ?.let { firstTransactionIdNotInBlock ->
+                val keys = submittedTransactionCache.keys
+                val startIndex = keys.indexOfFirst { it == firstTransactionIdNotInBlock }.let { index ->
+                    // try to start 20 transactions before we need to
+                    if (index < 0) {
+                        index
+                    } else if (index - 20 < 0) {
+                        0
+                    } else {
+                        index - 20
+                    }
+                }
+                val lastIndex = keys.size - 1
+                if (startIndex > -1) {
+                    keys.forEachIndexed { index, transactionId ->
+                        if (index >= startIndex) {
+                            submittedTransactionCache.get(transactionId)?.let { cbor ->
+                                val request = SubmitTransactionRequest
+                                    .newBuilder()
+                                    .setCbor(cbor.toByteString())
+                                    .build()
+                                when (newmChainService.submitTransaction(request).result) {
+                                    "MsgAcceptTx" -> {
+                                        log.warn("Re-Submit txid to mempool due to rollback: $transactionId, $index/$lastIndex")
+                                    }
+
+                                    else -> {
+                                        if (index % 10 == 0 || index == lastIndex) {
+                                            log.info("Re-Submit txid to mempool exists already: $transactionId, $index/$lastIndex")
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } ?: run {
+            log.info("No transactions found to re-submit due to rollback.")
         }
     }
 

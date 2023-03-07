@@ -1,6 +1,7 @@
 package io.newm.chain.grpc
 
 import io.newm.chain.database.repository.LedgerRepository
+import io.newm.chain.ledger.SubmittedTransactionCache
 import io.newm.chain.util.toHexString
 import io.newm.kogmios.protocols.messages.SubmitFail
 import io.newm.kogmios.protocols.messages.SubmitSuccess
@@ -13,6 +14,7 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
     private val log: Logger by inject { parametersOf("NewmChainService") }
     private val ledgerRepository: LedgerRepository by inject()
     private val txSubmitClientPool: TxSubmitClientPool by inject()
+    private val submittedTransactionCache: SubmittedTransactionCache by inject()
 
     override suspend fun queryUtxos(request: QueryUtxosRequest): QueryUtxosResponse =
         ledgerRepository.queryUtxos(request.address).toQueryUtxosResponse()
@@ -51,6 +53,10 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
             when (response.result) {
                 is SubmitSuccess -> {
                     val transactionId = (response.result as SubmitSuccess).txId
+                    if (submittedTransactionCache.get(transactionId) == null) {
+                        submittedTransactionCache.put(transactionId, cbor)
+                    }
+
                     ledgerRepository.updateLiveLedgerState(transactionId, cbor)
 
                     SubmitTransactionResponse.newBuilder().apply {
