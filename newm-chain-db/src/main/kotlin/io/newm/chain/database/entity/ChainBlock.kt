@@ -24,7 +24,4 @@ data class ChainBlock(
     val protocolMinorVersion: Int,
     val transactionDestAddresses: Set<String>,
     val stakeDestAddresses: Set<PaymentStakeAddress>,
-//    val isTip: Boolean,
-//    val created: Long,
-//    val transactionIdsInBlock: List<String>,
 )
