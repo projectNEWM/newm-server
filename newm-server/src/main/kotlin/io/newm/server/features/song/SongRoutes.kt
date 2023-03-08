@@ -10,9 +10,9 @@ import io.newm.server.auth.jwt.AUTH_JWT
 import io.newm.server.di.inject
 import io.newm.server.ext.*
 import io.newm.server.features.song.model.SongIdBody
-import io.newm.server.features.song.model.UploadRequest
-import io.newm.server.features.song.model.UploadResponse
-import io.newm.server.features.song.model.UploadType
+import io.newm.server.features.song.model.StreamTokenAgreementRequest
+import io.newm.server.features.song.model.UploadAudioRequest
+import io.newm.server.features.song.model.UploadAudioResponse
 import io.newm.server.features.song.model.songFilters
 import io.newm.server.features.song.repo.SongRepository
 
@@ -57,22 +57,30 @@ fun Routing.createSongRoutes() {
                         respond(HttpStatusCode.NoContent)
                     }
                 }
-                route("upload") {
-                    createRoute(UploadType.Audio, repository)
-                    createRoute(UploadType.Agreement, repository)
+                post("audio") {
+                    with(call) {
+                        respond(
+                            UploadAudioResponse(
+                                repository.generateAudioUploadUrl(
+                                    songId = songId,
+                                    requesterId = myUserId,
+                                    fileName = receive<UploadAudioRequest>().fileName
+                                )
+                            )
+                        )
+                    }
+                }
+                put("agreement") {
+                    with(call) {
+                        repository.processStreamTokenAgreement(
+                            songId = songId,
+                            requesterId = myUserId,
+                            accepted = receive<StreamTokenAgreementRequest>().accepted
+                        )
+                        respond(HttpStatusCode.OK)
+                    }
                 }
             }
-        }
-    }
-}
-
-private fun Route.createRoute(type: UploadType, repository: SongRepository) {
-    post(type.name.lowercase()) {
-        with(call) {
-            val req = receive<UploadRequest>()
-            respond(
-                UploadResponse(repository.generateUploadUrl(type, songId, myUserId, req.fileName))
-            )
         }
     }
 }

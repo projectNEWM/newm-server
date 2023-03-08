@@ -6,14 +6,11 @@ import io.ktor.server.application.*
 import io.ktor.util.logging.*
 import io.newm.server.exception.HttpForbiddenException
 import io.newm.server.exception.HttpUnprocessableEntityException
-import io.newm.server.ext.getConfigChild
-import io.newm.server.ext.getLong
-import io.newm.server.ext.getString
-import io.newm.server.ext.toDate
+import io.newm.server.ext.*
 import io.newm.server.features.song.database.SongEntity
+import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongFilters
-import io.newm.server.features.song.model.UploadType
 import io.newm.server.features.user.database.UserTable
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -106,13 +103,12 @@ internal class SongRepositoryImpl(
         }
     }
 
-    override suspend fun generateUploadUrl(
-        uploadType: UploadType,
+    override suspend fun generateAudioUploadUrl(
         songId: UUID,
         requesterId: UUID,
         fileName: String
     ): String {
-        logger.debug(marker, "generateUploadUrl: uploadType = $uploadType, songId = $songId, fileName = $fileName")
+        logger.debug(marker, "generateAudioUploadUrl: songId = $songId, fileName = $fileName")
 
         if ('/' in fileName) throw HttpUnprocessableEntityException("Invalid fileName: $fileName")
 
@@ -120,7 +116,7 @@ internal class SongRepositoryImpl(
             SongEntity[songId].checkRequester(requesterId)
         }
 
-        val config = environment.getConfigChild("aws.s3.${uploadType.name.lowercase()}")
+        val config = environment.getConfigChild("aws.s3.audio")
         val expiration = Instant.now()
             .plusSeconds(config.getLong("timeToLive"))
             .toDate()
@@ -131,6 +127,33 @@ internal class SongRepositoryImpl(
             expiration,
             HttpMethod.PUT
         ).toString()
+    }
+
+    override suspend fun processStreamTokenAgreement(songId: UUID, requesterId: UUID, accepted: Boolean) {
+        logger.debug(marker, "processStreamTokenAgreement: songId = $songId, accepted = $accepted")
+
+        val bucketName = environment.getConfigString("aws.s3.agreement.bucketName")
+        val fileName = environment.getConfigString("aws.s3.agreement.fileName")
+        val filePath = "$songId/$fileName"
+
+        val update = { status: MintingStatus ->
+            transaction {
+                SongEntity[songId].run {
+                    checkRequester(requesterId)
+                    mintingStatus = status
+                }
+            }
+        }
+
+        if (accepted) {
+            if (!s3.doesObjectExist(bucketName, filePath)) {
+                throw HttpUnprocessableEntityException("missing: $filePath")
+            }
+            update(MintingStatus.StreamTokenAgreementApproved)
+        } else {
+            update(MintingStatus.Undistributed)
+            s3.deleteObject(bucketName, filePath)
+        }
     }
 
     private fun SongEntity.checkRequester(requesterId: UUID) {
