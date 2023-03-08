@@ -3,11 +3,9 @@ package io.newm.server.features.song
 import com.amazonaws.HttpMethod
 import com.amazonaws.services.s3.AmazonS3
 import com.google.common.truth.Truth.assertThat
-import io.ktor.client.call.body
+import io.ktor.client.call.*
 import io.ktor.client.request.*
-import io.ktor.http.ContentType
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.contentType
+import io.ktor.http.*
 import io.newm.server.BaseApplicationTests
 import io.newm.server.di.inject
 import io.newm.server.ext.existsHavingId
@@ -18,18 +16,18 @@ import io.newm.server.features.song.model.MarketplaceStatus
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongIdBody
-import io.newm.server.features.song.model.UploadRequest
-import io.newm.server.features.song.model.UploadResponse
+import io.newm.server.features.song.model.UploadAudioRequest
+import io.newm.server.features.song.model.UploadAudioResponse
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
-import java.time.Instant
-import java.time.LocalDateTime
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.deleteAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.time.Instant
+import java.time.LocalDateTime
 
 class SongRoutesTests : BaseApplicationTests() {
 
@@ -528,66 +526,21 @@ class SongRoutesTests : BaseApplicationTests() {
         val start = Instant.now()
 
         // Request upload
-        val response = client.post("v1/songs/$songId/upload/audio") {
+        val response = client.post("v1/songs/$songId/audio") {
             bearerAuth(testUserToken)
             contentType(ContentType.Application.Json)
-            setBody(UploadRequest("test1.mp3"))
+            setBody(UploadAudioRequest("test1.mp3"))
         }
         assertThat(response.status).isEqualTo(HttpStatusCode.OK)
-        val resp = response.body<UploadResponse>()
+        val resp = response.body<UploadAudioResponse>()
 
         // allow for some variation on ttl
         val s3 by inject<AmazonS3>()
         val validUrls = mutableListOf<String>()
         for (ttl in 180L..182L) {
             validUrls += s3.generatePresignedUrl(
-                "newm-test",
+                "test-audio",
                 "$songId/test1.mp3",
-                start.plusSeconds(ttl).toDate(),
-                HttpMethod.PUT
-            ).toString()
-        }
-        assertThat(resp.uploadUrl).isIn(validUrls)
-    }
-
-    @Test
-    fun testRequestAgreementUpload() = runBlocking {
-        // Add song directly into database
-        val songId = transaction {
-            SongEntity.new {
-                ownerId = EntityID(testUserId, UserTable)
-                title = testSong1.title!!
-                genres = testSong1.genres!!.toTypedArray()
-                coverArtUrl = testSong1.coverArtUrl
-                description = testSong1.description
-                credits = testSong1.credits
-                duration = testSong1.duration
-                streamUrl = testSong1.streamUrl
-                nftPolicyId = testSong1.nftPolicyId
-                nftName = testSong1.nftName
-                mintingStatus = testSong1.mintingStatus!!
-                marketplaceStatus = testSong1.marketplaceStatus!!
-            }
-        }.id.value
-
-        val start = Instant.now()
-
-        // Request upload
-        val response = client.post("v1/songs/$songId/upload/agreement") {
-            bearerAuth(testUserToken)
-            contentType(ContentType.Application.Json)
-            setBody(UploadRequest("test1.pdf"))
-        }
-        assertThat(response.status).isEqualTo(HttpStatusCode.OK)
-        val resp = response.body<UploadResponse>()
-
-        // allow for some variation on ttl
-        val s3 by inject<AmazonS3>()
-        val validUrls = mutableListOf<String>()
-        for (ttl in 180L..182L) {
-            validUrls += s3.generatePresignedUrl(
-                "newm-test",
-                "$songId/test1.pdf",
                 start.plusSeconds(ttl).toDate(),
                 HttpMethod.PUT
             ).toString()
