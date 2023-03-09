@@ -240,6 +240,43 @@ private fun UtxoOutput.extractStakeAddressOrNull() = if (receiveAddressRegex.mat
     null
 }
 
+fun Block.toCreatedUtxoMap(): Map<String, Set<CreatedUtxo>> = when (this) {
+    is BlockShelley -> shelley.body.associate { transaction ->
+        Pair(
+            transaction.id,
+            transaction.body.outputs.toCreatedUtxoList(transaction.id).toSet()
+        )
+    }
+
+    is BlockAllegra -> allegra.body.associate { transaction ->
+        Pair(
+            transaction.id,
+            transaction.body.outputs.toCreatedUtxoList(transaction.id).toSet()
+        )
+    }
+
+    is BlockMary -> mary.body.associate { transaction ->
+        Pair(
+            transaction.id,
+            transaction.body.outputs.toCreatedUtxoList(transaction.id).toSet()
+        )
+    }
+
+    is BlockAlonzo -> alonzo.body.associate { transaction ->
+        Pair(
+            transaction.id,
+            transaction.body.outputs.toCreatedUtxoList(transaction.id).toSet()
+        )
+    }
+
+    is BlockBabbage -> babbage.body.associate { transaction ->
+        Pair(
+            transaction.id,
+            transaction.body.outputs.toCreatedUtxoList(transaction.id).toSet()
+        )
+    }
+}
+
 fun Block.toCreatedUtxoSet(): Set<CreatedUtxo> = when (this) {
     is BlockShelley -> this.shelley.body.flatMap { txShelley ->
         txShelley.body.outputs.toCreatedUtxoList(txShelley.id)
@@ -262,7 +299,7 @@ fun Block.toCreatedUtxoSet(): Set<CreatedUtxo> = when (this) {
     }.toSet()
 }
 
-private fun List<UtxoOutput>.toCreatedUtxoList(txId: String) = this.mapIndexed { index, utxoOutput ->
+fun List<UtxoOutput>.toCreatedUtxoList(txId: String) = this.mapIndexed { index, utxoOutput ->
     CreatedUtxo(
         address = utxoOutput.address,
         addressType = utxoOutput.address.addressType(),
@@ -279,9 +316,86 @@ private fun List<UtxoOutput>.toCreatedUtxoList(txId: String) = this.mapIndexed {
                 name = entry.key.substringAfter('.', missingDelimiterValue = ""),
                 amount = entry.value,
             )
-        } ?: emptyList(),
+        }.orEmpty(),
         cbor = null, // TODO: fix if we ever need it
     )
+}
+
+fun Block.toSpentUtxoMap(): Map<String, Set<SpentUtxo>> = when (this) {
+    is BlockShelley -> shelley.body.associate { transaction ->
+        Pair(
+            transaction.id,
+            transaction.body.inputs.map { utxoInput ->
+                SpentUtxo(
+                    transactionSpent = transaction.id,
+                    hash = utxoInput.txId,
+                    ix = utxoInput.index,
+                )
+            }.toSet()
+        )
+    }
+
+    is BlockAllegra -> allegra.body.associate { transaction ->
+        Pair(
+            transaction.id,
+            transaction.body.inputs.map { utxoInput ->
+                SpentUtxo(
+                    transactionSpent = transaction.id,
+                    hash = utxoInput.txId,
+                    ix = utxoInput.index,
+                )
+            }.toSet()
+        )
+    }
+
+    is BlockMary -> mary.body.associate { transaction ->
+        Pair(
+            transaction.id,
+            transaction.body.inputs.map { utxoInput ->
+                SpentUtxo(
+                    transactionSpent = transaction.id,
+                    hash = utxoInput.txId,
+                    ix = utxoInput.index,
+                )
+            }.toSet()
+        )
+    }
+
+    is BlockAlonzo -> alonzo.body.associate { transaction ->
+        Pair(
+            transaction.id,
+            if (transaction.inputSource == "inputs") {
+                transaction.body.inputs
+            } else {
+                // tx failed. take the collaterals
+                transaction.body.collaterals
+            }.map { utxoInput ->
+                SpentUtxo(
+                    transactionSpent = transaction.id,
+                    hash = utxoInput.txId,
+                    ix = utxoInput.index,
+                )
+            }.toSet()
+        )
+    }
+
+    is BlockBabbage -> babbage.body.associate { transaction ->
+        Pair(
+            transaction.id,
+            if (transaction.inputSource == "inputs") {
+                transaction.body.inputs
+            } else {
+                // tx failed. take the collaterals
+                transaction.body.collaterals
+            }.map { utxoInput ->
+                SpentUtxo(
+                    transactionSpent = transaction.id,
+                    hash = utxoInput.txId,
+                    ix = utxoInput.index,
+                )
+            }.toSet()
+        )
+    }
 }
 
 fun Block.toSpentUtxoSet(): Set<SpentUtxo> = when (this) {
@@ -472,15 +586,12 @@ private fun extractAssetMetadata(
                             (detailsMetadataValue as? MetadataMap)?.mapNotNull { (keyMetadataValue, valueMetadataValue) ->
                                 buildAssetMetadata(it.id!!, keyMetadataValue, valueMetadataValue, 0)
                             }
-                        } ?: run {
-//                            log.warn("No 721 metadata found for $policyId.$hexName: nativeAssetMetadataSet: $nativeAssetMetadataSet, assetMetadatas: $assetMetadatas")
-                            emptyList()
-                        }
-                    } ?: emptyList()
+                        }.orEmpty()
+                    }.orEmpty()
                 }
-            } ?: emptyList()
-        } ?: emptyList()
-    } ?: emptyList()
+            }.orEmpty()
+        }.orEmpty()
+    }.orEmpty()
 
 private fun buildAssetMetadata(
     assetId: Long,

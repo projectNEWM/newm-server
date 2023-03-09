@@ -5,6 +5,7 @@ import com.google.protobuf.ByteString
 import io.grpc.ManagedChannelBuilder
 import io.grpc.Metadata
 import io.grpc.stub.MetadataUtils
+import io.newm.chain.grpc.MonitorAddressRequest
 import io.newm.chain.grpc.NewmChainGrpcKt
 import io.newm.chain.grpc.QueryUtxosRequest
 import io.newm.chain.grpc.QueryUtxosResponse
@@ -114,5 +115,35 @@ class GrpcTests {
 
         println("utxos: $queryUtxosResponse")
         println("liveUtxos: $queryLiveUtxosResponse")
+    }
+
+    @Test
+    @Disabled
+    fun `test scriptWatching`() = runBlocking {
+        val scriptAddress =
+            "addr_test1xpta3gjhejy2yuc6uddhdmm4xckzk4csg4y9g2ac9nd8awxcns7gfqfjmlcm0mp27f89jwahzs2xrw0vadw56z8rxdrqe8svxm"
+
+        // plainText for localhost testing only. use SSL later.
+        val channel = ManagedChannelBuilder.forAddress("localhost", 3737).usePlaintext().build()
+        val client =
+            NewmChainGrpcKt.NewmChainCoroutineStub(channel).withInterceptors(
+                MetadataUtils.newAttachHeadersInterceptor(
+                    Metadata().apply {
+                        put(
+                            Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER),
+                            "Bearer <JWT_TOKEN_HERE_DO_NOT_COMMIT>"
+                        )
+                    }
+                )
+            )
+        val monitorAddressUtxosRequest = MonitorAddressRequest.newBuilder()
+            .setAddress(scriptAddress)
+            .build()
+
+        val flow = client.monitorAddress(monitorAddressUtxosRequest)
+        flow.collect { monitorAddressUtxosResponse ->
+            println("transaction: $monitorAddressUtxosResponse")
+            println()
+        }
     }
 }

@@ -5,9 +5,18 @@ import io.newm.chain.ledger.SubmittedTransactionCache
 import io.newm.chain.util.toHexString
 import io.newm.kogmios.protocols.messages.SubmitFail
 import io.newm.kogmios.protocols.messages.SubmitSuccess
+import io.newm.kogmios.protocols.model.Block
 import io.newm.objectpool.useInstance
 import io.newm.server.di.inject
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.launch
 import org.koin.core.parameter.parametersOf
+import org.koin.core.qualifier.named
 import org.slf4j.Logger
 
 class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
@@ -15,6 +24,7 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
     private val ledgerRepository: LedgerRepository by inject()
     private val txSubmitClientPool: TxSubmitClientPool by inject()
     private val submittedTransactionCache: SubmittedTransactionCache by inject()
+    private val blockFlow: MutableSharedFlow<Block> by inject(named("blockFlow"))
 
     override suspend fun queryUtxos(request: QueryUtxosRequest): QueryUtxosResponse =
         ledgerRepository.queryUtxos(request.address).toQueryUtxosResponse()
@@ -72,5 +82,41 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                 }
             }
         }
+    }
+
+    override fun monitorAddress(request: MonitorAddressRequest): Flow<MonitorAddressResponse> {
+        log.warn("monitorAddress($request) started.")
+        val responseFlow = MutableSharedFlow<MonitorAddressResponse>(replay = 1)
+        val messageHandlerJob: Job = CoroutineScope(context).launch {
+            try {
+                var startAfterTxId: String? = request.startAfterTxId
+                while (true) {
+                    val monitorAddressResponseList = ledgerRepository.queryAddressTxLogsAfter(
+                        request.address,
+                        startAfterTxId,
+                    ).map {
+                        MonitorAddressResponse.parseFrom(it)
+                    }
+
+                    monitorAddressResponseList.forEach { monitorAddressResponse ->
+                        responseFlow.emit(monitorAddressResponse)
+                    }
+
+                    if (monitorAddressResponseList.isNotEmpty()) {
+                        startAfterTxId = monitorAddressResponseList.last().txId
+                    }
+                    delay(1000L)
+                }
+            } catch (e: Throwable) {
+                if (e !is CancellationException) {
+                    log.error(e.message, e)
+                }
+            }
+        }
+
+        messageHandlerJob.invokeOnCompletion {
+            log.warn("invokeOnCompletion: ${it?.message}")
+        }
+        return responseFlow
     }
 }
