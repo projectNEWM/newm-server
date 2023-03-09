@@ -11,6 +11,7 @@ import io.newm.chain.database.entity.LedgerAssetMetadata
 import io.newm.chain.database.entity.RawTransaction
 import io.newm.chain.database.entity.StakeDelegation
 import io.newm.chain.database.entity.StakeRegistration
+import io.newm.chain.database.table.AddressTxLogTable
 import io.newm.chain.database.table.LedgerAssetMetadataTable
 import io.newm.chain.database.table.LedgerAssetsTable
 import io.newm.chain.database.table.LedgerTable
@@ -621,6 +622,53 @@ class LedgerRepositoryImpl : LedgerRepository {
             ?: throw IllegalArgumentException("Cannot find payer address that funded utxo: ${receivedUtxo.hash}:${receivedUtxo.ix}")
     }
 
+    override fun queryAddressForUtxo(hash: String, ix: Int): String? = transaction {
+        LedgerTable.innerJoin(
+            otherTable = LedgerUtxosTable,
+            onColumn = { LedgerTable.id },
+            otherColumn = { ledgerId }
+        )
+            .slice(LedgerTable.address)
+            .select {
+                (LedgerUtxosTable.txId eq hash) and
+                    (LedgerUtxosTable.txIx eq ix)
+            }.limit(1).firstOrNull()?.let { row -> row[LedgerTable.address] }
+    }
+
+    override fun queryUtxoHavingAddress(address: String, hash: String, ix: Int): Utxo? = transaction {
+        LedgerUtxosTable.innerJoin(LedgerTable, { ledgerId }, { LedgerTable.id }, { LedgerTable.address eq address })
+            .select {
+                (LedgerUtxosTable.txId eq hash) and
+                    (LedgerUtxosTable.txIx eq ix)
+            }.firstOrNull()?.let { row ->
+                val ledgerUtxoId = row[LedgerUtxosTable.id].value
+
+                val nativeAssets = LedgerUtxoAssetsTable.innerJoin(
+                    LedgerAssetsTable,
+                    { ledgerAssetId },
+                    { LedgerAssetsTable.id },
+                    { LedgerUtxoAssetsTable.ledgerUtxoId eq ledgerUtxoId }
+                )
+                    .selectAll().map { naRow ->
+                        NativeAsset(
+                            name = naRow[LedgerAssetsTable.name],
+                            policy = naRow[LedgerAssetsTable.policy],
+                            amount = BigInteger(naRow[LedgerUtxoAssetsTable.amount])
+                        )
+                    }
+
+                Utxo(
+                    hash = row[LedgerUtxosTable.txId],
+                    ix = row[LedgerUtxosTable.txIx].toLong(),
+                    lovelace = BigInteger(row[LedgerUtxosTable.lovelace]),
+                    nativeAssets = nativeAssets,
+                    datumHash = row[LedgerUtxosTable.datumHash],
+                    datum = row[LedgerUtxosTable.datum],
+                    scriptRef = row[LedgerUtxosTable.scriptRef],
+                )
+            }
+    }
+
     override fun createRawTransactions(rawTransactions: List<RawTransaction>) {
         if (rawTransactions.isNotEmpty()) {
             RawTransactionsTable.batchInsert(data = rawTransactions, shouldReturnGeneratedValues = false) {
@@ -633,6 +681,20 @@ class LedgerRepositoryImpl : LedgerRepository {
                 this[RawTransactionsTable.protocolVersionMajor] = it.protocolVersionMajor
                 this[RawTransactionsTable.protocolVersionMinor] = it.protocolVersionMinor
             }
+        }
+    }
+
+    override fun queryAddressTxLogsAfter(address: String, afterTxId: String?): List<ByteArray> = transaction {
+        val afterId: Long = afterTxId?.let {
+            AddressTxLogTable.slice(AddressTxLogTable.id).select {
+                (AddressTxLogTable.address eq address) and (AddressTxLogTable.txId eq it)
+            }.firstOrNull()?.let { row -> row[AddressTxLogTable.id].value } ?: -1L
+        } ?: -1L
+
+        AddressTxLogTable.select {
+            (AddressTxLogTable.address eq address) and (AddressTxLogTable.id greater afterId)
+        }.orderBy(AddressTxLogTable.id).map { row ->
+            row[AddressTxLogTable.monitorAddressResponseBytes]
         }
     }
 

@@ -86,7 +86,7 @@ class JwtAuthorizationServerInterceptor(jwtConfig: ApplicationConfig) : ServerIn
             .withAudience(audience)
             .withIssuer(issuer)
             .withClaim("user", name)
-            .withExpiresAt(Date.from(Instant.now().plus(durationYears, ChronoUnit.YEARS)))
+            .withExpiresAt(Date.from(Instant.now().plus(durationYears * 365, ChronoUnit.DAYS)))
             .withIssuedAt(Date.from(Instant.now()))
             .sign(algorithm)
 

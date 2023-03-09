@@ -44,4 +44,10 @@ interface LedgerRepository {
     fun queryPayerAddress(receivedUtxo: Utxo): String
 
     fun createRawTransactions(rawTransactions: List<RawTransaction>)
+
+    fun queryAddressForUtxo(hash: String, ix: Int): String?
+
+    fun queryUtxoHavingAddress(address: String, hash: String, ix: Int): Utxo?
+
+    fun queryAddressTxLogsAfter(address: String, afterTxId: String?): List<ByteArray>
 }

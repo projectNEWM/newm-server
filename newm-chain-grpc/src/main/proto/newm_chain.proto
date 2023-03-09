@@ -9,6 +9,7 @@ service NewmChain {
   rpc SubmitTransaction (SubmitTransactionRequest) returns (SubmitTransactionResponse) {}
   rpc QueryUtxos (QueryUtxosRequest) returns (QueryUtxosResponse) {}
   rpc QueryLiveUtxos (QueryUtxosRequest) returns (QueryUtxosResponse) {}
+  rpc MonitorAddress (MonitorAddressRequest) returns (stream MonitorAddressResponse) {}
 }
 
 message SubmitTransactionRequest {
@@ -41,4 +42,27 @@ message NativeAsset {
   string name = 1;
   string policy = 2;
   string amount = 3;
+}
+
+message MonitorAddressRequest {
+  string address = 1;
+  string start_after_tx_id = 2;
+}
+
+message MonitorAddressResponse {
+  string tx_id = 1;
+  map<string, string> datums = 2;
+  map<string, Redeemer> redeemers = 3;
+  repeated Utxo created_utxos = 4;
+  repeated Utxo spent_utxos = 5;
+}
+
+message Redeemer {
+  ExecutionUnits execution_units = 1;
+  string redeemer = 2;
+}
+
+message ExecutionUnits {
+  uint64 memory = 1;
+  uint64 steps = 2;
 }

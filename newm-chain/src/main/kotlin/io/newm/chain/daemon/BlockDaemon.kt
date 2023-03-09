@@ -8,17 +8,25 @@ import io.newm.chain.cardano.getEpochForSlot
 import io.newm.chain.config.Config
 import io.newm.chain.database.repository.ChainRepository
 import io.newm.chain.database.repository.LedgerRepository
+import io.newm.chain.database.table.AddressTxLogTable
+import io.newm.chain.grpc.ExecutionUnits
+import io.newm.chain.grpc.MonitorAddressResponse
+import io.newm.chain.grpc.NativeAsset
 import io.newm.chain.grpc.NewmChainService
+import io.newm.chain.grpc.Redeemer
 import io.newm.chain.grpc.SubmitTransactionRequest
+import io.newm.chain.grpc.Utxo
 import io.newm.chain.ledger.SubmittedTransactionCache
 import io.newm.chain.logging.captureToSentry
 import io.newm.chain.model.NativeAssetMetadata
 import io.newm.chain.util.b64ToByteArray
 import io.newm.chain.util.toAssetMetadataList
 import io.newm.chain.util.toChainBlock
+import io.newm.chain.util.toCreatedUtxoMap
 import io.newm.chain.util.toCreatedUtxoSet
 import io.newm.chain.util.toHexString
 import io.newm.chain.util.toRawTransactionList
+import io.newm.chain.util.toSpentUtxoMap
 import io.newm.chain.util.toSpentUtxoSet
 import io.newm.chain.util.toStakeDelegationList
 import io.newm.chain.util.toStakeRegistrationList
@@ -49,16 +57,22 @@ import io.newm.kogmios.protocols.model.OriginString
 import io.newm.kogmios.protocols.model.PointDetail
 import io.newm.kogmios.protocols.model.PointDetailOrOrigin
 import io.newm.server.di.inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
+import org.jetbrains.exposed.sql.batchInsert
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf
 import org.slf4j.Logger
+import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.math.BigInteger
 import java.time.Duration
 import java.time.Instant
+import java.util.*
 import kotlin.math.max
 import kotlin.system.measureTimeMillis
 
@@ -67,6 +81,7 @@ class BlockDaemon(
     private val chainRepository: ChainRepository,
     private val ledgerRepository: LedgerRepository,
     private val submittedTransactionCache: SubmittedTransactionCache,
+    private val blockFlow: MutableSharedFlow<Block>,
 ) : Daemon {
     override val log: Logger by inject { parametersOf("BlockDaemon") }
 
@@ -74,6 +89,9 @@ class BlockDaemon(
     private val port by lazy { environment.config.property("ogmios.port").getString().toInt() }
     private val secure by lazy { environment.config.property("ogmios.secure").getString().toBoolean() }
     private val syncRawTxns by lazy { environment.config.property("newmchain.syncRawTxns").getString().toBoolean() }
+    private val monitorAddresses by lazy {
+        environment.config.property("newmchain.monitorAddresses").getString().split(',').map { it.trim() }
+    }
 
     private val blockBuffer: MutableList<Block> = mutableListOf()
 
@@ -94,6 +112,7 @@ class BlockDaemon(
     override fun start() {
         log.info("starting...")
         startChainSync()
+        startMonitorAddresses()
         log.info("startup complete.")
     }
 
@@ -322,6 +341,8 @@ class BlockDaemon(
                     }
                 }
             }
+            // Emit all these blocks for further processing now that basic ledger entry is done
+            blocksToCommit.forEach { blockFlow.emit(it) }
         }.also { totalTime ->
             val now = Instant.now()
             val tenSecondsAgo = now.minusSeconds(10L)
@@ -561,10 +582,150 @@ class BlockDaemon(
         }
     }
 
+    private fun startMonitorAddresses() {
+        launch {
+            while (true) {
+                try {
+                    log.warn("startMonitorAddresses: $monitorAddresses")
+                    val blockDelayQueue = LinkedList<Block>()
+                    blockFlow.collect { block ->
+                        // Prune any rolled back blocks
+                        blockDelayQueue.removeIf { bdqBlock -> bdqBlock.header.blockHeight >= block.header.blockHeight }
+                        // Add this new block to our queue
+                        blockDelayQueue.add(block)
+                        // Wait for 3 confirmations before processing
+                        if (blockDelayQueue.size > 3) {
+                            val oldestBlock = blockDelayQueue.poll()
+                            val spentUtxoMap = oldestBlock.toSpentUtxoMap()
+                            val createdUtxoMap = oldestBlock.toCreatedUtxoMap()
+                            val transactionIds = spentUtxoMap.keys + createdUtxoMap.keys
+                            val monitorAddressResponsesMap = mutableMapOf<String, MutableList<MonitorAddressResponse>>()
+
+                            transactionIds.forEach { transactionId ->
+                                monitorAddresses.forEach { monitorAddress ->
+                                    val spentAddressUtxos: List<Utxo> =
+                                        spentUtxoMap[transactionId]?.mapNotNull { spentUtxo ->
+                                            ledgerRepository.queryUtxoHavingAddress(
+                                                monitorAddress,
+                                                spentUtxo.hash,
+                                                spentUtxo.ix.toInt()
+                                            )
+                                        }?.map { utxo ->
+                                            Utxo.newBuilder().apply {
+                                                hash = utxo.hash
+                                                ix = utxo.ix
+                                                lovelace = utxo.lovelace.toString()
+                                                utxo.datumHash?.let { datumHash = it }
+                                                utxo.datum?.let { datum = it }
+                                                utxo.nativeAssets.forEach { nativeAsset ->
+                                                    addNativeAssets(
+                                                        NativeAsset.newBuilder().apply {
+                                                            policy = nativeAsset.policy
+                                                            name = nativeAsset.name
+                                                            amount = nativeAsset.amount.toString()
+                                                        }
+                                                    )
+                                                }
+                                            }.build()
+                                        }.orEmpty()
+
+                                    val createdAddressUtxos = createdUtxoMap[transactionId]?.filter { createdUtxo ->
+                                        createdUtxo.address == monitorAddress
+                                    }?.map { utxo ->
+                                        Utxo.newBuilder().apply {
+                                            hash = utxo.hash
+                                            ix = utxo.ix
+                                            lovelace = utxo.lovelace.toString()
+                                            utxo.datumHash?.let { datumHash = it }
+                                            utxo.datum?.let { datum = it }
+                                            utxo.nativeAssets.forEach { nativeAsset ->
+                                                addNativeAssets(
+                                                    NativeAsset.newBuilder().apply {
+                                                        policy = nativeAsset.policy
+                                                        name = nativeAsset.name
+                                                        amount = nativeAsset.amount.toString()
+                                                    }
+                                                )
+                                            }
+                                        }.build()
+                                    }.orEmpty()
+
+                                    if (spentAddressUtxos.isNotEmpty() || createdAddressUtxos.isNotEmpty()) {
+                                        val monitorAddressResponses = monitorAddressResponsesMap[monitorAddress]
+                                            ?: mutableListOf<MonitorAddressResponse>().also {
+                                                monitorAddressResponsesMap[monitorAddress] = it
+                                            }
+                                        monitorAddressResponses.add(
+                                            MonitorAddressResponse
+                                                .newBuilder()
+                                                .setTxId(transactionId)
+                                                .addAllSpentUtxos(spentAddressUtxos)
+                                                .addAllCreatedUtxos(createdAddressUtxos)
+                                                .apply {
+                                                    when (oldestBlock) {
+                                                        is BlockAlonzo -> oldestBlock.alonzo.body.first { it.id == transactionId }.witness
+                                                        is BlockBabbage -> oldestBlock.babbage.body.first { it.id == transactionId }.witness
+                                                        else -> null
+                                                    }?.let { witness ->
+                                                        witness.datums?.let { datums ->
+                                                            putAllDatums(datums)
+                                                        }
+                                                        witness.redeemers?.let { redeemers ->
+                                                            putAllRedeemers(
+                                                                redeemers.entries.associate { (key, txRedeemer) ->
+                                                                    Pair(
+                                                                        key,
+                                                                        Redeemer.newBuilder()
+                                                                            .setRedeemer(txRedeemer.redeemer)
+                                                                            .setExecutionUnits(
+                                                                                ExecutionUnits.newBuilder()
+                                                                                    .setMemory(txRedeemer.executionUnits.memory.toLong())
+                                                                                    .setSteps(txRedeemer.executionUnits.steps.toLong())
+                                                                                    .build()
+                                                                            ).build()
+                                                                    )
+                                                                }
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                                .build()
+                                        )
+                                    }
+                                }
+                            }
+                            transaction {
+                                val batch =
+                                    monitorAddressResponsesMap.flatMap { (monitorAddress, monitorAddressResponsesList) ->
+                                        monitorAddressResponsesList.map {
+                                            Pair(monitorAddress, it)
+                                        }
+                                    }
+                                AddressTxLogTable.batchInsert(
+                                    batch,
+                                    shouldReturnGeneratedValues = false
+                                ) { (monitorAddress, monitorAddressResponse) ->
+                                    this[AddressTxLogTable.address] = monitorAddress
+                                    this[AddressTxLogTable.txId] = monitorAddressResponse.txId
+                                    val bos = ByteArrayOutputStream()
+                                    monitorAddressResponse.writeTo(bos)
+                                    this[AddressTxLogTable.monitorAddressResponseBytes] = bos.toByteArray()
+                                }
+                            }
+                        }
+                    }
+                } catch (e: Throwable) {
+                    if (e !is CancellationException) {
+                        log.error(e.message, e)
+                    }
+                }
+            }
+        }
+    }
+
     companion object {
         private const val RETRY_DELAY_MILLIS = 10_000L
         private const val BLOCK_BUFFER_SIZE = 100
-        private const val FILLED_BLOCK_BUFFER_CAPACITY = 500
         private const val COMMIT_BLOCKS_WARN_LEVEL_MILLIS = 1_000L
         private val NATIVE_ASSET_METADATA_TAG = 721.toBigInteger()
         private val ASSET_NAME_METADATA_TAG = MetadataString("name")
