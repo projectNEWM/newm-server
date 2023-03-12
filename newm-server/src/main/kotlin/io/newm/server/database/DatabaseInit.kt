@@ -30,11 +30,9 @@ fun Application.initializeDatabase() {
         dataSource = ds
         locations = arrayOf("io/newm/server/database/migration")
         commands(
-            *listOf(
-                Info,
-                Migrate,
-                Validate
-            ).toTypedArray()
+            Info,
+            Migrate,
+            Validate
         )
     }
 }

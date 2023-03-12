@@ -77,7 +77,7 @@ fun Routing.createSongRoutes() {
                             requesterId = myUserId,
                             accepted = receive<StreamTokenAgreementRequest>().accepted
                         )
-                        respond(HttpStatusCode.OK)
+                        respond(HttpStatusCode.NoContent)
                     }
                 }
             }
