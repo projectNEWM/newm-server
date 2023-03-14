@@ -123,8 +123,10 @@ class GrpcTests {
         val scriptAddress =
             "addr_test1xpta3gjhejy2yuc6uddhdmm4xckzk4csg4y9g2ac9nd8awxcns7gfqfjmlcm0mp27f89jwahzs2xrw0vadw56z8rxdrqe8svxm"
 
+        val channel =
+            ManagedChannelBuilder.forAddress("newm-chain.cardanostakehouse.com", 3737).useTransportSecurity().build()
         // plainText for localhost testing only. use SSL later.
-        val channel = ManagedChannelBuilder.forAddress("localhost", 3737).usePlaintext().build()
+//        val channel = ManagedChannelBuilder.forAddress("localhost", 3737).usePlaintext().build()
         val client =
             NewmChainGrpcKt.NewmChainCoroutineStub(channel).withInterceptors(
                 MetadataUtils.newAttachHeadersInterceptor(

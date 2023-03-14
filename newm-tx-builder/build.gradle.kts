@@ -3,7 +3,6 @@ plugins {
     id(Dependencies.VersionsPlugin.ID)
     id(Dependencies.KtlintPlugin.ID)
     kotlin(Dependencies.KotlinPlugin.JVM_ID)
-    kotlin(Dependencies.KotlinPlugin.SERIALIZATION_ID)
 }
 
 java.sourceCompatibility = JavaVersion.VERSION_17
@@ -23,6 +22,9 @@ repositories {
 dependencies {
     compileOnly(Dependencies.Kotlin.REFLECTION)
     implementation(Dependencies.Kotlin.STDLIB_JDK8)
+    implementation(Dependencies.Newm.KOGMIOS)
+    implementation(project(":newm-chain-grpc"))
+    implementation(project(":newm-chain-util"))
 
     implementation(Dependencies.Coroutines.CORE)
     implementation(Dependencies.Coroutines.JDK8)
@@ -31,28 +33,8 @@ dependencies {
 
     implementation(Dependencies.LogBack.CLASSIC)
 
-    implementation(project(":newm-chain-util"))
-
-    implementation(Dependencies.Newm.KOGMIOS)
-
-    implementation(Dependencies.Exposed.CORE)
-    implementation(Dependencies.Exposed.DAO)
-    implementation(Dependencies.Exposed.JDBC)
-    implementation(Dependencies.Exposed.TIME)
-
-    implementation(Dependencies.HikariCP.ALL)
-    implementation(Dependencies.PostgreSQL.ALL)
-    implementation(Dependencies.FlywayDB.ALL)
-    implementation(Dependencies.Caffeine.ALL)
-
     implementation(Dependencies.Cbor.CBOR)
-    implementation(Dependencies.ApacheCommonsCodec.ALL)
     implementation(Dependencies.BouncyCastle.BCPROV)
-    implementation(Dependencies.SpringSecurity.CORE) {
-        // We don't care about other spring stuff.
-        // We just like using Encryptors.stronger
-        exclude(group = "org.springframework")
-    }
 
     testImplementation(Dependencies.JUnit.JUPITER)
     testImplementation(Dependencies.Mockk.MOCKK)

@@ -8,6 +8,7 @@ import io.newm.kogmios.protocols.messages.SubmitSuccess
 import io.newm.kogmios.protocols.model.Block
 import io.newm.objectpool.useInstance
 import io.newm.shared.koin.inject
+import io.newm.txbuilder.ktx.cborHexToPlutusData
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -41,7 +42,9 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                         ix = utxo.ix
                         lovelace = utxo.lovelace.toString()
                         utxo.datumHash?.let { datumHash = it }
-                        utxo.datum?.let { datum = it }
+                        utxo.datum?.let {
+                            datum = it.cborHexToPlutusData()
+                        }
                         utxo.nativeAssets.forEach { nativeAsset ->
                             addNativeAssets(
                                 NativeAsset.newBuilder().apply {
