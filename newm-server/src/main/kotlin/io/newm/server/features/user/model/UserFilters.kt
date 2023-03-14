@@ -1,7 +1,9 @@
 package io.newm.server.features.user.model
 
 import io.ktor.server.application.ApplicationCall
-import io.newm.server.ext.*
+import io.newm.server.ext.genres
+import io.newm.server.ext.ids
+import io.newm.server.ext.roles
 import java.util.UUID
 
 data class UserFilters(

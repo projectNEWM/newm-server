@@ -7,9 +7,9 @@ import io.ktor.server.auth.AuthenticationConfig
 import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.auth.jwt.jwt
 import io.newm.server.auth.jwt.repo.JwtRepository
-import io.newm.server.di.inject
-import io.newm.server.ext.getConfigString
-import io.newm.server.ext.toUUID
+import io.newm.shared.koin.inject
+import io.newm.shared.ext.getConfigString
+import io.newm.shared.ext.toUUID
 
 const val AUTH_JWT = "auth-jwt"
 const val AUTH_JWT_REFRESH = "auth-jwt-refresh"

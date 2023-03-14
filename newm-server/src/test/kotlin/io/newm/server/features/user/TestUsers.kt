@@ -1,6 +1,6 @@
 package io.newm.server.features.user
 
-import io.newm.server.auth.password.Password
+import io.newm.shared.auth.Password
 import io.newm.server.features.user.model.User
 
 val testUser1 = User(

@@ -7,8 +7,8 @@ import io.ktor.http.Parameters
 import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.util.logging.Logger
 import io.newm.server.auth.oauth.OAuthType
-import io.newm.server.ext.getConfigChild
-import io.newm.server.ext.getString
+import io.newm.shared.ext.getConfigChild
+import io.newm.shared.ext.getString
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.slf4j.MarkerFactory

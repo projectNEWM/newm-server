@@ -1,8 +1,8 @@
 package io.newm.server.features.user.model
 
 import io.newm.server.auth.oauth.OAuthType
-import io.newm.server.auth.password.Password
-import io.newm.server.serialization.UUIDSerializer
+import io.newm.shared.auth.Password
+import io.newm.shared.serialization.UUIDSerializer
 import kotlinx.serialization.Serializable
 import java.util.UUID
 

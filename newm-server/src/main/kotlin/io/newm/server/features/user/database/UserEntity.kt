@@ -1,8 +1,8 @@
 package io.newm.server.features.user.database
 
 import io.newm.server.auth.oauth.OAuthType
-import io.newm.server.ext.existsHavingId
-import io.newm.server.ext.getId
+import io.newm.shared.ext.existsHavingId
+import io.newm.shared.ext.getId
 import io.newm.server.features.user.model.User
 import io.newm.server.features.user.model.UserFilters
 import io.newm.server.features.user.model.UserVerificationStatus

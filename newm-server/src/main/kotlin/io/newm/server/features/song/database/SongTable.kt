@@ -1,6 +1,6 @@
 package io.newm.server.features.song.database
 
-import io.newm.server.database.exposed.textArray
+import io.newm.shared.exposed.textArray
 import io.newm.server.features.song.model.MarketplaceStatus
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.user.database.UserTable

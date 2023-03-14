@@ -5,8 +5,8 @@ import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.newm.server.BaseApplicationTests
-import io.newm.server.ext.exists
-import io.newm.server.ext.existsHavingId
+import io.newm.shared.ext.exists
+import io.newm.shared.ext.existsHavingId
 import io.newm.server.features.playlist.database.PlaylistEntity
 import io.newm.server.features.playlist.database.PlaylistTable
 import io.newm.server.features.playlist.database.SongsInPlaylistsTable

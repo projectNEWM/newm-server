@@ -1,8 +1,8 @@
 package io.newm.server.features.playlist.repo
 
 import io.ktor.util.logging.*
-import io.newm.server.exception.HttpForbiddenException
-import io.newm.server.exception.HttpUnprocessableEntityException
+import io.newm.shared.exception.HttpForbiddenException
+import io.newm.shared.exception.HttpUnprocessableEntityException
 import io.newm.server.features.playlist.database.PlaylistEntity
 import io.newm.server.features.playlist.model.Playlist
 import io.newm.server.features.playlist.model.PlaylistFilters

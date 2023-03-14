@@ -7,8 +7,8 @@ import io.ktor.http.*
 import io.newm.server.BaseApplicationTests
 import io.newm.server.auth.twofactor.database.TwoFactorAuthEntity
 import io.newm.server.auth.twofactor.database.TwoFactorAuthTable
-import io.newm.server.ext.existsHavingId
-import io.newm.server.ext.toHash
+import io.newm.shared.ext.existsHavingId
+import io.newm.shared.ext.toHash
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
 import io.newm.server.features.user.model.User

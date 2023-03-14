@@ -12,7 +12,7 @@ import io.ktor.server.routing.patch
 import io.ktor.server.routing.put
 import io.ktor.server.routing.route
 import io.newm.server.auth.jwt.AUTH_JWT
-import io.newm.server.di.inject
+import io.newm.shared.koin.inject
 import io.newm.server.ext.identifyUser
 import io.newm.server.ext.limit
 import io.newm.server.ext.offset

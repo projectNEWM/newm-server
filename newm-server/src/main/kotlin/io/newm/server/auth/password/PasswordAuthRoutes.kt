@@ -7,7 +7,7 @@ import io.ktor.server.routing.Routing
 import io.ktor.server.routing.post
 import io.newm.server.auth.AUTH_PATH
 import io.newm.server.auth.jwt.repo.JwtRepository
-import io.newm.server.di.inject
+import io.newm.shared.koin.inject
 import io.newm.server.features.user.repo.UserRepository
 
 fun Routing.createPasswordAuthRoutes() {

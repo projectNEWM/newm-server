@@ -5,8 +5,8 @@ import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.newm.server.BaseApplicationTests
-import io.newm.server.di.inject
-import io.newm.server.ext.toHexString
+import io.newm.shared.koin.inject
+import io.newm.shared.ext.toHexString
 import io.newm.server.features.idenfy.model.IdenfyCreateSessionResponse
 import io.newm.server.features.idenfy.model.IdenfySessionResult
 import io.newm.server.features.user.database.UserEntity

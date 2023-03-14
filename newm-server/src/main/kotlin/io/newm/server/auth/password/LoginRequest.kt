@@ -1,5 +1,6 @@
 package io.newm.server.auth.password
 
+import io.newm.shared.auth.Password
 import kotlinx.serialization.Serializable
 
 @Serializable

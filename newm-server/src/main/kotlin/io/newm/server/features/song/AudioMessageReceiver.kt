@@ -4,9 +4,9 @@ import com.amazonaws.services.sqs.model.Message
 import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.util.logging.Logger
 import io.newm.server.aws.SqsMessageReceiver
-import io.newm.server.di.inject
-import io.newm.server.ext.getConfigString
-import io.newm.server.ext.toUUID
+import io.newm.shared.koin.inject
+import io.newm.shared.ext.getConfigString
+import io.newm.shared.ext.toUUID
 import io.newm.server.features.song.model.AudioMessage
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.repo.SongRepository

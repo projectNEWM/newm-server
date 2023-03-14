@@ -5,8 +5,8 @@ import io.ktor.server.auth.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import io.newm.server.di.inject
-import io.newm.server.ext.getConfigString
+import io.newm.shared.koin.inject
+import io.newm.shared.ext.getConfigString
 import io.newm.server.features.idenfy.model.IdenfyCreateSessionRequest
 import io.newm.server.features.idenfy.model.IdenfyCreateSessionResponse
 

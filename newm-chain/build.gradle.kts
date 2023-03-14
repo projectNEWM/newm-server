@@ -30,6 +30,7 @@ dependencies {
     implementation(project(":newm-chain-db"))
     implementation(project(":newm-chain-grpc"))
     implementation(project(":newm-objectpool"))
+    implementation(project(":newm-shared"))
     implementation(Dependencies.Newm.KOGMIOS)
     implementation(Dependencies.SSLKickstart.PEM)
     implementation(Dependencies.SSLKickstart.NETTY)

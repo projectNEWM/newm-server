@@ -1,7 +1,7 @@
 package io.newm.server.features.idenfy
 
 import io.ktor.server.application.*
-import io.newm.server.ext.getConfigString
+import io.newm.shared.ext.getConfigString
 import io.newm.server.features.idenfy.repo.IdenfyRepository
 import io.newm.server.features.idenfy.repo.IdenfyRepositoryImpl
 import org.koin.core.qualifier.Qualifier

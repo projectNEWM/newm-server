@@ -2,6 +2,7 @@ package io.newm.server.features.song.model
 
 import io.ktor.server.application.ApplicationCall
 import io.newm.server.ext.*
+import io.newm.shared.ext.*
 import java.time.LocalDateTime
 import java.util.UUID
 

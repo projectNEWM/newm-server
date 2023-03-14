@@ -7,7 +7,7 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import com.amazonaws.services.sqs.AmazonSQSAsync
 import com.amazonaws.services.sqs.AmazonSQSAsyncClientBuilder
 import io.ktor.server.application.ApplicationEnvironment
-import io.newm.server.ext.getConfigString
+import io.newm.shared.ext.getConfigString
 import org.koin.dsl.module
 
 val awsKoinModule = module {

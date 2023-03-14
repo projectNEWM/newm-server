@@ -13,12 +13,13 @@ import io.ktor.server.routing.post
 import io.ktor.server.routing.put
 import io.ktor.server.routing.route
 import io.newm.server.auth.jwt.AUTH_JWT
-import io.newm.server.di.inject
 import io.newm.server.ext.*
+import io.newm.shared.koin.inject
 import io.newm.server.features.playlist.model.PlaylistIdBody
 import io.newm.server.features.playlist.model.playlistFilters
 import io.newm.server.features.song.model.SongIdBody
 import io.newm.server.features.playlist.repo.PlaylistRepository
+import io.newm.shared.ext.*
 
 private const val PLAYLISTS_PATH = "v1/playlists"
 
