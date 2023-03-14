@@ -33,9 +33,18 @@ message Utxo {
   string hash = 1;
   sint64 ix = 2;
   string lovelace = 3;
-  string datum_hash = 4;
-  string datum = 5;
+  optional string datum_hash = 4;
+  optional PlutusData datum = 5;
   repeated NativeAsset native_assets = 6;
+}
+
+message OutputUtxo {
+  string address = 1;
+  string lovelace = 2;
+  optional string datum_hash = 3;
+  optional string datum = 4;
+  repeated NativeAsset native_assets = 5;
+  optional string script_ref = 6;
 }
 
 message NativeAsset {
@@ -44,25 +53,112 @@ message NativeAsset {
   string amount = 3;
 }
 
+message SigningKey {
+  bytes skey = 1;
+  bytes vkey = 2;
+}
+
+message Signature {
+  bytes pkh = 1;
+  bytes sig = 2;
+}
+
 message MonitorAddressRequest {
   string address = 1;
   string start_after_tx_id = 2;
 }
 
 message MonitorAddressResponse {
-  string tx_id = 1;
-  map<string, string> datums = 2;
-  map<string, Redeemer> redeemers = 3;
-  repeated Utxo created_utxos = 4;
-  repeated Utxo spent_utxos = 5;
+  uint64 block = 1;
+  uint64 slot = 2;
+  string tx_id = 3;
+  map<string, PlutusData> datums = 4;
+  map<string, Redeemer> redeemers = 5;
+  repeated Utxo created_utxos = 6;
+  repeated Utxo spent_utxos = 7;
 }
 
 message Redeemer {
-  ExecutionUnits execution_units = 1;
-  string redeemer = 2;
+  RedeemerTag tag = 1;
+  uint64 index = 2;
+  PlutusData data = 3;
+  ExUnits ex_units = 4;
 }
 
-message ExecutionUnits {
-  uint64 memory = 1;
+enum RedeemerTag {
+  SPEND = 0;
+  MINT = 1;
+  CERT = 2;
+  REWARD = 3;
+}
+
+message PlutusData {
+  optional string cborHex = 1;
+  optional uint32 constr = 2;
+  oneof plutus_data_wrapper {
+    PlutusDataMap map = 3;
+    PlutusDataList list = 4;
+    uint64 int = 5;
+    bytes bytes = 6;
+  }
+}
+
+message PlutusDataMap {
+  repeated PlutusDataMapItem map_item = 1;
+}
+
+message PlutusDataMapItem {
+  PlutusData map_item_key = 1;
+  PlutusData map_item_value = 2;
+}
+
+message PlutusDataList {
+  repeated PlutusData list_item = 1;
+}
+
+message ExUnits {
+  uint64 mem = 1;
   uint64 steps = 2;
+}
+
+message NativeScript {
+  oneof native_script_wrapper {
+    NativeScriptPubKey native_script_pub_key = 1;
+    NativeScriptAll native_script_all = 2;
+    NativeScriptAny native_script_any = 3;
+    NativeScriptNofK native_script_n_of_k = 4;
+    NativeScriptInvalidBefore native_script_invalid_before = 5;
+    NativeScriptInvalidHereafter native_script_invalid_hereafter = 6;
+  }
+}
+
+message NativeScriptPubKey {
+  // type == 0
+  bytes addr_key_hash = 1;
+}
+
+message NativeScriptAll {
+  // type == 1
+  repeated NativeScript all = 1;
+}
+
+message NativeScriptAny {
+  // type == 2
+  repeated NativeScript any = 1;
+}
+
+message NativeScriptNofK {
+  // type == 3
+  uint32 n = 1;
+  repeated NativeScript k = 2;
+}
+
+message NativeScriptInvalidBefore {
+  // type == 4
+  uint64 absolute_slot = 1;
+}
+
+message NativeScriptInvalidHereafter {
+  // type == 5
+  uint64 absolute_slot = 1;
 }

@@ -2,6 +2,7 @@ package io.newm.chain.daemon
 
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
+import com.google.iot.cbor.CborReader
 import com.google.protobuf.kotlin.toByteString
 import io.ktor.server.application.ApplicationEnvironment
 import io.newm.chain.cardano.getEpochForSlot
@@ -9,17 +10,19 @@ import io.newm.chain.config.Config
 import io.newm.chain.database.repository.ChainRepository
 import io.newm.chain.database.repository.LedgerRepository
 import io.newm.chain.database.table.AddressTxLogTable
-import io.newm.chain.grpc.ExecutionUnits
+import io.newm.chain.grpc.ExUnits
 import io.newm.chain.grpc.MonitorAddressResponse
 import io.newm.chain.grpc.NativeAsset
 import io.newm.chain.grpc.NewmChainService
 import io.newm.chain.grpc.Redeemer
+import io.newm.chain.grpc.RedeemerTag
 import io.newm.chain.grpc.SubmitTransactionRequest
 import io.newm.chain.grpc.Utxo
 import io.newm.chain.ledger.SubmittedTransactionCache
 import io.newm.chain.logging.captureToSentry
 import io.newm.chain.model.NativeAssetMetadata
 import io.newm.chain.util.b64ToByteArray
+import io.newm.chain.util.hexToByteArray
 import io.newm.chain.util.toAssetMetadataList
 import io.newm.chain.util.toChainBlock
 import io.newm.chain.util.toCreatedUtxoMap
@@ -56,8 +59,14 @@ import io.newm.kogmios.protocols.model.MetadataValue
 import io.newm.kogmios.protocols.model.OriginString
 import io.newm.kogmios.protocols.model.PointDetail
 import io.newm.kogmios.protocols.model.PointDetailOrOrigin
-import io.newm.shared.ext.*
+import io.newm.shared.ext.debug
+import io.newm.shared.ext.getConfigBoolean
+import io.newm.shared.ext.getConfigInt
+import io.newm.shared.ext.getConfigSplitStrings
+import io.newm.shared.ext.getConfigString
 import io.newm.shared.koin.inject
+import io.newm.txbuilder.ktx.cborHexToPlutusData
+import io.newm.txbuilder.ktx.toPlutusData
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
@@ -615,7 +624,9 @@ class BlockDaemon(
                                                 ix = utxo.ix
                                                 lovelace = utxo.lovelace.toString()
                                                 utxo.datumHash?.let { datumHash = it }
-                                                utxo.datum?.let { datum = it }
+                                                utxo.datum?.let {
+                                                    datum = it.cborHexToPlutusData()
+                                                }
                                                 utxo.nativeAssets.forEach { nativeAsset ->
                                                     addNativeAssets(
                                                         NativeAsset.newBuilder().apply {
@@ -636,7 +647,9 @@ class BlockDaemon(
                                             ix = utxo.ix
                                             lovelace = utxo.lovelace.toString()
                                             utxo.datumHash?.let { datumHash = it }
-                                            utxo.datum?.let { datum = it }
+                                            utxo.datum?.let {
+                                                datum = it.cborHexToPlutusData()
+                                            }
                                             utxo.nativeAssets.forEach { nativeAsset ->
                                                 addNativeAssets(
                                                     NativeAsset.newBuilder().apply {
@@ -657,6 +670,8 @@ class BlockDaemon(
                                         monitorAddressResponses.add(
                                             MonitorAddressResponse
                                                 .newBuilder()
+                                                .setBlock(oldestBlock.header.blockHeight)
+                                                .setSlot(oldestBlock.header.slot)
                                                 .setTxId(transactionId)
                                                 .addAllSpentUtxos(spentAddressUtxos)
                                                 .addAllCreatedUtxos(createdAddressUtxos)
@@ -667,21 +682,53 @@ class BlockDaemon(
                                                         else -> null
                                                     }?.let { witness ->
                                                         witness.datums?.let { datums ->
-                                                            putAllDatums(datums)
+                                                            putAllDatums(
+                                                                datums.entries.associate { entry ->
+                                                                    Pair(
+                                                                        entry.key,
+                                                                        entry.value.cborHexToPlutusData(),
+                                                                    )
+                                                                }
+                                                            )
                                                         }
                                                         witness.redeemers?.let { redeemers ->
                                                             putAllRedeemers(
                                                                 redeemers.entries.associate { (key, txRedeemer) ->
+                                                                    // log.debug("key, txRedeemer.redeemer: $key, ${txRedeemer.redeemer}")
+                                                                    val txRedeemerCbor = CborReader
+                                                                        .createFromByteArray(txRedeemer.redeemer.hexToByteArray())
+                                                                        .readDataItem()
+                                                                    val (redeemerTag, redeemerIndex) = key.split(":")
+                                                                        .let {
+                                                                            Pair(
+                                                                                when (it[0]) {
+                                                                                    "spend" -> RedeemerTag.SPEND
+                                                                                    "mint" -> RedeemerTag.MINT
+                                                                                    "certificate" -> RedeemerTag.CERT
+                                                                                    "withdrawal" -> RedeemerTag.REWARD
+                                                                                    else -> throw IllegalArgumentException(
+                                                                                        "Unknown redeemer tag"
+                                                                                    )
+                                                                                },
+                                                                                it[1].toLong()
+                                                                            )
+                                                                        }
+
+                                                                    val plutusData =
+                                                                        txRedeemerCbor.toPlutusData(txRedeemer.redeemer)
+                                                                    val exUnits = ExUnits.newBuilder()
+                                                                        .setMem(txRedeemer.executionUnits.memory.toLong())
+                                                                        .setSteps(txRedeemer.executionUnits.steps.toLong())
+                                                                        .build()
+
                                                                     Pair(
                                                                         key,
                                                                         Redeemer.newBuilder()
-                                                                            .setRedeemer(txRedeemer.redeemer)
-                                                                            .setExecutionUnits(
-                                                                                ExecutionUnits.newBuilder()
-                                                                                    .setMemory(txRedeemer.executionUnits.memory.toLong())
-                                                                                    .setSteps(txRedeemer.executionUnits.steps.toLong())
-                                                                                    .build()
-                                                                            ).build()
+                                                                            .setTag(redeemerTag)
+                                                                            .setIndex(redeemerIndex)
+                                                                            .setData(plutusData)
+                                                                            .setExUnits(exUnits)
+                                                                            .build()
                                                                     )
                                                                 }
                                                             )

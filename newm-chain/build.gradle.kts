@@ -27,11 +27,14 @@ repositories {
 
 dependencies {
     implementation(project(":ktor-grpc"))
+    implementation(project(":newm-chain-util"))
     implementation(project(":newm-chain-db"))
     implementation(project(":newm-chain-grpc"))
+    implementation(project(":newm-tx-builder"))
     implementation(project(":newm-objectpool"))
     implementation(project(":newm-shared"))
     implementation(Dependencies.Newm.KOGMIOS)
+    implementation(Dependencies.Cbor.CBOR)
     implementation(Dependencies.SSLKickstart.PEM)
     implementation(Dependencies.SSLKickstart.NETTY)
 

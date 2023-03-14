@@ -4,7 +4,6 @@ import com.google.iot.cbor.CborArray
 import com.google.iot.cbor.CborByteString
 import com.google.iot.cbor.CborInteger
 import com.google.iot.cbor.CborReader
-import com.muquit.libsodiumjna.SodiumLibrary
 import io.newm.chain.config.Config
 import io.newm.chain.model.CliKey
 import io.newm.chain.model.CliKeyPair
@@ -16,6 +15,12 @@ import io.newm.chain.util.Constants.PAYMENT_ADDRESS_SCRIPT_PREFIX_MAINNET
 import io.newm.chain.util.Constants.PAYMENT_ADDRESS_SCRIPT_PREFIX_TESTNET
 import io.newm.chain.util.hexToByteArray
 import io.newm.chain.util.toHexString
+import org.bouncycastle.crypto.generators.Ed25519KeyPairGenerator
+import org.bouncycastle.crypto.params.Ed25519KeyGenerationParameters
+import org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters
+import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters
+import java.security.SecureRandom
+import kotlin.concurrent.getOrSet
 
 data class Key(
     val id: Long? = null,
@@ -31,14 +36,22 @@ data class Key(
 
         private val scriptPrefixTag = ByteArray(1) { 0x00 }
 
+        private val ed25519KeyPairGenerator = ThreadLocal<Ed25519KeyPairGenerator>()
+
         /**
          * Generate a new random keypair
          */
         fun create(): Key {
-            val ed25519KeyPair = SodiumLibrary.cryptoSignKeyPair()
-            val vkey = ed25519KeyPair.publicKey
+            val keyPairGenerator = ed25519KeyPairGenerator.getOrSet {
+                Ed25519KeyPairGenerator().also {
+                    it.init(Ed25519KeyGenerationParameters(SecureRandom.getInstanceStrong()))
+                }
+            }
+            val ed25519KeyPair = keyPairGenerator.generateKeyPair()
+            val vkey = (ed25519KeyPair.public as Ed25519PublicKeyParameters).encoded
+            val skey = (ed25519KeyPair.private as Ed25519PrivateKeyParameters).encoded
             return Key(
-                skey = ed25519KeyPair.privateKey.sliceArray(0..31),
+                skey = skey,
                 vkey = vkey.toHexString(),
                 address = vkeyToAddress(vkey),
                 script = null,

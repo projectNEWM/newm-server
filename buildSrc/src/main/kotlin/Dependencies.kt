@@ -42,7 +42,7 @@ object Dependencies {
     }
 
     object KotlinXSerialization {
-        private const val VERSION = "1.4.1"
+        private const val VERSION = "1.5.0"
 
         const val JSON = "org.jetbrains.kotlinx:kotlinx-serialization-json:$VERSION"
     }
@@ -62,7 +62,7 @@ object Dependencies {
     }
 
     object Ktor {
-        private const val VERSION = "2.2.3"
+        private const val VERSION = "2.2.4"
 
         const val SERVER_CORE = "io.ktor:ktor-server-core:$VERSION"
         const val SERVER_CIO = "io.ktor:ktor-server-cio:$VERSION"
@@ -116,7 +116,7 @@ object Dependencies {
     }
 
     object PostgreSQL {
-        private const val VERSION = "42.5.3"
+        private const val VERSION = "42.5.4"
 
         const val ALL = "org.postgresql:postgresql:$VERSION"
     }
@@ -128,13 +128,13 @@ object Dependencies {
     }
 
     object FlywayDB {
-        private const val VERSION = "9.14.1"
+        private const val VERSION = "9.15.2"
 
         const val ALL = "org.flywaydb:flyway-core:$VERSION"
     }
 
     object Caffeine {
-        private const val VERSION = "3.1.2"
+        private const val VERSION = "3.1.5"
 
         const val ALL = "com.github.ben-manes.caffeine:caffeine:$VERSION"
     }
@@ -166,7 +166,7 @@ object Dependencies {
     }
 
     object SpringSecurity {
-        private const val VERSION = "6.0.0"
+        private const val VERSION = "6.0.2"
 
         const val CORE = "org.springframework.security:spring-security-core:$VERSION"
     }
@@ -179,7 +179,7 @@ object Dependencies {
     }
 
     object Aws {
-        private const val VERSION = "1.12.405"
+        private const val VERSION = "1.12.426"
 
         const val BOM = "com.amazonaws:aws-java-sdk-bom:$VERSION"
         const val S3 = "com.amazonaws:aws-java-sdk-s3"
@@ -190,12 +190,6 @@ object Dependencies {
         private const val VERSION = "5.9.2"
 
         const val JUPITER = "org.junit.jupiter:junit-jupiter:$VERSION"
-    }
-
-    object LibSodiumJNA {
-        private const val VERSION = "1.1.0-NEWM"
-
-        const val SODIUM = "io.newm:com.muquit.libsodiumjna.libsodium-jna:$VERSION"
     }
 
     object Cbor {
@@ -217,7 +211,7 @@ object Dependencies {
     }
 
     object Sentry {
-        private const val VERSION = "6.13.1"
+        private const val VERSION = "6.15.0"
 
         const val CORE = "io.sentry:sentry:$VERSION"
         const val LOGBACK = "io.sentry:sentry-logback:$VERSION"
@@ -247,7 +241,7 @@ object Dependencies {
     }
 
     object Protobuf {
-        private const val VERSION = "3.21.12"
+        private const val VERSION = "3.22.2"
 
         const val JAVA_UTIL = "com.google.protobuf:protobuf-java-util:$VERSION"
         const val KOTLIN = "com.google.protobuf:protobuf-kotlin:$VERSION"
@@ -255,7 +249,7 @@ object Dependencies {
     }
 
     object SSLKickstart {
-        private const val VERSION = "7.4.9"
+        private const val VERSION = "7.4.11"
 
         const val PEM = "io.github.hakky54:sslcontext-kickstart-for-pem:$VERSION"
         const val NETTY = "io.github.hakky54:sslcontext-kickstart-for-netty:$VERSION"
