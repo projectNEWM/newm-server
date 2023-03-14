@@ -6,7 +6,7 @@ import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.application.log
 import io.ktor.server.plugins.cors.routing.CORS
-import io.newm.server.ext.getConfigSplitStrings
+import io.newm.shared.ext.getConfigSplitStrings
 
 fun Application.installCORS() {
     install(CORS) {

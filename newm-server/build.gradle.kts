@@ -19,10 +19,12 @@ application {
 }
 
 dependencies {
+    implementation(project(":newm-shared"))
+    implementation(project(":newm-chain-grpc"))
+
     compileOnly(Dependencies.Kotlin.REFLECTION)
     implementation(Dependencies.Kotlin.STDLIB_JDK8)
 
-    implementation(project(":newm-chain-grpc"))
     implementation(Dependencies.Grpc.NETTY)
 
     implementation(Dependencies.Coroutines.CORE)

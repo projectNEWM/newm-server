@@ -1,7 +1,7 @@
 package io.newm.server.logging
 
 import io.ktor.server.application.Application
-import io.newm.server.ext.getConfigString
+import io.newm.shared.ext.getConfigString
 import io.sentry.Sentry
 
 fun Application.initializeSentry() {

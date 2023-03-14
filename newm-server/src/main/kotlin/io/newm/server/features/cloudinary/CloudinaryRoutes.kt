@@ -8,8 +8,8 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.Routing
 import io.ktor.server.routing.post
 import io.newm.server.auth.jwt.AUTH_JWT
-import io.newm.server.di.inject
-import io.newm.server.ext.value
+import io.newm.shared.koin.inject
+import io.newm.shared.ext.value
 import io.newm.server.features.cloudinary.model.CloudinarySignResponse
 import java.time.Instant
 import kotlinx.serialization.json.JsonPrimitive

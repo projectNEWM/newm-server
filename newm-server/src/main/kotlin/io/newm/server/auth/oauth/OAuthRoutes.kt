@@ -9,8 +9,8 @@ import io.newm.server.auth.AUTH_PATH
 import io.newm.server.auth.jwt.repo.JwtRepository
 import io.newm.server.auth.oauth.repo.OAuthRepository
 import io.newm.server.auth.password.createLoginResponse
-import io.newm.server.di.inject
-import io.newm.server.exception.HttpBadRequestException
+import io.newm.shared.koin.inject
+import io.newm.shared.exception.HttpBadRequestException
 import io.newm.server.features.user.repo.UserRepository
 
 fun Routing.createOAuthRoutes(type: OAuthType) {

@@ -6,10 +6,10 @@ import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.util.logging.Logger
 import io.newm.server.auth.jwt.JwtType
 import io.newm.server.auth.jwt.database.JwtEntity
-import io.newm.server.ext.existsHavingId
-import io.newm.server.ext.getConfigLong
-import io.newm.server.ext.getConfigString
-import io.newm.server.ext.toDate
+import io.newm.shared.ext.existsHavingId
+import io.newm.shared.ext.getConfigLong
+import io.newm.shared.ext.getConfigString
+import io.newm.shared.ext.toDate
 import io.newm.server.features.user.database.UserTable
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.transactions.transaction

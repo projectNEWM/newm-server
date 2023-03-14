@@ -5,12 +5,12 @@ import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.server.application.ApplicationEnvironment
-import io.newm.server.ext.*
 import io.newm.server.features.idenfy.model.IdenfyCreateSessionRequest
 import io.newm.server.features.idenfy.model.IdenfyCreateSessionResponse
 import io.newm.server.features.idenfy.model.IdenfySessionResult
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.model.UserVerificationStatus
+import io.newm.shared.ext.*
 import org.apache.commons.mail.DefaultAuthenticator
 import org.apache.commons.mail.HtmlEmail
 import org.jetbrains.exposed.sql.transactions.transaction

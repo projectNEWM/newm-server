@@ -56,7 +56,11 @@ import io.newm.kogmios.protocols.model.MetadataValue
 import io.newm.kogmios.protocols.model.OriginString
 import io.newm.kogmios.protocols.model.PointDetail
 import io.newm.kogmios.protocols.model.PointDetailOrOrigin
-import io.newm.server.di.inject
+import io.newm.shared.ext.getConfigBoolean
+import io.newm.shared.ext.getConfigInt
+import io.newm.shared.ext.getConfigSplitStrings
+import io.newm.shared.ext.getConfigString
+import io.newm.shared.koin.inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
@@ -85,12 +89,12 @@ class BlockDaemon(
 ) : Daemon {
     override val log: Logger by inject { parametersOf("BlockDaemon") }
 
-    private val server by lazy { environment.config.property("ogmios.server").getString() }
-    private val port by lazy { environment.config.property("ogmios.port").getString().toInt() }
-    private val secure by lazy { environment.config.property("ogmios.secure").getString().toBoolean() }
-    private val syncRawTxns by lazy { environment.config.property("newmchain.syncRawTxns").getString().toBoolean() }
+    private val server by lazy { environment.getConfigString("ogmios.server") }
+    private val port by lazy { environment.getConfigInt("ogmios.port") }
+    private val secure by lazy { environment.getConfigBoolean("ogmios.secure") }
+    private val syncRawTxns by lazy { environment.getConfigBoolean("newmchain.syncRawTxns") }
     private val monitorAddresses by lazy {
-        environment.config.property("newmchain.monitorAddresses").getString().split(',').map { it.trim() }
+        environment.getConfigSplitStrings("newmchain.monitorAddresses")
     }
 
     private val blockBuffer: MutableList<Block> = mutableListOf()

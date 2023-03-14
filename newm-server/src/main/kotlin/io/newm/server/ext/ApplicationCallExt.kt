@@ -6,7 +6,11 @@ import io.ktor.server.auth.jwt.*
 import io.ktor.server.request.*
 import io.ktor.utils.io.*
 import io.ktor.utils.io.bits.*
-import io.newm.server.exception.HttpUnauthorizedException
+import io.newm.shared.exception.HttpUnauthorizedException
+import io.newm.shared.ext.splitAndTrim
+import io.newm.shared.ext.toHexString
+import io.newm.shared.ext.toLocalDateTime
+import io.newm.shared.ext.toUUID
 import java.nio.ByteBuffer
 import java.security.Key
 import java.time.LocalDateTime

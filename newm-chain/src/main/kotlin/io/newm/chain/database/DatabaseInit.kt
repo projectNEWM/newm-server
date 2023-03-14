@@ -8,24 +8,25 @@ import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import io.ktor.server.application.*
 import io.newm.chain.config.Config
+import io.newm.shared.ext.getConfigString
 import org.jetbrains.exposed.sql.Database
 import java.util.*
 
 fun Application.initializeDatabase() {
     // Init database key encryptor
-    Config.S = environment.config.property("database.s").getString()
-    Config.spendingPassword = environment.config.property("database.spendingPassword").getString()
-    Config.shelleyGenesisHash = environment.config.property("database.shelleyGenesisHash").getString()
+    Config.S = environment.getConfigString("database.s")
+    Config.spendingPassword = environment.getConfigString("database.spendingPassword")
+    Config.shelleyGenesisHash = environment.getConfigString("database.shelleyGenesisHash")
 
     val ds = HikariDataSource(
         HikariConfig(
             Properties().apply {
-                this["dataSourceClassName"] = environment.config.property("database.dataSourceClassName").getString()
-                this["dataSource.user"] = environment.config.property("database.username").getString()
-                this["dataSource.password"] = environment.config.property("database.password").getString()
-                this["dataSource.databaseName"] = environment.config.property("database.name").getString()
-                this["dataSource.portNumber"] = environment.config.property("database.port").getString()
-                this["dataSource.serverName"] = environment.config.property("database.server").getString()
+                this["dataSourceClassName"] = environment.getConfigString("database.dataSourceClassName")
+                this["dataSource.user"] = environment.getConfigString("database.username")
+                this["dataSource.password"] = environment.getConfigString("database.password")
+                this["dataSource.databaseName"] = environment.getConfigString("database.name")
+                this["dataSource.portNumber"] = environment.getConfigString("database.port")
+                this["dataSource.serverName"] = environment.getConfigString("database.server")
                 this["autoCommit"] = false
                 this["transactionIsolation"] = "TRANSACTION_REPEATABLE_READ"
                 this["connectionTimeout"] = 40_000L

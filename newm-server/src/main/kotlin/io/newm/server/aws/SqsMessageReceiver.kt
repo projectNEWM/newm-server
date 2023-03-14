@@ -7,9 +7,9 @@ import com.amazonaws.services.sqs.model.ReceiveMessageRequest
 import com.amazonaws.services.sqs.model.ReceiveMessageResult
 import io.ktor.server.config.ApplicationConfig
 import io.ktor.util.logging.Logger
-import io.newm.server.di.inject
-import io.newm.server.ext.getInt
-import io.newm.server.ext.getString
+import io.newm.shared.koin.inject
+import io.newm.shared.ext.getInt
+import io.newm.shared.ext.getString
 import org.slf4j.MarkerFactory
 import kotlin.reflect.full.primaryConstructor
 

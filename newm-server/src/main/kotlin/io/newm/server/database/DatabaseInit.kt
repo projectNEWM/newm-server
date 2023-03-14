@@ -6,7 +6,7 @@ import com.viartemev.ktor.flyway.Migrate
 import com.viartemev.ktor.flyway.Validate
 import com.zaxxer.hikari.HikariDataSource
 import io.ktor.server.application.*
-import io.newm.server.ext.getConfigString
+import io.newm.shared.ext.getConfigString
 import org.jetbrains.exposed.sql.Database
 
 fun Application.initializeDatabase() {

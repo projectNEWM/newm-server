@@ -16,7 +16,7 @@ import io.ktor.server.config.ApplicationConfig
 import io.ktor.utils.io.core.toByteArray
 import io.newm.chain.database.entity.User
 import io.newm.chain.database.repository.UsersRepository
-import io.newm.server.di.inject
+import io.newm.shared.koin.inject
 import org.koin.core.parameter.parametersOf
 import org.slf4j.Logger
 import java.security.MessageDigest

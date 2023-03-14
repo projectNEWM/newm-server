@@ -1,7 +1,7 @@
 package io.newm.server.features.song.database
 
-import io.newm.server.database.exposed.overlaps
-import io.newm.server.database.exposed.unnest
+import io.newm.shared.exposed.overlaps
+import io.newm.shared.exposed.unnest
 import io.newm.server.features.song.model.MarketplaceStatus
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Song

@@ -7,14 +7,17 @@ import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.*
 import io.newm.server.auth.jwt.AUTH_JWT
-import io.newm.server.di.inject
-import io.newm.server.ext.*
+import io.newm.shared.koin.inject
 import io.newm.server.features.song.model.SongIdBody
 import io.newm.server.features.song.model.StreamTokenAgreementRequest
 import io.newm.server.features.song.model.UploadAudioRequest
 import io.newm.server.features.song.model.UploadAudioResponse
 import io.newm.server.features.song.model.songFilters
 import io.newm.server.features.song.repo.SongRepository
+import io.newm.server.ext.limit
+import io.newm.server.ext.myUserId
+import io.newm.server.ext.offset
+import io.newm.server.ext.songId
 
 private const val SONGS_PATH = "v1/songs"
 

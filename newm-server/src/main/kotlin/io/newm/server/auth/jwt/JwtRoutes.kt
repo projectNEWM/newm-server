@@ -8,7 +8,7 @@ import io.ktor.server.routing.get
 import io.newm.server.auth.AUTH_PATH
 import io.newm.server.auth.jwt.repo.JwtRepository
 import io.newm.server.auth.password.createLoginResponse
-import io.newm.server.di.inject
+import io.newm.shared.koin.inject
 import io.newm.server.ext.jwtId
 import io.newm.server.ext.jwtPrincipal
 import io.newm.server.ext.myUserId

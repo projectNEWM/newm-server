@@ -1,7 +1,7 @@
 package io.newm.server.features.user.repo
 
 import io.newm.server.auth.oauth.OAuthType
-import io.newm.server.auth.password.Password
+import io.newm.shared.auth.Password
 import io.newm.server.features.user.model.User
 import io.newm.server.features.user.model.UserFilters
 import java.util.UUID

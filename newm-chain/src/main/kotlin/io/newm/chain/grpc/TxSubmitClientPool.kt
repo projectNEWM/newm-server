@@ -6,7 +6,7 @@ import io.newm.kogmios.TxSubmitClient
 import io.newm.kogmios.createTxSubmitClient
 import io.newm.kogmios.protocols.model.InstantQueryResult
 import io.newm.objectpool.DefaultPool
-import io.newm.server.di.inject
+import io.newm.shared.koin.inject
 import org.koin.core.parameter.parametersOf
 import org.slf4j.Logger
 

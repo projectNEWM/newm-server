@@ -7,7 +7,7 @@ import io.newm.kogmios.protocols.messages.SubmitFail
 import io.newm.kogmios.protocols.messages.SubmitSuccess
 import io.newm.kogmios.protocols.model.Block
 import io.newm.objectpool.useInstance
-import io.newm.server.di.inject
+import io.newm.shared.koin.inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job

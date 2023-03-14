@@ -7,9 +7,9 @@ import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.newm.server.BaseApplicationTests
-import io.newm.server.di.inject
-import io.newm.server.ext.existsHavingId
-import io.newm.server.ext.toDate
+import io.newm.shared.koin.inject
+import io.newm.shared.ext.existsHavingId
+import io.newm.shared.ext.toDate
 import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.database.SongTable
 import io.newm.server.features.song.model.MarketplaceStatus

@@ -3,7 +3,7 @@ package io.newm.server.auth.twofactor.repo
 import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.util.logging.Logger
 import io.newm.server.auth.twofactor.database.TwoFactorAuthEntity
-import io.newm.server.ext.*
+import io.newm.shared.ext.*
 import org.apache.commons.mail.DefaultAuthenticator
 import org.apache.commons.mail.HtmlEmail
 import org.jetbrains.exposed.sql.transactions.transaction

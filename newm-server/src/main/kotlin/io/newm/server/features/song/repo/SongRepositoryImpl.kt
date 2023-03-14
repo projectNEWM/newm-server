@@ -4,14 +4,14 @@ import com.amazonaws.HttpMethod
 import com.amazonaws.services.s3.AmazonS3
 import io.ktor.server.application.*
 import io.ktor.util.logging.*
-import io.newm.server.exception.HttpForbiddenException
-import io.newm.server.exception.HttpUnprocessableEntityException
-import io.newm.server.ext.*
+import io.newm.shared.exception.HttpForbiddenException
+import io.newm.shared.exception.HttpUnprocessableEntityException
 import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongFilters
 import io.newm.server.features.user.database.UserTable
+import io.newm.shared.ext.*
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.MarkerFactory
