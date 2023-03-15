@@ -10,32 +10,29 @@ import io.newm.shared.exception.HttpForbiddenException
 import io.newm.shared.exception.HttpNotFoundException
 import io.newm.shared.exception.HttpUnauthorizedException
 import io.newm.shared.exception.HttpUnprocessableEntityException
-import io.newm.shared.ext.existsHavingId
-import io.newm.shared.ext.isValidEmail
-import io.newm.shared.ext.isValidPassword
-import io.newm.shared.ext.isValidUrl
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.model.User
 import io.newm.server.features.user.model.UserFilters
 import io.newm.server.features.user.oauth.providers.FacebookUserProvider
 import io.newm.server.features.user.oauth.providers.GoogleUserProvider
 import io.newm.server.features.user.oauth.providers.LinkedInUserProvider
+import io.newm.shared.ext.*
+import io.newm.shared.koin.inject
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.slf4j.MarkerFactory
+import org.koin.core.parameter.parametersOf
 import java.util.UUID
 
 internal class UserRepositoryImpl(
-    private val logger: Logger,
     private val googleUserProvider: GoogleUserProvider,
     private val facebookUserProvider: FacebookUserProvider,
     private val linkedInUserProvider: LinkedInUserProvider,
     private val twoFactorAuthRepository: TwoFactorAuthRepository
 ) : UserRepository {
 
-    private val marker = MarkerFactory.getMarker(javaClass.simpleName)
+    private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
 
     override suspend fun add(user: User) {
-        logger.debug(marker, "add: user = $user")
+        logger.debug { "add: user = $user" }
 
         val pictureUrl = user.pictureUrl?.asValidUrl()
         val email = user.email.asValidEmail().asVerifiedEmail(user.authCode)
@@ -58,7 +55,7 @@ internal class UserRepositoryImpl(
     }
 
     override suspend fun find(email: String, password: Password): UUID {
-        logger.debug(marker, "find: email = $email")
+        logger.debug { "find: email = $email" }
         return transaction {
             val entity = getUserEntityByEmail(email)
             password.checkAuth(entity.passwordHash)
@@ -67,14 +64,14 @@ internal class UserRepositoryImpl(
     }
 
     override suspend fun findOrAdd(oauthType: OAuthType, oauthAccessToken: String): UUID {
-        logger.debug(marker, "findOrAdd: oauthType = $oauthType")
+        logger.debug { "findOrAdd: oauthType = $oauthType" }
 
         val user = when (oauthType) {
             OAuthType.Google -> googleUserProvider.getUser(oauthAccessToken)
             OAuthType.Facebook -> facebookUserProvider.getUser(oauthAccessToken)
             OAuthType.LinkedIn -> linkedInUserProvider.getUser(oauthAccessToken)
         }
-        logger.debug(marker, "findOrAdd: oauthUser = $user")
+        logger.debug { "findOrAdd: oauthUser = $user" }
 
         val pictureUrl = user.pictureUrl?.asValidUrl()
         val email = user.email.asValidEmail()
@@ -102,14 +99,14 @@ internal class UserRepositoryImpl(
     }
 
     override suspend fun get(userId: UUID, includeAll: Boolean): User {
-        logger.debug(marker, "get: userId = $userId, includeAll = $includeAll")
+        logger.debug { "get: userId = $userId, includeAll = $includeAll" }
         return transaction {
             UserEntity[userId].toModel(includeAll)
         }
     }
 
     override suspend fun getAll(filters: UserFilters, offset: Int, limit: Int): List<User> {
-        logger.debug(marker, "getAll: filters = $filters, offset = $offset, limit = $limit")
+        logger.debug { "getAll: filters = $filters, offset = $offset, limit = $limit" }
         return transaction {
             UserEntity.all(filters)
                 .limit(n = limit, offset = offset.toLong())
@@ -118,7 +115,7 @@ internal class UserRepositoryImpl(
     }
 
     override suspend fun update(userId: UUID, user: User) {
-        logger.debug(marker, "update: userId = $userId, user = $user")
+        logger.debug { "update: userId = $userId, user = $user" }
 
         val pictureUrl = user.pictureUrl?.asValidUrl()
         val email = user.email?.asValidEmail()?.asVerifiedEmail(user.authCode)
@@ -145,7 +142,7 @@ internal class UserRepositoryImpl(
     }
 
     override suspend fun recover(user: User) {
-        logger.debug(marker, "recover: user = $user")
+        logger.debug { "recover: user = $user" }
 
         val email = user.email.asValidEmail().asVerifiedEmail(user.authCode)
         val passwordHash = user.newPassword.asValidPassword(user.confirmPassword).toHash()
@@ -158,7 +155,7 @@ internal class UserRepositoryImpl(
     }
 
     override suspend fun delete(userId: UUID) {
-        logger.debug(marker, "delete: userId = $userId")
+        logger.debug { "delete: userId = $userId" }
         transaction {
             UserEntity[userId].delete()
         }

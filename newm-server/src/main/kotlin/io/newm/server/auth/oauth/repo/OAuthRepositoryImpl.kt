@@ -7,11 +7,13 @@ import io.ktor.http.Parameters
 import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.util.logging.Logger
 import io.newm.server.auth.oauth.OAuthType
+import io.newm.shared.ext.debug
 import io.newm.shared.ext.getConfigChild
 import io.newm.shared.ext.getString
+import io.newm.shared.koin.inject
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.slf4j.MarkerFactory
+import org.koin.core.parameter.parametersOf
 
 @Serializable
 private data class TokenResponse(
@@ -22,12 +24,11 @@ private data class TokenResponse(
 class OAuthRepositoryImpl(
     private val environment: ApplicationEnvironment,
     private val httpClient: HttpClient,
-    private val logger: Logger
 ) : OAuthRepository {
-    private val marker = MarkerFactory.getMarker(javaClass.simpleName)
+    private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
 
     override suspend fun getAccessToken(type: OAuthType, code: String, redirectUri: String): String {
-        logger.debug(marker, "getAccessToken: type = $type, redirectUri=$redirectUri")
+        logger.debug { "getAccessToken: type = $type, redirectUri=$redirectUri" }
 
         val config = environment.getConfigChild("oauth.${type.name.lowercase()}")
         return httpClient.submitForm(

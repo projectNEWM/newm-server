@@ -5,5 +5,5 @@ import io.newm.server.features.playlist.repo.PlaylistRepositoryImpl
 import org.koin.dsl.module
 
 val playlistKoinModule = module {
-    single<PlaylistRepository> { PlaylistRepositoryImpl(get()) }
+    single<PlaylistRepository> { PlaylistRepositoryImpl() }
 }

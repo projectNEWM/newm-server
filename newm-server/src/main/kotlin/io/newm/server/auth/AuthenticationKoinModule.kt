@@ -9,7 +9,7 @@ import io.newm.server.auth.twofactor.repo.TwoFactorAuthRepositoryImpl
 import org.koin.dsl.module
 
 val authKoinModule = module {
-    single<TwoFactorAuthRepository> { TwoFactorAuthRepositoryImpl(get(), get()) }
-    single<OAuthRepository> { OAuthRepositoryImpl(get(), get(), get()) }
-    single<JwtRepository> { JwtRepositoryImpl(get(), get()) }
+    single<TwoFactorAuthRepository> { TwoFactorAuthRepositoryImpl(get()) }
+    single<OAuthRepository> { OAuthRepositoryImpl(get(), get()) }
+    single<JwtRepository> { JwtRepositoryImpl(get()) }
 }

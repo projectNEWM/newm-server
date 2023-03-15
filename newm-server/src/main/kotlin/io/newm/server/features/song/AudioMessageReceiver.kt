@@ -10,21 +10,21 @@ import io.newm.shared.ext.toUUID
 import io.newm.server.features.song.model.AudioMessage
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.repo.SongRepository
+import io.newm.shared.ext.debug
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
-import org.slf4j.MarkerFactory
+import org.koin.core.parameter.parametersOf
 
 class AudioMessageReceiver : SqsMessageReceiver {
     private val repository: SongRepository by inject()
     private val environment: ApplicationEnvironment by inject()
     private val json: Json by inject()
-    private val logger: Logger by inject()
-    private val marker = MarkerFactory.getMarker(javaClass.simpleName)
+    private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
 
     override fun onMessageReceived(message: Message) {
         val msg: AudioMessage = json.decodeFromString(message.body)
-        logger.debug(marker, "Audio job status: ${msg.status}")
+        logger.debug { "Audio job status: ${msg.status}" }
 
         if (msg.status != "COMPLETE") return
 
