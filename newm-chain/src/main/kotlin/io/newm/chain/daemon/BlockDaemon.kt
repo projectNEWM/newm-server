@@ -56,10 +56,7 @@ import io.newm.kogmios.protocols.model.MetadataValue
 import io.newm.kogmios.protocols.model.OriginString
 import io.newm.kogmios.protocols.model.PointDetail
 import io.newm.kogmios.protocols.model.PointDetailOrOrigin
-import io.newm.shared.ext.getConfigBoolean
-import io.newm.shared.ext.getConfigInt
-import io.newm.shared.ext.getConfigSplitStrings
-import io.newm.shared.ext.getConfigString
+import io.newm.shared.ext.*
 import io.newm.shared.koin.inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
@@ -282,9 +279,7 @@ class BlockDaemon(
                                 block.toCreatedUtxoSet().map { createdUtxo -> createdUtxo.hash }.toSet()
                                     .filter { transactionId ->
                                         submittedTransactionCache.get(transactionId)?.also {
-                                            if (log.isDebugEnabled) {
-                                                log.debug("Our transaction $transactionId was seen in a block!")
-                                            }
+                                            log.debug { "Our transaction $transactionId was seen in a block!" }
                                         } != null
                                     }.toSet()
                             checkBlockRollbacks(block.header.blockHeight, ourTransactionIdsInBlock)

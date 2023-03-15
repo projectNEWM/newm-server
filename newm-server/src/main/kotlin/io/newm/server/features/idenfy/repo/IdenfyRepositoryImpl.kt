@@ -11,26 +11,26 @@ import io.newm.server.features.idenfy.model.IdenfySessionResult
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.model.UserVerificationStatus
 import io.newm.shared.ext.*
+import io.newm.shared.koin.inject
 import org.apache.commons.mail.DefaultAuthenticator
 import org.apache.commons.mail.HtmlEmail
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.koin.core.parameter.parametersOf
 import org.slf4j.Logger
-import org.slf4j.MarkerFactory
 import java.util.*
 
 class IdenfyRepositoryImpl(
     private val environment: ApplicationEnvironment,
-    private val httpClient: HttpClient,
-    private val logger: Logger
+    private val httpClient: HttpClient
 ) : IdenfyRepository {
 
-    private val marker = MarkerFactory.getMarker(javaClass.simpleName)
+    private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
     private val messages: Properties by lazy {
         propertiesFromResource("idenfy-messages.properties")
     }
 
     override suspend fun createSession(userId: UUID): IdenfyCreateSessionResponse {
-        logger.debug(marker, "createSession: $userId")
+        logger.debug { "createSession: $userId" }
 
         return with(environment.getConfigChild("idenfy")) {
             httpClient.post(getString("sessionUrl")) {
@@ -45,14 +45,14 @@ class IdenfyRepositoryImpl(
     }
 
     override suspend fun processSessionResult(result: IdenfySessionResult) {
-        logger.debug(marker, "processSessionResult: $result")
+        logger.debug { "processSessionResult: $result" }
 
         val status = when {
             result.isApproved -> UserVerificationStatus.Verified
             !result.isFinal -> UserVerificationStatus.Pending
             else -> UserVerificationStatus.Unverified
         }
-        logger.debug(marker, "processRequest: status = $status")
+        logger.debug { "processRequest: status = $status" }
 
         val email = transaction {
             with(UserEntity[result.clientId.toUUID()]) {
@@ -87,7 +87,7 @@ class IdenfyRepositoryImpl(
                     mismatchTags?.let { codes += it }
                     suspicionReasons?.let { codes += it }
                 }
-                logger.debug(marker, "processRequest: codes = $codes")
+                logger.debug { "processRequest: codes = $codes" }
                 val reasons = codes.joinToString(separator = "<br/><br/>") { code ->
                     "&bull; ${messages.getProperty(code, code)}"
                 }

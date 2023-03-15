@@ -4,23 +4,23 @@ import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.util.logging.Logger
 import io.newm.server.auth.twofactor.database.TwoFactorAuthEntity
 import io.newm.shared.ext.*
+import io.newm.shared.koin.inject
 import org.apache.commons.mail.DefaultAuthenticator
 import org.apache.commons.mail.HtmlEmail
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.slf4j.MarkerFactory
+import org.koin.core.parameter.parametersOf
 import java.security.SecureRandom
 import java.time.LocalDateTime
 
 internal class TwoFactorAuthRepositoryImpl(
-    private val environment: ApplicationEnvironment,
-    private val logger: Logger
+    private val environment: ApplicationEnvironment
 ) : TwoFactorAuthRepository {
 
-    private val marker = MarkerFactory.getMarker(javaClass.simpleName)
+    private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
     private val random = SecureRandom()
 
     override suspend fun sendCode(email: String) {
-        logger.debug(marker, "sendCode: $email")
+        logger.debug { "sendCode: $email" }
 
         val config = environment.getConfigChild("emailAuth")
         val code = random.nextDigitCode(config.getInt("codeSize"))

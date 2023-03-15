@@ -12,22 +12,22 @@ import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongFilters
 import io.newm.server.features.user.database.UserTable
 import io.newm.shared.ext.*
+import io.newm.shared.koin.inject
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.slf4j.MarkerFactory
+import org.koin.core.parameter.parametersOf
 import java.time.Instant
 import java.util.UUID
 
 internal class SongRepositoryImpl(
-    private val logger: Logger,
     private val environment: ApplicationEnvironment,
     private val s3: AmazonS3
 ) : SongRepository {
 
-    private val marker = MarkerFactory.getMarker(javaClass.simpleName)
+    private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
 
     override suspend fun add(song: Song, ownerId: UUID): UUID {
-        logger.debug(marker, "add: song = $song")
+        logger.debug { "add: song = $song" }
         val title = song.title ?: throw HttpUnprocessableEntityException("missing title")
         val genres = song.genres ?: throw HttpUnprocessableEntityException("missing genres")
         return transaction {
@@ -49,7 +49,7 @@ internal class SongRepositoryImpl(
     }
 
     override suspend fun update(songId: UUID, song: Song, requesterId: UUID?) {
-        logger.debug(marker, "update: songId = $songId, song = $song, requesterId = $requesterId")
+        logger.debug { "update: songId = $songId, song = $song, requesterId = $requesterId" }
         transaction {
             val entity = SongEntity[songId]
             requesterId?.let { entity.checkRequester(it) }
@@ -70,7 +70,7 @@ internal class SongRepositoryImpl(
     }
 
     override suspend fun delete(songId: UUID, requesterId: UUID) {
-        logger.debug(marker, "delete: songId = $songId, requesterId = $requesterId")
+        logger.debug { "delete: songId = $songId, requesterId = $requesterId" }
         transaction {
             val entity = SongEntity[songId]
             entity.checkRequester(requesterId)
@@ -79,14 +79,14 @@ internal class SongRepositoryImpl(
     }
 
     override suspend fun get(songId: UUID): Song {
-        logger.debug(marker, "get: songId = $songId")
+        logger.debug { "get: songId = $songId" }
         return transaction {
             SongEntity[songId].toModel()
         }
     }
 
     override suspend fun getAll(filters: SongFilters, offset: Int, limit: Int): List<Song> {
-        logger.debug(marker, "getAll: filters = $filters, offset = $offset, limit = $limit")
+        logger.debug { "getAll: filters = $filters, offset = $offset, limit = $limit" }
         return transaction {
             SongEntity.all(filters)
                 .limit(n = limit, offset = offset.toLong())
@@ -95,7 +95,7 @@ internal class SongRepositoryImpl(
     }
 
     override suspend fun getGenres(filters: SongFilters, offset: Int, limit: Int): List<String> {
-        logger.debug(marker, "getGenres: filters = $filters, offset = $offset, limit = $limit")
+        logger.debug { "getGenres: filters = $filters, offset = $offset, limit = $limit" }
         return transaction {
             SongEntity.genres(filters)
                 .limit(n = limit, offset = offset.toLong())
@@ -108,7 +108,7 @@ internal class SongRepositoryImpl(
         requesterId: UUID,
         fileName: String
     ): String {
-        logger.debug(marker, "generateAudioUploadUrl: songId = $songId, fileName = $fileName")
+        logger.debug { "generateAudioUploadUrl: songId = $songId, fileName = $fileName" }
 
         if ('/' in fileName) throw HttpUnprocessableEntityException("Invalid fileName: $fileName")
 
@@ -130,7 +130,7 @@ internal class SongRepositoryImpl(
     }
 
     override suspend fun processStreamTokenAgreement(songId: UUID, requesterId: UUID, accepted: Boolean) {
-        logger.debug(marker, "processStreamTokenAgreement: songId = $songId, accepted = $accepted")
+        logger.debug { "processStreamTokenAgreement: songId = $songId, accepted = $accepted" }
 
         val bucketName = environment.getConfigString("aws.s3.agreement.bucketName")
         val fileName = environment.getConfigString("aws.s3.agreement.fileName")

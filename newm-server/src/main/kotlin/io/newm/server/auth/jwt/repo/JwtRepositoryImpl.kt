@@ -6,26 +6,23 @@ import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.util.logging.Logger
 import io.newm.server.auth.jwt.JwtType
 import io.newm.server.auth.jwt.database.JwtEntity
-import io.newm.shared.ext.existsHavingId
-import io.newm.shared.ext.getConfigLong
-import io.newm.shared.ext.getConfigString
-import io.newm.shared.ext.toDate
 import io.newm.server.features.user.database.UserTable
+import io.newm.shared.ext.*
+import io.newm.shared.koin.inject
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.slf4j.MarkerFactory
+import org.koin.core.parameter.parametersOf
 import java.time.LocalDateTime
 import java.util.UUID
 
 class JwtRepositoryImpl(
-    private val environment: ApplicationEnvironment,
-    private val logger: Logger
+    private val environment: ApplicationEnvironment
 ) : JwtRepository {
 
-    private val marker = MarkerFactory.getMarker(javaClass.simpleName)
+    private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
 
     override suspend fun create(type: JwtType, userId: UUID): String {
-        logger.debug(marker, "create: type = $type, userId = $userId")
+        logger.debug { "create: type = $type, userId = $userId" }
 
         val expiresAt = LocalDateTime
             .now()
@@ -50,12 +47,12 @@ class JwtRepositoryImpl(
     }
 
     override suspend fun delete(jwtId: UUID) {
-        logger.debug(marker, "delete: jwtId = $jwtId")
+        logger.debug { "delete: jwtId = $jwtId" }
         transaction { JwtEntity[jwtId].delete() }
     }
 
     override suspend fun exists(jwtId: UUID): Boolean {
-        logger.debug(marker, "exists: jwtId = $jwtId")
+        logger.debug { "exists: jwtId = $jwtId" }
         return transaction { JwtEntity.existsHavingId(jwtId) }
     }
 }
