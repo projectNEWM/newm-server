@@ -1,5 +1,6 @@
 package io.newm.server.features.playlist.repo
 
+import io.newm.server.ext.checkLength
 import io.ktor.util.logging.*
 import io.newm.shared.exception.HttpForbiddenException
 import io.newm.shared.exception.HttpUnprocessableEntityException
@@ -23,6 +24,7 @@ internal class PlaylistRepositoryImpl : PlaylistRepository {
     override suspend fun add(playlist: Playlist, ownerId: UUID): UUID {
         logger.debug { "add: playlist = $playlist" }
         val name = playlist.name ?: throw HttpUnprocessableEntityException("missing name")
+        playlist.checkFieldLengths()
         return transaction {
             PlaylistEntity.new {
                 this.ownerId = EntityID(ownerId, UserTable)
@@ -33,6 +35,7 @@ internal class PlaylistRepositoryImpl : PlaylistRepository {
 
     override suspend fun update(playlist: Playlist, playlistId: UUID, requesterId: UUID) {
         logger.debug { "update: playlist = $playlist" }
+        playlist.checkFieldLengths()
         transaction {
             val entity = PlaylistEntity[playlistId]
             entity.checkRequester(requesterId)
@@ -92,5 +95,9 @@ internal class PlaylistRepositoryImpl : PlaylistRepository {
 
     private fun PlaylistEntity.checkRequester(requesterId: UUID) {
         if (ownerId.value != requesterId) throw HttpForbiddenException("operation allowed only by owner")
+    }
+
+    private fun Playlist.checkFieldLengths() {
+        name?.checkLength("name")
     }
 }

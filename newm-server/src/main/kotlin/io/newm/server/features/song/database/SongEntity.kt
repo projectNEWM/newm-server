@@ -37,7 +37,6 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         createdAt = createdAt,
         title = title,
         genres = genres.toList(),
-        genre = genres.firstOrNull(), // TODO: remove genre (CU-8669gyp2a)
         coverArtUrl = coverArtUrl,
         description = description,
         credits = credits,

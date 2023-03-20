@@ -16,7 +16,6 @@ data class Song(
     val createdAt: LocalDateTime? = null,
     val title: String? = null,
     val genres: List<String>? = null,
-    val genre: String? = null, // TODO: remove genre (CU-8669gyp2a)
     val coverArtUrl: String? = null,
     val description: String? = null,
     val credits: String? = null,

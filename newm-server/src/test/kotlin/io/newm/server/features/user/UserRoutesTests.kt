@@ -31,6 +31,8 @@ class UserRoutesTests : BaseApplicationTests() {
 
     @Test
     fun testPutUser() = runBlocking {
+        val startTime = LocalDateTime.now()
+
         // Put 2FA code directly into database
         transaction {
             TwoFactorAuthEntity.new {
@@ -51,12 +53,14 @@ class UserRoutesTests : BaseApplicationTests() {
         val (user, passwordHash) = transaction {
             UserEntity.getByEmail(testUser1.email!!)!!.let { it.toModel() to it.passwordHash!! }
         }
+        assertThat(user.createdAt).isAtLeast(startTime)
         assertThat(user.firstName).isEqualTo(testUser1.firstName)
         assertThat(user.lastName).isEqualTo(testUser1.lastName)
         assertThat(user.nickname).isEqualTo(testUser1.nickname)
         assertThat(user.pictureUrl).isEqualTo(testUser1.pictureUrl)
         assertThat(user.role).isEqualTo(testUser1.role)
         assertThat(user.genre).isEqualTo(testUser1.genre)
+        assertThat(user.biography).isEqualTo(testUser1.biography)
         assertThat(user.walletAddress).isEqualTo(testUser1.walletAddress)
         assertThat(user.email).isEqualTo(testUser1.email)
         assertThat(testUser1.newPassword!!.verify(passwordHash)).isTrue()
@@ -73,6 +77,7 @@ class UserRoutesTests : BaseApplicationTests() {
                 pictureUrl = testUser1.pictureUrl
                 role = testUser1.role
                 genre = testUser1.genre
+                biography = testUser1.biography
                 walletAddress = testUser1.walletAddress
                 email = testUser1.email!!
             }
@@ -94,6 +99,7 @@ class UserRoutesTests : BaseApplicationTests() {
         assertThat(user.pictureUrl).isEqualTo(testUser1.pictureUrl)
         assertThat(user.role).isEqualTo(testUser1.role)
         assertThat(user.genre).isEqualTo(testUser1.genre)
+        assertThat(user.biography).isEqualTo(testUser1.biography)
         assertThat(user.walletAddress).isEqualTo(testUser1.walletAddress)
         assertThat(user.email).isEqualTo(testUser1.email)
     }
@@ -109,6 +115,7 @@ class UserRoutesTests : BaseApplicationTests() {
                 pictureUrl = testUser1.pictureUrl
                 role = testUser1.role
                 genre = testUser1.genre
+                biography = testUser1.biography
                 walletAddress = testUser1.walletAddress
                 email = testUser1.email!!
                 passwordHash = testUser1.newPassword!!.toHash()
@@ -143,6 +150,7 @@ class UserRoutesTests : BaseApplicationTests() {
         assertThat(user.pictureUrl).isEqualTo(testUser2.pictureUrl)
         assertThat(user.role).isEqualTo(testUser2.role)
         assertThat(user.genre).isEqualTo(testUser2.genre)
+        assertThat(user.biography).isEqualTo(testUser2.biography)
         assertThat(user.walletAddress).isEqualTo(testUser2.walletAddress)
         assertThat(user.email).isEqualTo(testUser2.email)
         assertThat(testUser2.newPassword!!.verify(passwordHash)).isTrue()
@@ -159,6 +167,7 @@ class UserRoutesTests : BaseApplicationTests() {
                 pictureUrl = testUser1.pictureUrl
                 role = testUser1.role
                 genre = testUser1.genre
+                biography = testUser1.biography
                 walletAddress = testUser1.walletAddress
                 email = testUser1.email!!
             }
@@ -226,6 +235,7 @@ class UserRoutesTests : BaseApplicationTests() {
                     pictureUrl = "pictureUrl$offset"
                     role = "role$offset"
                     genre = "genre$offset"
+                    biography = "biography$offset"
                     email = "email$offset"
                 }
             }.toModel(includeAll = false)
@@ -261,6 +271,7 @@ class UserRoutesTests : BaseApplicationTests() {
             assertThat(actualUser.pictureUrl).isEqualTo(expectedUser.pictureUrl)
             assertThat(actualUser.role).isEqualTo(expectedUser.role)
             assertThat(actualUser.genre).isEqualTo(expectedUser.genre)
+            assertThat(actualUser.biography).isEqualTo(expectedUser.biography)
         }
     }
 
@@ -277,6 +288,7 @@ class UserRoutesTests : BaseApplicationTests() {
                     pictureUrl = "pictureUrl$offset"
                     role = "role$offset"
                     genre = "genre$offset"
+                    biography = "biography$offset"
                     email = "email$offset"
                 }
             }.toModel(includeAll = false)
@@ -317,6 +329,7 @@ class UserRoutesTests : BaseApplicationTests() {
             assertThat(actualUser.pictureUrl).isEqualTo(expectedUser.pictureUrl)
             assertThat(actualUser.role).isEqualTo(expectedUser.role)
             assertThat(actualUser.genre).isEqualTo(expectedUser.genre)
+            assertThat(actualUser.biography).isEqualTo(expectedUser.biography)
         }
     }
 
@@ -333,6 +346,7 @@ class UserRoutesTests : BaseApplicationTests() {
                     pictureUrl = "pictureUrl$offset"
                     role = "role$offset"
                     genre = "genre$offset"
+                    biography = "biography$offset"
                     email = "email$offset"
                 }
             }.toModel(includeAll = false)
@@ -373,6 +387,7 @@ class UserRoutesTests : BaseApplicationTests() {
             assertThat(actualUser.pictureUrl).isEqualTo(expectedUser.pictureUrl)
             assertThat(actualUser.role).isEqualTo(expectedUser.role)
             assertThat(actualUser.genre).isEqualTo(expectedUser.genre)
+            assertThat(actualUser.biography).isEqualTo(expectedUser.biography)
         }
     }
 
@@ -389,6 +404,7 @@ class UserRoutesTests : BaseApplicationTests() {
                     pictureUrl = "pictureUrl$offset"
                     role = "role$offset"
                     genre = "genre$offset"
+                    biography = "biography$offset"
                     email = "email$offset"
                 }
             }.toModel(includeAll = false)
@@ -429,6 +445,123 @@ class UserRoutesTests : BaseApplicationTests() {
             assertThat(actualUser.pictureUrl).isEqualTo(expectedUser.pictureUrl)
             assertThat(actualUser.role).isEqualTo(expectedUser.role)
             assertThat(actualUser.genre).isEqualTo(expectedUser.genre)
+            assertThat(actualUser.biography).isEqualTo(expectedUser.biography)
+        }
+    }
+
+    @Test
+    fun testGetUsersByOlderThan() = runBlocking {
+        // Put Users directly into database
+        val allUsers = mutableListOf<User>()
+        for (offset in 0..30) {
+            allUsers += transaction {
+                UserEntity.new {
+                    firstName = "firstName$offset"
+                    lastName = "lastName$offset"
+                    nickname = "nickname$offset"
+                    pictureUrl = "pictureUrl$offset"
+                    role = "role$offset"
+                    genre = "genre$offset"
+                    biography = "biography$offset"
+                    email = "email$offset"
+                }
+            }.toModel(includeAll = false)
+        }
+
+        // filter out newest one
+        val expectedUsers = allUsers.subList(0, allUsers.size - 1)
+        val olderThan = allUsers.last().createdAt
+
+        // read back all Users forcing pagination
+        var offset = 0
+        val limit = 5
+        val actualUsers = mutableListOf<User>()
+        val token = expectedUsers.first().id.toString()
+        while (true) {
+            val response = client.get("v1/users") {
+                bearerAuth(token)
+                accept(ContentType.Application.Json)
+                parameter("offset", offset)
+                parameter("limit", limit)
+                parameter("olderThan", olderThan)
+            }
+            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+            val users = response.body<List<User>>()
+            if (users.isEmpty()) break
+            actualUsers += users
+            offset += limit
+        }
+
+        // verify all
+        assertThat(actualUsers.size).isEqualTo(expectedUsers.size)
+        expectedUsers.forEachIndexed { i, expectedUser ->
+            val actualUser = actualUsers[i]
+            assertThat(actualUser.id).isEqualTo(expectedUser.id)
+            assertThat(actualUser.firstName).isEqualTo(expectedUser.firstName)
+            assertThat(actualUser.lastName).isEqualTo(expectedUser.lastName)
+            assertThat(actualUser.nickname).isEqualTo(expectedUser.nickname)
+            assertThat(actualUser.pictureUrl).isEqualTo(expectedUser.pictureUrl)
+            assertThat(actualUser.role).isEqualTo(expectedUser.role)
+            assertThat(actualUser.genre).isEqualTo(expectedUser.genre)
+            assertThat(actualUser.biography).isEqualTo(expectedUser.biography)
+        }
+    }
+
+    @Test
+    fun testGetUsersByNewerThan() = runBlocking {
+        // Put Users directly into database
+        val allUsers = mutableListOf<User>()
+        for (offset in 0..30) {
+            allUsers += transaction {
+                UserEntity.new {
+                    firstName = "firstName$offset"
+                    lastName = "lastName$offset"
+                    nickname = "nickname$offset"
+                    pictureUrl = "pictureUrl$offset"
+                    role = "role$offset"
+                    genre = "genre$offset"
+                    biography = "biography$offset"
+                    email = "email$offset"
+                }
+            }.toModel(includeAll = false)
+        }
+
+        // filter out oldest one
+        val expectedUsers = allUsers.subList(1, allUsers.size)
+        val newerThan = allUsers.first().createdAt
+
+        // read back all Users forcing pagination
+        var offset = 0
+        val limit = 5
+        val actualUsers = mutableListOf<User>()
+        val token = expectedUsers.first().id.toString()
+        while (true) {
+            val response = client.get("v1/users") {
+                bearerAuth(token)
+                accept(ContentType.Application.Json)
+                parameter("offset", offset)
+                parameter("limit", limit)
+                parameter("newerThan", newerThan)
+            }
+            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+            val users = response.body<List<User>>()
+            if (users.isEmpty()) break
+            actualUsers += users
+            offset += limit
+        }
+
+        // verify all
+        assertThat(actualUsers.size).isEqualTo(expectedUsers.size)
+        expectedUsers.forEachIndexed { i, expectedUser ->
+            val actualUser = actualUsers[i]
+            assertThat(actualUser.id).isEqualTo(expectedUser.id)
+            assertThat(actualUser.firstName).isEqualTo(expectedUser.firstName)
+            assertThat(actualUser.lastName).isEqualTo(expectedUser.lastName)
+            assertThat(actualUser.nickname).isEqualTo(expectedUser.nickname)
+            assertThat(actualUser.pictureUrl).isEqualTo(expectedUser.pictureUrl)
+            assertThat(actualUser.role).isEqualTo(expectedUser.role)
+            assertThat(actualUser.genre).isEqualTo(expectedUser.genre)
+            assertThat(actualUser.biography).isEqualTo(expectedUser.biography)
         }
     }
 }
