@@ -10,11 +10,14 @@ import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
+import java.time.LocalDateTime
 import java.util.UUID
 
 class UserEntity(id: EntityID<UUID>) : UUIDEntity(id) {
-
+    val createdAt: LocalDateTime by UserTable.createdAt
     var oauthType: OAuthType? by UserTable.oauthType
     var oauthId: String? by UserTable.oauthId
     var firstName: String? by UserTable.firstName
@@ -23,6 +26,7 @@ class UserEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var pictureUrl: String? by UserTable.pictureUrl
     var role: String? by UserTable.role
     var genre: String? by UserTable.genre
+    var biography: String? by UserTable.biography
     var walletAddress: String? by UserTable.walletAddress
     var email: String by UserTable.email
     var passwordHash: String? by UserTable.passwordHash
@@ -30,6 +34,7 @@ class UserEntity(id: EntityID<UUID>) : UUIDEntity(id) {
 
     fun toModel(includeAll: Boolean = true) = User(
         id = id.value,
+        createdAt = createdAt,
         oauthType = oauthType.takeIf { includeAll },
         oauthId = oauthId.takeIf { includeAll },
         firstName = firstName,
@@ -38,6 +43,7 @@ class UserEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         pictureUrl = pictureUrl,
         role = role,
         genre = genre,
+        biography = biography,
         walletAddress = walletAddress.takeIf { includeAll },
         email = email.takeIf { includeAll },
         verificationStatus = verificationStatus.takeIf { includeAll }
@@ -47,6 +53,12 @@ class UserEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         fun all(filters: UserFilters): SizedIterable<UserEntity> {
             val ops = mutableListOf<Op<Boolean>>()
             with(filters) {
+                olderThan?.let {
+                    ops += UserTable.createdAt less it
+                }
+                newerThan?.let {
+                    ops += UserTable.createdAt greater it
+                }
                 ids?.let {
                     ops += UserTable.id inList it
                 }

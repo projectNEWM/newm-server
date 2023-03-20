@@ -1,5 +1,6 @@
 package io.newm.server.features.song.repo
 
+import io.newm.server.ext.checkLength
 import com.amazonaws.HttpMethod
 import com.amazonaws.services.s3.AmazonS3
 import io.ktor.server.application.*
@@ -30,6 +31,7 @@ internal class SongRepositoryImpl(
         logger.debug { "add: song = $song" }
         val title = song.title ?: throw HttpUnprocessableEntityException("missing title")
         val genres = song.genres ?: throw HttpUnprocessableEntityException("missing genres")
+        song.checkFieldLengths()
         return transaction {
             SongEntity.new {
                 this.ownerId = EntityID(ownerId, UserTable)
@@ -50,12 +52,13 @@ internal class SongRepositoryImpl(
 
     override suspend fun update(songId: UUID, song: Song, requesterId: UUID?) {
         logger.debug { "update: songId = $songId, song = $song, requesterId = $requesterId" }
+        song.checkFieldLengths()
         transaction {
             val entity = SongEntity[songId]
             requesterId?.let { entity.checkRequester(it) }
             with(song) {
                 title?.let { entity.title = it }
-                genres?.let { entity.genres = it.toTypedArray() } ?: genre?.let { entity.genres = arrayOf(it) } // TODO: remove genre (CU-8669gyp2a)
+                genres?.let { entity.genres = it.toTypedArray() }
                 coverArtUrl?.let { entity.coverArtUrl = it }
                 description?.let { entity.description = it }
                 credits?.let { entity.credits = it }
@@ -158,5 +161,13 @@ internal class SongRepositoryImpl(
 
     private fun SongEntity.checkRequester(requesterId: UUID) {
         if (ownerId.value != requesterId) throw HttpForbiddenException("operation allowed only by owner")
+    }
+
+    private fun Song.checkFieldLengths() {
+        title?.checkLength("title")
+        genres?.forEachIndexed { index, genre -> genre.checkLength("genres$index") }
+        description?.checkLength("description", 250)
+        credits?.checkLength("credits")
+        nftName?.checkLength("nftName")
     }
 }

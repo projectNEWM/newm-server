@@ -1,5 +1,6 @@
 package io.newm.server.features.user.repo
 
+import io.newm.server.ext.checkLength
 import io.ktor.util.logging.Logger
 import io.newm.server.auth.oauth.OAuthType
 import io.newm.shared.auth.Password
@@ -34,6 +35,7 @@ internal class UserRepositoryImpl(
     override suspend fun add(user: User) {
         logger.debug { "add: user = $user" }
 
+        user.checkFieldLengths()
         val pictureUrl = user.pictureUrl?.asValidUrl()
         val email = user.email.asValidEmail().asVerifiedEmail(user.authCode)
         val passwordHash = user.newPassword.asValidPassword(user.confirmPassword).toHash()
@@ -47,6 +49,7 @@ internal class UserRepositoryImpl(
                 this.pictureUrl = pictureUrl
                 this.role = user.role
                 this.genre = user.genre
+                this.biography = user.biography
                 this.walletAddress = user.walletAddress
                 this.email = email
                 this.passwordHash = passwordHash
@@ -117,6 +120,7 @@ internal class UserRepositoryImpl(
     override suspend fun update(userId: UUID, user: User) {
         logger.debug { "update: userId = $userId, user = $user" }
 
+        user.checkFieldLengths()
         val pictureUrl = user.pictureUrl?.asValidUrl()
         val email = user.email?.asValidEmail()?.asVerifiedEmail(user.authCode)
         val passwordHash = user.newPassword?.asValidPassword(user.confirmPassword)?.toHash()
@@ -129,6 +133,7 @@ internal class UserRepositoryImpl(
             pictureUrl?.let { entity.pictureUrl = it }
             user.role?.let { entity.role = it }
             user.genre?.let { entity.genre = it }
+            user.biography?.let { entity.biography = it }
             user.walletAddress?.let { entity.walletAddress = it }
             email?.let {
                 it.checkEmailUnique()
@@ -201,5 +206,14 @@ internal class UserRepositoryImpl(
 
     private fun UserEntity.checkNonOAuth() {
         if (oauthType != null) throw HttpForbiddenException("Not allowed for OAuth Users")
+    }
+
+    private fun User.checkFieldLengths() {
+        firstName?.checkLength("firstName")
+        lastName?.checkLength("lastName")
+        nickname?.checkLength("nickname")
+        role?.checkLength("role")
+        genre?.checkLength("genre")
+        biography?.checkLength("biography", 250)
     }
 }
