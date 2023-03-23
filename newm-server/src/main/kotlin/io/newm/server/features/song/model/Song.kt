@@ -16,6 +16,7 @@ data class Song(
     val createdAt: LocalDateTime? = null,
     val title: String? = null,
     val genres: List<String>? = null,
+    val moods: List<String>? = null,
     val coverArtUrl: String? = null,
     val description: String? = null,
     val credits: String? = null,

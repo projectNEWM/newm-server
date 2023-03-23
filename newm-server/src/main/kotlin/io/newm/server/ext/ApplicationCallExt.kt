@@ -56,6 +56,9 @@ val ApplicationCall.ownerIds: List<UUID>?
 val ApplicationCall.genres: List<String>?
     get() = parameters["genres"]?.splitAndTrim()
 
+val ApplicationCall.moods: List<String>?
+    get() = parameters["moods"]?.splitAndTrim()
+
 val ApplicationCall.roles: List<String>?
     get() = parameters["roles"]?.splitAndTrim()
 

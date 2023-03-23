@@ -11,8 +11,9 @@ data class SongFilters(
     val newerThan: LocalDateTime?,
     val ids: List<UUID>?,
     val ownerIds: List<UUID>?,
-    val genres: List<String>?
+    val genres: List<String>?,
+    val moods: List<String>?
 )
 
 val ApplicationCall.songFilters: SongFilters
-    get() = SongFilters(olderThan, newerThan, ids, ownerIds, genres)
+    get() = SongFilters(olderThan, newerThan, ids, ownerIds, genres, moods)

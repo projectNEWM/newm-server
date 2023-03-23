@@ -32,4 +32,14 @@ class StaticRoutesTests : BaseApplicationTests() {
         val content = javaClass.getResource("/static/predefined-genres.json").readText()
         assertThat(response.body<String>()).isEqualTo(content)
     }
+
+    @Test
+    fun testGetPredefinedMoods() = runBlocking {
+        val response = client.get("contents/predefined-moods.json")
+        assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+        assertThat(response.contentType()).isEqualTo(ContentType.Application.Json)
+
+        val content = javaClass.getResource("/static/predefined-moods.json").readText()
+        assertThat(response.body<String>()).isEqualTo(content)
+    }
 }

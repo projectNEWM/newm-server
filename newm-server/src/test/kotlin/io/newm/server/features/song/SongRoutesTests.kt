@@ -58,6 +58,7 @@ class SongRoutesTests : BaseApplicationTests() {
         assertThat(song.createdAt).isAtLeast(startTime)
         assertThat(song.title).isEqualTo(testSong1.title)
         assertThat(song.genres).isEqualTo(testSong1.genres)
+        assertThat(song.moods).isEqualTo(testSong1.moods)
         assertThat(song.description).isEqualTo(testSong1.description)
         assertThat(song.credits).isEqualTo(testSong1.credits)
         assertThat(song.duration).isEqualTo(testSong1.duration)
@@ -76,6 +77,7 @@ class SongRoutesTests : BaseApplicationTests() {
                 ownerId = EntityID(testUserId, UserTable)
                 title = testSong1.title!!
                 genres = testSong1.genres!!.toTypedArray()
+                moods = testSong1.moods!!.toTypedArray()
                 coverArtUrl = testSong1.coverArtUrl
                 description = testSong1.description
                 credits = testSong1.credits
@@ -113,6 +115,7 @@ class SongRoutesTests : BaseApplicationTests() {
                     this.ownerId = EntityID(ownerId, UserTable)
                     title = "title$offset"
                     genres = arrayOf("genre${offset}_0", "genre${offset}_1")
+                    moods = arrayOf("mood${offset}_0", "mood${offset}_1")
                     coverArtUrl = "coverArtUrl$offset"
                     description = "description$offset"
                     credits = "credits$offset"
@@ -164,6 +167,7 @@ class SongRoutesTests : BaseApplicationTests() {
                     this.ownerId = EntityID(ownerId, UserTable)
                     title = "title$offset"
                     genres = arrayOf("genre${offset}_0", "genre${offset}_1")
+                    moods = arrayOf("mood${offset}_0", "mood${offset}_1")
                     coverArtUrl = "coverArtUrl$offset"
                     description = "description$offset"
                     credits = "credits$offset"
@@ -220,6 +224,7 @@ class SongRoutesTests : BaseApplicationTests() {
                     this.ownerId = EntityID(ownerId, UserTable)
                     title = "title$offset"
                     genres = arrayOf("genre${offset}_0", "genre${offset}_1")
+                    moods = arrayOf("mood${offset}_0", "mood${offset}_1")
                     coverArtUrl = "coverArtUrl$offset"
                     description = "description$offset"
                     credits = "credits$offset"
@@ -276,6 +281,7 @@ class SongRoutesTests : BaseApplicationTests() {
                     this.ownerId = EntityID(ownerId, UserTable)
                     title = "title$offset"
                     genres = arrayOf("genre${offset}_0", "genre${offset}_1")
+                    moods = arrayOf("mood${offset}_0", "mood${offset}_1")
                     coverArtUrl = "coverArtUrl$offset"
                     description = "description$offset"
                     credits = "credits$offset"
@@ -332,6 +338,7 @@ class SongRoutesTests : BaseApplicationTests() {
                     this.ownerId = EntityID(ownerId, UserTable)
                     title = "title$offset"
                     genres = arrayOf("genre${offset}_0", "genre${offset}_1")
+                    moods = arrayOf("mood${offset}_0", "mood${offset}_1")
                     coverArtUrl = "coverArtUrl$offset"
                     description = "description$offset"
                     credits = "credits$offset"
@@ -388,6 +395,7 @@ class SongRoutesTests : BaseApplicationTests() {
                     this.ownerId = EntityID(ownerId, UserTable)
                     title = "title$offset"
                     genres = arrayOf("genre${offset}_0", "genre${offset}_1")
+                    moods = arrayOf("mood${offset}_0", "mood${offset}_1")
                     coverArtUrl = "coverArtUrl$offset"
                     description = "description$offset"
                     credits = "credits$offset"
@@ -436,6 +444,7 @@ class SongRoutesTests : BaseApplicationTests() {
                 ownerId = EntityID(testUserId, UserTable)
                 title = testSong1.title!!
                 genres = testSong1.genres!!.toTypedArray()
+                moods = testSong1.moods!!.toTypedArray()
                 coverArtUrl = testSong1.coverArtUrl
                 description = testSong1.description
                 credits = testSong1.credits
@@ -462,6 +471,7 @@ class SongRoutesTests : BaseApplicationTests() {
         assertThat(song.ownerId).isEqualTo(testUserId)
         assertThat(song.title).isEqualTo(testSong2.title)
         assertThat(song.genres).isEqualTo(testSong2.genres)
+        assertThat(song.moods).isEqualTo(testSong2.moods)
         assertThat(song.description).isEqualTo(testSong2.description)
         assertThat(song.credits).isEqualTo(testSong2.credits)
         assertThat(song.duration).isEqualTo(testSong2.duration)
@@ -480,6 +490,7 @@ class SongRoutesTests : BaseApplicationTests() {
                 ownerId = EntityID(testUserId, UserTable)
                 title = testSong1.title!!
                 genres = testSong1.genres!!.toTypedArray()
+                moods = testSong1.moods!!.toTypedArray()
                 coverArtUrl = testSong1.coverArtUrl
                 description = testSong1.description
                 credits = testSong1.credits
@@ -511,6 +522,7 @@ class SongRoutesTests : BaseApplicationTests() {
                 ownerId = EntityID(testUserId, UserTable)
                 title = testSong1.title!!
                 genres = testSong1.genres!!.toTypedArray()
+                moods = testSong1.moods!!.toTypedArray()
                 coverArtUrl = testSong1.coverArtUrl
                 description = testSong1.description
                 credits = testSong1.credits
