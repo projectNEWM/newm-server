@@ -37,6 +37,7 @@ internal class SongRepositoryImpl(
                 this.ownerId = EntityID(ownerId, UserTable)
                 this.title = title
                 this.genres = genres.toTypedArray()
+                moods = song.moods?.toTypedArray()
                 coverArtUrl = song.coverArtUrl
                 description = song.description
                 credits = song.credits
@@ -59,6 +60,7 @@ internal class SongRepositoryImpl(
             with(song) {
                 title?.let { entity.title = it }
                 genres?.let { entity.genres = it.toTypedArray() }
+                moods?.let { entity.moods = it.toTypedArray() }
                 coverArtUrl?.let { entity.coverArtUrl = it }
                 description?.let { entity.description = it }
                 credits?.let { entity.credits = it }
@@ -166,6 +168,7 @@ internal class SongRepositoryImpl(
     private fun Song.checkFieldLengths() {
         title?.checkLength("title")
         genres?.forEachIndexed { index, genre -> genre.checkLength("genres$index") }
+        moods?.forEachIndexed { index, mood -> mood.checkLength("moods$index") }
         description?.checkLength("description", 250)
         credits?.checkLength("credits")
         nftName?.checkLength("nftName")

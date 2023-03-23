@@ -1,6 +1,7 @@
 package io.newm.shared.exposed
 
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.asLiteral
 import org.jetbrains.exposed.sql.statements.api.PreparedStatementApi
 import org.jetbrains.exposed.sql.statements.jdbc.JdbcPreparedStatementImpl
 import java.util.*
@@ -76,8 +77,14 @@ class ArrayColumnType(
 /**
  * Invokes the `ANY` function on an expression.
  */
-fun <T> ExpressionWithColumnType<Array<T>>.any(): ExpressionWithColumnType<T> =
-    CustomFunction("UNNEST", columnType, this)
+@JvmName("any")
+fun <T> ExpressionWithColumnType<Array<T>>.any(): ExpressionWithColumnType<T> = anyFunc()
+
+@JvmName("any2")
+fun <T> ExpressionWithColumnType<Array<T>?>.any(): ExpressionWithColumnType<T> = anyFunc()
+
+private fun <A, E> ExpressionWithColumnType<A>.anyFunc(): ExpressionWithColumnType<E> =
+    CustomFunction("ANY", columnType, this)
 
 /**
  * Checks whether this type is in the [other] expression.
@@ -89,42 +96,55 @@ fun <T> ExpressionWithColumnType<Array<T>>.any(): ExpressionWithColumnType<T> =
  *
  * @see any
  */
-infix fun Int.eqAny(other: ExpressionWithColumnType<Array<Int>>): EqOp = intLiteral(this).eqAny(other)
+@JvmName("eqAny")
+infix fun <T> T.eqAny(other: ExpressionWithColumnType<Array<T>>): EqOp =
+    EqOp(other.asLiteral(this), other.any())
 
-infix fun Long.eqAny(other: ExpressionWithColumnType<Array<Long>>): EqOp = longLiteral(this).eqAny(other)
-
-infix fun Float.eqAny(other: ExpressionWithColumnType<Array<Float>>): EqOp = floatLiteral(this).eqAny(other)
-
-infix fun Double.eqAny(other: ExpressionWithColumnType<Array<Double>>): EqOp = doubleLiteral(this).eqAny(other)
-
-infix fun String.eqAny(other: ExpressionWithColumnType<Array<String>>): EqOp = stringLiteral(this).eqAny(other)
-
-infix fun <T> ExpressionWithColumnType<T>.eqAny(other: ExpressionWithColumnType<Array<T>>): EqOp =
-    EqOp(this, other.any())
+@JvmName("eqAny2")
+infix fun <T> T.eqAny(other: ExpressionWithColumnType<Array<T>?>): EqOp =
+    EqOp(other.asLiteral(this), other.any())
 
 /***
  * Invokes the `UNNEST` function on an expression.
  */
-fun <T> ExpressionWithColumnType<Array<T>>.unnest(): ExpressionWithColumnType<T> =
+@JvmName("unnest")
+fun <T> ExpressionWithColumnType<Array<T>>.unnest(): ExpressionWithColumnType<T> = unnestFunc()
+
+@JvmName("unnest2")
+fun <T> ExpressionWithColumnType<Array<T>?>.unnest(): ExpressionWithColumnType<T> = unnestFunc()
+
+private fun <A, E> ExpressionWithColumnType<A>.unnestFunc(): ExpressionWithColumnType<E> =
     CustomFunction("UNNEST", columnType, this)
 
 /***
  * Invokes the `@>` (contains) operator
  * https://www.postgresql.org/docs/current/functions-array.html
  */
+@JvmName("contains")
 infix fun <T> ExpressionWithColumnType<Array<T>>.contains(array: Array<T>): Op<Boolean> = arrayOp(array, "@>")
+
+@JvmName("contains2")
+infix fun <T> ExpressionWithColumnType<Array<T>?>.contains(array: Array<T>): Op<Boolean> = arrayOp(array, "@>")
 
 /***
  * Invokes the `<@` (contained) operator
  * https://www.postgresql.org/docs/current/functions-array.html
  */
+@JvmName("contained")
 infix fun <T> ExpressionWithColumnType<Array<T>>.contained(array: Array<T>): Op<Boolean> = arrayOp(array, "<@")
+
+@JvmName("contained2")
+infix fun <T> ExpressionWithColumnType<Array<T>?>.contained(array: Array<T>): Op<Boolean> = arrayOp(array, "<@")
 
 /***
  * Invokes the `&&` (overlap) operator
  * https://www.postgresql.org/docs/current/functions-array.html
  */
+@JvmName("overlaps")
 infix fun <T> ExpressionWithColumnType<Array<T>>.overlaps(array: Array<T>): Op<Boolean> = arrayOp(array, "&&")
 
-private fun <T> ExpressionWithColumnType<Array<T>>.arrayOp(array: Array<T>, opSign: String): Op<Boolean> =
+@JvmName("overlaps2")
+infix fun <T> ExpressionWithColumnType<Array<T>?>.overlaps(array: Array<T>): Op<Boolean> = arrayOp(array, "&&")
+
+private fun <A, E> ExpressionWithColumnType<A>.arrayOp(array: Array<E>, opSign: String): Op<Boolean> =
     object : ComparisonOp(this@arrayOp, QueryParameter(array, columnType), opSign) {}

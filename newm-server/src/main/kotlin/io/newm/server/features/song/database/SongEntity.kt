@@ -1,11 +1,11 @@
 package io.newm.server.features.song.database
 
-import io.newm.shared.exposed.overlaps
-import io.newm.shared.exposed.unnest
 import io.newm.server.features.song.model.MarketplaceStatus
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongFilters
+import io.newm.shared.exposed.overlaps
+import io.newm.shared.exposed.unnest
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
@@ -21,6 +21,7 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var ownerId: EntityID<UUID> by SongTable.ownerId
     var title: String by SongTable.title
     var genres: Array<String> by SongTable.genres
+    var moods: Array<String>? by SongTable.moods
     var coverArtUrl: String? by SongTable.coverArtUrl
     var description: String? by SongTable.description
     var credits: String? by SongTable.credits
@@ -37,6 +38,7 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         createdAt = createdAt,
         title = title,
         genres = genres.toList(),
+        moods = moods?.toList(),
         coverArtUrl = coverArtUrl,
         description = description,
         credits = credits,
@@ -80,6 +82,9 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             }
             genres?.let {
                 ops += SongTable.genres overlaps it.toTypedArray()
+            }
+            moods?.let {
+                ops += SongTable.moods overlaps it.toTypedArray()
             }
             return ops
         }

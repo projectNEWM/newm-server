@@ -18,6 +18,7 @@ object SongTable : UUIDTable(name = "songs") {
     val ownerId: Column<EntityID<UUID>> = reference("owner_id", UserTable, onDelete = ReferenceOption.CASCADE)
     val title: Column<String> = text("title")
     val genres: Column<Array<String>> = textArray("genres")
+    val moods: Column<Array<String>?> = textArray("moods").nullable()
     val coverArtUrl: Column<String?> = text("cover_art_url").nullable()
     val description: Column<String?> = text("description").nullable()
     val credits: Column<String?> = text("credits").nullable()
