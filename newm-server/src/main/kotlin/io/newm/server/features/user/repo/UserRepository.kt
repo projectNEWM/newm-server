@@ -13,6 +13,7 @@ interface UserRepository {
     suspend fun exists(userId: UUID): Boolean
     suspend fun get(userId: UUID, includeAll: Boolean = true): User
     suspend fun getAll(filters: UserFilters, offset: Int, limit: Int): List<User>
+    suspend fun getAllCount(filters: UserFilters): Long
     suspend fun update(userId: UUID, user: User)
     suspend fun recover(user: User)
     suspend fun delete(userId: UUID)

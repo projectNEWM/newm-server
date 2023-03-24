@@ -117,6 +117,13 @@ internal class UserRepositoryImpl(
         }
     }
 
+    override suspend fun getAllCount(filters: UserFilters): Long {
+        logger.debug { "getAllCount: filters = $filters" }
+        return transaction {
+            UserEntity.all(filters).count()
+        }
+    }
+
     override suspend fun update(userId: UUID, user: User) {
         logger.debug { "update: userId = $userId, user = $user" }
 

@@ -1,17 +1,27 @@
 package io.newm.server.features.user
 
 import com.google.common.truth.Truth.assertThat
-import io.ktor.client.call.*
-import io.ktor.client.request.*
-import io.ktor.http.*
+import io.ktor.client.call.body
+import io.ktor.client.request.accept
+import io.ktor.client.request.bearerAuth
+import io.ktor.client.request.delete
+import io.ktor.client.request.get
+import io.ktor.client.request.parameter
+import io.ktor.client.request.patch
+import io.ktor.client.request.put
+import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.contentType
 import io.newm.server.BaseApplicationTests
 import io.newm.server.auth.twofactor.database.TwoFactorAuthEntity
 import io.newm.server.auth.twofactor.database.TwoFactorAuthTable
-import io.newm.shared.ext.existsHavingId
-import io.newm.shared.ext.toHash
+import io.newm.server.features.model.CountResponse
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
 import io.newm.server.features.user.model.User
+import io.newm.shared.ext.existsHavingId
+import io.newm.shared.ext.toHash
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.sql.deleteAll
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -562,6 +572,27 @@ class UserRoutesTests : BaseApplicationTests() {
             assertThat(actualUser.role).isEqualTo(expectedUser.role)
             assertThat(actualUser.genre).isEqualTo(expectedUser.genre)
             assertThat(actualUser.biography).isEqualTo(expectedUser.biography)
+        }
+    }
+
+    @Test
+    fun testGetUserCount() = runBlocking {
+        var count = 1L
+        while (true) {
+            val response = client.get("v1/users/count") {
+                bearerAuth(testUserToken)
+            }
+            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+            val actualCount = response.body<CountResponse>().count
+            assertThat(actualCount).isEqualTo(count)
+
+            if (++count == 11L) break
+
+            transaction {
+                UserEntity.new {
+                    this.email = "user$count@newm.io"
+                }
+            }
         }
     }
 }

@@ -12,13 +12,14 @@ import io.ktor.server.routing.patch
 import io.ktor.server.routing.put
 import io.ktor.server.routing.route
 import io.newm.server.auth.jwt.AUTH_JWT
-import io.newm.shared.koin.inject
 import io.newm.server.ext.identifyUser
 import io.newm.server.ext.limit
 import io.newm.server.ext.offset
 import io.newm.server.ext.restrictToMe
+import io.newm.server.features.model.CountResponse
 import io.newm.server.features.user.model.userFilters
 import io.newm.server.features.user.repo.UserRepository
+import io.newm.shared.koin.inject
 
 private const val USERS_PATH = "v1/users"
 
@@ -59,6 +60,11 @@ fun Routing.createUserRoutes() {
             with(call) {
                 repository.add(receive())
                 respond(HttpStatusCode.NoContent)
+            }
+        }
+        get("count") {
+            with(call) {
+                respond(CountResponse(repository.getAllCount(userFilters)))
             }
         }
         put("password") {
