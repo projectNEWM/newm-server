@@ -11,6 +11,7 @@ interface PlaylistRepository {
     suspend fun delete(playlistId: UUID, requesterId: UUID)
     suspend fun get(playlistId: UUID): Playlist
     suspend fun getAll(filters: PlaylistFilters, offset: Int, limit: Int): List<Playlist>
+    suspend fun getAllCount(filters: PlaylistFilters): Long
     suspend fun addSong(playlistId: UUID, songId: UUID, requesterId: UUID)
     suspend fun deleteSong(playlistId: UUID, songId: UUID, requesterId: UUID)
     suspend fun getSongs(playlistId: UUID, offset: Int, limit: Int): List<Song>

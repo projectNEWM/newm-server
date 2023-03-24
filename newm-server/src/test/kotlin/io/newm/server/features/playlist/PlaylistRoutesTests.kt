@@ -1,12 +1,21 @@
 package io.newm.server.features.playlist
 
 import com.google.common.truth.Truth.assertThat
-import io.ktor.client.call.*
-import io.ktor.client.request.*
-import io.ktor.http.*
+import io.ktor.client.call.body
+import io.ktor.client.request.accept
+import io.ktor.client.request.bearerAuth
+import io.ktor.client.request.delete
+import io.ktor.client.request.get
+import io.ktor.client.request.parameter
+import io.ktor.client.request.patch
+import io.ktor.client.request.post
+import io.ktor.client.request.put
+import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.contentType
 import io.newm.server.BaseApplicationTests
-import io.newm.shared.ext.exists
-import io.newm.shared.ext.existsHavingId
+import io.newm.server.features.model.CountResponse
 import io.newm.server.features.playlist.database.PlaylistEntity
 import io.newm.server.features.playlist.database.PlaylistTable
 import io.newm.server.features.playlist.database.SongsInPlaylistsTable
@@ -21,6 +30,8 @@ import io.newm.server.features.song.model.SongIdBody
 import io.newm.server.features.song.testSong1
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
+import io.newm.shared.ext.exists
+import io.newm.shared.ext.existsHavingId
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.and
@@ -497,5 +508,27 @@ class PlaylistRoutesTests : BaseApplicationTests() {
 
         // verify all
         assertThat(actualSongs).isEqualTo(expectedSongs)
+    }
+
+    @Test
+    fun testGetPlaylistCount() = runBlocking {
+        var count = 0L
+        while (true) {
+            val response = client.get("v1/playlists/count") {
+                bearerAuth(testUserToken)
+            }
+            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+            val actualCount = response.body<CountResponse>().count
+            assertThat(actualCount).isEqualTo(count)
+
+            if (++count == 10L) break
+
+            transaction {
+                PlaylistEntity.new {
+                    ownerId = EntityID(testUserId, UserTable)
+                    name = "playlist$count"
+                }
+            }
+        }
     }
 }

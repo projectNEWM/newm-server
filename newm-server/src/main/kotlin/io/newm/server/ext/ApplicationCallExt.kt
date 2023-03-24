@@ -68,6 +68,9 @@ val ApplicationCall.olderThan: LocalDateTime?
 val ApplicationCall.newerThan: LocalDateTime?
     get() = parameters["newerThan"]?.toLocalDateTime()
 
+val ApplicationCall.phrase: String?
+    get() = parameters["phrase"]
+
 /***
  * Receives signed content and verifies signature
  */

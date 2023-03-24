@@ -3,13 +3,20 @@ package io.newm.server.features.song
 import com.amazonaws.HttpMethod
 import com.amazonaws.services.s3.AmazonS3
 import com.google.common.truth.Truth.assertThat
-import io.ktor.client.call.*
-import io.ktor.client.request.*
-import io.ktor.http.*
+import io.ktor.client.call.body
+import io.ktor.client.request.accept
+import io.ktor.client.request.bearerAuth
+import io.ktor.client.request.delete
+import io.ktor.client.request.get
+import io.ktor.client.request.parameter
+import io.ktor.client.request.patch
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.contentType
 import io.newm.server.BaseApplicationTests
-import io.newm.shared.koin.inject
-import io.newm.shared.ext.existsHavingId
-import io.newm.shared.ext.toDate
+import io.newm.server.features.model.CountResponse
 import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.database.SongTable
 import io.newm.server.features.song.model.MarketplaceStatus
@@ -20,6 +27,9 @@ import io.newm.server.features.song.model.UploadAudioRequest
 import io.newm.server.features.song.model.UploadAudioResponse
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
+import io.newm.shared.ext.existsHavingId
+import io.newm.shared.ext.toDate
+import io.newm.shared.koin.inject
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.deleteAll
@@ -323,6 +333,63 @@ class SongRoutesTests : BaseApplicationTests() {
     }
 
     @Test
+    fun testGetSongsByMoods() = runBlocking {
+        // Add Users + Songs directly into database
+        val allSongs = mutableListOf<Song>()
+        for (offset in 0..30) {
+            val ownerId = transaction {
+                UserEntity.new {
+                    email = "artist$offset@newm.io"
+                }
+            }.id.value
+
+            allSongs += transaction {
+                SongEntity.new {
+                    this.ownerId = EntityID(ownerId, UserTable)
+                    title = "title$offset"
+                    genres = arrayOf("genre${offset}_0", "genre${offset}_1")
+                    moods = arrayOf("mood${offset}_0", "mood${offset}_1")
+                    coverArtUrl = "coverArtUrl$offset"
+                    description = "description$offset"
+                    credits = "credits$offset"
+                    duration = offset
+                    streamUrl = "streamUrl$offset"
+                    nftPolicyId = "nftPolicyId$offset"
+                    nftName = "nftName$offset"
+                    mintingStatus = MintingStatus.values()[offset % MintingStatus.values().size]
+                    marketplaceStatus = MarketplaceStatus.values()[offset % MarketplaceStatus.values().size]
+                }
+            }.toModel()
+        }
+
+        // filter out 1st and last and take only 1st mood of each
+        val expectedSongs = allSongs.subList(1, allSongs.size - 1)
+        val moods = expectedSongs.joinToString { it.moods!!.first() }
+
+        // Get all songs forcing pagination
+        var offset = 0
+        val limit = 5
+        val actualSongs = mutableListOf<Song>()
+        while (true) {
+            val response = client.get("v1/songs") {
+                bearerAuth(testUserToken)
+                accept(ContentType.Application.Json)
+                parameter("offset", offset)
+                parameter("limit", limit)
+                parameter("moods", moods)
+            }
+            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+            val songs = response.body<List<Song>>()
+            if (songs.isEmpty()) break
+            actualSongs += songs
+            offset += limit
+        }
+
+        // verify all
+        assertThat(actualSongs).isEqualTo(expectedSongs)
+    }
+
+    @Test
     fun testGetSongsByOlderThan() = runBlocking {
         // Add Users + Songs directly into database
         val allSongs = mutableListOf<Song>()
@@ -424,6 +491,67 @@ class SongRoutesTests : BaseApplicationTests() {
                 parameter("offset", offset)
                 parameter("limit", limit)
                 parameter("newerThan", newerThan)
+            }
+            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+            val songs = response.body<List<Song>>()
+            if (songs.isEmpty()) break
+            actualSongs += songs
+            offset += limit
+        }
+
+        // verify all
+        assertThat(actualSongs).isEqualTo(expectedSongs)
+    }
+
+    @Test
+    fun testGetSongsByPhrase() = runBlocking {
+        val phrase = "ABCDE"
+        fun phraseOrBlank(offset: Int, target: Int) = if (offset % 4 == target) phrase else ""
+
+        // Add Users + Songs directly into database
+        val allSongs = mutableListOf<Song>()
+        for (offset in 0..30) {
+            val ownerId = transaction {
+                UserEntity.new {
+                    email = "artist$offset@newm.io"
+                }
+            }.id.value
+
+            allSongs += transaction {
+                SongEntity.new {
+                    this.ownerId = EntityID(ownerId, UserTable)
+                    title = "title$offset ${phraseOrBlank(offset, 0)} blah blah"
+                    genres = arrayOf("genre${offset}_0", "genre${offset}_1")
+                    moods = arrayOf("mood${offset}_0", "mood${offset}_1")
+                    coverArtUrl = "coverArtUrl$offset"
+                    description = "description$offset ${phraseOrBlank(offset, 1)} blah blah"
+                    credits = "credits$offset ${phraseOrBlank(offset, 2)} blah blah"
+                    duration = offset
+                    streamUrl = "streamUrl$offset"
+                    nftPolicyId = "nftPolicyId$offset"
+                    nftName = "nftName$offset ${phraseOrBlank(offset, 3)} blah blah"
+                    mintingStatus = MintingStatus.values()[offset % MintingStatus.values().size]
+                    marketplaceStatus = MarketplaceStatus.values()[offset % MarketplaceStatus.values().size]
+                }
+            }.toModel()
+        }
+
+        // filter out for phrase
+        val expectedSongs = allSongs.filter {
+            phrase in it.title!! || phrase in it.description!! || phrase in it.credits!! || phrase in it.nftName!!
+        }
+
+        // Get all songs forcing pagination
+        var offset = 0
+        val limit = 5
+        val actualSongs = mutableListOf<Song>()
+        while (true) {
+            val response = client.get("v1/songs") {
+                bearerAuth(testUserToken)
+                accept(ContentType.Application.Json)
+                parameter("offset", offset)
+                parameter("limit", limit)
+                parameter("phrase", phrase)
             }
             assertThat(response.status).isEqualTo(HttpStatusCode.OK)
             val songs = response.body<List<Song>>()
@@ -670,5 +798,51 @@ class SongRoutesTests : BaseApplicationTests() {
 
         // verify all
         assertThat(actualGenres).isEqualTo(expectedGenres)
+    }
+
+    @Test
+    fun testGetSongCount() = runBlocking {
+        var count = 0L
+        while (true) {
+            val response = client.get("v1/songs/count") {
+                bearerAuth(testUserToken)
+            }
+            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+            val actualCount = response.body<CountResponse>().count
+            assertThat(actualCount).isEqualTo(count)
+
+            if (++count == 10L) break
+
+            transaction {
+                SongEntity.new {
+                    this.ownerId = EntityID(testUserId, UserTable)
+                    title = "song$count"
+                    genres = arrayOf("genre")
+                }
+            }
+        }
+    }
+
+    @Test
+    fun testGetSongGenreCount() = runBlocking {
+        var count = 0L
+        while (true) {
+            val response = client.get("v1/songs/genres/count") {
+                bearerAuth(testUserToken)
+            }
+            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+            val actualCount = response.body<CountResponse>().count
+            assertThat(actualCount).isEqualTo(count)
+
+            if (++count == 10L) break
+
+            transaction {
+                SongEntity.new {
+                    this.ownerId = EntityID(testUserId, UserTable)
+                    title = "song$count"
+                    genres = arrayOf("genre$count")
+                }
+            }
+        }
     }
 }

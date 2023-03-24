@@ -68,6 +68,13 @@ internal class PlaylistRepositoryImpl : PlaylistRepository {
         }
     }
 
+    override suspend fun getAllCount(filters: PlaylistFilters): Long {
+        logger.debug { "getAllCount: filters = $filters" }
+        return transaction {
+            PlaylistEntity.all(filters).count()
+        }
+    }
+
     override suspend fun addSong(playlistId: UUID, songId: UUID, requesterId: UUID) {
         logger.debug { "addSong: playlistId = $playlistId, songId = $songId" }
         return transaction {

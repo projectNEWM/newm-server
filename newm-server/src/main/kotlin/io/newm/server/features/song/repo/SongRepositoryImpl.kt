@@ -99,12 +99,26 @@ internal class SongRepositoryImpl(
         }
     }
 
+    override suspend fun getAllCount(filters: SongFilters): Long {
+        logger.debug { "getAllCount: filters = $filters" }
+        return transaction {
+            SongEntity.all(filters).count()
+        }
+    }
+
     override suspend fun getGenres(filters: SongFilters, offset: Int, limit: Int): List<String> {
         logger.debug { "getGenres: filters = $filters, offset = $offset, limit = $limit" }
         return transaction {
             SongEntity.genres(filters)
                 .limit(n = limit, offset = offset.toLong())
                 .toList()
+        }
+    }
+
+    override suspend fun getGenreCount(filters: SongFilters): Long {
+        logger.debug { "getGenresCount: filters = $filters" }
+        return transaction {
+            SongEntity.genres(filters).count()
         }
     }
 

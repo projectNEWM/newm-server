@@ -13,13 +13,17 @@ import io.ktor.server.routing.post
 import io.ktor.server.routing.put
 import io.ktor.server.routing.route
 import io.newm.server.auth.jwt.AUTH_JWT
-import io.newm.server.ext.*
-import io.newm.shared.koin.inject
+import io.newm.server.ext.limit
+import io.newm.server.ext.myUserId
+import io.newm.server.ext.offset
+import io.newm.server.ext.playlistId
+import io.newm.server.ext.songId
+import io.newm.server.features.model.CountResponse
 import io.newm.server.features.playlist.model.PlaylistIdBody
 import io.newm.server.features.playlist.model.playlistFilters
-import io.newm.server.features.song.model.SongIdBody
 import io.newm.server.features.playlist.repo.PlaylistRepository
-import io.newm.shared.ext.*
+import io.newm.server.features.song.model.SongIdBody
+import io.newm.shared.koin.inject
 
 private const val PLAYLISTS_PATH = "v1/playlists"
 
@@ -39,6 +43,11 @@ fun Routing.createPlaylistRoutes() {
                     respond(
                         repository.getAll(playlistFilters, offset, limit)
                     )
+                }
+            }
+            get("count") {
+                with(call) {
+                    respond(CountResponse(repository.getAllCount(playlistFilters)))
                 }
             }
             route("{playlistId}") {
