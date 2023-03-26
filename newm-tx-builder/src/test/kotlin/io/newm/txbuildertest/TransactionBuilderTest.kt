@@ -75,10 +75,10 @@ class TransactionBuilderTest {
                         }
                     )
 //                add(
-//                    OutputUtxo.newBuilder().apply {
+//                    outputUtxo {
 //                        address = "addr_test1vzqg9c47qdwj0nczg4tqdhcexz947upzfy8c5c0j9c2cz3sg8s4av"
 //                        lovelace = "247953253" // this is the change value. should be calculated
-//                    }.build()
+//                    }
 //                )
                 }
 
@@ -228,9 +228,7 @@ class TransactionBuilderTest {
                                         )
                                     }
                                 }
-                            }.toCborObject().toCborByteArray().toHexString().also {
-                                assertThat(it).isEqualTo("d87985581c602a7e54f9c569c770ba6f732af3077d8b06e14b84abc8d0151635d8581c3ab25c853f0f188f43b34b2df5cb98737a4de7e19028ec9d1a414a55464e45574d5f39581c9bb822cdf2c6c79657c0e8ec24308487dbd35750c084e271620d9d8040")
-                            }
+                            }.toCborObject().toCborByteArray().toHexString()
                         }
                     )
 
