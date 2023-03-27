@@ -7,9 +7,13 @@ package newmchain;
 
 service NewmChain {
   rpc SubmitTransaction (SubmitTransactionRequest) returns (SubmitTransactionResponse) {}
+  rpc QueryCurrentEpoch (QueryCurrentEpochRequest) returns (QueryCurrentEpochResponse) {}
   rpc QueryUtxos (QueryUtxosRequest) returns (QueryUtxosResponse) {}
   rpc QueryLiveUtxos (QueryUtxosRequest) returns (QueryUtxosResponse) {}
   rpc MonitorAddress (MonitorAddressRequest) returns (stream MonitorAddressResponse) {}
+  rpc IsMainnet (IsMainnetRequest) returns (IsMainnetResponse) {}
+  rpc MonitorPaymentAddress (MonitorPaymentAddressRequest) returns (MonitorPaymentAddressResponse) {}
+  rpc TransactionBuilder (TransactionBuilderRequest) returns (TransactionBuilderResponse) {}
 }
 
 message SubmitTransactionRequest {
@@ -19,6 +23,18 @@ message SubmitTransactionRequest {
 message SubmitTransactionResponse {
   string result = 1;
   string tx_id = 2;
+}
+
+message QueryCurrentEpochRequest {}
+
+message QueryCurrentEpochResponse {
+  uint64 epoch = 1;
+}
+
+message QueryProtocolParametersRequest {}
+
+message QueryProtocolParametersResult {
+
 }
 
 message QueryUtxosRequest {
@@ -161,4 +177,62 @@ message NativeScriptInvalidBefore {
 message NativeScriptInvalidHereafter {
   // type == 5
   uint64 absolute_slot = 1;
+}
+
+message IsMainnetRequest {}
+
+message IsMainnetResponse {
+  bool is_mainnet = 1;
+}
+
+message MonitorPaymentAddressRequest {
+  string address = 1;
+  string lovelace = 3;
+  uint64 timeout_ms = 2;
+  repeated NativeAsset native_assets = 4;
+}
+
+message MonitorPaymentAddressResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message TransactionBuilderRequest {
+  repeated Utxo source_utxos = 1;
+  repeated OutputUtxo output_utxos = 2;
+  repeated SigningKey signing_keys = 3;
+  repeated Signature signatures = 4;
+  repeated NativeAsset mint_tokens = 5;
+  repeated Utxo reference_inputs = 6;
+  repeated NativeScript native_scripts = 7;
+  repeated bytes plutus_v1_scripts = 8;
+  repeated bytes plutus_v2_scripts = 9;
+  repeated NativeScript aux_native_scripts = 10;
+  repeated bytes aux_plutus_v1_scripts = 11;
+  repeated bytes aux_plutus_v2_scripts = 12;
+  repeated Utxo collateral_utxos = 13;
+  repeated bytes required_signers = 14;
+  repeated Redeemer redeemers = 15;
+  repeated PlutusData datums = 16;
+  optional string change_address = 17;
+  optional uint64 fee = 18;
+  optional uint64 ttl_absolute_slot = 19;
+  optional bytes aux_data_hash = 20;
+  optional uint64 validity_interval_start = 21;
+  optional bytes script_data_hash = 22;
+  optional NetworkId network_id = 23;
+  optional string collateral_return_address = 24;
+  optional OutputUtxo collateral_return = 25;
+  optional uint64 total_collateral = 26;
+  optional bytes transaction_metadata_cbor = 27;
+}
+
+message TransactionBuilderResponse {
+  string transaction_id = 1;
+  bytes transaction_cbor = 2;
+}
+
+enum NetworkId {
+  TESTNET = 0;
+  MAINNET = 1;
 }

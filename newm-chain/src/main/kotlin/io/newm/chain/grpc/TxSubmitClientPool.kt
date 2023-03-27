@@ -13,7 +13,7 @@ import org.slf4j.Logger
 class TxSubmitClientPool(
     capacity: Int
 ) : DefaultPool<TxSubmitClient>(capacity) {
-    private val log: Logger by inject { parametersOf("OgmiosClientPool") }
+    private val log: Logger by inject { parametersOf("TxSubmitClientPool") }
 
     private val environment: ApplicationEnvironment by inject()
     private val ogmiosConfig by lazy { environment.config.config("ogmios") }

@@ -25,5 +25,7 @@ data class Song(
     val nftPolicyId: String? = null,
     val nftName: String? = null,
     val mintingStatus: MintingStatus? = null,
-    val marketplaceStatus: MarketplaceStatus? = null
+    val marketplaceStatus: MarketplaceStatus? = null,
+    @Serializable(with = UUIDSerializer::class)
+    val paymentKeyId: UUID? = null,
 )

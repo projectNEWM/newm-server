@@ -21,6 +21,9 @@ application {
 dependencies {
     implementation(project(":newm-shared"))
     implementation(project(":newm-chain-grpc"))
+    implementation(project(":newm-chain-util"))
+    implementation(project(":newm-tx-builder"))
+    implementation(Dependencies.Newm.KOGMIOS)
 
     compileOnly(Dependencies.Kotlin.REFLECTION)
     implementation(Dependencies.Kotlin.STDLIB_JDK8)
@@ -66,12 +69,16 @@ dependencies {
     implementation(Dependencies.Sentry.LOGBACK)
     implementation(Dependencies.ApacheCommonsEmail.ALL)
     implementation(Dependencies.JBCrypt.ALL)
+    implementation(Dependencies.BouncyCastle.BCPROV)
+    implementation(Dependencies.Cbor.CBOR)
+    implementation(Dependencies.Caffeine.ALL)
 
     implementation(Dependencies.Cloudinary.ALL)
 
     implementation(platform(Dependencies.Aws.BOM))
     implementation(Dependencies.Aws.S3)
     implementation(Dependencies.Aws.SQS)
+    implementation(Dependencies.Aws.KMS)
 
     testImplementation(Dependencies.JUnit.JUPITER)
     testImplementation(Dependencies.Mockk.MOCKK)
@@ -91,5 +98,16 @@ tasks {
 
         // defaults to all, so removing this overrides the normal, non-fat jar
         archiveClassifier.set("")
+    }
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+    kotlinOptions {
+        freeCompilerArgs = listOf(
+            "-Xjsr305=strict",
+            "-opt-in=kotlin.RequiresOptIn",
+            "-opt-in=kotlinx.serialization.ExperimentalSerializationApi"
+        )
+        jvmTarget = "17"
     }
 }

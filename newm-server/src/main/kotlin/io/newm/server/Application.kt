@@ -4,7 +4,6 @@ import io.ktor.server.application.*
 import io.ktor.server.routing.*
 import io.newm.server.auth.createAuthenticationRoutes
 import io.newm.server.auth.installAuthentication
-import io.newm.server.aws.initializeAws
 import io.newm.server.content.installContentNegotiation
 import io.newm.server.cors.installCORS
 import io.newm.server.database.initializeDatabase
@@ -18,6 +17,7 @@ import io.newm.server.logging.initializeSentry
 import io.newm.server.logging.installCallLogging
 import io.newm.server.staticcontent.createStaticContentRoutes
 import io.newm.server.statuspages.installStatusPages
+import io.newm.shared.daemon.initializeDaemons
 
 fun main(args: Array<String>) = io.ktor.server.cio.EngineMain.main(args)
 
@@ -33,8 +33,6 @@ fun Application.module() {
     installStatusPages()
     installCORS()
 
-    initializeAws()
-
     routing {
         createStaticContentRoutes()
         createAuthenticationRoutes()
@@ -44,4 +42,6 @@ fun Application.module() {
         createCloudinaryRoutes()
         createIdenfyRoutes()
     }
+
+    initializeDaemons()
 }

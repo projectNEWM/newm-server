@@ -24,7 +24,7 @@ import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
 import java.time.LocalDateTime
-import java.util.UUID
+import java.util.*
 
 class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     val createdAt: LocalDateTime by SongTable.createdAt
@@ -41,6 +41,7 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var nftName: String? by SongTable.nftName
     var mintingStatus: MintingStatus by SongTable.mintingStatus
     var marketplaceStatus: MarketplaceStatus by SongTable.marketplaceStatus
+    var paymentKeyId: EntityID<UUID>? by SongTable.paymentKeyId
 
     fun toModel(): Song = Song(
         id = id.value,
@@ -57,7 +58,8 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         nftPolicyId = nftPolicyId,
         nftName = nftName,
         mintingStatus = mintingStatus,
-        marketplaceStatus = marketplaceStatus
+        marketplaceStatus = marketplaceStatus,
+        paymentKeyId = paymentKeyId?.value,
     )
 
     companion object : UUIDEntityClass<SongEntity>(SongTable) {

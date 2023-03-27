@@ -2,6 +2,8 @@ package io.newm.server.aws
 
 import com.amazonaws.auth.AWSCredentialsProvider
 import com.amazonaws.regions.Regions
+import com.amazonaws.services.kms.AWSKMSAsync
+import com.amazonaws.services.kms.AWSKMSAsyncClientBuilder
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import com.amazonaws.services.sqs.AmazonSQSAsync
@@ -21,6 +23,13 @@ val awsKoinModule = module {
 
     single<AmazonSQSAsync> {
         AmazonSQSAsyncClientBuilder.standard()
+            .withRegion(get<Regions>())
+            .withCredentials(get())
+            .build()
+    }
+
+    single<AWSKMSAsync> {
+        AWSKMSAsyncClientBuilder.standard()
             .withRegion(get<Regions>())
             .withCredentials(get())
             .build()

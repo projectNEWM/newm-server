@@ -6,20 +6,22 @@ import com.google.iot.cbor.CborByteString
 import com.google.iot.cbor.CborInteger
 import com.google.iot.cbor.CborMap
 import com.google.iot.cbor.CborObject
+import com.google.iot.cbor.CborReader
 import com.google.iot.cbor.CborSimple
 import io.newm.chain.grpc.NativeAsset
 import io.newm.chain.grpc.NativeScript
+import io.newm.chain.grpc.NetworkId
 import io.newm.chain.grpc.OutputUtxo
 import io.newm.chain.grpc.PlutusData
 import io.newm.chain.grpc.Redeemer
 import io.newm.chain.grpc.Signature
 import io.newm.chain.grpc.SigningKey
+import io.newm.chain.grpc.TransactionBuilderRequest
 import io.newm.chain.grpc.Utxo
 import io.newm.chain.grpc.exUnits
 import io.newm.chain.grpc.outputUtxo
 import io.newm.chain.grpc.redeemer
 import io.newm.chain.util.Blake2b
-import io.newm.chain.util.NetworkId
 import io.newm.chain.util.toHexString
 import io.newm.kogmios.protocols.messages.EvaluationResult
 import io.newm.kogmios.protocols.model.QueryCurrentProtocolBabbageParametersResult
@@ -405,7 +407,7 @@ class TransactionBuilder(
                         it.map { requiredSigner -> CborByteString.create(requiredSigner) }
                     )
                 },
-                TX_KEY_NETWORK_ID to networkId?.value?.let { CborInteger.create(it) },
+                TX_KEY_NETWORK_ID to networkId?.number?.let { CborInteger.create(it) },
                 TX_KEY_COLLATERAL_RETURN to collateralReturn?.toCborObject(),
                 TX_KEY_TOTAL_COLLATERAL to totalCollateral?.let { CborInteger.create(it) },
                 TX_KEY_REFERENCE_INPUTS to referenceInputs?.toCborObject(),
@@ -542,15 +544,127 @@ class TransactionBuilder(
         }
     }
 
+    fun loadFrom(request: TransactionBuilderRequest) {
+        sourceUtxos {
+            addAll(request.sourceUtxosList)
+        }
+
+        outputUtxos {
+            addAll(request.outputUtxosList)
+        }
+
+        signingKeys {
+            addAll(request.signingKeysList)
+        }
+
+        signatures {
+            addAll(request.signaturesList)
+        }
+
+        mintTokens {
+            addAll(request.mintTokensList)
+        }
+
+        referenceInputs {
+            addAll(request.referenceInputsList)
+        }
+
+        nativeScripts {
+            addAll(request.nativeScriptsList)
+        }
+
+        plutusV1Scripts {
+            addAll(request.plutusV1ScriptsList.map { it.toByteArray() })
+        }
+
+        plutusV2Scripts {
+            addAll(request.plutusV2ScriptsList.map { it.toByteArray() })
+        }
+
+        auxNativeScripts {
+            addAll(request.auxNativeScriptsList)
+        }
+
+        auxPlutusV1Scripts {
+            addAll(request.auxPlutusV1ScriptsList.map { it.toByteArray() })
+        }
+
+        auxPlutusV2Scripts {
+            addAll(request.auxPlutusV2ScriptsList.map { it.toByteArray() })
+        }
+
+        collateralUtxos {
+            addAll(request.collateralUtxosList)
+        }
+
+        requiredSigners {
+            addAll(request.requiredSignersList.map { it.toByteArray() })
+        }
+
+        redeemers {
+            addAll(request.redeemersList)
+        }
+
+        datums {
+            addAll(request.datumsList)
+        }
+
+        if (request.hasChangeAddress()) {
+            changeAddress = request.changeAddress
+        }
+
+        if (request.hasFee()) {
+            fee = request.fee
+        }
+
+        if (request.hasTtlAbsoluteSlot()) {
+            ttlAbsoluteSlot = request.ttlAbsoluteSlot
+        }
+
+        if (request.hasAuxDataHash()) {
+            auxDataHash = request.auxDataHash.toByteArray()
+        }
+
+        if (request.hasValidityIntervalStart()) {
+            validityIntervalStart = request.validityIntervalStart
+        }
+
+        if (request.hasScriptDataHash()) {
+            scriptDataHash = request.scriptDataHash.toByteArray()
+        }
+
+        if (request.hasNetworkId()) {
+            networkId = request.networkId
+        }
+
+        if (request.hasCollateralReturnAddress()) {
+            collateralReturnAddress = request.collateralReturnAddress
+        }
+
+        if (request.hasCollateralReturn()) {
+            collateralReturn = request.collateralReturn
+        }
+
+        if (request.hasTotalCollateral()) {
+            totalCollateral = request.totalCollateral
+        }
+
+        if (request.hasTransactionMetadataCbor()) {
+            transactionMetadata =
+                CborReader.createFromByteArray(request.transactionMetadataCbor.toByteArray()).readDataItem() as CborMap
+        }
+    }
+
     companion object {
         suspend fun transactionBuilder(
             protocolParameters: QueryCurrentProtocolBabbageParametersResult,
             calculateTxExecutionUnits: (suspend (ByteArray) -> EvaluationResult)? = null,
             block: TransactionBuilder.() -> Unit
-        ): ByteArray {
+        ): Pair<String, ByteArray> {
             val transactionBuilder = TransactionBuilder(protocolParameters, calculateTxExecutionUnits)
             block.invoke(transactionBuilder)
-            return transactionBuilder.build()
+            val cborBytes = transactionBuilder.build()
+            return Pair(transactionBuilder.transactionId, cborBytes)
         }
 
         private val TX_KEY_UTXO_INPUTS by lazy { CborInteger.create(0) }

@@ -1,6 +1,7 @@
-package io.newm.chain.daemon
+package io.newm.shared.daemon
 
-import io.ktor.server.application.*
+import io.ktor.server.application.Application
+import io.ktor.server.application.ApplicationStopPreparing
 import org.koin.ktor.ext.getKoin
 
 fun Application.initializeDaemons() {
@@ -10,7 +11,7 @@ fun Application.initializeDaemons() {
     // Add shutdown hook
     environment.monitor.subscribe(ApplicationStopPreparing) {
         // Shutdown the Daemons
-        daemons.forEach { controller -> controller.shutdown() }
+        daemons.forEach { daemon -> daemon.shutdown() }
     }
 
     daemons.forEach { it.start() }

@@ -59,6 +59,7 @@ import io.newm.kogmios.protocols.model.MetadataValue
 import io.newm.kogmios.protocols.model.OriginString
 import io.newm.kogmios.protocols.model.PointDetail
 import io.newm.kogmios.protocols.model.PointDetailOrOrigin
+import io.newm.shared.daemon.Daemon
 import io.newm.shared.ext.debug
 import io.newm.shared.ext.getConfigBoolean
 import io.newm.shared.ext.getConfigInt
@@ -92,6 +93,7 @@ class BlockDaemon(
     private val ledgerRepository: LedgerRepository,
     private val submittedTransactionCache: SubmittedTransactionCache,
     private val blockFlow: MutableSharedFlow<Block>,
+    private val confirmedBlockFlow: MutableSharedFlow<Block>,
 ) : Daemon {
     override val log: Logger by inject { parametersOf("BlockDaemon") }
 
@@ -133,14 +135,23 @@ class BlockDaemon(
     private fun startChainSync() {
         launch {
             // Fetch network genesis information
-            createStateQueryClient(
-                websocketHost = server,
-                websocketPort = port,
-                secure = secure,
-                ogmiosCompact = true,
-            ).use { stateQueryClient ->
-                connect(stateQueryClient)
-                fetchNetworkInfo(stateQueryClient)
+            while (true) {
+                try {
+                    createStateQueryClient(
+                        websocketHost = server,
+                        websocketPort = port,
+                        secure = secure,
+                        ogmiosCompact = true,
+                    ).use { stateQueryClient ->
+                        connect(stateQueryClient)
+                        fetchNetworkInfo(stateQueryClient)
+                    }
+                    break
+                } catch (e: Throwable) {
+                    log.error("Error connecting Kogmios!", e)
+                    log.info("Wait 10 seconds to retry...")
+                    delay(RETRY_DELAY_MILLIS)
+                }
             }
 
             while (true) {
@@ -604,6 +615,10 @@ class BlockDaemon(
                         // Wait for 3 confirmations before processing
                         if (blockDelayQueue.size > 3) {
                             val oldestBlock = blockDelayQueue.poll()
+
+                            // emit block as confirmed for other monitors
+                            confirmedBlockFlow.emit(oldestBlock)
+
                             val spentUtxoMap = oldestBlock.toSpentUtxoMap()
                             val createdUtxoMap = oldestBlock.toCreatedUtxoMap()
                             val transactionIds = spentUtxoMap.keys + createdUtxoMap.keys
