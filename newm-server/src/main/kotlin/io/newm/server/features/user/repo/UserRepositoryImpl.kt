@@ -61,6 +61,7 @@ internal class UserRepositoryImpl(
         logger.debug { "find: email = $email" }
         return transaction {
             val entity = getUserEntityByEmail(email)
+            entity.checkNonOAuth()
             password.checkAuth(entity.passwordHash)
             entity.id.value
         }
@@ -147,6 +148,7 @@ internal class UserRepositoryImpl(
                 entity.email = it
             }
             passwordHash?.let {
+                entity.checkNonOAuth()
                 user.currentPassword.checkAuth(entity.passwordHash)
                 entity.passwordHash = it
             }
