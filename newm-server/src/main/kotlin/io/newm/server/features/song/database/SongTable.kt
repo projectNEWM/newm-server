@@ -1,9 +1,10 @@
 package io.newm.server.features.song.database
 
-import io.newm.shared.exposed.textArray
+import io.newm.server.features.cardano.database.KeyTable
 import io.newm.server.features.song.model.MarketplaceStatus
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.user.database.UserTable
+import io.newm.shared.exposed.textArray
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.Column
@@ -11,7 +12,7 @@ import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.javatime.CurrentDateTime
 import org.jetbrains.exposed.sql.javatime.datetime
 import java.time.LocalDateTime
-import java.util.UUID
+import java.util.*
 
 object SongTable : UUIDTable(name = "songs") {
     val createdAt: Column<LocalDateTime> = datetime("created_at").defaultExpression(CurrentDateTime)
@@ -30,4 +31,6 @@ object SongTable : UUIDTable(name = "songs") {
         enumeration("minting_status", MintingStatus::class).default(MintingStatus.Undistributed)
     val marketplaceStatus: Column<MarketplaceStatus> =
         enumeration("marketplace_status", MarketplaceStatus::class).default(MarketplaceStatus.NotSelling)
+    val paymentKeyId: Column<EntityID<UUID>?> =
+        reference("payment_key_id", KeyTable, onDelete = ReferenceOption.NO_ACTION).nullable()
 }

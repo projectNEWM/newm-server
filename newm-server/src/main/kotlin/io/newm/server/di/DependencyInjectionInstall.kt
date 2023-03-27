@@ -3,9 +3,11 @@ package io.newm.server.di
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.newm.server.auth.authKoinModule
-import io.newm.server.client.clientKoinModule
 import io.newm.server.aws.awsKoinModule
+import io.newm.server.client.clientKoinModule
+import io.newm.server.features.cardano.cardanoKoinModule
 import io.newm.server.features.cloudinary.cloudinaryKoinModule
+import io.newm.server.features.daemon.daemonsKoinModule
 import io.newm.server.features.idenfy.idenfyKoinModule
 import io.newm.server.features.playlist.playlistKoinModule
 import io.newm.server.features.song.songKoinModule
@@ -33,6 +35,8 @@ fun Application.installDependencyInjection() {
             cloudinaryKoinModule,
             awsKoinModule,
             idenfyKoinModule,
+            cardanoKoinModule,
+            daemonsKoinModule,
         )
     }
 }

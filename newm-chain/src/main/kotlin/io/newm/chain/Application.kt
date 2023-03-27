@@ -3,7 +3,7 @@ package io.newm.chain
 import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.Logger
 import io.ktor.server.application.*
-import io.newm.chain.daemon.initializeDaemons
+import io.newm.shared.daemon.initializeDaemons
 import io.newm.chain.database.initializeDatabase
 import io.newm.chain.di.installDependencyInjection
 import io.newm.chain.grpc.GrpcConfig

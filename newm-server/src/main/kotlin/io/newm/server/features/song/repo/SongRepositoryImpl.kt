@@ -5,6 +5,7 @@ import com.amazonaws.HttpMethod
 import com.amazonaws.services.s3.AmazonS3
 import io.ktor.server.application.*
 import io.ktor.util.logging.*
+import io.newm.server.features.cardano.database.KeyTable
 import io.newm.shared.exception.HttpForbiddenException
 import io.newm.shared.exception.HttpUnprocessableEntityException
 import io.newm.server.features.song.database.SongEntity
@@ -47,6 +48,7 @@ internal class SongRepositoryImpl(
                 nftName = song.nftName
                 mintingStatus = song.mintingStatus ?: mintingStatus
                 marketplaceStatus = song.marketplaceStatus ?: marketplaceStatus
+                this.paymentKeyId = song.paymentKeyId?.let { EntityID(it, KeyTable) } ?: paymentKeyId
             }.id.value
         }
     }
@@ -70,6 +72,7 @@ internal class SongRepositoryImpl(
                 nftName?.let { entity.nftName = it }
                 mintingStatus?.let { entity.mintingStatus = it }
                 marketplaceStatus?.let { entity.marketplaceStatus = it }
+                paymentKeyId?.let { entity.paymentKeyId = EntityID(it, KeyTable) }
             }
         }
     }

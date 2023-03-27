@@ -3,27 +3,20 @@ package io.newm.chain.database.repository
 import io.newm.chain.config.Config
 import io.newm.chain.database.entity.ChainBlock
 import io.newm.chain.database.table.ChainTable
-import io.newm.chain.database.table.KeysTable
 import io.newm.chain.database.table.PaymentStakeAddressTable
-import io.newm.chain.database.table.TransactionDestAddressTable
 import io.newm.chain.util.Blake2b
 import io.newm.chain.util.hexToByteArray
 import io.newm.chain.util.toHexString
 import io.newm.kogmios.protocols.model.PointDetail
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.greaterEq
-import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.batchInsert
 import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.exists
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.max
-import org.jetbrains.exposed.sql.notExists
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
-import org.jetbrains.exposed.sql.wrapAsExpression
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -94,7 +87,7 @@ class ChainRepositoryImpl : ChainRepository {
                     .singleOrNull()?.get(ChainTable.etaV)
                     ?: Config.shelleyGenesisHash
 
-                val chainId = ChainTable.insertAndGetId { row ->
+                ChainTable.insertAndGetId { row ->
                     row[blockNumber] = block.blockNumber
                     row[slotNumber] = block.slotNumber
                     row[hash] = block.hash
@@ -120,17 +113,6 @@ class ChainRepositoryImpl : ChainRepository {
                     row[created] = System.currentTimeMillis()
                     row[processed] = false
                 }.value
-
-                if (block.transactionDestAddresses.isNotEmpty()) {
-                    TransactionDestAddressTable.batchInsert(
-                        block.transactionDestAddresses,
-                        shouldReturnGeneratedValues = false
-                    ) {
-                        this[TransactionDestAddressTable.address] = it
-                        this[TransactionDestAddressTable.chainId] = chainId
-                        this[TransactionDestAddressTable.processed] = false
-                    }
-                }
 
                 if (block.stakeDestAddresses.isNotEmpty()) {
                     // Ignore errors as we want to just keep the existing record as-is because it's older
@@ -183,14 +165,6 @@ class ChainRepositoryImpl : ChainRepository {
                 row[processed] = false
             }.value
 
-            if (block.transactionDestAddresses.isNotEmpty()) {
-                TransactionDestAddressTable.batchInsert(block.transactionDestAddresses) {
-                    this[TransactionDestAddressTable.address] = it
-                    this[TransactionDestAddressTable.chainId] = chainId
-                    this[TransactionDestAddressTable.processed] = false
-                }
-            }
-
             if (block.stakeDestAddresses.isNotEmpty()) {
                 // Ignore errors as we want to just keep the existing record as-is because it's older
                 PaymentStakeAddressTable.batchInsert(
@@ -204,50 +178,6 @@ class ChainRepositoryImpl : ChainRepository {
             }
 
             chainId
-        }
-    }
-
-    override fun markNonPurchaseAddressesAsProcessed() {
-        transaction {
-            // logDebug(log)
-            TransactionDestAddressTable.update({
-                TransactionDestAddressTable.processed.eq(false) and
-                    notExists(
-                        KeysTable.slice(KeysTable.id).select {
-                            TransactionDestAddressTable.processed.eq(false) and
-                                KeysTable.address.eq(TransactionDestAddressTable.address)
-                        }
-                    )
-            }) {
-                it[processed] = true
-            }
-        }
-    }
-
-    /**
-     * Check to see if this address we're waiting on has an unprocessed transaction on the blockchain 3 behind tip
-     */
-    override fun shouldProcessAddress(address: String): Boolean {
-        return transaction {
-            // logDebug(log)
-            val updateCount = TransactionDestAddressTable.update({
-                TransactionDestAddressTable.address.eq(address) and TransactionDestAddressTable.processed.eq(false) and
-                    exists(
-                        (ChainTable innerJoin TransactionDestAddressTable).slice(ChainTable.blockNumber).select {
-                            (TransactionDestAddressTable.address eq address) and
-                                (TransactionDestAddressTable.processed eq false) and
-                                (
-                                    ChainTable.blockNumber + STABILITY_WINDOW lessEq wrapAsExpression(
-                                        ChainTable.slice(ChainTable.blockNumber.max()).selectAll()
-                                    )
-                                    )
-                        }
-                    )
-            }) {
-                it[processed] = true
-            }
-
-            updateCount > 0
         }
     }
 

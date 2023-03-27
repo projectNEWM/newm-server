@@ -8,6 +8,7 @@ import io.ktor.server.config.ApplicationConfig
 import io.ktor.server.testing.TestApplication
 import io.newm.server.auth.jwt.database.JwtTable
 import io.newm.server.auth.twofactor.database.TwoFactorAuthTable
+import io.newm.server.features.cardano.database.KeyTable
 import io.newm.server.features.playlist.database.PlaylistTable
 import io.newm.server.features.playlist.database.SongsInPlaylistsTable
 import io.newm.server.features.song.database.SongTable
@@ -76,9 +77,10 @@ open class BaseApplicationTests {
                 UserTable,
                 TwoFactorAuthTable,
                 JwtTable,
+                KeyTable,
                 SongTable,
                 PlaylistTable,
-                SongsInPlaylistsTable
+                SongsInPlaylistsTable,
             )
         }
         application.start()

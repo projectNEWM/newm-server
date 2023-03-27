@@ -5,11 +5,13 @@ import com.google.iot.cbor.CborByteString
 import com.google.iot.cbor.CborInteger
 import com.google.iot.cbor.CborMap
 import com.google.iot.cbor.CborObject
+import io.newm.chain.grpc.NativeAsset
 import io.newm.chain.grpc.OutputUtxo
 import io.newm.chain.grpc.Utxo
 import io.newm.chain.util.Bech32
 import io.newm.chain.util.hexToByteArray
 import io.newm.txbuilder.TransactionBuilder
+import java.math.BigInteger
 
 /**
  * Convert input utxos into cbor so it can be included in a transaction.
@@ -28,6 +30,11 @@ fun List<Utxo>.toCborObject(): CborObject? {
             )
         }
     )
+}
+
+fun List<Utxo>.selectUtxos(requiredLovelace: BigInteger, requiredNativeAssets: List<NativeAsset> = emptyList()): List<Utxo> {
+    // FIXME: implement
+    return emptyList()
 }
 
 /**

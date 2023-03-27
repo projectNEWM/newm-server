@@ -15,7 +15,10 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
+import io.newm.chain.util.toHexString
 import io.newm.server.BaseApplicationTests
+import io.newm.server.features.cardano.database.KeyEntity
+import io.newm.server.features.cardano.database.KeyTable
 import io.newm.server.features.model.CountResponse
 import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.database.SongTable
@@ -38,6 +41,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.time.Instant
 import java.time.LocalDateTime
+import java.util.*
 
 class SongRoutesTests : BaseApplicationTests() {
 
@@ -45,12 +49,21 @@ class SongRoutesTests : BaseApplicationTests() {
     fun beforeEach() {
         transaction {
             SongTable.deleteAll()
+            KeyTable.deleteAll()
         }
     }
 
     @Test
     fun testPostSong() = runBlocking {
         val startTime = LocalDateTime.now()
+
+        val key = transaction {
+            KeyEntity.new(id = UUID.fromString("00000000-0000-0000-0000-000000000000")) {
+                this.address = testKey.address
+                this.vkey = testKey.vkey.toHexString()
+                this.skey = testKey.skey.toHexString()
+            }
+        }.toModel(testKey.skey)
 
         // Post
         val response = client.post("v1/songs") {
@@ -77,10 +90,19 @@ class SongRoutesTests : BaseApplicationTests() {
         assertThat(song.nftName).isEqualTo(testSong1.nftName)
         assertThat(song.mintingStatus).isEqualTo(testSong1.mintingStatus)
         assertThat(song.marketplaceStatus).isEqualTo(testSong1.marketplaceStatus)
+        assertThat(song.paymentKeyId).isEqualTo(testSong1.paymentKeyId)
     }
 
     @Test
     fun testGetSong() = runBlocking {
+        val key = transaction {
+            KeyEntity.new(id = UUID.fromString("00000000-0000-0000-0000-000000000000")) {
+                this.address = testKey.address
+                this.vkey = testKey.vkey.toHexString()
+                this.skey = testKey.skey.toHexString()
+            }
+        }.toModel(testKey.skey)
+
         // Add Song directly into database
         val song = transaction {
             SongEntity.new {
@@ -97,6 +119,7 @@ class SongRoutesTests : BaseApplicationTests() {
                 nftName = testSong1.nftName
                 mintingStatus = testSong1.mintingStatus!!
                 marketplaceStatus = testSong1.marketplaceStatus!!
+                paymentKeyId = EntityID(testSong1.paymentKeyId!!, KeyTable)
             }
         }.toModel()
 

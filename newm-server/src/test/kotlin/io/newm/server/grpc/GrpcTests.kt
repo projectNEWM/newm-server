@@ -11,6 +11,8 @@ import io.newm.chain.grpc.QueryUtxosRequest
 import io.newm.chain.grpc.QueryUtxosResponse
 import io.newm.chain.grpc.SubmitTransactionRequest
 import io.newm.chain.grpc.SubmitTransactionResponse
+import io.newm.chain.grpc.monitorPaymentAddressRequest
+import io.newm.chain.grpc.nativeAsset
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
@@ -147,5 +149,41 @@ class GrpcTests {
             println("transaction: $monitorAddressUtxosResponse")
             println()
         }
+    }
+
+    @Test
+    @Disabled
+    fun `test monitorPaymentAddress`() = runBlocking {
+        val channel =
+            ManagedChannelBuilder.forAddress("newm-chain.cardanostakehouse.com", 3737).useTransportSecurity().build()
+        // plainText for localhost testing only. use SSL later.
+//        val channel = ManagedChannelBuilder.forAddress("localhost", 3737).usePlaintext().build()
+        val client =
+            NewmChainGrpcKt.NewmChainCoroutineStub(channel).withInterceptors(
+                MetadataUtils.newAttachHeadersInterceptor(
+                    Metadata().apply {
+                        put(
+                            Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER),
+                            "Bearer <JWT_TOKEN_HERE_DO_NOT_COMMIT>"
+                        )
+                    }
+                )
+            )
+        val response = client.monitorPaymentAddress(
+            monitorPaymentAddressRequest {
+                address = "addr_test1vrdqad0dwcg5stk9pzdknkrsurzkc8z9rqp9vyfrnrsgxkc4r8za2"
+                lovelace = "6000000"
+                timeoutMs = 600000
+                nativeAssets.add(
+                    nativeAsset {
+                        policy = "769c4c6e9bc3ba5406b9b89fb7beb6819e638ff2e2de63f008d5bcff"
+                        name = "744e45574d" // tNEWM
+                        amount = "23"
+                    }
+                )
+            }
+        )
+        assertThat(response.success).isTrue()
+        assertThat(response.message).isEqualTo("Payment Received")
     }
 }

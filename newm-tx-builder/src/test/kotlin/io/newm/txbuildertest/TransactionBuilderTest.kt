@@ -44,7 +44,7 @@ class TransactionBuilderTest {
             val response = (client as StateQueryClient).currentProtocolParameters()
             val protocolParams = response.result as QueryCurrentProtocolBabbageParametersResult
 
-            val cborByteArray: ByteArray = transactionBuilder(protocolParams) {
+            val (_, cborByteArray) = transactionBuilder(protocolParams) {
                 sourceUtxos {
                     add(
                         utxo {
@@ -158,7 +158,7 @@ class TransactionBuilderTest {
                 (evaluateResponse.result as EvaluationResult)
             }
 
-            val cborByteArray: ByteArray = transactionBuilder(protocolParams, calculateTxExecutionUnits) {
+            val (_, cborByteArray) = transactionBuilder(protocolParams, calculateTxExecutionUnits) {
                 sourceUtxos {
                     add(
                         utxo {
@@ -478,20 +478,26 @@ class TransactionBuilderTest {
                     // 3 random signing keys for testing
                     add(
                         signingKey {
-                            skey = ByteString.fromHex("e30565043f3863fa3e9fd22790807e13f04be018d3ec7b2eec7d69a3671cf51c")
-                            vkey = ByteString.fromHex("d482feaa7d38f393d3a39b0b61d1bcab4213a09e8816ffa48931f26561b40260")
+                            skey =
+                                ByteString.fromHex("e30565043f3863fa3e9fd22790807e13f04be018d3ec7b2eec7d69a3671cf51c")
+                            vkey =
+                                ByteString.fromHex("d482feaa7d38f393d3a39b0b61d1bcab4213a09e8816ffa48931f26561b40260")
                         }
                     )
                     add(
                         signingKey {
-                            skey = ByteString.fromHex("6bfaab76198b8da79b1e46f77383534b1a6ddfb36b0ee33d4dd6ff019a3bff75")
-                            vkey = ByteString.fromHex("3cc51d63f04e5c509c34f6d6c2d6b51aaed557a66c8069fc06f15b17cc57d7e5")
+                            skey =
+                                ByteString.fromHex("6bfaab76198b8da79b1e46f77383534b1a6ddfb36b0ee33d4dd6ff019a3bff75")
+                            vkey =
+                                ByteString.fromHex("3cc51d63f04e5c509c34f6d6c2d6b51aaed557a66c8069fc06f15b17cc57d7e5")
                         }
                     )
                     add(
                         signingKey {
-                            skey = ByteString.fromHex("a7a0f3643adae688df9d9a4d29d282df4cf8ddda9de324d58155d4f0c363f1de")
-                            vkey = ByteString.fromHex("de537d884b9b84c267309e9a07a4fd857da4c81565a5d261ef4041bd08c93ca2")
+                            skey =
+                                ByteString.fromHex("a7a0f3643adae688df9d9a4d29d282df4cf8ddda9de324d58155d4f0c363f1de")
+                            vkey =
+                                ByteString.fromHex("de537d884b9b84c267309e9a07a4fd857da4c81565a5d261ef4041bd08c93ca2")
                         }
                     )
                 }

@@ -1,8 +1,11 @@
 package io.newm.server.features.song
 
+import io.newm.server.features.cardano.model.Key
 import io.newm.server.features.song.model.MarketplaceStatus
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Song
+import java.time.LocalDateTime
+import java.util.*
 
 val testSong1 = Song(
     title = "Test Song 1",
@@ -17,6 +20,7 @@ val testSong1 = Song(
     nftName = "NFT Name 1",
     mintingStatus = MintingStatus.Undistributed,
     marketplaceStatus = MarketplaceStatus.NotSelling,
+    paymentKeyId = UUID.fromString("00000000-0000-0000-0000-000000000000")
 )
 
 val testSong2 = Song(
@@ -32,4 +36,14 @@ val testSong2 = Song(
     nftName = "NFT Name 2",
     mintingStatus = MintingStatus.Distributed,
     marketplaceStatus = MarketplaceStatus.Selling
+)
+
+val testKey = Key(
+    id = UUID.fromString("00000000-0000-0000-0000-000000000000"),
+    createdAt = LocalDateTime.now(),
+    skey = ByteArray(0),
+    vkey = ByteArray(0),
+    address = "addr_test1vqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqd9tg5t",
+    script = null,
+    scriptAddress = null,
 )

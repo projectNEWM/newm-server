@@ -184,6 +184,7 @@ object Dependencies {
         const val BOM = "com.amazonaws:aws-java-sdk-bom:$VERSION"
         const val S3 = "com.amazonaws:aws-java-sdk-s3"
         const val SQS = "com.amazonaws:aws-java-sdk-sqs"
+        const val KMS = "com.amazonaws:aws-java-sdk-kms"
     }
 
     object JUnit {

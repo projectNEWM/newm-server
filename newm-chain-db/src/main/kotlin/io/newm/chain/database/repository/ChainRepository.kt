@@ -13,8 +13,4 @@ interface ChainRepository {
     fun insertAll(blocks: List<ChainBlock>)
 
     fun insert(block: ChainBlock): Long
-
-    fun markNonPurchaseAddressesAsProcessed()
-
-    fun shouldProcessAddress(address: String): Boolean
 }

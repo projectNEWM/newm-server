@@ -1,7 +1,9 @@
-package io.newm.chain.daemon
+package io.newm.shared.daemon
 
-import io.newm.chain.logging.captureToSentry
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import org.slf4j.Logger
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.CoroutineContext
@@ -21,7 +23,6 @@ interface Daemon : CoroutineScope {
                 SupervisorJob() + Dispatchers.IO + CoroutineExceptionHandler { _, throwable ->
                     if (throwable !is CancellationException) {
                         log.error("Unhandled Coroutine Exception!", throwable)
-                        throwable.captureToSentry()
                         Thread.sleep(5000)
                         exitProcess(1)
                     } else {
