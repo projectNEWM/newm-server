@@ -102,7 +102,7 @@ subprojects {
             "EMAIL_AUTH_USERNAME" to "",
             "EMAIL_AUTH_PASSWORD" to "",
             "EMAIL_AUTH_FROM" to "",
-            "SENTRY_DNS" to "",
+            "SENTRY_DSN" to "",
             "CLOUDINARY_URL" to "",
             "AWS_ACCESS_KEY_ID" to "",
             "AWS_SECRET_KEY" to "",

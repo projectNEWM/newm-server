@@ -8,6 +8,10 @@ val testUser1 = User(
     lastName = "LastName1",
     nickname = "Nickname1",
     pictureUrl = "https://projectnewm.io/pic1.jpg",
+    bannerUrl = "https://projectnewm.io/banner1.jpg",
+    websiteUrl = "https://user1.com",
+    twitterUrl = "https://twitter.com/user1",
+    location = "Location1",
     role = "Role1",
     genre = "Genre1",
     biography = "Biography1",
@@ -24,6 +28,10 @@ val testUser2 = User(
     lastName = "LastName2",
     nickname = "Nickname2",
     pictureUrl = "https://projectnewm.io/pic2.jpg",
+    bannerUrl = "https://projectnewm.io/banner2.jpg",
+    websiteUrl = "https://user2.com",
+    twitterUrl = "https://twitter.com/user2",
+    location = "Location2",
     role = "Role2",
     genre = "Genre2",
     biography = "Biography2",
@@ -34,20 +42,3 @@ val testUser2 = User(
     currentPassword = Password("Password1"),
     authCode = "123456"
 )
-
-val testUser3 = User(
-    firstName = "FirstName3",
-    lastName = "LastName3",
-    nickname = "Nickname3",
-    pictureUrl = "https://projectnewm.io/pic2.jpg",
-    role = "Role3",
-    genre = "Genre3",
-    biography = "Biography3",
-    email = "testuser3@projectnewm.io",
-    newPassword = Password("Password3"),
-    confirmPassword = Password("Password3"),
-    currentPassword = Password("Password2"),
-    authCode = "123456"
-)
-
-val testUsers = listOf(testUser1, testUser2, testUser3)
