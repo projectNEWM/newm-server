@@ -24,6 +24,10 @@ class UserEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var lastName: String? by UserTable.lastName
     var nickname: String? by UserTable.nickname
     var pictureUrl: String? by UserTable.pictureUrl
+    var bannerUrl: String? by UserTable.bannerUrl
+    var websiteUrl: String? by UserTable.websiteUrl
+    var twitterUrl: String? by UserTable.twitterUrl
+    var location: String? by UserTable.location
     var role: String? by UserTable.role
     var genre: String? by UserTable.genre
     var biography: String? by UserTable.biography
@@ -41,6 +45,10 @@ class UserEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         lastName = lastName,
         nickname = nickname,
         pictureUrl = pictureUrl,
+        bannerUrl = bannerUrl,
+        websiteUrl = websiteUrl,
+        twitterUrl = twitterUrl,
+        location = location,
         role = role,
         genre = genre,
         biography = biography,

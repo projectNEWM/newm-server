@@ -68,6 +68,10 @@ class UserRoutesTests : BaseApplicationTests() {
         assertThat(user.lastName).isEqualTo(testUser1.lastName)
         assertThat(user.nickname).isEqualTo(testUser1.nickname)
         assertThat(user.pictureUrl).isEqualTo(testUser1.pictureUrl)
+        assertThat(user.bannerUrl).isEqualTo(testUser1.bannerUrl)
+        assertThat(user.websiteUrl).isEqualTo(testUser1.websiteUrl)
+        assertThat(user.twitterUrl).isEqualTo(testUser1.twitterUrl)
+        assertThat(user.location).isEqualTo(testUser1.location)
         assertThat(user.role).isEqualTo(testUser1.role)
         assertThat(user.genre).isEqualTo(testUser1.genre)
         assertThat(user.biography).isEqualTo(testUser1.biography)
@@ -85,6 +89,10 @@ class UserRoutesTests : BaseApplicationTests() {
                 lastName = testUser1.lastName
                 nickname = testUser1.nickname
                 pictureUrl = testUser1.pictureUrl
+                bannerUrl = testUser1.bannerUrl
+                websiteUrl = testUser1.websiteUrl
+                twitterUrl = testUser1.twitterUrl
+                location = testUser1.location
                 role = testUser1.role
                 genre = testUser1.genre
                 biography = testUser1.biography
@@ -107,6 +115,10 @@ class UserRoutesTests : BaseApplicationTests() {
         assertThat(user.lastName).isEqualTo(testUser1.lastName)
         assertThat(user.nickname).isEqualTo(testUser1.nickname)
         assertThat(user.pictureUrl).isEqualTo(testUser1.pictureUrl)
+        assertThat(user.bannerUrl).isEqualTo(testUser1.bannerUrl)
+        assertThat(user.websiteUrl).isEqualTo(testUser1.websiteUrl)
+        assertThat(user.twitterUrl).isEqualTo(testUser1.twitterUrl)
+        assertThat(user.location).isEqualTo(testUser1.location)
         assertThat(user.role).isEqualTo(testUser1.role)
         assertThat(user.genre).isEqualTo(testUser1.genre)
         assertThat(user.biography).isEqualTo(testUser1.biography)
@@ -123,6 +135,10 @@ class UserRoutesTests : BaseApplicationTests() {
                 lastName = testUser1.lastName
                 nickname = testUser1.nickname
                 pictureUrl = testUser1.pictureUrl
+                bannerUrl = testUser1.bannerUrl
+                websiteUrl = testUser1.websiteUrl
+                twitterUrl = testUser1.twitterUrl
+                location = testUser1.location
                 role = testUser1.role
                 genre = testUser1.genre
                 biography = testUser1.biography
@@ -158,6 +174,10 @@ class UserRoutesTests : BaseApplicationTests() {
         assertThat(user.lastName).isEqualTo(testUser2.lastName)
         assertThat(user.nickname).isEqualTo(testUser2.nickname)
         assertThat(user.pictureUrl).isEqualTo(testUser2.pictureUrl)
+        assertThat(user.bannerUrl).isEqualTo(testUser2.bannerUrl)
+        assertThat(user.websiteUrl).isEqualTo(testUser2.websiteUrl)
+        assertThat(user.twitterUrl).isEqualTo(testUser2.twitterUrl)
+        assertThat(user.location).isEqualTo(testUser2.location)
         assertThat(user.role).isEqualTo(testUser2.role)
         assertThat(user.genre).isEqualTo(testUser2.genre)
         assertThat(user.biography).isEqualTo(testUser2.biography)
@@ -175,6 +195,10 @@ class UserRoutesTests : BaseApplicationTests() {
                 lastName = testUser1.lastName
                 nickname = testUser1.nickname
                 pictureUrl = testUser1.pictureUrl
+                bannerUrl = testUser1.bannerUrl
+                websiteUrl = testUser1.websiteUrl
+                twitterUrl = testUser1.pictureUrl
+                location = testUser1.location
                 role = testUser1.role
                 genre = testUser1.genre
                 biography = testUser1.biography
@@ -243,6 +267,10 @@ class UserRoutesTests : BaseApplicationTests() {
                     lastName = "lastName$offset"
                     nickname = "nickname$offset"
                     pictureUrl = "pictureUrl$offset"
+                    bannerUrl = "bannerUrl$offset"
+                    websiteUrl = "websiteUrl$offset"
+                    twitterUrl = "twitterUrl$offset"
+                    location = "location$offset"
                     role = "role$offset"
                     genre = "genre$offset"
                     biography = "biography$offset"
@@ -279,6 +307,10 @@ class UserRoutesTests : BaseApplicationTests() {
             assertThat(actualUser.lastName).isEqualTo(expectedUser.lastName)
             assertThat(actualUser.nickname).isEqualTo(expectedUser.nickname)
             assertThat(actualUser.pictureUrl).isEqualTo(expectedUser.pictureUrl)
+            assertThat(actualUser.bannerUrl).isEqualTo(expectedUser.bannerUrl)
+            assertThat(actualUser.websiteUrl).isEqualTo(expectedUser.websiteUrl)
+            assertThat(actualUser.twitterUrl).isEqualTo(expectedUser.twitterUrl)
+            assertThat(actualUser.location).isEqualTo(expectedUser.location)
             assertThat(actualUser.role).isEqualTo(expectedUser.role)
             assertThat(actualUser.genre).isEqualTo(expectedUser.genre)
             assertThat(actualUser.biography).isEqualTo(expectedUser.biography)
@@ -296,6 +328,10 @@ class UserRoutesTests : BaseApplicationTests() {
                     lastName = "lastName$offset"
                     nickname = "nickname$offset"
                     pictureUrl = "pictureUrl$offset"
+                    bannerUrl = "bannerUrl$offset"
+                    websiteUrl = "websiteUrl$offset"
+                    twitterUrl = "twitterUrl$offset"
+                    location = "location$offset"
                     role = "role$offset"
                     genre = "genre$offset"
                     biography = "biography$offset"
@@ -337,6 +373,10 @@ class UserRoutesTests : BaseApplicationTests() {
             assertThat(actualUser.lastName).isEqualTo(expectedUser.lastName)
             assertThat(actualUser.nickname).isEqualTo(expectedUser.nickname)
             assertThat(actualUser.pictureUrl).isEqualTo(expectedUser.pictureUrl)
+            assertThat(actualUser.bannerUrl).isEqualTo(expectedUser.bannerUrl)
+            assertThat(actualUser.websiteUrl).isEqualTo(expectedUser.websiteUrl)
+            assertThat(actualUser.twitterUrl).isEqualTo(expectedUser.twitterUrl)
+            assertThat(actualUser.location).isEqualTo(expectedUser.location)
             assertThat(actualUser.role).isEqualTo(expectedUser.role)
             assertThat(actualUser.genre).isEqualTo(expectedUser.genre)
             assertThat(actualUser.biography).isEqualTo(expectedUser.biography)
@@ -354,6 +394,10 @@ class UserRoutesTests : BaseApplicationTests() {
                     lastName = "lastName$offset"
                     nickname = "nickname$offset"
                     pictureUrl = "pictureUrl$offset"
+                    bannerUrl = "bannerUrl$offset"
+                    websiteUrl = "websiteUrl$offset"
+                    twitterUrl = "twitterUrl$offset"
+                    location = "location$offset"
                     role = "role$offset"
                     genre = "genre$offset"
                     biography = "biography$offset"
@@ -395,6 +439,10 @@ class UserRoutesTests : BaseApplicationTests() {
             assertThat(actualUser.lastName).isEqualTo(expectedUser.lastName)
             assertThat(actualUser.nickname).isEqualTo(expectedUser.nickname)
             assertThat(actualUser.pictureUrl).isEqualTo(expectedUser.pictureUrl)
+            assertThat(actualUser.bannerUrl).isEqualTo(expectedUser.bannerUrl)
+            assertThat(actualUser.websiteUrl).isEqualTo(expectedUser.websiteUrl)
+            assertThat(actualUser.twitterUrl).isEqualTo(expectedUser.twitterUrl)
+            assertThat(actualUser.location).isEqualTo(expectedUser.location)
             assertThat(actualUser.role).isEqualTo(expectedUser.role)
             assertThat(actualUser.genre).isEqualTo(expectedUser.genre)
             assertThat(actualUser.biography).isEqualTo(expectedUser.biography)
@@ -412,6 +460,10 @@ class UserRoutesTests : BaseApplicationTests() {
                     lastName = "lastName$offset"
                     nickname = "nickname$offset"
                     pictureUrl = "pictureUrl$offset"
+                    bannerUrl = "bannerUrl$offset"
+                    websiteUrl = "websiteUrl$offset"
+                    twitterUrl = "twitterUrl$offset"
+                    location = "location$offset"
                     role = "role$offset"
                     genre = "genre$offset"
                     biography = "biography$offset"
@@ -453,6 +505,10 @@ class UserRoutesTests : BaseApplicationTests() {
             assertThat(actualUser.lastName).isEqualTo(expectedUser.lastName)
             assertThat(actualUser.nickname).isEqualTo(expectedUser.nickname)
             assertThat(actualUser.pictureUrl).isEqualTo(expectedUser.pictureUrl)
+            assertThat(actualUser.bannerUrl).isEqualTo(expectedUser.bannerUrl)
+            assertThat(actualUser.websiteUrl).isEqualTo(expectedUser.websiteUrl)
+            assertThat(actualUser.twitterUrl).isEqualTo(expectedUser.twitterUrl)
+            assertThat(actualUser.location).isEqualTo(expectedUser.location)
             assertThat(actualUser.role).isEqualTo(expectedUser.role)
             assertThat(actualUser.genre).isEqualTo(expectedUser.genre)
             assertThat(actualUser.biography).isEqualTo(expectedUser.biography)
@@ -470,6 +526,10 @@ class UserRoutesTests : BaseApplicationTests() {
                     lastName = "lastName$offset"
                     nickname = "nickname$offset"
                     pictureUrl = "pictureUrl$offset"
+                    bannerUrl = "bannerUrl$offset"
+                    websiteUrl = "websiteUrl$offset"
+                    twitterUrl = "twitterUrl$offset"
+                    location = "location$offset"
                     role = "role$offset"
                     genre = "genre$offset"
                     biography = "biography$offset"
@@ -511,6 +571,10 @@ class UserRoutesTests : BaseApplicationTests() {
             assertThat(actualUser.lastName).isEqualTo(expectedUser.lastName)
             assertThat(actualUser.nickname).isEqualTo(expectedUser.nickname)
             assertThat(actualUser.pictureUrl).isEqualTo(expectedUser.pictureUrl)
+            assertThat(actualUser.bannerUrl).isEqualTo(expectedUser.bannerUrl)
+            assertThat(actualUser.websiteUrl).isEqualTo(expectedUser.websiteUrl)
+            assertThat(actualUser.twitterUrl).isEqualTo(expectedUser.twitterUrl)
+            assertThat(actualUser.location).isEqualTo(expectedUser.location)
             assertThat(actualUser.role).isEqualTo(expectedUser.role)
             assertThat(actualUser.genre).isEqualTo(expectedUser.genre)
             assertThat(actualUser.biography).isEqualTo(expectedUser.biography)
@@ -528,6 +592,10 @@ class UserRoutesTests : BaseApplicationTests() {
                     lastName = "lastName$offset"
                     nickname = "nickname$offset"
                     pictureUrl = "pictureUrl$offset"
+                    bannerUrl = "bannerUrl$offset"
+                    websiteUrl = "websiteUrl$offset"
+                    twitterUrl = "twitterUrl$offset"
+                    location = "location$offset"
                     role = "role$offset"
                     genre = "genre$offset"
                     biography = "biography$offset"
@@ -569,6 +637,10 @@ class UserRoutesTests : BaseApplicationTests() {
             assertThat(actualUser.lastName).isEqualTo(expectedUser.lastName)
             assertThat(actualUser.nickname).isEqualTo(expectedUser.nickname)
             assertThat(actualUser.pictureUrl).isEqualTo(expectedUser.pictureUrl)
+            assertThat(actualUser.bannerUrl).isEqualTo(expectedUser.bannerUrl)
+            assertThat(actualUser.websiteUrl).isEqualTo(expectedUser.websiteUrl)
+            assertThat(actualUser.twitterUrl).isEqualTo(expectedUser.twitterUrl)
+            assertThat(actualUser.location).isEqualTo(expectedUser.location)
             assertThat(actualUser.role).isEqualTo(expectedUser.role)
             assertThat(actualUser.genre).isEqualTo(expectedUser.genre)
             assertThat(actualUser.biography).isEqualTo(expectedUser.biography)

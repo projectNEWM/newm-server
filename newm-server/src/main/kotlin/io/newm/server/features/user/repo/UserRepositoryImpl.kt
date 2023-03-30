@@ -36,7 +36,6 @@ internal class UserRepositoryImpl(
         logger.debug { "add: user = $user" }
 
         user.checkFieldLengths()
-        val pictureUrl = user.pictureUrl?.asValidUrl()
         val email = user.email.asValidEmail().asVerifiedEmail(user.authCode)
         val passwordHash = user.newPassword.asValidPassword(user.confirmPassword).toHash()
 
@@ -46,7 +45,11 @@ internal class UserRepositoryImpl(
                 this.firstName = user.firstName
                 this.lastName = user.lastName
                 this.nickname = user.nickname
-                this.pictureUrl = pictureUrl
+                this.pictureUrl = user.pictureUrl?.asValidUrl()
+                this.bannerUrl = user.bannerUrl?.asValidUrl()
+                this.websiteUrl = user.websiteUrl?.asValidUrl()
+                this.twitterUrl = user.twitterUrl?.asValidUrl()
+                this.location = user.location
                 this.role = user.role
                 this.genre = user.genre
                 this.biography = user.biography
@@ -129,7 +132,6 @@ internal class UserRepositoryImpl(
         logger.debug { "update: userId = $userId, user = $user" }
 
         user.checkFieldLengths()
-        val pictureUrl = user.pictureUrl?.asValidUrl()
         val email = user.email?.asValidEmail()?.asVerifiedEmail(user.authCode)
         val passwordHash = user.newPassword?.asValidPassword(user.confirmPassword)?.toHash()
 
@@ -138,7 +140,11 @@ internal class UserRepositoryImpl(
             user.firstName?.let { entity.firstName = it }
             user.lastName?.let { entity.lastName = it }
             user.nickname?.let { entity.nickname = it }
-            pictureUrl?.let { entity.pictureUrl = it }
+            user.pictureUrl?.let { entity.pictureUrl = it.asValidUrl() }
+            user.bannerUrl?.let { entity.bannerUrl = it.asValidUrl() }
+            user.websiteUrl?.let { entity.websiteUrl = it.asValidUrl() }
+            user.twitterUrl?.let { entity.twitterUrl = it.asValidUrl() }
+            user.location?.let { entity.location = it }
             user.role?.let { entity.role = it }
             user.genre?.let { entity.genre = it }
             user.biography?.let { entity.biography = it }
@@ -221,6 +227,7 @@ internal class UserRepositoryImpl(
         firstName?.checkLength("firstName")
         lastName?.checkLength("lastName")
         nickname?.checkLength("nickname")
+        location?.checkLength("location")
         role?.checkLength("role")
         genre?.checkLength("genre")
         biography?.checkLength("biography", 250)
