@@ -5,7 +5,7 @@ import org.flywaydb.core.api.migration.Context
 import org.jetbrains.exposed.sql.transactions.transaction
 
 @Suppress("unused")
-class V9__CreateKeys : BaseJavaMigration() {
+class V10__CreateKeys : BaseJavaMigration() {
     override fun migrate(context: Context?) {
         transaction {
             execInBatch(
