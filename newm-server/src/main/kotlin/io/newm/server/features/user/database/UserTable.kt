@@ -19,6 +19,7 @@ object UserTable : UUIDTable(name = "users") {
     val bannerUrl: Column<String?> = text("banner_url").nullable()
     val websiteUrl: Column<String?> = text("website_url").nullable()
     val twitterUrl: Column<String?> = text("twitter_url").nullable()
+    val instagramUrl: Column<String?> = text("instagram_url").nullable()
     val location: Column<String?> = text("location").nullable()
     val role: Column<String?> = text("role").nullable()
     val genre: Column<String?> = text("genre").nullable()
@@ -29,4 +30,7 @@ object UserTable : UUIDTable(name = "users") {
     val verificationStatus: Column<UserVerificationStatus> =
         enumeration("verification_status", UserVerificationStatus::class)
             .default(UserVerificationStatus.Unverified)
+    val companyName: Column<String?> = text("company_name").nullable()
+    val companyLogoUrl: Column<String?> = text("company_logo_url").nullable()
+    val companyIpRights: Column<Boolean?> = bool("company_ip_rights").nullable()
 }

@@ -27,6 +27,7 @@ class UserEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var bannerUrl: String? by UserTable.bannerUrl
     var websiteUrl: String? by UserTable.websiteUrl
     var twitterUrl: String? by UserTable.twitterUrl
+    var instagramUrl: String? by UserTable.instagramUrl
     var location: String? by UserTable.location
     var role: String? by UserTable.role
     var genre: String? by UserTable.genre
@@ -35,6 +36,9 @@ class UserEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var email: String by UserTable.email
     var passwordHash: String? by UserTable.passwordHash
     var verificationStatus: UserVerificationStatus by UserTable.verificationStatus
+    var companyName: String? by UserTable.companyName
+    var companyLogoUrl: String? by UserTable.companyLogoUrl
+    var companyIpRights: Boolean? by UserTable.companyIpRights
 
     fun toModel(includeAll: Boolean = true) = User(
         id = id.value,
@@ -48,13 +52,17 @@ class UserEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         bannerUrl = bannerUrl,
         websiteUrl = websiteUrl,
         twitterUrl = twitterUrl,
+        instagramUrl = instagramUrl,
         location = location,
         role = role,
         genre = genre,
         biography = biography,
         walletAddress = walletAddress.takeIf { includeAll },
         email = email.takeIf { includeAll },
-        verificationStatus = verificationStatus.takeIf { includeAll }
+        verificationStatus = verificationStatus.takeIf { includeAll },
+        companyName = companyName,
+        companyLogoUrl = companyLogoUrl,
+        companyIpRights = companyIpRights
     )
 
     companion object : UUIDEntityClass<UserEntity>(UserTable) {

@@ -11,6 +11,7 @@ val testUser1 = User(
     bannerUrl = "https://projectnewm.io/banner1.jpg",
     websiteUrl = "https://user1.com",
     twitterUrl = "https://twitter.com/user1",
+    instagramUrl = "https://instagram.com/user1",
     location = "Location1",
     role = "Role1",
     genre = "Genre1",
@@ -20,7 +21,10 @@ val testUser1 = User(
     newPassword = Password("Password1"),
     confirmPassword = Password("Password1"),
     currentPassword = Password("Password2"),
-    authCode = "123456"
+    authCode = "123456",
+    companyName = "Company1",
+    companyLogoUrl = "https://projectnewm.io/logo1.jpg",
+    companyIpRights = true
 )
 
 val testUser2 = User(
@@ -31,6 +35,7 @@ val testUser2 = User(
     bannerUrl = "https://projectnewm.io/banner2.jpg",
     websiteUrl = "https://user2.com",
     twitterUrl = "https://twitter.com/user2",
+    instagramUrl = "https://instagram.com/user2",
     location = "Location2",
     role = "Role2",
     genre = "Genre2",
@@ -40,5 +45,8 @@ val testUser2 = User(
     newPassword = Password("Password2"),
     confirmPassword = Password("Password2"),
     currentPassword = Password("Password1"),
-    authCode = "123456"
+    authCode = "123456",
+    companyName = "Company2",
+    companyLogoUrl = "https://projectnewm.io/logo2.jpg",
+    companyIpRights = false
 )

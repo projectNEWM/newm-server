@@ -23,6 +23,7 @@ data class User(
     val bannerUrl: String? = null,
     val websiteUrl: String? = null,
     val twitterUrl: String? = null,
+    val instagramUrl: String? = null,
     val location: String? = null,
     val role: String? = null,
     val genre: String? = null,
@@ -33,5 +34,8 @@ data class User(
     val confirmPassword: Password? = null,
     val currentPassword: Password? = null,
     val authCode: String? = null,
-    val verificationStatus: UserVerificationStatus? = null
+    val verificationStatus: UserVerificationStatus? = null,
+    val companyName: String? = null,
+    val companyLogoUrl: String? = null,
+    var companyIpRights: Boolean? = null
 )
