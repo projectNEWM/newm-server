@@ -28,6 +28,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.time.LocalDateTime
+import java.util.UUID
 
 class UserRoutesTests : BaseApplicationTests() {
 
@@ -71,6 +72,7 @@ class UserRoutesTests : BaseApplicationTests() {
         assertThat(user.bannerUrl).isEqualTo(testUser1.bannerUrl)
         assertThat(user.websiteUrl).isEqualTo(testUser1.websiteUrl)
         assertThat(user.twitterUrl).isEqualTo(testUser1.twitterUrl)
+        assertThat(user.instagramUrl).isEqualTo(testUser1.instagramUrl)
         assertThat(user.location).isEqualTo(testUser1.location)
         assertThat(user.role).isEqualTo(testUser1.role)
         assertThat(user.genre).isEqualTo(testUser1.genre)
@@ -78,28 +80,15 @@ class UserRoutesTests : BaseApplicationTests() {
         assertThat(user.walletAddress).isEqualTo(testUser1.walletAddress)
         assertThat(user.email).isEqualTo(testUser1.email)
         assertThat(testUser1.newPassword!!.verify(passwordHash)).isTrue()
+        assertThat(user.companyName).isEqualTo(testUser1.companyName)
+        assertThat(user.companyLogoUrl).isEqualTo(testUser1.companyLogoUrl)
+        assertThat(user.companyIpRights).isEqualTo(testUser1.companyIpRights)
     }
 
     @Test
     fun testGetUser() = runBlocking {
         // Put User directly into database
-        val userId = transaction {
-            UserEntity.new {
-                firstName = testUser1.firstName
-                lastName = testUser1.lastName
-                nickname = testUser1.nickname
-                pictureUrl = testUser1.pictureUrl
-                bannerUrl = testUser1.bannerUrl
-                websiteUrl = testUser1.websiteUrl
-                twitterUrl = testUser1.twitterUrl
-                location = testUser1.location
-                role = testUser1.role
-                genre = testUser1.genre
-                biography = testUser1.biography
-                walletAddress = testUser1.walletAddress
-                email = testUser1.email!!
-            }
-        }.id.value
+        val userId = addUserToDatabase(testUser1)
 
         // Get User
         val response = client.get("v1/users/me") {
@@ -118,35 +107,22 @@ class UserRoutesTests : BaseApplicationTests() {
         assertThat(user.bannerUrl).isEqualTo(testUser1.bannerUrl)
         assertThat(user.websiteUrl).isEqualTo(testUser1.websiteUrl)
         assertThat(user.twitterUrl).isEqualTo(testUser1.twitterUrl)
+        assertThat(user.instagramUrl).isEqualTo(testUser1.instagramUrl)
         assertThat(user.location).isEqualTo(testUser1.location)
         assertThat(user.role).isEqualTo(testUser1.role)
         assertThat(user.genre).isEqualTo(testUser1.genre)
         assertThat(user.biography).isEqualTo(testUser1.biography)
         assertThat(user.walletAddress).isEqualTo(testUser1.walletAddress)
         assertThat(user.email).isEqualTo(testUser1.email)
+        assertThat(user.companyName).isEqualTo(testUser1.companyName)
+        assertThat(user.companyLogoUrl).isEqualTo(testUser1.companyLogoUrl)
+        assertThat(user.companyIpRights).isEqualTo(testUser1.companyIpRights)
     }
 
     @Test
     fun testPatchUser() = runBlocking {
         // Put User directly into database
-        val userId = transaction {
-            UserEntity.new {
-                firstName = testUser1.firstName
-                lastName = testUser1.lastName
-                nickname = testUser1.nickname
-                pictureUrl = testUser1.pictureUrl
-                bannerUrl = testUser1.bannerUrl
-                websiteUrl = testUser1.websiteUrl
-                twitterUrl = testUser1.twitterUrl
-                location = testUser1.location
-                role = testUser1.role
-                genre = testUser1.genre
-                biography = testUser1.biography
-                walletAddress = testUser1.walletAddress
-                email = testUser1.email!!
-                passwordHash = testUser1.newPassword!!.toHash()
-            }
-        }.id.value
+        val userId = addUserToDatabase(testUser1)
 
         // Put 2FA code directly into database
         transaction {
@@ -177,6 +153,7 @@ class UserRoutesTests : BaseApplicationTests() {
         assertThat(user.bannerUrl).isEqualTo(testUser2.bannerUrl)
         assertThat(user.websiteUrl).isEqualTo(testUser2.websiteUrl)
         assertThat(user.twitterUrl).isEqualTo(testUser2.twitterUrl)
+        assertThat(user.instagramUrl).isEqualTo(testUser2.instagramUrl)
         assertThat(user.location).isEqualTo(testUser2.location)
         assertThat(user.role).isEqualTo(testUser2.role)
         assertThat(user.genre).isEqualTo(testUser2.genre)
@@ -184,28 +161,15 @@ class UserRoutesTests : BaseApplicationTests() {
         assertThat(user.walletAddress).isEqualTo(testUser2.walletAddress)
         assertThat(user.email).isEqualTo(testUser2.email)
         assertThat(testUser2.newPassword!!.verify(passwordHash)).isTrue()
+        assertThat(user.companyName).isEqualTo(testUser2.companyName)
+        assertThat(user.companyLogoUrl).isEqualTo(testUser2.companyLogoUrl)
+        assertThat(user.companyIpRights).isEqualTo(testUser2.companyIpRights)
     }
 
     @Test
     fun testDeleteUser() = runBlocking {
         // Put User directly into database
-        val userId = transaction {
-            UserEntity.new {
-                firstName = testUser1.firstName
-                lastName = testUser1.lastName
-                nickname = testUser1.nickname
-                pictureUrl = testUser1.pictureUrl
-                bannerUrl = testUser1.bannerUrl
-                websiteUrl = testUser1.websiteUrl
-                twitterUrl = testUser1.pictureUrl
-                location = testUser1.location
-                role = testUser1.role
-                genre = testUser1.genre
-                biography = testUser1.biography
-                walletAddress = testUser1.walletAddress
-                email = testUser1.email!!
-            }
-        }.id.value
+        val userId = addUserToDatabase(testUser1)
 
         // Get User
         val response = client.delete("v1/users/me") {
@@ -261,22 +225,7 @@ class UserRoutesTests : BaseApplicationTests() {
         // Put Users directly into database
         val expectedUsers = mutableListOf<User>()
         for (offset in 0..30) {
-            expectedUsers += transaction {
-                UserEntity.new {
-                    firstName = "firstName$offset"
-                    lastName = "lastName$offset"
-                    nickname = "nickname$offset"
-                    pictureUrl = "pictureUrl$offset"
-                    bannerUrl = "bannerUrl$offset"
-                    websiteUrl = "websiteUrl$offset"
-                    twitterUrl = "twitterUrl$offset"
-                    location = "location$offset"
-                    role = "role$offset"
-                    genre = "genre$offset"
-                    biography = "biography$offset"
-                    email = "email$offset"
-                }
-            }.toModel(includeAll = false)
+            expectedUsers += addUserToDatabase(offset)
         }
 
         // read back all Users forcing pagination
@@ -310,10 +259,14 @@ class UserRoutesTests : BaseApplicationTests() {
             assertThat(actualUser.bannerUrl).isEqualTo(expectedUser.bannerUrl)
             assertThat(actualUser.websiteUrl).isEqualTo(expectedUser.websiteUrl)
             assertThat(actualUser.twitterUrl).isEqualTo(expectedUser.twitterUrl)
+            assertThat(actualUser.instagramUrl).isEqualTo(expectedUser.instagramUrl)
             assertThat(actualUser.location).isEqualTo(expectedUser.location)
             assertThat(actualUser.role).isEqualTo(expectedUser.role)
             assertThat(actualUser.genre).isEqualTo(expectedUser.genre)
             assertThat(actualUser.biography).isEqualTo(expectedUser.biography)
+            assertThat(actualUser.companyName).isEqualTo(expectedUser.companyName)
+            assertThat(actualUser.companyLogoUrl).isEqualTo(expectedUser.companyLogoUrl)
+            assertThat(actualUser.companyIpRights).isEqualTo(expectedUser.companyIpRights)
         }
     }
 
@@ -322,22 +275,7 @@ class UserRoutesTests : BaseApplicationTests() {
         // Put Users directly into database
         val allUsers = mutableListOf<User>()
         for (offset in 0..30) {
-            allUsers += transaction {
-                UserEntity.new {
-                    firstName = "firstName$offset"
-                    lastName = "lastName$offset"
-                    nickname = "nickname$offset"
-                    pictureUrl = "pictureUrl$offset"
-                    bannerUrl = "bannerUrl$offset"
-                    websiteUrl = "websiteUrl$offset"
-                    twitterUrl = "twitterUrl$offset"
-                    location = "location$offset"
-                    role = "role$offset"
-                    genre = "genre$offset"
-                    biography = "biography$offset"
-                    email = "email$offset"
-                }
-            }.toModel(includeAll = false)
+            allUsers += addUserToDatabase(offset)
         }
 
         // filter out 1st and last
@@ -376,10 +314,14 @@ class UserRoutesTests : BaseApplicationTests() {
             assertThat(actualUser.bannerUrl).isEqualTo(expectedUser.bannerUrl)
             assertThat(actualUser.websiteUrl).isEqualTo(expectedUser.websiteUrl)
             assertThat(actualUser.twitterUrl).isEqualTo(expectedUser.twitterUrl)
+            assertThat(actualUser.instagramUrl).isEqualTo(expectedUser.instagramUrl)
             assertThat(actualUser.location).isEqualTo(expectedUser.location)
             assertThat(actualUser.role).isEqualTo(expectedUser.role)
             assertThat(actualUser.genre).isEqualTo(expectedUser.genre)
             assertThat(actualUser.biography).isEqualTo(expectedUser.biography)
+            assertThat(actualUser.companyName).isEqualTo(expectedUser.companyName)
+            assertThat(actualUser.companyLogoUrl).isEqualTo(expectedUser.companyLogoUrl)
+            assertThat(actualUser.companyIpRights).isEqualTo(expectedUser.companyIpRights)
         }
     }
 
@@ -388,22 +330,7 @@ class UserRoutesTests : BaseApplicationTests() {
         // Put Users directly into database
         val allUsers = mutableListOf<User>()
         for (offset in 0..30) {
-            allUsers += transaction {
-                UserEntity.new {
-                    firstName = "firstName$offset"
-                    lastName = "lastName$offset"
-                    nickname = "nickname$offset"
-                    pictureUrl = "pictureUrl$offset"
-                    bannerUrl = "bannerUrl$offset"
-                    websiteUrl = "websiteUrl$offset"
-                    twitterUrl = "twitterUrl$offset"
-                    location = "location$offset"
-                    role = "role$offset"
-                    genre = "genre$offset"
-                    biography = "biography$offset"
-                    email = "email$offset"
-                }
-            }.toModel(includeAll = false)
+            allUsers += addUserToDatabase(offset)
         }
 
         // filter out 1st and last
@@ -442,10 +369,14 @@ class UserRoutesTests : BaseApplicationTests() {
             assertThat(actualUser.bannerUrl).isEqualTo(expectedUser.bannerUrl)
             assertThat(actualUser.websiteUrl).isEqualTo(expectedUser.websiteUrl)
             assertThat(actualUser.twitterUrl).isEqualTo(expectedUser.twitterUrl)
+            assertThat(actualUser.instagramUrl).isEqualTo(expectedUser.instagramUrl)
             assertThat(actualUser.location).isEqualTo(expectedUser.location)
             assertThat(actualUser.role).isEqualTo(expectedUser.role)
             assertThat(actualUser.genre).isEqualTo(expectedUser.genre)
             assertThat(actualUser.biography).isEqualTo(expectedUser.biography)
+            assertThat(actualUser.companyName).isEqualTo(expectedUser.companyName)
+            assertThat(actualUser.companyLogoUrl).isEqualTo(expectedUser.companyLogoUrl)
+            assertThat(actualUser.companyIpRights).isEqualTo(expectedUser.companyIpRights)
         }
     }
 
@@ -454,22 +385,7 @@ class UserRoutesTests : BaseApplicationTests() {
         // Put Users directly into database
         val allUsers = mutableListOf<User>()
         for (offset in 0..30) {
-            allUsers += transaction {
-                UserEntity.new {
-                    firstName = "firstName$offset"
-                    lastName = "lastName$offset"
-                    nickname = "nickname$offset"
-                    pictureUrl = "pictureUrl$offset"
-                    bannerUrl = "bannerUrl$offset"
-                    websiteUrl = "websiteUrl$offset"
-                    twitterUrl = "twitterUrl$offset"
-                    location = "location$offset"
-                    role = "role$offset"
-                    genre = "genre$offset"
-                    biography = "biography$offset"
-                    email = "email$offset"
-                }
-            }.toModel(includeAll = false)
+            allUsers += addUserToDatabase(offset)
         }
 
         // filter out 1st and last
@@ -508,10 +424,14 @@ class UserRoutesTests : BaseApplicationTests() {
             assertThat(actualUser.bannerUrl).isEqualTo(expectedUser.bannerUrl)
             assertThat(actualUser.websiteUrl).isEqualTo(expectedUser.websiteUrl)
             assertThat(actualUser.twitterUrl).isEqualTo(expectedUser.twitterUrl)
+            assertThat(actualUser.instagramUrl).isEqualTo(expectedUser.instagramUrl)
             assertThat(actualUser.location).isEqualTo(expectedUser.location)
             assertThat(actualUser.role).isEqualTo(expectedUser.role)
             assertThat(actualUser.genre).isEqualTo(expectedUser.genre)
             assertThat(actualUser.biography).isEqualTo(expectedUser.biography)
+            assertThat(actualUser.companyName).isEqualTo(expectedUser.companyName)
+            assertThat(actualUser.companyLogoUrl).isEqualTo(expectedUser.companyLogoUrl)
+            assertThat(actualUser.companyIpRights).isEqualTo(expectedUser.companyIpRights)
         }
     }
 
@@ -520,22 +440,7 @@ class UserRoutesTests : BaseApplicationTests() {
         // Put Users directly into database
         val allUsers = mutableListOf<User>()
         for (offset in 0..30) {
-            allUsers += transaction {
-                UserEntity.new {
-                    firstName = "firstName$offset"
-                    lastName = "lastName$offset"
-                    nickname = "nickname$offset"
-                    pictureUrl = "pictureUrl$offset"
-                    bannerUrl = "bannerUrl$offset"
-                    websiteUrl = "websiteUrl$offset"
-                    twitterUrl = "twitterUrl$offset"
-                    location = "location$offset"
-                    role = "role$offset"
-                    genre = "genre$offset"
-                    biography = "biography$offset"
-                    email = "email$offset"
-                }
-            }.toModel(includeAll = false)
+            allUsers += addUserToDatabase(offset)
         }
 
         // filter out newest one
@@ -574,10 +479,14 @@ class UserRoutesTests : BaseApplicationTests() {
             assertThat(actualUser.bannerUrl).isEqualTo(expectedUser.bannerUrl)
             assertThat(actualUser.websiteUrl).isEqualTo(expectedUser.websiteUrl)
             assertThat(actualUser.twitterUrl).isEqualTo(expectedUser.twitterUrl)
+            assertThat(actualUser.instagramUrl).isEqualTo(expectedUser.instagramUrl)
             assertThat(actualUser.location).isEqualTo(expectedUser.location)
             assertThat(actualUser.role).isEqualTo(expectedUser.role)
             assertThat(actualUser.genre).isEqualTo(expectedUser.genre)
             assertThat(actualUser.biography).isEqualTo(expectedUser.biography)
+            assertThat(actualUser.companyName).isEqualTo(expectedUser.companyName)
+            assertThat(actualUser.companyLogoUrl).isEqualTo(expectedUser.companyLogoUrl)
+            assertThat(actualUser.companyIpRights).isEqualTo(expectedUser.companyIpRights)
         }
     }
 
@@ -586,22 +495,7 @@ class UserRoutesTests : BaseApplicationTests() {
         // Put Users directly into database
         val allUsers = mutableListOf<User>()
         for (offset in 0..30) {
-            allUsers += transaction {
-                UserEntity.new {
-                    firstName = "firstName$offset"
-                    lastName = "lastName$offset"
-                    nickname = "nickname$offset"
-                    pictureUrl = "pictureUrl$offset"
-                    bannerUrl = "bannerUrl$offset"
-                    websiteUrl = "websiteUrl$offset"
-                    twitterUrl = "twitterUrl$offset"
-                    location = "location$offset"
-                    role = "role$offset"
-                    genre = "genre$offset"
-                    biography = "biography$offset"
-                    email = "email$offset"
-                }
-            }.toModel(includeAll = false)
+            allUsers += addUserToDatabase(offset)
         }
 
         // filter out oldest one
@@ -640,10 +534,14 @@ class UserRoutesTests : BaseApplicationTests() {
             assertThat(actualUser.bannerUrl).isEqualTo(expectedUser.bannerUrl)
             assertThat(actualUser.websiteUrl).isEqualTo(expectedUser.websiteUrl)
             assertThat(actualUser.twitterUrl).isEqualTo(expectedUser.twitterUrl)
+            assertThat(actualUser.instagramUrl).isEqualTo(expectedUser.instagramUrl)
             assertThat(actualUser.location).isEqualTo(expectedUser.location)
             assertThat(actualUser.role).isEqualTo(expectedUser.role)
             assertThat(actualUser.genre).isEqualTo(expectedUser.genre)
             assertThat(actualUser.biography).isEqualTo(expectedUser.biography)
+            assertThat(actualUser.companyName).isEqualTo(expectedUser.companyName)
+            assertThat(actualUser.companyLogoUrl).isEqualTo(expectedUser.companyLogoUrl)
+            assertThat(actualUser.companyIpRights).isEqualTo(expectedUser.companyIpRights)
         }
     }
 
@@ -668,3 +566,47 @@ class UserRoutesTests : BaseApplicationTests() {
         }
     }
 }
+
+private fun addUserToDatabase(user: User): UUID = transaction {
+    UserEntity.new {
+        firstName = user.firstName
+        lastName = user.lastName
+        nickname = user.nickname
+        pictureUrl = user.pictureUrl
+        bannerUrl = user.bannerUrl
+        websiteUrl = user.websiteUrl
+        twitterUrl = user.twitterUrl
+        instagramUrl = user.instagramUrl
+        location = user.location
+        role = user.role
+        genre = user.genre
+        biography = user.biography
+        walletAddress = user.walletAddress
+        email = user.email!!
+        passwordHash = user.newPassword!!.toHash()
+        companyName = user.companyName
+        companyLogoUrl = user.companyLogoUrl
+        companyIpRights = user.companyIpRights
+    }
+}.id.value
+
+private fun addUserToDatabase(offset: Int): User = transaction {
+    UserEntity.new {
+        firstName = "firstName$offset"
+        lastName = "lastName$offset"
+        nickname = "nickname$offset"
+        pictureUrl = "pictureUrl$offset"
+        bannerUrl = "bannerUrl$offset"
+        websiteUrl = "websiteUrl$offset"
+        twitterUrl = "twitterUrl$offset"
+        instagramUrl = "instagramUrl$offset"
+        location = "location$offset"
+        role = "role$offset"
+        genre = "genre$offset"
+        biography = "biography$offset"
+        email = "email$offset"
+        companyName = "companyName$offset"
+        companyLogoUrl = "companyLogoUrl$offset"
+        companyIpRights = offset % 2 == 0
+    }
+}.toModel(includeAll = false)

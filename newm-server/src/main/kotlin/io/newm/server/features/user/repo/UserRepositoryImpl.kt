@@ -49,6 +49,7 @@ internal class UserRepositoryImpl(
                 this.bannerUrl = user.bannerUrl?.asValidUrl()
                 this.websiteUrl = user.websiteUrl?.asValidUrl()
                 this.twitterUrl = user.twitterUrl?.asValidUrl()
+                this.instagramUrl = user.instagramUrl?.asValidUrl()
                 this.location = user.location
                 this.role = user.role
                 this.genre = user.genre
@@ -56,6 +57,9 @@ internal class UserRepositoryImpl(
                 this.walletAddress = user.walletAddress
                 this.email = email
                 this.passwordHash = passwordHash
+                this.companyName = user.companyName
+                this.companyLogoUrl = user.companyLogoUrl.asValidUrl()
+                this.companyIpRights = user.companyIpRights
             }
         }
     }
@@ -144,6 +148,7 @@ internal class UserRepositoryImpl(
             user.bannerUrl?.let { entity.bannerUrl = it.asValidUrl() }
             user.websiteUrl?.let { entity.websiteUrl = it.asValidUrl() }
             user.twitterUrl?.let { entity.twitterUrl = it.asValidUrl() }
+            user.instagramUrl?.let { entity.instagramUrl = it.asValidUrl() }
             user.location?.let { entity.location = it }
             user.role?.let { entity.role = it }
             user.genre?.let { entity.genre = it }
@@ -158,6 +163,9 @@ internal class UserRepositoryImpl(
                 user.currentPassword.checkAuth(entity.passwordHash)
                 entity.passwordHash = it
             }
+            user.companyName?.let { entity.companyName = it }
+            user.companyLogoUrl?.let { entity.companyLogoUrl = it.asValidUrl() }
+            user.companyIpRights?.let { entity.companyIpRights = it }
         }
     }
 
@@ -231,5 +239,6 @@ internal class UserRepositoryImpl(
         role?.checkLength("role")
         genre?.checkLength("genre")
         biography?.checkLength("biography", 250)
+        companyName?.checkLength("companyName")
     }
 }
