@@ -1,2 +1,5 @@
 [*.{kt,kts}]
-disabled_rules = import-ordering, no-wildcard-imports
+ktlint_standard_import-ordering = disabled
+ktlint_standard_no-wildcard-imports = disabled
+ktlint_standard_trailing-comma-on-call-site = disabled
+ktlint_standard_trailing-comma-on-declaration-site = disabled

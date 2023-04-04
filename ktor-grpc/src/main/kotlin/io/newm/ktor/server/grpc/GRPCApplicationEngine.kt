@@ -119,7 +119,6 @@ class GRPCApplicationEngine(
         return CoroutineScope(
             environment.parentCoroutineContext + engineDispatcher
         ).launch(start = CoroutineStart.LAZY) {
-
             try {
                 if (configuration.startEnvironment) {
                     withContext(userDispatcher) {

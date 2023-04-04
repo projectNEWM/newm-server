@@ -21,7 +21,7 @@ java.targetCompatibility = JavaVersion.VERSION_17
 version = "0.1.0-SNAPSHOT"
 
 ktlint {
-    version.set("0.42.1")
+    version.set(Dependencies.KtLint.VERSION)
 }
 
 repositories {

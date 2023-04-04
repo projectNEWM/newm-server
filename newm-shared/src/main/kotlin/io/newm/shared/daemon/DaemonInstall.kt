@@ -5,7 +5,6 @@ import io.ktor.server.application.ApplicationStopPreparing
 import org.koin.ktor.ext.getKoin
 
 fun Application.initializeDaemons() {
-
     val daemons = getKoin().getAll<Daemon>()
 
     // Add shutdown hook

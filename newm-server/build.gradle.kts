@@ -11,7 +11,7 @@ java.sourceCompatibility = JavaVersion.VERSION_17
 java.targetCompatibility = JavaVersion.VERSION_17
 
 ktlint {
-    version.set("0.43.2")
+    version.set(Dependencies.KtLint.VERSION)
 }
 
 application {

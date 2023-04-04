@@ -17,7 +17,7 @@ java.sourceCompatibility = JavaVersion.VERSION_17
 java.targetCompatibility = JavaVersion.VERSION_17
 
 ktlint {
-    version.set("0.42.1")
+    version.set(Dependencies.KtLint.VERSION)
     filter {
         exclude { entry ->
             entry.file.toString().contains("generated")
