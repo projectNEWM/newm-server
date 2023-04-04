@@ -10,9 +10,6 @@ object LedgerAssetsTable : LongIdTable(name = "ledger_assets") {
     // name for this asset
     val name: Column<String> = text("name")
 
-    // the asset image ipfs link
-    val image: Column<String?> = text("image").nullable()
-
-    // the asset image description
-    val description: Column<String?> = text("description").nullable()
+    // the total supply of this asset
+    val supply: Column<String> = text("supply")
 }

@@ -2,13 +2,13 @@ package io.newm.chain.util
 
 import io.newm.chain.config.Config
 import io.newm.chain.database.entity.ChainBlock
+import io.newm.chain.database.entity.LedgerAsset
 import io.newm.chain.database.entity.LedgerAssetMetadata
 import io.newm.chain.database.entity.PaymentStakeAddress
 import io.newm.chain.database.entity.RawTransaction
 import io.newm.chain.database.entity.StakeRegistration
 import io.newm.chain.model.CreatedUtxo
 import io.newm.chain.model.NativeAsset
-import io.newm.chain.model.NativeAssetMetadata
 import io.newm.chain.model.SpentUtxo
 import io.newm.chain.util.Constants.LEADER_VRF_HEADER
 import io.newm.chain.util.Constants.NFT_METADATA_KEY
@@ -435,31 +435,65 @@ fun Block.toStakeDelegationList(epoch: Long) = when (this) {
     }
 }
 
-fun Block.toAssetMetadataList(nativeAssetMetadataSet: Set<NativeAssetMetadata>): List<LedgerAssetMetadata> =
+fun Block.toLedgerAssets(): List<LedgerAsset> =
+    when (this) {
+        is BlockShelley -> emptyList()
+        is BlockAllegra -> emptyList()
+        is BlockMary -> mary.body.flatMap { txMary ->
+            txMary.body.mint.assets.map { asset ->
+                LedgerAsset(
+                    policy = asset.policyId,
+                    name = asset.name,
+                    supply = asset.quantity,
+                )
+            }
+        }
+
+        is BlockAlonzo -> alonzo.body.flatMap { txAlonzo ->
+            txAlonzo.body.mint.assets.map { asset ->
+                LedgerAsset(
+                    policy = asset.policyId,
+                    name = asset.name,
+                    supply = asset.quantity,
+                )
+            }
+        }
+
+        is BlockBabbage -> babbage.body.flatMap { txBabbage ->
+            txBabbage.body.mint.assets.map { asset ->
+                LedgerAsset(
+                    policy = asset.policyId,
+                    name = asset.name,
+                    supply = asset.quantity,
+                )
+            }
+        }
+    }
+
+fun Block.toAssetMetadataList(ledgerAssets: List<LedgerAsset>): List<LedgerAssetMetadata> =
     when (this) {
         is BlockShelley -> emptyList()
         is BlockAllegra -> emptyList()
         is BlockMary -> mary.body.flatMap { transaction ->
             val assetMetadatas = transaction.metadata?.body?.blob?.get(NFT_METADATA_KEY) as? MetadataMap
-            extractAssetMetadata(nativeAssetMetadataSet, assetMetadatas)
+            assetMetadatas.extractAssetMetadata(ledgerAssets)
         }
 
         is BlockAlonzo -> alonzo.body.flatMap { transaction ->
             val assetMetadatas = transaction.metadata?.body?.blob?.get(NFT_METADATA_KEY) as? MetadataMap
-            extractAssetMetadata(nativeAssetMetadataSet, assetMetadatas)
+            assetMetadatas.extractAssetMetadata(ledgerAssets)
         }
 
         is BlockBabbage -> babbage.body.flatMap { transaction ->
             val assetMetadatas = transaction.metadata?.body?.blob?.get(NFT_METADATA_KEY) as? MetadataMap
-            extractAssetMetadata(nativeAssetMetadataSet, assetMetadatas)
+            assetMetadatas.extractAssetMetadata(ledgerAssets)
         }
     }
 
-private fun extractAssetMetadata(
-    nativeAssetMetadataSet: Set<NativeAssetMetadata>,
-    assetMetadatas: MetadataMap?
+fun MetadataMap?.extractAssetMetadata(
+    ledgerAssets: List<LedgerAsset>,
 ): List<LedgerAssetMetadata> =
-    assetMetadatas?.flatMap { (policyIdKey, assetMetadataValue) ->
+    this?.flatMap { (policyIdKey, assetMetadataValue) ->
         val policyId = when (policyIdKey) {
             is MetadataString -> policyIdKey.string
             is MetadataBytes -> policyIdKey.bytes.b64ToByteArray().toHexString()
@@ -475,12 +509,12 @@ private fun extractAssetMetadata(
                     }
                     name?.let {
                         val hexName = it.toByteArray().toHexString()
-                        val nativeAssetMetadata = nativeAssetMetadataSet.find { asset ->
-                            asset.assetPolicy == policyId &&
-                                (asset.assetName == hexName || asset.assetName == it)
+                        val ledgerAsset = ledgerAssets.find { asset ->
+                            asset.policy == policyId &&
+                                (asset.name == hexName || asset.name == it)
                         }
 
-                        nativeAssetMetadata?.let {
+                        ledgerAsset?.let {
                             (detailsMetadataValue as? MetadataMap)?.mapNotNull { (keyMetadataValue, valueMetadataValue) ->
                                 buildAssetMetadata(it.id!!, keyMetadataValue, valueMetadataValue, 0)
                             }

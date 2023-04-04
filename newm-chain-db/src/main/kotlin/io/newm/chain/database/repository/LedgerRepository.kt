@@ -1,11 +1,11 @@
 package io.newm.chain.database.repository
 
+import io.newm.chain.database.entity.LedgerAsset
 import io.newm.chain.database.entity.LedgerAssetMetadata
 import io.newm.chain.database.entity.RawTransaction
 import io.newm.chain.database.entity.StakeDelegation
 import io.newm.chain.database.entity.StakeRegistration
 import io.newm.chain.model.CreatedUtxo
-import io.newm.chain.model.NativeAssetMetadata
 import io.newm.chain.model.SpentUtxo
 import io.newm.chain.model.Utxo
 
@@ -19,7 +19,9 @@ interface LedgerRepository {
 
     fun doRollback(blockNumber: Long)
 
-    fun upcertNativeAssets(nativeAssetsMetadata: Set<NativeAssetMetadata>): Set<NativeAssetMetadata>
+    fun queryLedgerAsset(policyId: String, hexName: String): LedgerAsset?
+
+    fun upcertLedgerAssets(ledgerAssets: List<LedgerAsset>): List<LedgerAsset>
 
     fun insertLedgerAssetMetadataList(assetMetadataList: List<LedgerAssetMetadata>)
 
@@ -50,4 +52,8 @@ interface LedgerRepository {
     fun queryUtxoHavingAddress(address: String, hash: String, ix: Int): Utxo?
 
     fun queryAddressTxLogsAfter(address: String, afterTxId: String?): List<ByteArray>
+
+    fun queryNativeAssetLogsAfter(afterTableId: Long?): List<Pair<Long, ByteArray>>
+
+    fun queryLedgerAssetMetadataList(assetId: Long, parentId: Long? = null): List<LedgerAssetMetadata>
 }
