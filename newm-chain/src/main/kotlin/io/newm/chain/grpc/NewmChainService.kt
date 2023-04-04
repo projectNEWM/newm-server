@@ -212,4 +212,43 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
             }
         }
     }
+
+    override fun monitorNativeAssets(request: MonitorNativeAssetsRequest): Flow<MonitorNativeAssetsResponse> {
+        val responseFlow = MutableSharedFlow<MonitorNativeAssetsResponse>(replay = 1)
+        val messageHandlerJob: Job = CoroutineScope(context).launch {
+            try {
+                var startAfterId: Long? = if (request.hasStartAfterId()) {
+                    request.startAfterId
+                } else {
+                    null
+                }
+                while (true) {
+                    val nativeAssetLogList = ledgerRepository.queryNativeAssetLogsAfter(startAfterId)
+
+                    nativeAssetLogList.forEach { nativeAssetLog ->
+                        responseFlow.emit(
+                            MonitorNativeAssetsResponse.parseFrom(nativeAssetLog.second)
+                                .toBuilder()
+                                .setId(nativeAssetLog.first)
+                                .build()
+                        )
+                    }
+
+                    if (nativeAssetLogList.isNotEmpty()) {
+                        startAfterId = nativeAssetLogList.last().first
+                    }
+                    delay(1000L)
+                }
+            } catch (e: Throwable) {
+                if (e !is CancellationException) {
+                    log.error(e.message, e)
+                }
+            }
+        }
+
+        messageHandlerJob.invokeOnCompletion {
+            log.warn("invokeOnCompletion: ${it?.message}")
+        }
+        return responseFlow
+    }
 }
