@@ -6,10 +6,14 @@ import com.google.iot.cbor.CborReader
 import com.google.protobuf.kotlin.toByteString
 import io.ktor.server.application.ApplicationEnvironment
 import io.newm.chain.cardano.getEpochForSlot
+import io.newm.chain.cardano.to721Json
+import io.newm.chain.cardano.toMetadataMap
 import io.newm.chain.config.Config
+import io.newm.chain.database.entity.LedgerAsset
 import io.newm.chain.database.repository.ChainRepository
 import io.newm.chain.database.repository.LedgerRepository
 import io.newm.chain.database.table.AddressTxLogTable
+import io.newm.chain.database.table.NativeAssetMonitorLogTable
 import io.newm.chain.grpc.ExUnits
 import io.newm.chain.grpc.MonitorAddressResponse
 import io.newm.chain.grpc.NativeAsset
@@ -18,16 +22,18 @@ import io.newm.chain.grpc.Redeemer
 import io.newm.chain.grpc.RedeemerTag
 import io.newm.chain.grpc.SubmitTransactionRequest
 import io.newm.chain.grpc.Utxo
+import io.newm.chain.grpc.monitorNativeAssetsResponse
+import io.newm.chain.grpc.nativeAsset
 import io.newm.chain.ledger.SubmittedTransactionCache
 import io.newm.chain.logging.captureToSentry
-import io.newm.chain.model.NativeAssetMetadata
-import io.newm.chain.util.b64ToByteArray
+import io.newm.chain.model.CreatedUtxo
+import io.newm.chain.util.extractAssetMetadata
 import io.newm.chain.util.hexToByteArray
 import io.newm.chain.util.toAssetMetadataList
 import io.newm.chain.util.toChainBlock
 import io.newm.chain.util.toCreatedUtxoMap
 import io.newm.chain.util.toCreatedUtxoSet
-import io.newm.chain.util.toHexString
+import io.newm.chain.util.toLedgerAssets
 import io.newm.chain.util.toRawTransactionList
 import io.newm.chain.util.toSpentUtxoMap
 import io.newm.chain.util.toSpentUtxoSet
@@ -43,19 +49,12 @@ import io.newm.kogmios.createStateQueryClient
 import io.newm.kogmios.protocols.messages.IntersectionFound
 import io.newm.kogmios.protocols.messages.RollBackward
 import io.newm.kogmios.protocols.messages.RollForward
-import io.newm.kogmios.protocols.model.Asset
 import io.newm.kogmios.protocols.model.Block
-import io.newm.kogmios.protocols.model.BlockAllegra
 import io.newm.kogmios.protocols.model.BlockAlonzo
 import io.newm.kogmios.protocols.model.BlockBabbage
-import io.newm.kogmios.protocols.model.BlockMary
-import io.newm.kogmios.protocols.model.BlockShelley
 import io.newm.kogmios.protocols.model.CompactGenesis
-import io.newm.kogmios.protocols.model.MetadataBytes
-import io.newm.kogmios.protocols.model.MetadataList
 import io.newm.kogmios.protocols.model.MetadataMap
 import io.newm.kogmios.protocols.model.MetadataString
-import io.newm.kogmios.protocols.model.MetadataValue
 import io.newm.kogmios.protocols.model.OriginString
 import io.newm.kogmios.protocols.model.PointDetail
 import io.newm.kogmios.protocols.model.PointDetailOrOrigin
@@ -83,7 +82,7 @@ import java.io.IOException
 import java.math.BigInteger
 import java.time.Duration
 import java.time.Instant
-import java.util.*
+import java.util.LinkedList
 import kotlin.math.max
 import kotlin.system.measureTimeMillis
 
@@ -125,6 +124,7 @@ class BlockDaemon(
         log.info("starting...")
         startChainSync()
         startMonitorAddresses()
+        startMonitorNativeAssets()
         log.info("startup complete.")
     }
 
@@ -155,14 +155,13 @@ class BlockDaemon(
             }
 
             while (true) {
-                val localChainSyncClient = createChainSyncClient(
-                    websocketHost = server,
-                    websocketPort = port,
-                    secure = secure,
-                    ogmiosCompact = false,
-                )
                 try {
-                    localChainSyncClient.use {
+                    createChainSyncClient(
+                        websocketHost = server,
+                        websocketPort = port,
+                        secure = secure,
+                        ogmiosCompact = false,
+                    ).use { localChainSyncClient ->
                         connect(localChainSyncClient)
                         syncBlockchain(localChainSyncClient)
                     }
@@ -177,7 +176,10 @@ class BlockDaemon(
                         blockBuffer.clear()
                     } catch (_: Throwable) {
                     }
-                    delay(RETRY_DELAY_MILLIS)
+                    try {
+                        delay(RETRY_DELAY_MILLIS)
+                    } catch (_: Throwable) {
+                    }
                 }
             }
         }
@@ -310,25 +312,19 @@ class BlockDaemon(
                         chainRepository.insert(block.toChainBlock())
                     }
 
-                    // Load any Native asset metadata
+                    // Which ledger assets do we need to notify grpc subscribers of changes on.
+                    val mintedLedgerAssets: List<LedgerAsset>
                     nativeAssetTime += measureTimeMillis {
-                        // Store just name/image/description
-                        val nativeAssetMetadataSet =
-                            ledgerRepository.upcertNativeAssets(extractBlockTokenMetadataSet(block))
-
-                        // Store ALL nested metadata items
-                        ledgerRepository.insertLedgerAssetMetadataList(
-                            block.toAssetMetadataList(
-                                nativeAssetMetadataSet
-                            )
-                        )
+                        // Handle any assets minted or burned
+                        mintedLedgerAssets = ledgerRepository.upcertLedgerAssets(block.toLedgerAssets())
                     }
 
                     // Insert unspent utxos and stake delegations/de-registrations
+                    val createdUtxos: Set<CreatedUtxo>
                     createTime += measureTimeMillis {
                         val slotNumber = block.header.slot
                         val blockNumber = block.header.blockHeight
-                        val createdUtxos = block.toCreatedUtxoSet()
+                        createdUtxos = block.toCreatedUtxoSet()
                         ledgerRepository.createUtxos(slotNumber, blockNumber, createdUtxos)
                         val stakeRegistrations = block.toStakeRegistrationList()
                         ledgerRepository.createStakeRegistrations(stakeRegistrations)
@@ -348,6 +344,33 @@ class BlockDaemon(
                             blockNumber = block.header.blockHeight,
                             spentUtxos = block.toSpentUtxoSet()
                         )
+                    }
+
+                    // Load any Native asset metadata
+                    nativeAssetTime += measureTimeMillis {
+                        // Save metadata for CIP-68 reference metadata appearing on createdUtxos datum values
+                        val nativeAssetMetadataList = cip68UtxoOutputsTo721MetadataMap(createdUtxos)
+                        nativeAssetMetadataList.forEach { (metadataMap, assetList) ->
+                            try {
+                                ledgerRepository.insertLedgerAssetMetadataList(
+                                    metadataMap.extractAssetMetadata(assetList)
+                                )
+                            } catch (e: Throwable) {
+                                log.error("metadataMap: $metadataMap")
+                                log.error("assetList: $assetList")
+                                throw e
+                            }
+                        }
+
+                        try {
+                            // Save metadata for CIP-25 metadata appearing in tx metadata
+                            ledgerRepository.insertLedgerAssetMetadataList(
+                                block.toAssetMetadataList(mintedLedgerAssets)
+                            )
+                        } catch (e: Throwable) {
+                            log.error("mintedLedgerAssets: $mintedLedgerAssets")
+                            throw e
+                        }
                     }
                 }
 
@@ -377,164 +400,28 @@ class BlockDaemon(
         }
     }
 
-    private fun extractBlockTokenMetadataSet(block: Block): Set<NativeAssetMetadata> {
-        val sevenTwentyOneMetadataMap = when (block) {
-            is BlockShelley -> emptyList()
-            is BlockAllegra -> emptyList()
-            is BlockMary -> block.mary.body.mapNotNull {
-                val assetsMinted = it.body.mint.assets
-                (it.metadata?.body?.blob?.get(NATIVE_ASSET_METADATA_TAG) as? MetadataMap)?.let { metadataMap ->
-                    Pair(metadataMap, assetsMinted)
-                }
+    private fun cip68UtxoOutputsTo721MetadataMap(createdUtxos: Set<CreatedUtxo>): List<Pair<MetadataMap, List<LedgerAsset>>> {
+        return createdUtxos.filter { createdUtxo ->
+            createdUtxo.nativeAssets.any { nativeAsset ->
+                nativeAsset.name.matches(CIP68_REFERENCE_TOKEN_REGEX)
             }
-
-            is BlockAlonzo -> block.alonzo.body.mapNotNull {
-                val assetsMinted = it.body.mint.assets
-                (it.metadata?.body?.blob?.get(NATIVE_ASSET_METADATA_TAG) as? MetadataMap)?.let { metadataMap ->
-                    Pair(metadataMap, assetsMinted)
-                }
-            }
-
-            is BlockBabbage -> block.babbage.body.mapNotNull {
-                val assetsMinted = it.body.mint.assets
-                (it.metadata?.body?.blob?.get(NATIVE_ASSET_METADATA_TAG) as? MetadataMap)?.let { metadataMap ->
-                    Pair(metadataMap, assetsMinted)
-                }
-            }
-        }
-
-        return if (sevenTwentyOneMetadataMap.isNotEmpty()) {
-            extractSevenTwentyOneMetadata(sevenTwentyOneMetadataMap, block.header.blockHeight)
-        } else {
-            emptySet()
-        }
-    }
-
-    private fun extractSevenTwentyOneMetadata(
-        metadataMaps: List<Pair<MetadataMap, List<Asset>>>,
-        blockHeight: Long
-    ): Set<NativeAssetMetadata> {
-        val nativeAssetMetadata: Set<NativeAssetMetadata> = metadataMaps.flatMap { (metadataMap, assetsMinted) ->
-            metadataMap.mapNotNull { entry ->
-                val assetPolicy = extractNativeAssetPolicy(entry, blockHeight)
-                assetPolicy?.let { ap ->
-                    (entry.value as? MetadataMap)?.let { policyMetadataMap ->
-                        extractNativeAssetsForPolicy(assetsMinted, policyMetadataMap, ap, blockHeight)
+        }.mapNotNull { cip68CreatedUtxo ->
+            cip68CreatedUtxo.datum?.let { datum ->
+                val cip68PlutusData = datum.cborHexToPlutusData()
+                if (cip68PlutusData.hasConstr() && cip68PlutusData.constr == 0) {
+                    cip68CreatedUtxo.nativeAssets.filter { nativeAsset ->
+                        nativeAsset.name.matches(CIP68_REFERENCE_TOKEN_REGEX)
+                    }.map { nativeAsset ->
+                        val metadataMap = cip68PlutusData.toMetadataMap(nativeAsset.policy, nativeAsset.name)
+                        metadataMap to cip68CreatedUtxo.nativeAssets.map { na ->
+                            ledgerRepository.queryLedgerAsset(na.policy, na.name)!!
+                        }
                     }
-                }
-            }
-        }.flatten().toSet()
-
-        return nativeAssetMetadata
-    }
-
-    private fun extractNativeAssetsForPolicy(
-        assetsMinted: List<Asset>,
-        policyMetadataMap: MetadataMap,
-        ap: String,
-        blockHeight: Long,
-    ): List<NativeAssetMetadata> {
-        return policyMetadataMap.mapNotNull { (key, value) ->
-            val assetName = extractNativeAssetName(key, value, blockHeight)
-            assetName?.let { an ->
-                // We have metadata and we actually minted the asset in this tx
-                assetsMinted.find {
-                    it.quantity > BigInteger.ZERO && it.policyId == ap &&
-                        (it.name == an || it.name.toByteArray().toHexString() == an)
-                }?.let {
-                    (value as? MetadataMap)?.let { tokenDetailsMap ->
-                        extractNativeAssetDetails(tokenDetailsMap, an, ap, blockHeight)
-                    } ?: run {
-                        log.error("! value is not MetadataMap!: $value")
-                        null
-                    }
-                }
-            }
-        }
-    }
-
-    private fun extractNativeAssetDetails(
-        tokenDetailsMap: MetadataMap,
-        an: String,
-        ap: String,
-        blockHeight: Long,
-    ): NativeAssetMetadata {
-        val metadataName = extractMetadataName(tokenDetailsMap)
-        val metadataImage = extractMetadataImage(tokenDetailsMap, blockHeight)
-        val metadataDescription = extractMetadataDescription(tokenDetailsMap, blockHeight)
-        return NativeAssetMetadata(
-            assetName = an,
-            assetPolicy = ap,
-            metadataName = metadataName,
-            metadataImage = metadataImage,
-            metadataDescription = metadataDescription,
-        )
-    }
-
-    private fun extractMetadataName(tokenDetailsMap: MetadataMap): String {
-        return (tokenDetailsMap[ASSET_NAME_METADATA_TAG] as? MetadataString)?.string ?: ""
-    }
-
-    private fun extractMetadataDescription(tokenDetailsMap: MetadataMap, blockHeight: Long): String? {
-        val metadataDescription =
-            when (
-                val metadataDescriptionValue =
-                    tokenDetailsMap[ASSET_DESCRIPTION_METADATA_TAG]
-            ) {
-                is MetadataString -> metadataDescriptionValue.string
-                is MetadataList -> metadataDescriptionValue.joinToString(
-                    separator = " "
-                ) { metadataDescriptionPart ->
-                    (metadataDescriptionPart as? MetadataString)?.string
-                        ?: ""
-                }
-
-                null -> null
-                else -> {
-                    log.warn("block: $blockHeight, metadataDescription type was: ${metadataDescriptionValue.javaClass.name}!: $metadataDescriptionValue")
+                } else {
                     null
                 }
             }
-        return metadataDescription
-    }
-
-    private fun extractMetadataImage(tokenDetailsMap: MetadataMap, blockHeight: Long): String {
-        return when (val metadataImageValue = tokenDetailsMap[ASSET_IMAGE_METADATA_TAG]) {
-            is MetadataString -> metadataImageValue.string
-            is MetadataList -> metadataImageValue.joinToString(
-                separator = ""
-            ) { metadataImagePart ->
-                (metadataImagePart as? MetadataString)?.string ?: ""
-            }
-
-            null -> null
-            else -> {
-                log.warn("block: $blockHeight, metadataImage type was: ${metadataImageValue.javaClass.name}!: $metadataImageValue")
-                null
-            }
-        } ?: ""
-    }
-
-    private fun extractNativeAssetName(key: MetadataValue, value: MetadataValue, blockHeight: Long): String? {
-        return when (key) {
-            is MetadataBytes -> key.bytes.b64ToByteArray().toHexString()
-            is MetadataString -> key.string.toByteArray().toHexString()
-            else -> {
-                log.warn("block: $blockHeight, assetName metadata type was: ${key.javaClass.name}!: $key -> $value")
-                null
-            }
-        }
-    }
-
-    private fun extractNativeAssetPolicy(entry: Map.Entry<MetadataValue, MetadataValue>, blockHeight: Long): String? {
-        return when (val assetPolicyKey = entry.key) {
-            is MetadataBytes -> assetPolicyKey.bytes.b64ToByteArray().toHexString()
-            is MetadataString -> assetPolicyKey.string.lowercase()
-            else -> {
-                log.warn("block: $blockHeight, assetPolicy metadata type was: ${assetPolicyKey.javaClass.name}!: $assetPolicyKey -> ${entry.value}")
-                null
-            }
-        }
+        }.flatten()
     }
 
     private suspend fun checkBlockRollbacks(blockHeight: Long, transactionIdsInBlock: Set<String>) {
@@ -755,13 +642,13 @@ class BlockDaemon(
                                     }
                                 }
                             }
-                            transaction {
-                                val batch =
-                                    monitorAddressResponsesMap.flatMap { (monitorAddress, monitorAddressResponsesList) ->
-                                        monitorAddressResponsesList.map {
-                                            Pair(monitorAddress, it)
-                                        }
+                            val batch =
+                                monitorAddressResponsesMap.flatMap { (monitorAddress, monitorAddressResponsesList) ->
+                                    monitorAddressResponsesList.map {
+                                        Pair(monitorAddress, it)
                                     }
+                                }
+                            transaction {
                                 AddressTxLogTable.batchInsert(
                                     batch,
                                     shouldReturnGeneratedValues = false
@@ -784,6 +671,120 @@ class BlockDaemon(
         }
     }
 
+    private fun startMonitorNativeAssets() {
+        launch {
+            while (true) {
+                try {
+                    log.warn("startMonitorNativeAssets")
+                    confirmedBlockFlow.collect { confirmedBlock ->
+                        transaction {
+                            val ledgerAssets = confirmedBlock.toLedgerAssets().map { ledgerAsset ->
+                                ledgerRepository.queryLedgerAsset(ledgerAsset.policy, ledgerAsset.name)!!
+                            }
+                            // handle supply changes
+                            val batch = mutableListOf<ByteArray>()
+                            batch.addAll(
+                                ledgerAssets.mapNotNull { ledgerAsset ->
+                                    val bos = ByteArrayOutputStream()
+                                    monitorNativeAssetsResponse {
+                                        nativeAssetSupplyChange = nativeAsset {
+                                            policy = ledgerAsset.policy
+                                            name = ledgerAsset.name
+                                            amount = ledgerAsset.supply.toString()
+                                        }
+                                    }.writeTo(bos)
+                                    bos.toByteArray()
+                                }
+                            )
+
+                            // handle metadata updates for CIP-25 or if CIP-68 is minted without reference token
+                            batch.addAll(
+                                ledgerAssets.filter { it.supply > BigInteger.ZERO }.map { ledgerAsset ->
+                                    val metadataLedgerAsset = if (ledgerAsset.name.matches(CIP68_USER_TOKEN_REGEX)) {
+                                        val name = "2831303029${ledgerAsset.name.substring(10)}"
+                                        ledgerRepository.queryLedgerAsset(ledgerAsset.policy, name) ?: run {
+                                            log.warn("No LedgerAsset found for name: '$name' !")
+                                            ledgerAsset
+                                        }
+                                    } else {
+                                        ledgerAsset
+                                    }
+
+                                    val ledgerAssetMetadataList =
+                                        ledgerRepository.queryLedgerAssetMetadataList(metadataLedgerAsset.id!!)
+                                    val bos = ByteArrayOutputStream()
+                                    monitorNativeAssetsResponse {
+                                        nativeAssetMetadataJson = ledgerAssetMetadataList.to721Json(
+                                            ledgerAsset.policy,
+                                            ledgerAsset.name,
+                                        )
+                                    }.writeTo(bos)
+                                    bos.toByteArray()
+                                }
+                            )
+
+                            // handle metadata updates for CIP-68
+                            batch.addAll(
+                                confirmedBlock.toCreatedUtxoSet().mapNotNull { createdUtxo ->
+                                    createdUtxo.datum?.let {
+                                        createdUtxo.nativeAssets.filter { nativeAsset ->
+                                            nativeAsset.name.matches(CIP68_REFERENCE_TOKEN_REGEX)
+                                        }
+                                    }
+                                }.flatten().flatMap { updatedNativeAsset ->
+                                    val metadataBatch = mutableListOf<ByteArray>()
+                                    ledgerRepository.queryLedgerAsset(
+                                        updatedNativeAsset.policy,
+                                        updatedNativeAsset.name
+                                    )?.let { nativeAsset ->
+                                        val ledgerAssetMetadataList =
+                                            ledgerRepository.queryLedgerAssetMetadataList(nativeAsset.id!!)
+                                        val bos = ByteArrayOutputStream()
+                                        monitorNativeAssetsResponse {
+                                            nativeAssetMetadataJson = ledgerAssetMetadataList.to721Json(
+                                                updatedNativeAsset.policy,
+                                                updatedNativeAsset.name
+                                            )
+                                        }.writeTo(bos)
+                                        metadataBatch.add(bos.toByteArray())
+
+                                        val prefixes =
+                                            listOf("2832323229", "2833333329", "2834343429") // (222), (333), (444)
+
+                                        prefixes.forEach { prefix ->
+                                            val name = prefix + updatedNativeAsset.name.substring(10)
+                                            ledgerRepository.queryLedgerAsset(updatedNativeAsset.policy, name)
+                                                ?.let { nativeAsset ->
+                                                    val bos1 = ByteArrayOutputStream()
+                                                    monitorNativeAssetsResponse {
+                                                        nativeAssetMetadataJson = ledgerAssetMetadataList.to721Json(
+                                                            nativeAsset.policy,
+                                                            nativeAsset.name
+                                                        )
+                                                    }.writeTo(bos1)
+                                                    metadataBatch.add(bos1.toByteArray())
+                                                }
+                                        }
+                                    }
+                                    metadataBatch
+                                }
+                            )
+
+                            // Update the db for native asset changes
+                            NativeAssetMonitorLogTable.batchInsert(batch, shouldReturnGeneratedValues = false) {
+                                this[NativeAssetMonitorLogTable.monitorNativeAssetsResponseBytes] = it
+                            }
+                        }
+                    }
+                } catch (e: Throwable) {
+                    if (e !is CancellationException) {
+                        log.error(e.message, e)
+                    }
+                }
+            }
+        }
+    }
+
     companion object {
         private const val RETRY_DELAY_MILLIS = 10_000L
         private const val BLOCK_BUFFER_SIZE = 100
@@ -792,5 +793,8 @@ class BlockDaemon(
         private val ASSET_NAME_METADATA_TAG = MetadataString("name")
         private val ASSET_IMAGE_METADATA_TAG = MetadataString("image")
         private val ASSET_DESCRIPTION_METADATA_TAG = MetadataString("description")
+        private val CIP68_REFERENCE_TOKEN_REGEX = Regex("^2831303029.*$") // (100)TokenName
+        private val CIP68_USER_TOKEN_REGEX =
+            Regex("^283[234]3[234]3[234]29.*$") // (222)TokenName, (333)TokenName, (444)TokenName
     }
 }

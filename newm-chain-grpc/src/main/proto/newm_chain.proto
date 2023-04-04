@@ -14,6 +14,7 @@ service NewmChain {
   rpc IsMainnet (IsMainnetRequest) returns (IsMainnetResponse) {}
   rpc MonitorPaymentAddress (MonitorPaymentAddressRequest) returns (MonitorPaymentAddressResponse) {}
   rpc TransactionBuilder (TransactionBuilderRequest) returns (TransactionBuilderResponse) {}
+  rpc MonitorNativeAssets (MonitorNativeAssetsRequest) returns (stream MonitorNativeAssetsResponse) {}
 }
 
 message SubmitTransactionRequest {
@@ -81,7 +82,7 @@ message Signature {
 
 message MonitorAddressRequest {
   string address = 1;
-  string start_after_tx_id = 2;
+  optional string start_after_tx_id = 2;
 }
 
 message MonitorAddressResponse {
@@ -235,4 +236,16 @@ message TransactionBuilderResponse {
 enum NetworkId {
   TESTNET = 0;
   MAINNET = 1;
+}
+
+message MonitorNativeAssetsRequest {
+  optional uint64 start_after_id = 1;
+}
+
+message MonitorNativeAssetsResponse {
+  uint64 id = 1;
+  oneof monitor_native_assets_response_wrapper {
+    NativeAsset native_asset_supply_change = 2;
+    string native_asset_metadata_json = 3;
+  }
 }

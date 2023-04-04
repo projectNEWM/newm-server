@@ -1,6 +1,8 @@
 package io.newm.chain.database.entity
 
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
+import java.math.BigInteger
 
 @Serializable
 data class LedgerAsset(
@@ -12,9 +14,7 @@ data class LedgerAsset(
     // name for this asset
     val name: String,
 
-    // the asset image ipfs link
-    val image: String?,
-
-    // the asset image description
-    val description: String?,
+    // the total supply of this asset
+    @Contextual
+    val supply: BigInteger,
 )

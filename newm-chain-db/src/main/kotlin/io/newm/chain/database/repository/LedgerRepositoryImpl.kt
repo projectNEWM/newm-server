@@ -7,6 +7,7 @@ import com.google.iot.cbor.CborInteger
 import com.google.iot.cbor.CborMap
 import com.google.iot.cbor.CborReader
 import io.newm.chain.config.Config
+import io.newm.chain.database.entity.LedgerAsset
 import io.newm.chain.database.entity.LedgerAssetMetadata
 import io.newm.chain.database.entity.RawTransaction
 import io.newm.chain.database.entity.StakeDelegation
@@ -17,12 +18,12 @@ import io.newm.chain.database.table.LedgerAssetsTable
 import io.newm.chain.database.table.LedgerTable
 import io.newm.chain.database.table.LedgerUtxoAssetsTable
 import io.newm.chain.database.table.LedgerUtxosTable
+import io.newm.chain.database.table.NativeAssetMonitorLogTable
 import io.newm.chain.database.table.RawTransactionsTable
 import io.newm.chain.database.table.StakeDelegationsTable
 import io.newm.chain.database.table.StakeRegistrationsTable
 import io.newm.chain.model.CreatedUtxo
 import io.newm.chain.model.NativeAsset
-import io.newm.chain.model.NativeAssetMetadata
 import io.newm.chain.model.SpentUtxo
 import io.newm.chain.model.Utxo
 import io.newm.chain.util.Bech32
@@ -39,8 +40,10 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.greaterEq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.isNull
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.batchInsert
@@ -373,34 +376,52 @@ class LedgerRepositoryImpl : LedgerRepository {
         RawTransactionsTable.deleteWhere { RawTransactionsTable.blockNumber greaterEq blockNumber }
     }
 
-    override fun upcertNativeAssets(nativeAssetsMetadata: Set<NativeAssetMetadata>): Set<NativeAssetMetadata> {
-        return nativeAssetsMetadata.map { nativeAssetMetadata ->
+    override fun queryLedgerAsset(policyId: String, hexName: String): LedgerAsset? {
+        return LedgerAssetsTable.select {
+            (LedgerAssetsTable.policy eq policyId) and
+                (LedgerAssetsTable.name eq hexName)
+        }.firstOrNull()?.let { row ->
+            LedgerAsset(
+                id = row[LedgerAssetsTable.id].value,
+                policy = row[LedgerAssetsTable.policy],
+                name = row[LedgerAssetsTable.name],
+                supply = row[LedgerAssetsTable.supply].toBigInteger()
+            )
+        }
+    }
+
+    override fun upcertLedgerAssets(ledgerAssets: List<LedgerAsset>): List<LedgerAsset> {
+        val mintedLedgerAssets = mutableMapOf<Long, LedgerAsset>()
+        ledgerAssets.map { ledgerAsset ->
             LedgerAssetsTable.select {
-                (LedgerAssetsTable.policy eq nativeAssetMetadata.assetPolicy) and
-                    (LedgerAssetsTable.name eq nativeAssetMetadata.assetName)
+                (LedgerAssetsTable.policy eq ledgerAsset.policy) and
+                    (LedgerAssetsTable.name eq ledgerAsset.name)
             }.firstOrNull()?.let { existingRow ->
                 val id: Long = existingRow[LedgerAssetsTable.id].value
+                val newSupply = existingRow[LedgerAssetsTable.supply].toBigInteger() + ledgerAsset.supply
                 // Do update
                 LedgerAssetsTable.update({ LedgerAssetsTable.id eq id }) { row ->
-                    row[policy] = nativeAssetMetadata.assetPolicy
-                    row[name] = nativeAssetMetadata.assetName
-                    row[image] = nativeAssetMetadata.metadataImage
-                    row[description] = nativeAssetMetadata.metadataDescription
+                    row[policy] = ledgerAsset.policy
+                    row[name] = ledgerAsset.name
+                    row[supply] = newSupply.toString()
                 }
-
-                nativeAssetMetadata.copy(id = id)
+                if (ledgerAsset.supply > BigInteger.ZERO) {
+                    mintedLedgerAssets[id] = ledgerAsset.copy(id = id, supply = newSupply)
+                }
             } ?: run {
                 // Do insert
                 val id = LedgerAssetsTable.insertAndGetId { row ->
-                    row[policy] = nativeAssetMetadata.assetPolicy
-                    row[name] = nativeAssetMetadata.assetName
-                    row[image] = nativeAssetMetadata.metadataImage
-                    row[description] = nativeAssetMetadata.metadataDescription
+                    row[policy] = ledgerAsset.policy
+                    row[name] = ledgerAsset.name
+                    row[supply] = ledgerAsset.supply.toString()
                 }.value
 
-                nativeAssetMetadata.copy(id = id)
+                if (ledgerAsset.supply > BigInteger.ZERO) {
+                    mintedLedgerAssets[id] = ledgerAsset.copy(id = id)
+                }
             }
-        }.toSet()
+        }
+        return mintedLedgerAssets.values.toList()
     }
 
     override fun insertLedgerAssetMetadataList(assetMetadataList: List<LedgerAssetMetadata>) {
@@ -423,6 +444,26 @@ class LedgerRepositoryImpl : LedgerRepository {
         }.value
 
         ledgerAssetMetadata.children.forEach { insertLedgerAssetMetadata(it, id) }
+    }
+
+    override fun queryLedgerAssetMetadataList(assetId: Long, parentId: Long?): List<LedgerAssetMetadata> {
+        val parentIdExpression = parentId?.let { (LedgerAssetMetadataTable.parentId eq it) }
+            ?: LedgerAssetMetadataTable.parentId.isNull()
+        return LedgerAssetMetadataTable.select {
+            (LedgerAssetMetadataTable.assetId eq assetId) and parentIdExpression
+        }.orderBy(LedgerAssetMetadataTable.id).map { row ->
+            val id = row[LedgerAssetMetadataTable.id].value
+            LedgerAssetMetadata(
+                id = id,
+                assetId = row[LedgerAssetMetadataTable.assetId],
+                keyType = row[LedgerAssetMetadataTable.keyType],
+                key = row[LedgerAssetMetadataTable.key],
+                valueType = row[LedgerAssetMetadataTable.valueType],
+                value = row[LedgerAssetMetadataTable.value],
+                nestLevel = row[LedgerAssetMetadataTable.nestLevel],
+                children = queryLedgerAssetMetadataList(assetId, id),
+            )
+        }
     }
 
     override fun pruneSpent(slotNumber: Long) {
@@ -483,14 +524,7 @@ class LedgerRepositoryImpl : LedgerRepository {
                 val ledgerAssetTableId =
                     LedgerAssetsTable.select {
                         (LedgerAssetsTable.policy eq nativeAsset.policy) and (LedgerAssetsTable.name eq nativeAsset.name)
-                    }.limit(1).firstOrNull()?.let { row ->
-                        row[LedgerAssetsTable.id].value
-                    } ?: LedgerAssetsTable.insertAndGetId { row ->
-                        row[policy] = nativeAsset.policy
-                        row[name] = nativeAsset.name
-                        row[image] = null
-                        row[description] = null
-                    }.value
+                    }.limit(1).first()[LedgerAssetsTable.id].value
 
                 LedgerUtxoAssetsTable.insert { row ->
                     row[ledgerUtxoId] = ledgerUtxoTableId
@@ -695,6 +729,20 @@ class LedgerRepositoryImpl : LedgerRepository {
             (AddressTxLogTable.address eq address) and (AddressTxLogTable.id greater afterId)
         }.orderBy(AddressTxLogTable.id).map { row ->
             row[AddressTxLogTable.monitorAddressResponseBytes]
+        }
+    }
+
+    override fun queryNativeAssetLogsAfter(afterTableId: Long?): List<Pair<Long, ByteArray>> = transaction {
+        val afterId: Long = afterTableId?.let {
+            NativeAssetMonitorLogTable.slice(NativeAssetMonitorLogTable.id).select {
+                NativeAssetMonitorLogTable.id eq it
+            }.firstOrNull()?.let { row -> row[NativeAssetMonitorLogTable.id].value } ?: -1L
+        } ?: -1L
+
+        NativeAssetMonitorLogTable.select {
+            NativeAssetMonitorLogTable.id greater afterId
+        }.orderBy(NativeAssetMonitorLogTable.id).map { row ->
+            row[NativeAssetMonitorLogTable.id].value to row[NativeAssetMonitorLogTable.monitorNativeAssetsResponseBytes]
         }
     }
 

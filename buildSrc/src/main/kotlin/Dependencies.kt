@@ -223,7 +223,7 @@ object Dependencies {
     }
 
     object Newm {
-        private const val VERSION = "1.0.2"
+        private const val VERSION = "1.0.3"
 
         const val KOGMIOS = "io.newm:kogmios:$VERSION"
     }

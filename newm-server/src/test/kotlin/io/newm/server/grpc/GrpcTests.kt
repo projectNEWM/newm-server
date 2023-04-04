@@ -11,6 +11,7 @@ import io.newm.chain.grpc.QueryUtxosRequest
 import io.newm.chain.grpc.QueryUtxosResponse
 import io.newm.chain.grpc.SubmitTransactionRequest
 import io.newm.chain.grpc.SubmitTransactionResponse
+import io.newm.chain.grpc.monitorNativeAssetsRequest
 import io.newm.chain.grpc.monitorPaymentAddressRequest
 import io.newm.chain.grpc.nativeAsset
 import kotlinx.coroutines.runBlocking
@@ -185,5 +186,34 @@ class GrpcTests {
         )
         assertThat(response.success).isTrue()
         assertThat(response.message).isEqualTo("Payment Received")
+    }
+
+    @Test
+    @Disabled
+    fun `test monitorNativeAssets`() = runBlocking {
+        val channel =
+//            ManagedChannelBuilder.forAddress("newm-chain.cardanostakehouse.com", 3737).useTransportSecurity().build()
+            // plainText for localhost testing only. use SSL later.
+            ManagedChannelBuilder.forAddress("localhost", 3737).usePlaintext().build()
+        val client =
+            NewmChainGrpcKt.NewmChainCoroutineStub(channel).withInterceptors(
+                MetadataUtils.newAttachHeadersInterceptor(
+                    Metadata().apply {
+                        put(
+                            Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER),
+                            "Bearer <JWT_TOKEN_HERE_DO_NOT_COMMIT>"
+                        )
+                    }
+                )
+            )
+        val flow = client.monitorNativeAssets(
+            monitorNativeAssetsRequest {
+                startAfterId = 1763701
+            }
+        )
+        flow.collect { monitorNativeAssetsResponse ->
+            println("monitorNativeAssetsResponse: $monitorNativeAssetsResponse")
+            println()
+        }
     }
 }
