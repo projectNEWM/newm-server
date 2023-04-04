@@ -641,32 +641,32 @@ class LedgerRepositoryImpl : LedgerRepository {
                 (LedgerUtxosTable.txId eq hash) and
                     (LedgerUtxosTable.txIx eq ix)
             }.firstOrNull()?.let { row ->
-                val ledgerUtxoId = row[LedgerUtxosTable.id].value
+            val ledgerUtxoId = row[LedgerUtxosTable.id].value
 
-                val nativeAssets = LedgerUtxoAssetsTable.innerJoin(
-                    LedgerAssetsTable,
-                    { ledgerAssetId },
-                    { LedgerAssetsTable.id },
-                    { LedgerUtxoAssetsTable.ledgerUtxoId eq ledgerUtxoId }
-                )
-                    .selectAll().map { naRow ->
-                        NativeAsset(
-                            name = naRow[LedgerAssetsTable.name],
-                            policy = naRow[LedgerAssetsTable.policy],
-                            amount = BigInteger(naRow[LedgerUtxoAssetsTable.amount])
-                        )
-                    }
+            val nativeAssets = LedgerUtxoAssetsTable.innerJoin(
+                LedgerAssetsTable,
+                { ledgerAssetId },
+                { LedgerAssetsTable.id },
+                { LedgerUtxoAssetsTable.ledgerUtxoId eq ledgerUtxoId }
+            )
+                .selectAll().map { naRow ->
+                    NativeAsset(
+                        name = naRow[LedgerAssetsTable.name],
+                        policy = naRow[LedgerAssetsTable.policy],
+                        amount = BigInteger(naRow[LedgerUtxoAssetsTable.amount])
+                    )
+                }
 
-                Utxo(
-                    hash = row[LedgerUtxosTable.txId],
-                    ix = row[LedgerUtxosTable.txIx].toLong(),
-                    lovelace = BigInteger(row[LedgerUtxosTable.lovelace]),
-                    nativeAssets = nativeAssets,
-                    datumHash = row[LedgerUtxosTable.datumHash],
-                    datum = row[LedgerUtxosTable.datum],
-                    scriptRef = row[LedgerUtxosTable.scriptRef],
-                )
-            }
+            Utxo(
+                hash = row[LedgerUtxosTable.txId],
+                ix = row[LedgerUtxosTable.txIx].toLong(),
+                lovelace = BigInteger(row[LedgerUtxosTable.lovelace]),
+                nativeAssets = nativeAssets,
+                datumHash = row[LedgerUtxosTable.datumHash],
+                datum = row[LedgerUtxosTable.datum],
+                scriptRef = row[LedgerUtxosTable.scriptRef],
+            )
+        }
     }
 
     override fun createRawTransactions(rawTransactions: List<RawTransaction>) {

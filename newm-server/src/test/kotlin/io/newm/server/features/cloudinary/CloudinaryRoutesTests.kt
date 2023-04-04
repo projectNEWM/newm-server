@@ -22,7 +22,6 @@ class CloudinaryRoutesTests : BaseApplicationTests() {
 
     @Test
     fun testSign() = runBlocking {
-
         val start = Instant.now().epochSecond
 
         val params = mapOf(

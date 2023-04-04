@@ -11,12 +11,12 @@ object Dependencies {
     }
 
     object KtlintPlugin {
-        const val VERSION = "10.3.0"
+        const val VERSION = "11.3.1"
         const val ID = "org.jlleitschuh.gradle.ktlint"
     }
 
     object KotlinPlugin {
-        const val VERSION = "1.8.10"
+        const val VERSION = "1.8.20"
         const val JVM_ID = "jvm"
         const val SERIALIZATION_ID = "plugin.serialization"
     }
@@ -61,6 +61,10 @@ object Dependencies {
         const val TEST = "org.jetbrains.kotlinx:kotlinx-coroutines-test:$VERSION"
     }
 
+    object KtLint {
+        const val VERSION = "0.48.2"
+    }
+
     object Ktor {
         private const val VERSION = "2.2.4"
 
@@ -85,7 +89,7 @@ object Dependencies {
     }
 
     object LogBack {
-        private const val VERSION = "1.4.5"
+        private const val VERSION = "1.4.6"
 
         const val CLASSIC = "ch.qos.logback:logback-classic:$VERSION"
     }

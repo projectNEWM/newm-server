@@ -15,8 +15,9 @@ object VLQ {
         while (buffer.hasRemaining()) {
             val curByte: Int = buffer.get().toInt() and 0xFF
             n = (n shl 7) or (curByte and 0x7F).toLong()
-            if (curByte and 0x80 == 0)
+            if (curByte and 0x80 == 0) {
                 break
+            }
         }
         return n
     }

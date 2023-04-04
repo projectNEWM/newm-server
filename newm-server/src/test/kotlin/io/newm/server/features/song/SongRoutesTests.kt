@@ -713,7 +713,6 @@ class SongRoutesTests : BaseApplicationTests() {
 
     @Test
     fun testGetAllGenres() = runBlocking {
-
         val ownerId = transaction {
             UserEntity.new {
                 email = "artist1@newm.io"
@@ -760,7 +759,6 @@ class SongRoutesTests : BaseApplicationTests() {
 
     @Test
     fun testGetGenresByOwner() = runBlocking {
-
         val ownerId1 = transaction {
             UserEntity.new {
                 email = "artist1@newm.io"

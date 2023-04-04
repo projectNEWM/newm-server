@@ -57,11 +57,11 @@ class ChainRepositoryImpl : ChainRepository {
             ).select { ChainTable.slotNumber greater slot }
                 .orderBy(ChainTable.slotNumber, SortOrder.ASC)
                 .limit(1).firstOrNull()?.let { row ->
-                    PointDetail(
-                        slot = row[ChainTable.slotNumber],
-                        hash = row[ChainTable.hash],
-                    )
-                }
+                PointDetail(
+                    slot = row[ChainTable.slotNumber],
+                    hash = row[ChainTable.hash],
+                )
+            }
         }
     }
 
@@ -72,8 +72,8 @@ class ChainRepositoryImpl : ChainRepository {
                 .orderBy(ChainTable.id, SortOrder.DESC)
                 .limit(1)
                 .firstOrNull()?.let { row ->
-                    row[ChainTable.nodeVrfVkey]
-                }
+                row[ChainTable.nodeVrfVkey]
+            }
         }
     }
 

@@ -2,7 +2,6 @@ package io.newm.shared.ext
 
 import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.server.config.ApplicationConfig
-import io.newm.shared.ext.*
 
 fun ApplicationEnvironment.getConfigChild(path: String): ApplicationConfig = config.config(path)
 
