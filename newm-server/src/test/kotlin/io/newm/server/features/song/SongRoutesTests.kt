@@ -3,6 +3,7 @@ package io.newm.server.features.song
 import com.amazonaws.HttpMethod
 import com.amazonaws.services.s3.AmazonS3
 import com.google.common.truth.Truth.assertThat
+import com.google.iot.cbor.CborInteger
 import io.ktor.client.call.body
 import io.ktor.client.request.accept
 import io.ktor.client.request.bearerAuth
@@ -23,6 +24,7 @@ import io.newm.server.features.model.CountResponse
 import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.database.SongTable
 import io.newm.server.features.song.model.MarketplaceStatus
+import io.newm.server.features.song.model.MintPaymentResponse
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongIdBody
@@ -41,7 +43,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.time.Instant
 import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
 
 class SongRoutesTests : BaseApplicationTests() {
 
@@ -56,14 +58,6 @@ class SongRoutesTests : BaseApplicationTests() {
     @Test
     fun testPostSong() = runBlocking {
         val startTime = LocalDateTime.now()
-
-        val key = transaction {
-            KeyEntity.new(id = UUID.fromString("00000000-0000-0000-0000-000000000000")) {
-                this.address = testKey.address
-                this.vkey = testKey.vkey.toHexString()
-                this.skey = testKey.skey.toHexString()
-            }
-        }.toModel(testKey.skey)
 
         // Post
         val response = client.post("v1/songs") {
@@ -90,18 +84,17 @@ class SongRoutesTests : BaseApplicationTests() {
         assertThat(song.nftName).isEqualTo(testSong1.nftName)
         assertThat(song.mintingStatus).isEqualTo(testSong1.mintingStatus)
         assertThat(song.marketplaceStatus).isEqualTo(testSong1.marketplaceStatus)
-        assertThat(song.paymentKeyId).isEqualTo(testSong1.paymentKeyId)
     }
 
     @Test
     fun testGetSong() = runBlocking {
-        val key = transaction {
+        transaction {
             KeyEntity.new(id = UUID.fromString("00000000-0000-0000-0000-000000000000")) {
                 this.address = testKey.address
                 this.vkey = testKey.vkey.toHexString()
                 this.skey = testKey.skey.toHexString()
             }
-        }.toModel(testKey.skey)
+        }
 
         // Add Song directly into database
         val song = transaction {
@@ -629,8 +622,8 @@ class SongRoutesTests : BaseApplicationTests() {
         assertThat(song.streamUrl).isEqualTo(testSong2.streamUrl)
         assertThat(song.nftPolicyId).isEqualTo(testSong2.nftPolicyId)
         assertThat(song.nftName).isEqualTo(testSong2.nftName)
-        assertThat(song.mintingStatus).isEqualTo(testSong2.mintingStatus)
-        assertThat(song.marketplaceStatus).isEqualTo(testSong2.marketplaceStatus)
+        assertThat(song.mintingStatus).isEqualTo(testSong1.mintingStatus) // no change expected
+        assertThat(song.marketplaceStatus).isEqualTo(testSong1.marketplaceStatus) // no change expected
     }
 
     @Test
@@ -866,4 +859,72 @@ class SongRoutesTests : BaseApplicationTests() {
             }
         }
     }
+
+    @Test
+    fun testGetMintingPaymentAmount() = runBlocking {
+        // Add mint price value to database directly
+        val expectedAmount = 6000000
+        transaction {
+            exec("INSERT INTO config VALUES ('mint.price','$expectedAmount')")
+        }
+
+        // Add Song directly into database
+        val songId = transaction {
+            SongEntity.new {
+                ownerId = EntityID(testUserId, UserTable)
+                title = testSong1.title!!
+                genres = testSong1.genres!!.toTypedArray()
+                coverArtUrl = testSong1.coverArtUrl
+                description = testSong1.description
+                credits = testSong1.credits
+            }
+        }.id.value
+
+        // get required payment amount
+        val response = client.get("v1/songs/$songId/mint/payment") {
+            bearerAuth(testUserToken)
+        }
+        assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+        val actualCborHex = response.body<MintPaymentResponse>().cborHex
+        val expectedCborHex = CborInteger.create(expectedAmount).toCborByteArray().toHexString()
+        assertThat(actualCborHex).isEqualTo(expectedCborHex)
+    }
+
+    // TODO: complete implementation of testGenerateMintingPaymentTransaction() bellow
+    /*
+    @Test
+    fun testGenerateMintingPaymentTransaction() = runBlocking {
+
+        // Add mint price value to database directly
+        val expectedAmount = 6000000
+        transaction {
+            exec("INSERT INTO config VALUES ('mint.price','$expectedAmount')")
+        }
+
+        // Add Song directly into database
+        val songId = transaction {
+            SongEntity.new {
+                ownerId = EntityID(testUserId, UserTable)
+                title = testSong1.title!!
+                genres = testSong1.genres!!.toTypedArray()
+                coverArtUrl = testSong1.coverArtUrl
+                description = testSong1.description
+                credits = testSong1.credits
+            }
+        }.id.value
+
+        // generate transaction
+        val changeAddress = "addr_test1vrdqad0dwcg5stk9pzdknkrsurzkc8z9rqp9vyfrnrsgxkc4r8za2"
+        val response = client.post("v1/songs/$songId/mint/payment") {
+            bearerAuth(testUserToken)
+            contentType(ContentType.Application.Json)
+            setBody(MintPaymentRequest(changeAddress, listOf(????)) // TODO: figure out
+        }
+        assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+
+        val actualCborHex = response.body<MintPaymentResponse>().cborHex
+        val expectedCborHex = ????  // TODO: figure out
+        assertThat(actualCborHex).isEqualTo(expectedCborHex)
+    }
+     */
 }
