@@ -3,9 +3,16 @@ package io.newm.server.features.song.repo
 import io.newm.server.ext.checkLength
 import com.amazonaws.HttpMethod
 import com.amazonaws.services.s3.AmazonS3
+import com.google.iot.cbor.CborInteger
 import io.ktor.server.application.*
 import io.ktor.util.logging.*
+import io.newm.chain.grpc.Utxo
+import io.newm.chain.grpc.outputUtxo
+import io.newm.chain.util.toHexString
+import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.features.cardano.database.KeyTable
+import io.newm.server.features.cardano.model.Key
+import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.shared.exception.HttpForbiddenException
 import io.newm.shared.exception.HttpUnprocessableEntityException
 import io.newm.server.features.song.database.SongEntity
@@ -21,9 +28,13 @@ import org.koin.core.parameter.parametersOf
 import java.time.Instant
 import java.util.UUID
 
+private const val CONFIG_ID_MINT_PRICE = "mint.price"
+
 internal class SongRepositoryImpl(
     private val environment: ApplicationEnvironment,
-    private val s3: AmazonS3
+    private val s3: AmazonS3,
+    private val configRepository: ConfigRepository,
+    private val cardanoRepository: CardanoRepository,
 ) : SongRepository {
 
     private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
@@ -46,9 +57,6 @@ internal class SongRepositoryImpl(
                 streamUrl = song.streamUrl
                 nftPolicyId = song.nftPolicyId
                 nftName = song.nftName
-                mintingStatus = song.mintingStatus ?: mintingStatus
-                marketplaceStatus = song.marketplaceStatus ?: marketplaceStatus
-                this.paymentKeyId = song.paymentKeyId?.let { EntityID(it, KeyTable) } ?: paymentKeyId
             }.id.value
         }
     }
@@ -70,9 +78,12 @@ internal class SongRepositoryImpl(
                 streamUrl?.let { entity.streamUrl = it }
                 nftPolicyId?.let { entity.nftPolicyId = it }
                 nftName?.let { entity.nftName = it }
-                mintingStatus?.let { entity.mintingStatus = it }
-                marketplaceStatus?.let { entity.marketplaceStatus = it }
-                paymentKeyId?.let { entity.paymentKeyId = EntityID(it, KeyTable) }
+                if (requesterId == null) {
+                    // don't allow updating these fields when invoked from REST API
+                    mintingStatus?.let { entity.mintingStatus = it }
+                    marketplaceStatus?.let { entity.marketplaceStatus = it }
+                    paymentKeyId?.let { entity.paymentKeyId = EntityID(it, KeyTable) }
+                }
             }
         }
     }
@@ -134,9 +145,7 @@ internal class SongRepositoryImpl(
 
         if ('/' in fileName) throw HttpUnprocessableEntityException("Invalid fileName: $fileName")
 
-        transaction {
-            SongEntity[songId].checkRequester(requesterId)
-        }
+        checkRequester(songId, requesterId)
 
         val config = environment.getConfigChild("aws.s3.audio")
         val expiration = Instant.now()
@@ -154,28 +163,59 @@ internal class SongRepositoryImpl(
     override suspend fun processStreamTokenAgreement(songId: UUID, requesterId: UUID, accepted: Boolean) {
         logger.debug { "processStreamTokenAgreement: songId = $songId, accepted = $accepted" }
 
+        checkRequester(songId, requesterId)
+
         val bucketName = environment.getConfigString("aws.s3.agreement.bucketName")
         val fileName = environment.getConfigString("aws.s3.agreement.fileName")
         val filePath = "$songId/$fileName"
-
-        val update = { status: MintingStatus ->
-            transaction {
-                SongEntity[songId].run {
-                    checkRequester(requesterId)
-                    mintingStatus = status
-                }
-            }
-        }
 
         if (accepted) {
             if (!s3.doesObjectExist(bucketName, filePath)) {
                 throw HttpUnprocessableEntityException("missing: $filePath")
             }
-            update(MintingStatus.StreamTokenAgreementApproved)
+            update(songId, Song(mintingStatus = MintingStatus.StreamTokenAgreementApproved))
         } else {
-            update(MintingStatus.Undistributed)
+            update(songId, Song(mintingStatus = MintingStatus.Undistributed))
             s3.deleteObject(bucketName, filePath)
         }
+    }
+
+    override suspend fun getMintingPaymentAmount(songId: UUID, requesterId: UUID): String {
+        logger.debug { "getMintingPaymentAmount: songId = $songId" }
+        // We might need to change this code in the future if we're charging NEWM tokens in addition to ada
+        return CborInteger.create(configRepository.getLong(CONFIG_ID_MINT_PRICE)).toCborByteArray().toHexString()
+    }
+
+    override suspend fun generateMintingPaymentTransaction(
+        songId: UUID,
+        requesterId: UUID,
+        sourceUtxos: List<Utxo>,
+        changeAddress: String
+    ): String {
+        logger.debug { "generateMintingPaymentTransaction: songId = $songId" }
+
+        checkRequester(songId, requesterId)
+
+        val key = Key.generateNew()
+        val keyId = cardanoRepository.add(key)
+        val amount = configRepository.getLong(CONFIG_ID_MINT_PRICE)
+        val transaction = cardanoRepository.buildTransaction {
+            this.sourceUtxos.addAll(sourceUtxos)
+            this.outputUtxos.add(
+                outputUtxo {
+                    address = key.address
+                    lovelace = amount.toString()
+                }
+            )
+            this.changeAddress = changeAddress
+        }
+
+        update(songId, Song(mintingStatus = MintingStatus.MintingPaymentRequested, paymentKeyId = keyId))
+        return transaction.transactionCbor.toByteArray().toHexString()
+    }
+
+    private fun checkRequester(songId: UUID, requesterId: UUID) = transaction {
+        SongEntity[songId].checkRequester(requesterId)
     }
 
     private fun SongEntity.checkRequester(requesterId: UUID) {

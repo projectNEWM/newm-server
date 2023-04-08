@@ -5,6 +5,7 @@ import io.ktor.server.application.install
 import io.newm.server.auth.authKoinModule
 import io.newm.server.aws.awsKoinModule
 import io.newm.server.client.clientKoinModule
+import io.newm.server.config.configKoinModule
 import io.newm.server.features.cardano.cardanoKoinModule
 import io.newm.server.features.cloudinary.cloudinaryKoinModule
 import io.newm.server.features.daemon.daemonsKoinModule
@@ -26,6 +27,7 @@ fun Application.installDependencyInjection() {
     install(Koin) {
         modules(
             appKoinModule,
+            configKoinModule,
             serializationModule,
             clientKoinModule,
             userKoinModule,

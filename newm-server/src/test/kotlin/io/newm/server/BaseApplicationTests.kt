@@ -6,15 +6,17 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.config.ApplicationConfig
 import io.ktor.server.testing.TestApplication
+import io.mockk.mockk
 import io.newm.server.auth.jwt.database.JwtTable
 import io.newm.server.auth.twofactor.database.TwoFactorAuthTable
+import io.newm.server.config.database.ConfigTable
 import io.newm.server.features.cardano.database.KeyTable
+import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.playlist.database.PlaylistTable
 import io.newm.server.features.playlist.database.SongsInPlaylistsTable
 import io.newm.server.features.song.database.SongTable
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
-import java.util.UUID
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -26,6 +28,7 @@ import org.koin.dsl.module
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
+import java.util.UUID
 
 @Testcontainers
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -74,6 +77,7 @@ open class BaseApplicationTests {
         )
         transaction {
             SchemaUtils.create(
+                ConfigTable,
                 UserTable,
                 TwoFactorAuthTable,
                 JwtTable,
@@ -84,6 +88,11 @@ open class BaseApplicationTests {
             )
         }
         application.start()
+        loadKoinModules(
+            module {
+                single { mockk<CardanoRepository>(relaxed = true) }
+            }
+        )
     }
 
     @AfterAll

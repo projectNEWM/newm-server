@@ -1,5 +1,6 @@
 package io.newm.server.features.song.repo
 
+import io.newm.chain.grpc.Utxo
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongFilters
 import java.util.UUID
@@ -15,4 +16,13 @@ interface SongRepository {
     suspend fun getGenreCount(filters: SongFilters): Long
     suspend fun generateAudioUploadUrl(songId: UUID, requesterId: UUID, fileName: String): String
     suspend fun processStreamTokenAgreement(songId: UUID, requesterId: UUID, accepted: Boolean)
+
+    suspend fun getMintingPaymentAmount(songId: UUID, requesterId: UUID): String
+
+    suspend fun generateMintingPaymentTransaction(
+        songId: UUID,
+        requesterId: UUID,
+        sourceUtxos: List<Utxo>,
+        changeAddress: String
+    ): String
 }

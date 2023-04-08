@@ -1,18 +1,22 @@
 package io.newm.server.features.user.database
 
 import io.newm.server.auth.oauth.OAuthType
-import io.newm.shared.ext.existsHavingId
-import io.newm.shared.ext.getId
 import io.newm.server.features.user.model.User
 import io.newm.server.features.user.model.UserFilters
 import io.newm.server.features.user.model.UserVerificationStatus
+import io.newm.shared.ext.exists
+import io.newm.shared.ext.getId
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.AndOp
+import org.jetbrains.exposed.sql.Op
+import org.jetbrains.exposed.sql.SizedIterable
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.lowerCase
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -92,7 +96,7 @@ class UserEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             UserTable.email.lowerCase() eq email.lowercase()
         }.firstOrNull()
 
-        fun existsByEmail(email: String): Boolean = existsHavingId {
+        fun existsByEmail(email: String): Boolean = exists {
             UserTable.email.lowerCase() eq email.lowercase()
         }
 
