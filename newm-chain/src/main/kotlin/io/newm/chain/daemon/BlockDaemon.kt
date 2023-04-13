@@ -59,11 +59,11 @@ import io.newm.kogmios.protocols.model.OriginString
 import io.newm.kogmios.protocols.model.PointDetail
 import io.newm.kogmios.protocols.model.PointDetailOrOrigin
 import io.newm.shared.daemon.Daemon
-import io.newm.shared.ext.debug
-import io.newm.shared.ext.getConfigBoolean
-import io.newm.shared.ext.getConfigInt
-import io.newm.shared.ext.getConfigSplitStrings
-import io.newm.shared.ext.getConfigString
+import io.newm.shared.ktx.debug
+import io.newm.shared.ktx.getConfigBoolean
+import io.newm.shared.ktx.getConfigInt
+import io.newm.shared.ktx.getConfigSplitStrings
+import io.newm.shared.ktx.getConfigString
 import io.newm.shared.koin.inject
 import io.newm.txbuilder.ktx.cborHexToPlutusData
 import io.newm.txbuilder.ktx.toPlutusData

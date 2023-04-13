@@ -5,13 +5,13 @@ import com.amazonaws.services.sqs.model.SendMessageRequest
 import io.ktor.server.application.ApplicationEnvironment
 import io.newm.chain.grpc.monitorPaymentAddressRequest
 import io.newm.server.aws.SqsMessageReceiver
-import io.newm.server.ext.await
+import io.newm.server.ktx.await
 import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.repo.SongRepository
-import io.newm.shared.ext.getConfigString
-import io.newm.shared.ext.info
+import io.newm.shared.ktx.getConfigString
+import io.newm.shared.ktx.info
 import io.newm.shared.koin.inject
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString

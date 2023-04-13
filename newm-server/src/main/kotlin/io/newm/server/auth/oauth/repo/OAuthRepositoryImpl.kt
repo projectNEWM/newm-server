@@ -7,9 +7,9 @@ import io.ktor.http.Parameters
 import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.util.logging.Logger
 import io.newm.server.auth.oauth.OAuthType
-import io.newm.shared.ext.debug
-import io.newm.shared.ext.getConfigChild
-import io.newm.shared.ext.getString
+import io.newm.shared.ktx.debug
+import io.newm.shared.ktx.getConfigChild
+import io.newm.shared.ktx.getString
 import io.newm.shared.koin.inject
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

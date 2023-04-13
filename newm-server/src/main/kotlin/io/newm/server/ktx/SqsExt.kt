@@ -1,4 +1,4 @@
-package io.newm.server.ext
+package io.newm.server.ktx
 
 import com.amazonaws.handlers.AsyncHandler
 import com.amazonaws.services.sqs.AmazonSQSAsync

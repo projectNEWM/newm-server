@@ -32,8 +32,8 @@ import io.newm.server.features.song.model.UploadAudioRequest
 import io.newm.server.features.song.model.UploadAudioResponse
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
-import io.newm.shared.ext.existsHavingId
-import io.newm.shared.ext.toDate
+import io.newm.shared.ktx.existsHavingId
+import io.newm.shared.ktx.toDate
 import io.newm.shared.koin.inject
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.dao.id.EntityID

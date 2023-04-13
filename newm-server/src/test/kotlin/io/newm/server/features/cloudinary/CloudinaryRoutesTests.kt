@@ -11,7 +11,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.newm.server.BaseApplicationTests
 import io.newm.shared.koin.inject
-import io.newm.shared.ext.value
+import io.newm.shared.ktx.value
 import io.newm.server.features.cloudinary.model.CloudinarySignResponse
 import java.time.Instant
 import kotlinx.coroutines.runBlocking

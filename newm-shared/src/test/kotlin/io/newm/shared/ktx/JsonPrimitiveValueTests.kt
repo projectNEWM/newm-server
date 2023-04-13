@@ -1,4 +1,4 @@
-package io.newm.shared.ext
+package io.newm.shared.ktx
 
 import com.google.common.truth.Truth.assertThat
 import kotlinx.serialization.json.JsonPrimitive

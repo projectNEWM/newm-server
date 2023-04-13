@@ -7,8 +7,12 @@ import io.ktor.util.logging.Logger
 import io.newm.server.auth.jwt.JwtType
 import io.newm.server.auth.jwt.database.JwtEntity
 import io.newm.server.features.user.database.UserTable
-import io.newm.shared.ext.*
 import io.newm.shared.koin.inject
+import io.newm.shared.ktx.debug
+import io.newm.shared.ktx.existsHavingId
+import io.newm.shared.ktx.getConfigLong
+import io.newm.shared.ktx.getConfigString
+import io.newm.shared.ktx.toDate
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf

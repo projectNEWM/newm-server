@@ -30,8 +30,8 @@ import io.newm.server.features.song.model.SongIdBody
 import io.newm.server.features.song.testSong1
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
-import io.newm.shared.ext.exists
-import io.newm.shared.ext.existsHavingId
+import io.newm.shared.ktx.exists
+import io.newm.shared.ktx.existsHavingId
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.and

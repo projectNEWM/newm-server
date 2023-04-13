@@ -1,10 +1,10 @@
 package io.newm.server.features.playlist.model
 
 import io.ktor.server.application.ApplicationCall
-import io.newm.server.ext.ids
-import io.newm.server.ext.newerThan
-import io.newm.server.ext.olderThan
-import io.newm.server.ext.ownerIds
+import io.newm.server.ktx.ids
+import io.newm.server.ktx.newerThan
+import io.newm.server.ktx.olderThan
+import io.newm.server.ktx.ownerIds
 import java.time.LocalDateTime
 import java.util.UUID
 

@@ -1,20 +1,23 @@
-package io.newm.server.ext
+package io.newm.server.ktx
 
-import io.ktor.server.application.*
-import io.ktor.server.auth.*
-import io.ktor.server.auth.jwt.*
-import io.ktor.server.request.*
-import io.ktor.utils.io.*
-import io.ktor.utils.io.bits.*
+import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.ApplicationCall
+import io.ktor.server.auth.jwt.JWTPrincipal
+import io.ktor.server.auth.principal
+import io.ktor.server.request.ApplicationReceivePipeline
+import io.ktor.server.request.receive
+import io.ktor.server.response.respond
+import io.ktor.utils.io.ByteReadChannel
+import io.ktor.utils.io.bits.Memory
 import io.newm.shared.exception.HttpUnauthorizedException
-import io.newm.shared.ext.splitAndTrim
-import io.newm.shared.ext.toHexString
-import io.newm.shared.ext.toLocalDateTime
-import io.newm.shared.ext.toUUID
+import io.newm.shared.ktx.splitAndTrim
+import io.newm.shared.ktx.toHexString
+import io.newm.shared.ktx.toLocalDateTime
+import io.newm.shared.ktx.toUUID
 import java.nio.ByteBuffer
 import java.security.Key
 import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
 import javax.crypto.Mac
 import kotlin.reflect.KClass
 
@@ -70,6 +73,25 @@ val ApplicationCall.newerThan: LocalDateTime?
 
 val ApplicationCall.phrase: String?
     get() = parameters["phrase"]
+
+suspend inline fun ApplicationCall.identifyUser(
+    crossinline body: suspend ApplicationCall.(UUID, Boolean) -> Unit
+) {
+    val uid = userId
+    body(uid, uid == myUserId)
+}
+
+suspend inline fun ApplicationCall.restrictToMe(
+    crossinline body: suspend ApplicationCall.(UUID) -> Unit
+) {
+    identifyUser { userId, isMe ->
+        if (isMe) {
+            body(userId)
+        } else {
+            respond(HttpStatusCode.Forbidden)
+        }
+    }
+}
 
 /***
  * Receives signed content and verifies signature

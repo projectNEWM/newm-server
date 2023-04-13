@@ -1,14 +1,16 @@
 package io.newm.server.features.idenfy
 
-import io.ktor.http.*
-import io.ktor.server.application.*
-import io.ktor.server.auth.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
+import io.ktor.http.HttpStatusCode
+import io.ktor.server.auth.authenticate
+import io.ktor.server.response.respond
+import io.ktor.server.routing.Routing
+import io.ktor.server.routing.route
 import io.newm.server.auth.jwt.AUTH_JWT
-import io.newm.server.ext.myUserId
-import io.newm.server.ext.receiveAndVerify
+import io.newm.server.ktx.myUserId
+import io.newm.server.ktx.receiveAndVerify
 import io.newm.server.features.idenfy.repo.IdenfyRepository
+import io.newm.shared.ktx.get
+import io.newm.shared.ktx.post
 import org.koin.ktor.ext.inject
 import java.security.Key
 
@@ -21,22 +23,18 @@ fun Routing.createIdenfyRoutes() {
     route(IDENFY_PATH) {
         authenticate(AUTH_JWT) {
             get("session") {
-                with(call) {
-                    respond(repository.createSession(myUserId))
-                }
+                respond(repository.createSession(myUserId))
             }
         }
 
         post("callback") {
-            with(call) {
-                repository.processSessionResult(
-                    receiveAndVerify(
-                        signatureHeader = "Idenfy-Signature",
-                        key = key
-                    )
+            repository.processSessionResult(
+                receiveAndVerify(
+                    signatureHeader = "Idenfy-Signature",
+                    key = key
                 )
-                respond(HttpStatusCode.OK)
-            }
+            )
+            respond(HttpStatusCode.OK)
         }
     }
 }

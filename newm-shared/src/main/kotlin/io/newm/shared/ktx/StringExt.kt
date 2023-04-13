@@ -1,4 +1,4 @@
-package io.newm.shared.ext
+package io.newm.shared.ktx
 
 import at.favre.lib.crypto.bcrypt.BCrypt
 import java.net.URL

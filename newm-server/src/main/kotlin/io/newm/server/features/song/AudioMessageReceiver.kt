@@ -7,9 +7,9 @@ import io.newm.server.aws.SqsMessageReceiver
 import io.newm.server.features.song.model.AudioMessage
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.repo.SongRepository
-import io.newm.shared.ext.debug
-import io.newm.shared.ext.getConfigString
-import io.newm.shared.ext.toUUID
+import io.newm.shared.ktx.debug
+import io.newm.shared.ktx.getConfigString
+import io.newm.shared.ktx.toUUID
 import io.newm.shared.koin.inject
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
