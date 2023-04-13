@@ -27,4 +27,6 @@ interface SongRepository {
         sourceUtxos: List<Utxo>,
         changeAddress: String
     ): String
+
+    suspend fun distribute(songId: UUID)
 }
