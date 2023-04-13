@@ -12,6 +12,7 @@ import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.features.cardano.database.KeyTable
 import io.newm.server.features.cardano.model.Key
 import io.newm.server.features.cardano.repo.CardanoRepository
+import io.newm.server.features.distribution.DistributionRepository
 import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Song
@@ -40,6 +41,7 @@ internal class SongRepositoryImpl(
     private val s3: AmazonS3,
     private val configRepository: ConfigRepository,
     private val cardanoRepository: CardanoRepository,
+    private val distributionRepository: DistributionRepository,
 ) : SongRepository {
 
     private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
@@ -217,6 +219,12 @@ internal class SongRepositoryImpl(
 
         update(songId, Song(mintingStatus = MintingStatus.MintingPaymentRequested, paymentKeyId = keyId))
         return transaction.transactionCbor.toByteArray().toHexString()
+    }
+
+    override suspend fun distribute(songId: UUID) {
+        val song = SongEntity[songId]
+
+        distributionRepository.distributeSong(song)
     }
 
     private fun checkRequester(songId: UUID, requesterId: UUID) = transaction {
