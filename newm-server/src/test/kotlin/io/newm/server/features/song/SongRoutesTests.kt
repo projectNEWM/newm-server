@@ -828,6 +828,135 @@ class SongRoutesTests : BaseApplicationTests() {
     }
 
     @Test
+    fun testRequestAudioPostUpload() = runBlocking {
+        // Add song directly into database
+        val songId = transaction {
+            SongEntity.new {
+                ownerId = EntityID(testUserId, UserTable)
+                title = testSong1.title!!
+                genres = testSong1.genres!!.toTypedArray()
+                moods = testSong1.moods!!.toTypedArray()
+                coverArtUrl = testSong1.coverArtUrl
+                description = testSong1.description
+                credits = testSong1.credits
+                duration = testSong1.duration
+                streamUrl = testSong1.streamUrl
+                nftPolicyId = testSong1.nftPolicyId
+                nftName = testSong1.nftName
+                mintingStatus = testSong1.mintingStatus!!
+                marketplaceStatus = testSong1.marketplaceStatus!!
+            }
+        }.id.value
+
+        // Request upload
+        val response = client.post("v1/songs/$songId/upload") {
+            bearerAuth(testUserToken)
+            contentType(ContentType.Application.Json)
+            setBody(UploadAudioRequest("test1.mp3"))
+        }
+        assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+        val resp = response.body<UploadAudioPostResponse>()
+
+        // create a new HttpClient to work around loop back network in test environment
+        val localClient = HttpClient()
+
+        val environment: ApplicationEnvironment by inject()
+        val config = environment.getConfigChild("aws.s3.audio")
+        val file = File(config.getString("smallSongFile"))
+        val form = formData {
+            resp.fields.forEach {
+                append(it.key, it.value)
+                println("${it.key} = ${it.value}")
+            }
+            appendInput(
+                key = "file",
+                headers = Headers.build {
+                    append(HttpHeaders.ContentType, "application/octet-stream")
+                    append(HttpHeaders.ContentDisposition, "filename=${file.name}")
+                },
+                size = file.length()
+            ) {
+                buildPacket { writeFully(file.readBytes()) }
+            }
+        }
+
+        val formResp = localClient.submitFormWithBinaryData(form) {
+            url(resp.url)
+            headers {
+                append("Accept", ContentType.Application.Json)
+            }
+        }
+
+        assertThat(formResp.status.value).isIn(200..204)
+    }
+
+    @Test
+    fun testRequestAudioPostUploadTooLarge() = runBlocking {
+        // Add song directly into database
+        val songId = transaction {
+            SongEntity.new {
+                ownerId = EntityID(testUserId, UserTable)
+                title = testSong1.title!!
+                genres = testSong1.genres!!.toTypedArray()
+                moods = testSong1.moods!!.toTypedArray()
+                coverArtUrl = testSong1.coverArtUrl
+                description = testSong1.description
+                credits = testSong1.credits
+                duration = testSong1.duration
+                streamUrl = testSong1.streamUrl
+                nftPolicyId = testSong1.nftPolicyId
+                nftName = testSong1.nftName
+                mintingStatus = testSong1.mintingStatus!!
+                marketplaceStatus = testSong1.marketplaceStatus!!
+            }
+        }.id.value
+
+        // Request upload
+        val response = client.post("v1/songs/$songId/upload") {
+            bearerAuth(testUserToken)
+            contentType(ContentType.Application.Json)
+            setBody(UploadAudioRequest("test1.mp3"))
+        }
+        assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+        val resp = response.body<UploadAudioPostResponse>()
+
+        // create a new HttpClient to work around loop back network in test environment
+        val localClient = HttpClient()
+
+        val environment: ApplicationEnvironment by inject()
+        val config = environment.getConfigChild("aws.s3.audio")
+        val file = File(config.getString("bigSongFile"))
+        val form = formData {
+            resp.fields.forEach {
+                append(it.key, it.value)
+                println("${it.key} = ${it.value}")
+            }
+            appendInput(
+                key = "file",
+                headers = Headers.build {
+                    append(HttpHeaders.ContentType, "application/octet-stream")
+                    append(HttpHeaders.ContentDisposition, "filename=${file.name}")
+                },
+                size = file.length()
+            ) {
+                buildPacket { writeFully(file.readBytes()) }
+            }
+        }
+
+        val result = runCatching {
+            localClient.submitFormWithBinaryData(form) {
+                url(resp.url)
+                headers {
+                    append("Accept", ContentType.Application.Json)
+                }
+            }
+        }.onFailure {
+            assertThat(it).isInstanceOf(EOFException::class.java)
+        }
+        assertThat(result.isFailure).isTrue()
+    }
+
+    @Test
     fun testGetAllGenres() = runBlocking {
         val ownerId = transaction {
             UserEntity.new {
