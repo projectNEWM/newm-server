@@ -28,6 +28,7 @@ import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.deleteAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.io.EOFException
 import java.io.File
@@ -694,6 +695,7 @@ class SongRoutesTests : BaseApplicationTests() {
         assertThat(resp.uploadUrl).isIn(validUrls)
     }
 
+    @Disabled("Disabled because this test requires real AWS credentials")
     @Test
     fun testRequestAudioPostUpload() = runBlocking {
         // Add song directly into database
@@ -724,7 +726,6 @@ class SongRoutesTests : BaseApplicationTests() {
         assertThat(response.status).isEqualTo(HttpStatusCode.OK)
         val resp = response.body<UploadAudioPostResponse>()
 
-
         // create a new HttpClient to work around loop back network in test environment
         val localClient = HttpClient()
 
@@ -747,7 +748,6 @@ class SongRoutesTests : BaseApplicationTests() {
             }
         }
 
-
         val formResp = localClient.submitFormWithBinaryData(form) {
             url(resp.url)
             headers {
@@ -758,6 +758,7 @@ class SongRoutesTests : BaseApplicationTests() {
         assertThat(formResp.status.value).isIn(200..204)
     }
 
+    @Disabled("Disabled because this test requires real AWS credentials")
     @Test
     fun testRequestAudioPostUploadTooLarge() = runBlocking {
         // Add song directly into database
@@ -810,7 +811,6 @@ class SongRoutesTests : BaseApplicationTests() {
             }
         }
 
-
         val result = runCatching {
             localClient.submitFormWithBinaryData(form) {
                 url(resp.url)
@@ -823,7 +823,6 @@ class SongRoutesTests : BaseApplicationTests() {
         }
         assertThat(result.isFailure).isTrue()
     }
-
 
     @Test
     fun testGetAllGenres() = runBlocking {

@@ -13,7 +13,6 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.*
 
-
 private const val ALGORITHM_QUERY_PARAM = "X-Amz-Algorithm"
 private const val CREDENTIAL_QUERY_PARAM = "X-Amz-Credential"
 private const val AMZ_DATE_QUERY_PARAM = "X-Amz-Date"
@@ -22,7 +21,6 @@ private const val SIGNATURE_QUERY_PARAM = "X-Amz-Signature"
 private const val ALGORITHM_IDENTIFIER = "AWS4-HMAC-SHA256"
 private const val POLICY_QUERY_PARAM = "policy"
 private const val KEY_TYPE_IDENTIFIER = "aws4_request"
-
 
 private val UTC: ZoneId = ZoneId.of("Z")
 private val amzTimeFormatter: DateTimeFormatter =
@@ -36,12 +34,11 @@ private val amzDateFormattter: DateTimeFormatter =
     )
 
 private val responseDateFormatter: DateTimeFormatter =
-    DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH':'mm':'ss'.'SSS'Z'", Locale.US).withZone(UTC);
-
+    DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH':'mm':'ss'.'SSS'Z'", Locale.US).withZone(UTC)
 
 private fun computeSignature(encodedPolicy: String, secretKey: String, region: String, date: Instant): String {
     val shortDate = amzDateFormattter.format(date)
-    val dateKey = HmacUtils(HmacAlgorithms.HMAC_SHA_256, "AWS4${secretKey}").hmac(shortDate)
+    val dateKey = HmacUtils(HmacAlgorithms.HMAC_SHA_256, "AWS4$secretKey").hmac(shortDate)
     val dateRegionKey = HmacUtils(HmacAlgorithms.HMAC_SHA_256, dateKey).hmac(region)
     val dateRegionServiceKey = HmacUtils(HmacAlgorithms.HMAC_SHA_256, dateRegionKey).hmac("s3")
     val signingKey = HmacUtils(HmacAlgorithms.HMAC_SHA_256, dateRegionServiceKey).hmac("aws4_request")
@@ -49,7 +46,7 @@ private fun computeSignature(encodedPolicy: String, secretKey: String, region: S
 }
 
 private fun createScope(shortDate: String, region: String, service: String): String =
-    "${shortDate}/${region}/${service}/$KEY_TYPE_IDENTIFIER"
+    "$shortDate/$region/$service/$KEY_TYPE_IDENTIFIER"
 
 /**
  * Creates a presigned post object for uploading a file to S3. The presigned post object contains a URL and a map of
@@ -69,11 +66,10 @@ fun AmazonS3.createPresignedPost(block: PresignedPostOptionBuilder.() -> Unit): 
     val shortDate = amzDateFormattter.format(now)
     val clientRegion = client.region
 
-
     // Prepare credentials.
     val credentials = options.credentials
-    val credentialScope = createScope(shortDate, clientRegion.firstRegionId, "s3");
-    val credential = "${credentials.awsAccessKeyId}/${credentialScope}";
+    val credentialScope = createScope(shortDate, clientRegion.firstRegionId, "s3")
+    val credential = "${credentials.awsAccessKeyId}/$credentialScope"
 
     val fields = hashMapOf<String, String>()
     fields.putAll(options.fields)
@@ -104,7 +100,7 @@ fun AmazonS3.createPresignedPost(block: PresignedPostOptionBuilder.() -> Unit): 
     } else {
         conditions.add(MapCondition(key = "key", value = options.key))
     }
-    val postPolicy = PreSignedPostPolicy(
+    val postPolicy = PresignedPostPolicy(
         expiration = responseDateFormatter.format(expiration),
         conditions = conditions
     )
@@ -122,8 +118,3 @@ fun AmazonS3.createPresignedPost(block: PresignedPostOptionBuilder.() -> Unit): 
         fields = fields
     )
 }
-
-
-
-
-
