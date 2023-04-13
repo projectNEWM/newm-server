@@ -9,6 +9,7 @@ import io.newm.server.config.configKoinModule
 import io.newm.server.features.cardano.cardanoKoinModule
 import io.newm.server.features.cloudinary.cloudinaryKoinModule
 import io.newm.server.features.daemon.daemonsKoinModule
+import io.newm.server.features.distribution.distributionKoinModule
 import io.newm.server.features.idenfy.idenfyKoinModule
 import io.newm.server.features.playlist.playlistKoinModule
 import io.newm.server.features.song.songKoinModule
@@ -39,6 +40,7 @@ fun Application.installDependencyInjection() {
             idenfyKoinModule,
             cardanoKoinModule,
             daemonsKoinModule,
+            distributionKoinModule,
         )
     }
 }

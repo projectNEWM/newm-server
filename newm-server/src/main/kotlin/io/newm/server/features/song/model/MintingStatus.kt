@@ -5,6 +5,7 @@ enum class MintingStatus {
     StreamTokenAgreementApproved, // Artist has approved the Agreement /w placeholder for ISRC number
     MintingPaymentRequested, // We've created a payment address and presented that to the Artist's wallet for payment.
     MintingPaymentReceived, // Payment has been received in the payment address and 3 blocks have occurred since.
+    AwaitingCollaboratorApproval, // We're waiting for collaborators to approve their percentages
     ReadyToDistribute, // Ready for the distribution team to send all the song information to distribution partners.
     SubmittedForDistribution, // Distribution sets this status once they have uploaded song/metadata for distribution.
     Distributed, // Distribution partner has successfully deployed to streaming platforms. ISRC number added to song record.

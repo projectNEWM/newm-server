@@ -5,20 +5,20 @@ import com.amazonaws.services.sqs.model.SendMessageRequest
 import io.ktor.server.application.ApplicationEnvironment
 import io.newm.chain.grpc.monitorPaymentAddressRequest
 import io.newm.server.aws.SqsMessageReceiver
-import io.newm.server.ktx.await
 import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.repo.SongRepository
+import io.newm.server.ktx.await
+import io.newm.shared.koin.inject
 import io.newm.shared.ktx.getConfigString
 import io.newm.shared.ktx.info
-import io.newm.shared.koin.inject
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.koin.core.parameter.parametersOf
 import org.slf4j.Logger
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 class MintingMessageReceiver : SqsMessageReceiver {
@@ -65,32 +65,63 @@ class MintingMessageReceiver : SqsMessageReceiver {
                 // Payment received. Move -> ReadyToDistribute
                 updateSongStatus(
                     songId = mintingStatusSqsMessage.songId,
-                    mintingStatus = MintingStatus.ReadyToDistribute
+                    mintingStatus = MintingStatus.AwaitingCollaboratorApproval
+                )
+            }
+
+            MintingStatus.AwaitingCollaboratorApproval -> {
+                // TODO: Check to see if all collaborators have approved. Also check this each time we get a new approval in
+
+                // Payment received. Move -> ReadyToDistribute
+                updateSongStatus(
+                    songId = mintingStatusSqsMessage.songId,
+                    mintingStatus = MintingStatus.AwaitingCollaboratorApproval
                 )
             }
 
             MintingStatus.ReadyToDistribute -> {
-                TODO()
+                songRepository.distribute(mintingStatusSqsMessage.songId)
+
+                // Done submitting distributing. Move -> SubmittedForDistribution
+                updateSongStatus(
+                    songId = mintingStatusSqsMessage.songId,
+                    mintingStatus = MintingStatus.SubmittedForDistribution
+                )
             }
 
             MintingStatus.SubmittedForDistribution -> {
-                TODO()
+                // TODO: Add some monitoring job that will poll the distribution service for when the distribution
+                // is done. Let that monitoring job move it to either Distributed or Declined status
             }
 
             MintingStatus.Distributed -> {
-                TODO()
+                // TODO: Upload 30-second clip, lyrics.txt, streamtokenagreement.pdf to arweave and save those URLs
+                // on the Song record
+
+                // Done distributing. Move -> Pending
+                updateSongStatus(
+                    songId = mintingStatusSqsMessage.songId,
+                    mintingStatus = MintingStatus.Pending
+                )
             }
 
             MintingStatus.Declined -> {
-                TODO()
+                // TODO: Notify the user and our support team via email that the distribution was declined.
+                // We'll have to change the minting status manually to re-process things if necessary.
             }
 
             MintingStatus.Pending -> {
-                TODO()
+                // TODO: Create and submit the mint transaction
+
+                // Done submitting mint transaction. Move -> Minted
+                updateSongStatus(
+                    songId = mintingStatusSqsMessage.songId,
+                    mintingStatus = MintingStatus.Minted
+                )
             }
 
             MintingStatus.Minted -> {
-                TODO()
+                // TODO: Notify the user that the process has been completed
             }
         }
     }
