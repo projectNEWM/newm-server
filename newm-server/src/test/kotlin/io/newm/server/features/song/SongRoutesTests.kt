@@ -734,7 +734,6 @@ class SongRoutesTests : BaseApplicationTests() {
         val form = formData {
             resp.fields.forEach {
                 append(it.key, it.value)
-                println("${it.key} = ${it.value}")
             }
             appendInput(
                 key = "file",
@@ -798,7 +797,6 @@ class SongRoutesTests : BaseApplicationTests() {
         val form = formData {
             resp.fields.forEach {
                 append(it.key, it.value)
-                println("${it.key} = ${it.value}")
             }
             appendInput(
                 key = "file",
