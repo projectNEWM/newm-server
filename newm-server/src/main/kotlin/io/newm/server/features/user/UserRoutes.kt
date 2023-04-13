@@ -1,24 +1,23 @@
 package io.newm.server.features.user
 
 import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.call
 import io.ktor.server.auth.authenticate
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Routing
-import io.ktor.server.routing.delete
-import io.ktor.server.routing.get
-import io.ktor.server.routing.patch
-import io.ktor.server.routing.put
 import io.ktor.server.routing.route
 import io.newm.server.auth.jwt.AUTH_JWT
-import io.newm.server.ext.identifyUser
-import io.newm.server.ext.limit
-import io.newm.server.ext.offset
-import io.newm.server.ext.restrictToMe
+import io.newm.server.ktx.identifyUser
+import io.newm.server.ktx.limit
+import io.newm.server.ktx.offset
+import io.newm.server.ktx.restrictToMe
 import io.newm.server.features.model.CountResponse
 import io.newm.server.features.user.model.userFilters
 import io.newm.server.features.user.repo.UserRepository
+import io.newm.shared.ktx.delete
+import io.newm.shared.ktx.get
+import io.newm.shared.ktx.patch
+import io.newm.shared.ktx.put
 import io.newm.shared.koin.inject
 
 private const val USERS_PATH = "v1/users"
@@ -30,21 +29,19 @@ fun Routing.createUserRoutes() {
         route("$USERS_PATH/{userId}") {
             get {
                 identifyUser { userId, isMe ->
-                    call.respond(repository.get(userId, isMe))
+                    respond(repository.get(userId, isMe))
                 }
             }
             patch {
                 restrictToMe { myUserId ->
-                    with(call) {
-                        repository.update(myUserId, receive())
-                        respond(HttpStatusCode.NoContent)
-                    }
+                    repository.update(myUserId, receive())
+                    respond(HttpStatusCode.NoContent)
                 }
             }
             delete {
                 restrictToMe { myUserId ->
                     repository.delete(myUserId)
-                    call.respond(HttpStatusCode.NoContent)
+                    respond(HttpStatusCode.NoContent)
                 }
             }
         }
@@ -52,26 +49,18 @@ fun Routing.createUserRoutes() {
 
     route(USERS_PATH) {
         get {
-            with(call) {
-                respond(repository.getAll(userFilters, offset, limit))
-            }
+            respond(repository.getAll(userFilters, offset, limit))
         }
         put {
-            with(call) {
-                repository.add(receive())
-                respond(HttpStatusCode.NoContent)
-            }
+            repository.add(receive())
+            respond(HttpStatusCode.NoContent)
         }
         get("count") {
-            with(call) {
-                respond(CountResponse(repository.getAllCount(userFilters)))
-            }
+            respond(CountResponse(repository.getAllCount(userFilters)))
         }
         put("password") {
-            with(call) {
-                repository.recover(receive())
-                respond(HttpStatusCode.NoContent)
-            }
+            repository.recover(receive())
+            respond(HttpStatusCode.NoContent)
         }
     }
 }

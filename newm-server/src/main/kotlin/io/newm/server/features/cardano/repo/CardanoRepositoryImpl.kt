@@ -19,7 +19,7 @@ import io.newm.chain.util.toHexString
 import io.newm.kogmios.protocols.model.QueryCurrentProtocolBabbageParametersResult
 import io.newm.server.features.cardano.database.KeyEntity
 import io.newm.server.features.cardano.model.Key
-import io.newm.shared.ext.debug
+import io.newm.shared.ktx.debug
 import io.newm.shared.koin.inject
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf

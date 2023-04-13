@@ -1,6 +1,6 @@
 package io.newm.server.features.playlist.repo
 
-import io.newm.server.ext.checkLength
+import io.newm.server.ktx.checkLength
 import io.ktor.util.logging.*
 import io.newm.shared.exception.HttpForbiddenException
 import io.newm.shared.exception.HttpUnprocessableEntityException
@@ -10,7 +10,7 @@ import io.newm.server.features.playlist.model.PlaylistFilters
 import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.user.database.UserTable
-import io.newm.shared.ext.debug
+import io.newm.shared.ktx.debug
 import io.newm.shared.koin.inject
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.transactions.transaction

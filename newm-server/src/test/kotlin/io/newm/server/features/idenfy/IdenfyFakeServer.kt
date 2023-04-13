@@ -1,14 +1,18 @@
 package io.newm.server.features.idenfy
 
 import io.ktor.server.application.*
-import io.ktor.server.auth.*
-import io.ktor.server.request.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
-import io.newm.shared.koin.inject
-import io.newm.shared.ext.getConfigString
+import io.ktor.server.auth.AuthenticationConfig
+import io.ktor.server.auth.UserIdPrincipal
+import io.ktor.server.auth.authenticate
+import io.ktor.server.auth.basic
+import io.ktor.server.request.receive
+import io.ktor.server.response.respond
+import io.ktor.server.routing.Routing
 import io.newm.server.features.idenfy.model.IdenfyCreateSessionRequest
 import io.newm.server.features.idenfy.model.IdenfyCreateSessionResponse
+import io.newm.shared.ktx.getConfigString
+import io.newm.shared.ktx.post
+import io.newm.shared.koin.inject
 
 private const val AUTH_IDENFY = "auth-idenfy"
 
@@ -30,16 +34,14 @@ fun AuthenticationConfig.configIdenfyFakeServerAuth() {
 fun Routing.createIdenfyFakeServerRoutes() {
     authenticate(AUTH_IDENFY) {
         post("/idenfy-fake-server/api/v2/token") {
-            with(call) {
-                // for testing we echo back the request client ID
-                val req = receive<IdenfyCreateSessionRequest>()
-                respond(
-                    IdenfyCreateSessionResponse(
-                        authToken = req.clientId,
-                        expiryTime = req.clientId.hashCode()
-                    )
+            // for testing we echo back the request client ID
+            val req = receive<IdenfyCreateSessionRequest>()
+            respond(
+                IdenfyCreateSessionResponse(
+                    authToken = req.clientId,
+                    expiryTime = req.clientId.hashCode()
                 )
-            }
+            )
         }
     }
 }
