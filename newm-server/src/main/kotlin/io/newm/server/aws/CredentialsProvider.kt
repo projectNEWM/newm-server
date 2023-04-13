@@ -3,7 +3,7 @@ package io.newm.server.aws
 import com.amazonaws.auth.AWSCredentials
 import com.amazonaws.auth.AWSCredentialsProvider
 import io.ktor.server.application.ApplicationEnvironment
-import io.newm.shared.ext.getConfigString
+import io.newm.shared.ktx.getConfigString
 
 internal class CredentialsProvider(
     private val environment: ApplicationEnvironment

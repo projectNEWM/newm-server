@@ -20,8 +20,8 @@ import io.newm.server.features.model.CountResponse
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
 import io.newm.server.features.user.model.User
-import io.newm.shared.ext.existsHavingId
-import io.newm.shared.ext.toHash
+import io.newm.shared.ktx.existsHavingId
+import io.newm.shared.ktx.toHash
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.sql.deleteAll
 import org.jetbrains.exposed.sql.transactions.transaction

@@ -1,23 +1,34 @@
 package io.newm.server.features.idenfy.repo
 
-import io.ktor.client.*
-import io.ktor.client.call.*
-import io.ktor.client.request.*
-import io.ktor.http.*
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.request.basicAuth
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
 import io.ktor.server.application.ApplicationEnvironment
 import io.newm.server.features.idenfy.model.IdenfyCreateSessionRequest
 import io.newm.server.features.idenfy.model.IdenfyCreateSessionResponse
 import io.newm.server.features.idenfy.model.IdenfySessionResult
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.model.UserVerificationStatus
-import io.newm.shared.ext.*
 import io.newm.shared.koin.inject
+import io.newm.shared.ktx.debug
+import io.newm.shared.ktx.getBoolean
+import io.newm.shared.ktx.getConfigChild
+import io.newm.shared.ktx.getInt
+import io.newm.shared.ktx.getString
+import io.newm.shared.ktx.propertiesFromResource
+import io.newm.shared.ktx.toUUID
+import io.newm.shared.ktx.toUrl
 import org.apache.commons.mail.DefaultAuthenticator
 import org.apache.commons.mail.HtmlEmail
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf
 import org.slf4j.Logger
-import java.util.*
+import java.util.Properties
+import java.util.UUID
 
 class IdenfyRepositoryImpl(
     private val environment: ApplicationEnvironment,

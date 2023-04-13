@@ -1,6 +1,6 @@
 package io.newm.server.features.user.repo
 
-import io.newm.server.ext.checkLength
+import io.newm.server.ktx.checkLength
 import io.ktor.util.logging.Logger
 import io.newm.server.auth.oauth.OAuthType
 import io.newm.shared.auth.Password
@@ -17,7 +17,7 @@ import io.newm.server.features.user.model.UserFilters
 import io.newm.server.features.user.oauth.providers.FacebookUserProvider
 import io.newm.server.features.user.oauth.providers.GoogleUserProvider
 import io.newm.server.features.user.oauth.providers.LinkedInUserProvider
-import io.newm.shared.ext.*
+import io.newm.shared.ktx.*
 import io.newm.shared.koin.inject
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf

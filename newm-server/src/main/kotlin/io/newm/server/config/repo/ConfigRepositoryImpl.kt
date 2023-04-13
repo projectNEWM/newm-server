@@ -1,8 +1,8 @@
 package io.newm.server.config.repo
 
 import io.newm.server.config.database.ConfigEntity
-import io.newm.shared.ext.existsHavingId
-import io.newm.shared.ext.splitAndTrim
+import io.newm.shared.ktx.existsHavingId
+import io.newm.shared.ktx.splitAndTrim
 import org.jetbrains.exposed.sql.transactions.transaction
 
 internal class ConfigRepositoryImpl : ConfigRepository {

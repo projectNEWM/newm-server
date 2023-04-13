@@ -1,4 +1,4 @@
-package io.newm.shared.ext
+package io.newm.shared.ktx
 
 import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.server.config.ApplicationConfig

@@ -7,8 +7,8 @@ import io.ktor.server.application.ApplicationEnvironment
 import io.newm.chain.grpc.NewmChainGrpcKt.NewmChainCoroutineStub
 import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.cardano.repo.CardanoRepositoryImpl
-import io.newm.shared.ext.getConfigInt
-import io.newm.shared.ext.getConfigString
+import io.newm.shared.ktx.getConfigInt
+import io.newm.shared.ktx.getConfigString
 import org.koin.dsl.module
 
 val cardanoKoinModule = module {

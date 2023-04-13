@@ -1,4 +1,4 @@
-package io.newm.shared.ext
+package io.newm.shared.ktx
 
 import org.jetbrains.exposed.dao.id.IdTable
 import org.jetbrains.exposed.sql.Op

@@ -1,4 +1,4 @@
-package io.newm.server.ext
+package io.newm.server.ktx
 
 import io.ktor.server.request.ApplicationRequest
 import io.newm.shared.exception.HttpBadRequestException

@@ -1,4 +1,4 @@
-package io.newm.shared.ext
+package io.newm.shared.ktx
 
 import org.jetbrains.exposed.dao.Entity
 import org.jetbrains.exposed.dao.EntityClass

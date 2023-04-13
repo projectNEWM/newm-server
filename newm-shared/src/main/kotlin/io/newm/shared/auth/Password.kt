@@ -1,7 +1,7 @@
 package io.newm.shared.auth
 
-import io.newm.shared.ext.toHash
-import io.newm.shared.ext.verify
+import io.newm.shared.ktx.toHash
+import io.newm.shared.ktx.verify
 import io.newm.shared.serialization.PasswordSerializer
 import kotlinx.serialization.Serializable
 

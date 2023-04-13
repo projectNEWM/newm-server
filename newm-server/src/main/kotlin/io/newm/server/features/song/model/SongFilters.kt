@@ -1,13 +1,13 @@
 package io.newm.server.features.song.model
 
 import io.ktor.server.application.ApplicationCall
-import io.newm.server.ext.genres
-import io.newm.server.ext.ids
-import io.newm.server.ext.moods
-import io.newm.server.ext.newerThan
-import io.newm.server.ext.olderThan
-import io.newm.server.ext.ownerIds
-import io.newm.server.ext.phrase
+import io.newm.server.ktx.genres
+import io.newm.server.ktx.ids
+import io.newm.server.ktx.moods
+import io.newm.server.ktx.newerThan
+import io.newm.server.ktx.olderThan
+import io.newm.server.ktx.ownerIds
+import io.newm.server.ktx.phrase
 import java.time.LocalDateTime
 import java.util.UUID
 
