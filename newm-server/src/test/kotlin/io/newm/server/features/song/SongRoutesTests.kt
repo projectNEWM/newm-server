@@ -4,18 +4,13 @@ import com.amazonaws.HttpMethod
 import com.amazonaws.services.s3.AmazonS3
 import com.google.common.truth.Truth.assertThat
 import com.google.iot.cbor.CborInteger
+import io.ktor.client.*
 import io.ktor.client.call.body
-import io.ktor.client.request.accept
-import io.ktor.client.request.bearerAuth
-import io.ktor.client.request.delete
-import io.ktor.client.request.get
-import io.ktor.client.request.parameter
-import io.ktor.client.request.patch
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
-import io.ktor.http.ContentType
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.contentType
+import io.ktor.client.request.*
+import io.ktor.client.request.forms.*
+import io.ktor.http.*
+import io.ktor.server.application.*
+import io.ktor.utils.io.core.*
 import io.newm.chain.util.toHexString
 import io.newm.server.BaseApplicationTests
 import io.newm.server.features.cardano.database.KeyEntity
@@ -23,17 +18,10 @@ import io.newm.server.features.cardano.database.KeyTable
 import io.newm.server.features.model.CountResponse
 import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.database.SongTable
-import io.newm.server.features.song.model.MarketplaceStatus
-import io.newm.server.features.song.model.MintPaymentResponse
-import io.newm.server.features.song.model.MintingStatus
-import io.newm.server.features.song.model.Song
-import io.newm.server.features.song.model.SongIdBody
-import io.newm.server.features.song.model.UploadAudioRequest
-import io.newm.server.features.song.model.UploadAudioResponse
+import io.newm.server.features.song.model.*
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
-import io.newm.shared.ext.existsHavingId
-import io.newm.shared.ext.toDate
+import io.newm.shared.ext.*
 import io.newm.shared.koin.inject
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.dao.id.EntityID
@@ -41,9 +29,11 @@ import org.jetbrains.exposed.sql.deleteAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.io.EOFException
+import java.io.File
 import java.time.Instant
 import java.time.LocalDateTime
-import java.util.UUID
+import java.util.*
 
 class SongRoutesTests : BaseApplicationTests() {
 
@@ -705,6 +695,139 @@ class SongRoutesTests : BaseApplicationTests() {
     }
 
     @Test
+    fun testRequestAudioPostUpload() = runBlocking {
+        // Add song directly into database
+        val songId = transaction {
+            SongEntity.new {
+                ownerId = EntityID(testUserId, UserTable)
+                title = testSong1.title!!
+                genres = testSong1.genres!!.toTypedArray()
+                moods = testSong1.moods!!.toTypedArray()
+                coverArtUrl = testSong1.coverArtUrl
+                description = testSong1.description
+                credits = testSong1.credits
+                duration = testSong1.duration
+                streamUrl = testSong1.streamUrl
+                nftPolicyId = testSong1.nftPolicyId
+                nftName = testSong1.nftName
+                mintingStatus = testSong1.mintingStatus!!
+                marketplaceStatus = testSong1.marketplaceStatus!!
+            }
+        }.id.value
+
+        // Request upload
+        val response = client.post("v1/songs/$songId/upload") {
+            bearerAuth(testUserToken)
+            contentType(ContentType.Application.Json)
+            setBody(UploadAudioRequest("test1.mp3"))
+        }
+        assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+        val resp = response.body<UploadAudioPostResponse>()
+
+
+        // create a new HttpClient to work around loop back network in test environment
+        val localClient = HttpClient()
+
+        val environment: ApplicationEnvironment by inject()
+        val config = environment.getConfigChild("aws.s3.audio")
+        val file = File(config.getString("smallSongFile"))
+        val form = formData {
+            resp.fields.forEach {
+                append(it.key, it.value)
+                println("${it.key} = ${it.value}")
+            }
+            appendInput(
+                key = "file",
+                headers = Headers.build {
+                    append(HttpHeaders.ContentType, "application/octet-stream")
+                    append(HttpHeaders.ContentDisposition, "filename=${file.name}")
+                },
+                size = file.length()
+            ) {
+                buildPacket { writeFully(file.readBytes()) }
+            }
+        }
+
+
+        val formResp = localClient.submitFormWithBinaryData(form) {
+            url(resp.url)
+            headers {
+                append("Accept", ContentType.Application.Json)
+            }
+        }
+
+        assertThat(formResp.status.value).isIn(200..204)
+    }
+
+    @Test
+    fun testRequestAudioPostUploadTooLarge() = runBlocking {
+        // Add song directly into database
+        val songId = transaction {
+            SongEntity.new {
+                ownerId = EntityID(testUserId, UserTable)
+                title = testSong1.title!!
+                genres = testSong1.genres!!.toTypedArray()
+                moods = testSong1.moods!!.toTypedArray()
+                coverArtUrl = testSong1.coverArtUrl
+                description = testSong1.description
+                credits = testSong1.credits
+                duration = testSong1.duration
+                streamUrl = testSong1.streamUrl
+                nftPolicyId = testSong1.nftPolicyId
+                nftName = testSong1.nftName
+                mintingStatus = testSong1.mintingStatus!!
+                marketplaceStatus = testSong1.marketplaceStatus!!
+            }
+        }.id.value
+
+        // Request upload
+        val response = client.post("v1/songs/$songId/upload") {
+            bearerAuth(testUserToken)
+            contentType(ContentType.Application.Json)
+            setBody(UploadAudioRequest("test1.mp3"))
+        }
+        assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+        val resp = response.body<UploadAudioPostResponse>()
+
+        // create a new HttpClient to work around loop back network in test environment
+        val localClient = HttpClient()
+
+        val environment: ApplicationEnvironment by inject()
+        val config = environment.getConfigChild("aws.s3.audio")
+        val file = File(config.getString("bigSongFile"))
+        val form = formData {
+            resp.fields.forEach {
+                append(it.key, it.value)
+                println("${it.key} = ${it.value}")
+            }
+            appendInput(
+                key = "file",
+                headers = Headers.build {
+                    append(HttpHeaders.ContentType, "application/octet-stream")
+                    append(HttpHeaders.ContentDisposition, "filename=${file.name}")
+                },
+                size = file.length()
+            ) {
+                buildPacket { writeFully(file.readBytes()) }
+            }
+        }
+
+
+        val result = runCatching {
+            localClient.submitFormWithBinaryData(form) {
+                url(resp.url)
+                headers {
+                    append("Accept", ContentType.Application.Json)
+                }
+            }
+        }.onFailure {
+            assertThat(it).isInstanceOf(EOFException::class.java)
+        }
+        assertThat(result.isFailure).isTrue()
+    }
+
+
+    @Test
     fun testGetAllGenres() = runBlocking {
         val ownerId = transaction {
             UserEntity.new {
@@ -890,7 +1013,7 @@ class SongRoutesTests : BaseApplicationTests() {
         assertThat(actualCborHex).isEqualTo(expectedCborHex)
     }
 
-    // TODO: complete implementation of testGenerateMintingPaymentTransaction() bellow
+// TODO: complete implementation of testGenerateMintingPaymentTransaction() bellow
     /*
     @Test
     fun testGenerateMintingPaymentTransaction() = runBlocking {

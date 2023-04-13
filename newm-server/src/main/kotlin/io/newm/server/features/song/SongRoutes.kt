@@ -18,13 +18,7 @@ import io.newm.server.ext.myUserId
 import io.newm.server.ext.offset
 import io.newm.server.ext.songId
 import io.newm.server.features.model.CountResponse
-import io.newm.server.features.song.model.MintPaymentRequest
-import io.newm.server.features.song.model.MintPaymentResponse
-import io.newm.server.features.song.model.SongIdBody
-import io.newm.server.features.song.model.StreamTokenAgreementRequest
-import io.newm.server.features.song.model.UploadAudioRequest
-import io.newm.server.features.song.model.UploadAudioResponse
-import io.newm.server.features.song.model.songFilters
+import io.newm.server.features.song.model.*
 import io.newm.server.features.song.repo.SongRepository
 import io.newm.shared.koin.inject
 
@@ -79,6 +73,18 @@ fun Routing.createSongRoutes() {
                     with(call) {
                         songRepository.delete(songId, myUserId)
                         respond(HttpStatusCode.NoContent)
+                    }
+                }
+                post("upload") {
+                    with(call) {
+                        val resp = UploadAudioPostResponse(
+                            songRepository.generateAudioUploadPost(
+                                songId = songId,
+                                requesterId = myUserId,
+                                fileName = receive<UploadAudioRequest>().fileName
+                            )
+                        )
+                        respond(resp)
                     }
                 }
                 post("audio") {
