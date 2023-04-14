@@ -42,6 +42,9 @@ val ApplicationCall.songId: UUID
 val ApplicationCall.playlistId: UUID
     get() = parameters["playlistId"]!!.toUUID()
 
+val ApplicationCall.collaborationId: UUID
+    get() = parameters["collaborationId"]!!.toUUID()
+
 val ApplicationCall.offset: Int
     get() = parameters["offset"]?.toInt() ?: 0
 
@@ -49,12 +52,17 @@ val ApplicationCall.limit: Int
     get() = parameters["limit"]?.toInt() ?: 25
 
 val ApplicationCall.ids: List<UUID>?
-    get() = parameters["ids"]?.splitAndTrim()?.map { it.toUUID() }
+    get() = parameters["ids"]?.splitAndTrim()?.map(String::toUUID)
 
 val ApplicationCall.ownerIds: List<UUID>?
     get() = parameters["ownerIds"]?.splitAndTrim()?.map {
         if (it == "me") myUserId else it.toUUID()
     }
+val ApplicationCall.songIds: List<UUID>?
+    get() = parameters["songIds"]?.splitAndTrim()?.map(String::toUUID)
+
+val ApplicationCall.emails: List<String>?
+    get() = parameters["emails"]?.splitAndTrim()
 
 val ApplicationCall.genres: List<String>?
     get() = parameters["genres"]?.splitAndTrim()
