@@ -16,51 +16,44 @@ import io.ktor.server.application.ApplicationEnvironment
 import io.newm.server.features.distribution.DistributionRepository
 import io.newm.server.features.distribution.model.GetGenresResponse
 import io.newm.server.features.song.database.SongEntity
+import io.newm.server.ktx.getSecureConfigString
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.getConfigString
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import java.time.Duration
 
 class EvearaDistributionRepositoryImpl : DistributionRepository {
-    private val applicationEnvironment: ApplicationEnvironment by inject()
-    private val evaraServer by lazy {
-        applicationEnvironment.getConfigString("evara.server")
-    }
-    private val evearaClientId by lazy {
-        applicationEnvironment.getConfigString("eveara.clientId")
-    }
-    private val evearaClientSecret by lazy {
-        applicationEnvironment.getConfigString("eveara.clientSecret")
-    }
-
     private val httpClient: HttpClient by inject()
-
-    private val apiTokenCache = Caffeine.newBuilder().build<Int, ApiToken>()
+    private val applicationEnvironment: ApplicationEnvironment by inject()
+    private val evearaServer by lazy { applicationEnvironment.getConfigString("eveara.server") }
+    private suspend fun evearaClientId() = applicationEnvironment.getSecureConfigString("eveara.clientId")
+    private suspend fun evearaClientSecret() = applicationEnvironment.getSecureConfigString("eveara.clientSecret")
     private val getTokenMutex = Mutex()
+    private val apiTokenCache =
+        Caffeine.newBuilder()
+            .expireAfterWrite(Duration.ofHours(1L))
+            .build<Int, ApiToken>()
 
     private suspend fun getEvearaApiToken(): String {
         getTokenMutex.withLock {
             return apiTokenCache.getIfPresent(-1)?.let { apiToken ->
                 if (System.currentTimeMillis() > apiToken.expiryTimestampMillis - FIVE_MINUTES_IN_MILLIS) {
-                    // FIXME: use refreshToken once we hear back from eveara if they support it
-                    // for now, return null from this block so it falls through and uses key/secret to
-                    // get an accessToken
-
                     // Get an access token since it's close to expiry
                     null
                 } else {
                     apiToken.accessToken
                 }
             } ?: run {
-                val response = httpClient.post("https://$evaraServer/api/v2.0/oauth/gettoken") {
+                val response = httpClient.post("https://$evearaServer/api/v2.0/oauth/gettoken") {
                     contentType(ContentType.Application.Json)
                     accept(ContentType.Application.Json)
                     setBody(
-                        EvaraApiGetTokenRequest(
-                            clientId = evearaClientId,
-                            clientSecret = evearaClientSecret,
+                        EvearaApiGetTokenRequest(
+                            clientId = evearaClientId(),
+                            clientSecret = evearaClientSecret(),
                         )
                     )
                 }
@@ -84,7 +77,7 @@ class EvearaDistributionRepositoryImpl : DistributionRepository {
     }
 
     override suspend fun getGenres(): GetGenresResponse {
-        val response = httpClient.get("https://$evaraServer/api/v2.0/genres") {
+        val response = httpClient.get("https://$evearaServer/api/v2.0/genres") {
             accept(ContentType.Application.Json)
             bearerAuth(getEvearaApiToken())
         }
@@ -103,7 +96,7 @@ class EvearaDistributionRepositoryImpl : DistributionRepository {
         // TODO: Implement later. Focus on completing minting code first. Assume we have distributed to Eveara successfully.
     }
 
-    private data class EvaraApiGetTokenRequest(
+    private data class EvearaApiGetTokenRequest(
         @SerialName("grant_type")
         val grantType: String = "client_credentials",
         @SerialName("client_id")

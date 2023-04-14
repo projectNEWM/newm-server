@@ -95,9 +95,9 @@ object Dependencies {
     }
 
     object Koin {
-        private const val VERSION = "3.3.0"
-        private const val KTOR_VERSION = "3.3.1"
-        private const val TEST_JUNIT_VERSION = "3.3.3"
+        private const val VERSION = "3.4.0"
+        private const val KTOR_VERSION = "3.4.0"
+        private const val TEST_JUNIT_VERSION = "3.4.0"
 
         const val KTOR = "io.insert-koin:koin-ktor:$KTOR_VERSION"
         const val TEST = "io.insert-koin:koin-test:$VERSION"
@@ -120,7 +120,7 @@ object Dependencies {
     }
 
     object PostgreSQL {
-        private const val VERSION = "42.5.4"
+        private const val VERSION = "42.6.0"
 
         const val ALL = "org.postgresql:postgresql:$VERSION"
     }
@@ -132,13 +132,13 @@ object Dependencies {
     }
 
     object FlywayDB {
-        private const val VERSION = "9.15.2"
+        private const val VERSION = "9.16.3"
 
         const val ALL = "org.flywaydb:flyway-core:$VERSION"
     }
 
     object Caffeine {
-        private const val VERSION = "3.1.5"
+        private const val VERSION = "3.1.6"
 
         const val ALL = "com.github.ben-manes.caffeine:caffeine:$VERSION"
     }
@@ -183,12 +183,21 @@ object Dependencies {
     }
 
     object Aws {
-        private const val VERSION = "1.12.426"
+        private const val VERSION = "1.12.450"
 
         const val BOM = "com.amazonaws:aws-java-sdk-bom:$VERSION"
         const val S3 = "com.amazonaws:aws-java-sdk-s3"
         const val SQS = "com.amazonaws:aws-java-sdk-sqs"
         const val KMS = "com.amazonaws:aws-java-sdk-kms"
+        const val SECRETS_MANAGER = "com.amazonaws:aws-java-sdk-secretsmanager"
+    }
+
+    object Arweave {
+        private const val ARWEAVE4S_VERSION = "0.21.0"
+        private const val SCALA_JAVA8_COMPAT_VERSION = "1.0.2"
+
+        const val ARWEAVE4S = "co.upvest:arweave4s-core_2.12:$ARWEAVE4S_VERSION"
+        const val SCALA_JAVA8_COMPAT = "org.scala-lang.modules:scala-java8-compat_2.12:$SCALA_JAVA8_COMPAT_VERSION"
     }
 
     object JUnit {
@@ -204,7 +213,7 @@ object Dependencies {
     }
 
     object Mockk {
-        private const val VERSION = "1.13.4"
+        private const val VERSION = "1.13.5"
 
         const val MOCKK = "io.mockk:mockk:$VERSION"
     }
@@ -216,7 +225,7 @@ object Dependencies {
     }
 
     object Sentry {
-        private const val VERSION = "6.15.0"
+        private const val VERSION = "6.17.0"
 
         const val CORE = "io.sentry:sentry:$VERSION"
         const val LOGBACK = "io.sentry:sentry-logback:$VERSION"
@@ -229,7 +238,7 @@ object Dependencies {
     }
 
     object Grpc {
-        private const val VERSION = "1.53.0"
+        private const val VERSION = "1.54.0"
 
         const val STUB = "io.grpc:grpc-stub:$VERSION"
         const val API = "io.grpc:grpc-api:$VERSION"
@@ -246,7 +255,7 @@ object Dependencies {
     }
 
     object Protobuf {
-        private const val VERSION = "3.22.2"
+        private const val VERSION = "3.22.3"
 
         const val JAVA_UTIL = "com.google.protobuf:protobuf-java-util:$VERSION"
         const val KOTLIN = "com.google.protobuf:protobuf-kotlin:$VERSION"
@@ -261,7 +270,7 @@ object Dependencies {
     }
 
     object TestContainers {
-        private const val VERSION = "1.17.6"
+        private const val VERSION = "1.18.0"
 
         const val CORE = "org.testcontainers:testcontainers:$VERSION"
         const val JUINT = "org.testcontainers:junit-jupiter:$VERSION"
