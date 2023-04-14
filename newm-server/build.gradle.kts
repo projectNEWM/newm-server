@@ -79,6 +79,10 @@ dependencies {
     implementation(Dependencies.Aws.S3)
     implementation(Dependencies.Aws.SQS)
     implementation(Dependencies.Aws.KMS)
+    implementation(Dependencies.Aws.SECRETS_MANAGER)
+
+    implementation(Dependencies.Arweave.ARWEAVE4S)
+    implementation(Dependencies.Arweave.SCALA_JAVA8_COMPAT)
 
     testImplementation(Dependencies.JUnit.JUPITER)
     testImplementation(Dependencies.Mockk.MOCKK)

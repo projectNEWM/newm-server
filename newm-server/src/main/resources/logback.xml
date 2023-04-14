@@ -10,8 +10,9 @@
     </appender>
     <root level="trace">
         <appender-ref ref="STDOUT"/>
-        <appender-ref ref="Sentry" />
+        <appender-ref ref="Sentry"/>
     </root>
-    <logger name="org.eclipse.jetty" level="INFO"/>
-    <logger name="io.netty" level="INFO"/>
+    <logger name="org.eclipse.jetty" level="WARN"/>
+    <logger name="io.netty" level="WARN"/>
+    <logger name="org.asynchttpclient.netty" level="WARN"/>
 </configuration>

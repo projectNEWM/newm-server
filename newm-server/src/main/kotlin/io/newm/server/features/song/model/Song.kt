@@ -28,4 +28,15 @@ data class Song(
     val marketplaceStatus: MarketplaceStatus? = null,
     @Serializable(with = UUIDSerializer::class)
     val paymentKeyId: UUID? = null,
+
+    // FIXME: remove these and rebase on top of Walter's implementation. I just need them temporarily here so
+    // I can move forward with the code.
+    val arweaveCoverArt: String? = null,
+    val arweaveTokenAgreement: String? = null,
+    val arweaveClip: String? = null,
+    val arweaveLyrics: String? = null,
+
+    val tokenAgreementUrl: String? = null,
+    val clipUrl: String? = null,
+    val lyricsUrl: String? = null,
 )

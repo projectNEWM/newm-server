@@ -6,6 +6,7 @@ import io.newm.server.auth.authKoinModule
 import io.newm.server.aws.awsKoinModule
 import io.newm.server.client.clientKoinModule
 import io.newm.server.config.configKoinModule
+import io.newm.server.features.arweave.arweaveKoinModule
 import io.newm.server.features.cardano.cardanoKoinModule
 import io.newm.server.features.cloudinary.cloudinaryKoinModule
 import io.newm.server.features.collaboration.collaborationKoinModule
@@ -43,6 +44,7 @@ fun Application.installDependencyInjection() {
             cardanoKoinModule,
             daemonsKoinModule,
             distributionKoinModule,
+            arweaveKoinModule,
         )
     }
 }

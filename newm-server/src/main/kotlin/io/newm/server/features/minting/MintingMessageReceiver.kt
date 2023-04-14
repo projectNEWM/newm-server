@@ -5,6 +5,7 @@ import com.amazonaws.services.sqs.model.SendMessageRequest
 import io.ktor.server.application.ApplicationEnvironment
 import io.newm.chain.grpc.monitorPaymentAddressRequest
 import io.newm.server.aws.SqsMessageReceiver
+import io.newm.server.features.arweave.repo.ArweaveRepository
 import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Song
@@ -25,6 +26,7 @@ class MintingMessageReceiver : SqsMessageReceiver {
     private val log: Logger by inject { parametersOf(javaClass.simpleName) }
     private val songRepository: SongRepository by inject()
     private val cardanoRepository: CardanoRepository by inject()
+    private val arweaveRepository: ArweaveRepository by inject()
     private val json: Json by inject()
     private val environment: ApplicationEnvironment by inject()
     private val queueUrl by lazy { environment.getConfigString("aws.sqs.minting.queueUrl") }
@@ -95,10 +97,12 @@ class MintingMessageReceiver : SqsMessageReceiver {
             }
 
             MintingStatus.Distributed -> {
-                // TODO: Upload 30-second clip, lyrics.txt, streamtokenagreement.pdf to arweave and save those URLs
+                // Upload 30-second clip, lyrics.txt, streamtokenagreement.pdf, coverArt to arweave and save those URLs
                 // on the Song record
+                val song = songRepository.get(mintingStatusSqsMessage.songId)
+                arweaveRepository.uploadSongAssets(song)
 
-                // Done distributing. Move -> Pending
+                // Done with arweave. Move -> Pending for minting
                 updateSongStatus(
                     songId = mintingStatusSqsMessage.songId,
                     mintingStatus = MintingStatus.Pending
