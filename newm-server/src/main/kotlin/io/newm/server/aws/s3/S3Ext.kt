@@ -3,7 +3,12 @@ package io.newm.server.aws.s3
 import com.amazonaws.auth.AWSSessionCredentials
 import com.amazonaws.services.s3.AmazonS3
 import io.ktor.util.*
-import io.newm.server.aws.s3.model.*
+import io.newm.chain.util.toB64String
+import io.newm.server.aws.s3.model.MapCondition
+import io.newm.server.aws.s3.model.PresignedPost
+import io.newm.server.aws.s3.model.PresignedPostOptionBuilder
+import io.newm.server.aws.s3.model.PresignedPostPolicy
+import io.newm.server.aws.s3.model.StartsWithCondition
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.apache.commons.codec.digest.HmacAlgorithms
@@ -24,14 +29,10 @@ private const val KEY_TYPE_IDENTIFIER = "aws4_request"
 
 private val UTC: ZoneId = ZoneId.of("Z")
 private val amzTimeFormatter: DateTimeFormatter =
-    DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'", Locale.US).withZone(
-        UTC
-    )
+    DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'", Locale.US).withZone(UTC)
 
 private val amzDateFormattter: DateTimeFormatter =
-    DateTimeFormatter.ofPattern("yyyyMMdd", Locale.US).withZone(
-        UTC
-    )
+    DateTimeFormatter.ofPattern("yyyyMMdd", Locale.US).withZone(UTC)
 
 private val responseDateFormatter: DateTimeFormatter =
     DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH':'mm':'ss'.'SSS'Z'", Locale.US).withZone(UTC)
@@ -45,7 +46,7 @@ private fun computeSignature(encodedPolicy: String, secretKey: String, region: S
     return HmacUtils(HmacAlgorithms.HMAC_SHA_256, signingKey).hmacHex(encodedPolicy)
 }
 
-private fun createScope(shortDate: String, region: String, service: String): String =
+private inline fun createScope(shortDate: String, region: String, service: String): String =
     "$shortDate/$region/$service/$KEY_TYPE_IDENTIFIER"
 
 /**
@@ -71,7 +72,7 @@ fun AmazonS3.createPresignedPost(block: PresignedPostOptionBuilder.() -> Unit): 
     val credentialScope = createScope(shortDate, clientRegion.firstRegionId, "s3")
     val credential = "${credentials.awsAccessKeyId}/$credentialScope"
 
-    val fields = hashMapOf<String, String>()
+    val fields = mutableMapOf<String, String>()
     fields.putAll(options.fields)
     fields.putAll(
         mapOf(
@@ -88,11 +89,8 @@ fun AmazonS3.createPresignedPost(block: PresignedPostOptionBuilder.() -> Unit): 
 
     // Prepare policies.
     val expiration = now.plusSeconds(options.expiresSeconds)
-    val conditions = mutableListOf<Condition>()
-    options.conditions.map {
-        conditions.add(it)
-    }
-    fields.map { (key, value) ->
+    val conditions = options.conditions.toMutableList()
+    fields.forEach { (key, value) ->
         conditions.add(MapCondition(key = key.toLowerCasePreservingASCIIRules(), value = value))
     }
     if (options.key.endsWith("\${filename}")) {
@@ -105,7 +103,7 @@ fun AmazonS3.createPresignedPost(block: PresignedPostOptionBuilder.() -> Unit): 
         conditions = conditions
     )
     val policyJson: String = Json.encodeToString(postPolicy)
-    val encodedPolicy = Base64.getEncoder().encodeToString(policyJson.toByteArray(Charsets.UTF_8))
+    val encodedPolicy = policyJson.toByteArray().toB64String()
 
     // Sign the request.
     val signature = computeSignature(encodedPolicy, credentials.awsSecretKey, clientRegion.firstRegionId, now)

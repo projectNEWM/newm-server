@@ -1,10 +1,14 @@
 package io.newm.server.aws.s3.model
 
+import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.descriptors.StructureKind
+import kotlinx.serialization.descriptors.buildSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.encoding.encodeCollection
 import kotlinx.serialization.json.*
 
 @Serializable(with = Condition.Serializer::class)
@@ -12,29 +16,38 @@ sealed class Condition {
     abstract val key: String
 
     object Serializer : KSerializer<Condition> {
-        override val descriptor: SerialDescriptor = JsonArray.serializer().descriptor
+        @OptIn(InternalSerializationApi::class)
+        override val descriptor: SerialDescriptor = buildSerialDescriptor("Condition", StructureKind.LIST)
+
         override fun serialize(encoder: Encoder, value: Condition) {
             when (value) {
-                is StartsWithCondition -> {
-                    StartsWithCondition.serializer().serialize(encoder, value)
-                }
+                is StartsWithCondition -> encoder.encodeSerializableValue(StartsWithCondition.serializer(), value)
+                is ContentLengthRangeCondition -> encoder.encodeSerializableValue(
+                    ContentLengthRangeCondition.serializer(),
+                    value
+                )
 
-                is ContentLengthRangeCondition -> {
-                    ContentLengthRangeCondition.serializer().serialize(encoder, value)
-                }
-
-                is EqualCondition -> {
-                    EqualCondition.Serializer.serialize(encoder, value)
-                }
-
-                is MapCondition -> {
-                    MapCondition.Serializer.serialize(encoder, value)
-                }
+                is EqualCondition -> encoder.encodeSerializableValue(EqualCondition.serializer(), value)
+                is MapCondition -> encoder.encodeSerializableValue(MapCondition.serializer(), value)
             }
         }
 
         override fun deserialize(decoder: Decoder): Condition {
-            TODO("Not yet implemented")
+            val jsonArray = JsonArray.serializer().deserialize(decoder)
+            return when (jsonArray[0].jsonPrimitive.toString()) {
+                "starts-with" -> StartsWithCondition(
+                    jsonArray[1].jsonPrimitive.toString(),
+                    jsonArray[2].jsonPrimitive.toString()
+                )
+
+                "content-length-range" -> ContentLengthRangeCondition(
+                    jsonArray[1].jsonPrimitive.long,
+                    jsonArray[2].jsonPrimitive.long
+                )
+
+                "eq" -> EqualCondition(jsonArray[1].jsonPrimitive.toString(), jsonArray[2].jsonPrimitive.toString())
+                else -> MapCondition(jsonArray[0].jsonPrimitive.toString(), jsonArray[1].jsonPrimitive.toString())
+            }
         }
     }
 }
@@ -46,15 +59,15 @@ data class StartsWithCondition(
     override val key: String = "starts-with"
 ) : Condition() {
     object Serializer : KSerializer<StartsWithCondition> {
-        override val descriptor: SerialDescriptor = JsonArray.serializer().descriptor
+        @OptIn(InternalSerializationApi::class)
+        override val descriptor: SerialDescriptor = buildSerialDescriptor("StartsWithCondition", StructureKind.LIST)
 
         override fun serialize(encoder: Encoder, value: StartsWithCondition) {
-            val jsonArray = buildJsonArray {
-                add(JsonPrimitive(value.key))
-                add(JsonPrimitive(value.startsWith))
-                add(JsonPrimitive(value.value))
+            encoder.encodeCollection(descriptor, 3) {
+                encodeStringElement(descriptor, 0, value.key)
+                encodeStringElement(descriptor, 1, value.startsWith)
+                encodeStringElement(descriptor, 2, value.value)
             }
-            JsonArray.serializer().serialize(encoder, jsonArray)
         }
 
         override fun deserialize(decoder: Decoder): StartsWithCondition {
@@ -71,15 +84,15 @@ data class EqualCondition(
     override val key: String = "eq"
 ) : Condition() {
     object Serializer : KSerializer<EqualCondition> {
-        override val descriptor: SerialDescriptor = JsonArray.serializer().descriptor
+        @OptIn(InternalSerializationApi::class)
+        override val descriptor: SerialDescriptor = buildSerialDescriptor("EqualCondition", StructureKind.LIST)
 
         override fun serialize(encoder: Encoder, value: EqualCondition) {
-            val jsonArray = buildJsonArray {
-                add(JsonPrimitive(value.key))
-                add(JsonPrimitive(value.left))
-                add(JsonPrimitive(value.right))
+            encoder.encodeCollection(descriptor, 3) {
+                encodeStringElement(descriptor, 0, value.key)
+                encodeStringElement(descriptor, 1, value.left)
+                encodeStringElement(descriptor, 2, value.right)
             }
-            JsonArray.serializer().serialize(encoder, jsonArray)
         }
 
         override fun deserialize(decoder: Decoder): EqualCondition {
@@ -97,15 +110,16 @@ data class ContentLengthRangeCondition(
 ) : Condition() {
 
     object Serializer : KSerializer<ContentLengthRangeCondition> {
-        override val descriptor: SerialDescriptor = JsonArray.serializer().descriptor
+        @OptIn(InternalSerializationApi::class)
+        override val descriptor: SerialDescriptor =
+            buildSerialDescriptor("ContentLengthRangeCondition", StructureKind.LIST)
 
         override fun serialize(encoder: Encoder, value: ContentLengthRangeCondition) {
-            val jsonArray = buildJsonArray {
-                add(JsonPrimitive(value.key))
-                add(JsonPrimitive(value.min))
-                add(JsonPrimitive(value.max))
+            encoder.encodeCollection(descriptor, 3) {
+                encodeStringElement(descriptor, 0, value.key)
+                encodeLongElement(descriptor, 1, value.min)
+                encodeLongElement(descriptor, 2, value.max)
             }
-            JsonArray.serializer().serialize(encoder, jsonArray)
         }
 
         override fun deserialize(decoder: Decoder): ContentLengthRangeCondition {
@@ -126,12 +140,13 @@ data class ContentLengthRangeCondition(
 
 @Serializable(with = MapCondition.Serializer::class)
 data class MapCondition(
-    val value: String,
-    override val key: String
+    override val key: String,
+    val value: String
 ) : Condition() {
 
     object Serializer : KSerializer<MapCondition> {
-        override val descriptor: SerialDescriptor = JsonObject.serializer().descriptor
+        @OptIn(InternalSerializationApi::class)
+        override val descriptor: SerialDescriptor = buildSerialDescriptor("MapCondition", StructureKind.MAP)
 
         override fun serialize(encoder: Encoder, value: MapCondition) {
             val jsonObject = buildJsonObject {
@@ -141,7 +156,10 @@ data class MapCondition(
         }
 
         override fun deserialize(decoder: Decoder): MapCondition {
-            TODO("Not yet implemented")
+            val jsonObject = JsonObject.serializer().deserialize(decoder)
+            val key = jsonObject.keys.first()
+            val value = jsonObject[key]!!.jsonPrimitive.toString()
+            return MapCondition(key, value)
         }
     }
 }
