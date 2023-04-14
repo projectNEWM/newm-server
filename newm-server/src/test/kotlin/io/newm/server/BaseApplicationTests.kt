@@ -12,6 +12,7 @@ import io.newm.server.auth.twofactor.database.TwoFactorAuthTable
 import io.newm.server.config.database.ConfigTable
 import io.newm.server.features.cardano.database.KeyTable
 import io.newm.server.features.cardano.repo.CardanoRepository
+import io.newm.server.features.collaboration.database.CollaborationTable
 import io.newm.server.features.playlist.database.PlaylistTable
 import io.newm.server.features.playlist.database.SongsInPlaylistsTable
 import io.newm.server.features.song.database.SongTable
@@ -83,6 +84,7 @@ open class BaseApplicationTests {
                 JwtTable,
                 KeyTable,
                 SongTable,
+                CollaborationTable,
                 PlaylistTable,
                 SongsInPlaylistsTable,
             )
