@@ -86,29 +86,29 @@ fun Routing.createSongRoutes() {
                             )
                         )
                     }
-                }
-                post {
-                    val request = receive<MintPaymentRequest>()
-                    respond(
-                        MintPaymentResponse(
-                            cborHex = songRepository.generateMintingPaymentTransaction(
-                                songId = songId,
-                                requesterId = myUserId,
-                                sourceUtxos = request.utxos,
-                                changeAddress = request.changeAddress
+                    post {
+                        val request = receive<MintPaymentRequest>()
+                        respond(
+                            MintPaymentResponse(
+                                cborHex = songRepository.generateMintingPaymentTransaction(
+                                    songId = songId,
+                                    requesterId = myUserId,
+                                    sourceUtxos = request.utxos,
+                                    changeAddress = request.changeAddress
+                                )
                             )
                         )
+                    }
+                }
+                put("agreement") {
+                    songRepository.processStreamTokenAgreement(
+                        songId = songId,
+                        requesterId = myUserId,
+                        accepted = receive<StreamTokenAgreementRequest>().accepted
                     )
+                    respond(HttpStatusCode.NoContent)
                 }
             }
-        }
-        put("agreement") {
-            songRepository.processStreamTokenAgreement(
-                songId = songId,
-                requesterId = myUserId,
-                accepted = receive<StreamTokenAgreementRequest>().accepted
-            )
-            respond(HttpStatusCode.NoContent)
         }
     }
 }
