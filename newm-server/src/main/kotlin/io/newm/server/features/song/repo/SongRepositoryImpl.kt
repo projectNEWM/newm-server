@@ -1,6 +1,7 @@
 package io.newm.server.features.song.repo
 
 import com.amazonaws.HttpMethod
+import com.amazonaws.auth.BasicAWSCredentials
 import com.amazonaws.services.s3.AmazonS3
 import com.google.iot.cbor.CborInteger
 import io.ktor.server.application.ApplicationEnvironment
@@ -8,6 +9,9 @@ import io.ktor.util.logging.Logger
 import io.newm.chain.grpc.Utxo
 import io.newm.chain.grpc.outputUtxo
 import io.newm.chain.util.toHexString
+import io.newm.server.aws.s3.createPresignedPost
+import io.newm.server.aws.s3.model.ContentLengthRangeCondition
+import io.newm.server.aws.s3.model.PresignedPost
 import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.features.cardano.database.KeyTable
 import io.newm.server.features.cardano.model.Key
@@ -165,6 +169,36 @@ internal class SongRepositoryImpl(
             expiration,
             HttpMethod.PUT
         ).toString()
+    }
+
+    override suspend fun generateAudioUploadPost(
+        songId: UUID,
+        requesterId: UUID,
+        fileName: String
+    ): PresignedPost {
+        logger.debug { "generateAudioUploadUrl: songId = $songId, fileName = $fileName" }
+
+        if ('/' in fileName) throw HttpUnprocessableEntityException("Invalid fileName: $fileName")
+
+        checkRequester(songId, requesterId)
+
+        val config = environment.getConfigChild("aws.s3.audio")
+
+        return s3.createPresignedPost {
+            bucket = config.getString("bucketName")
+            key = "$songId/$fileName"
+            credentials = BasicAWSCredentials(
+                environment.getConfigString("aws.accessKeyId"),
+                environment.getConfigString("aws.secretKey")
+            )
+            conditions = listOf(
+                ContentLengthRangeCondition(
+                    config.getLong("minUploadSizeMB") * 1024 * 1024,
+                    config.getLong("maxUploadSizeMB") * 1024 * 1024
+                )
+            )
+            expiresSeconds = config.getLong("timeToLive")
+        }
     }
 
     override suspend fun processStreamTokenAgreement(songId: UUID, requesterId: UUID, accepted: Boolean) {

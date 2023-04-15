@@ -16,6 +16,7 @@ import io.newm.server.features.song.model.MintPaymentRequest
 import io.newm.server.features.song.model.MintPaymentResponse
 import io.newm.server.features.song.model.SongIdBody
 import io.newm.server.features.song.model.StreamTokenAgreementRequest
+import io.newm.server.features.song.model.UploadAudioPostResponse
 import io.newm.server.features.song.model.UploadAudioRequest
 import io.newm.server.features.song.model.UploadAudioResponse
 import io.newm.server.features.song.model.songFilters
@@ -68,6 +69,17 @@ fun Routing.createSongRoutes() {
                     respond(
                         UploadAudioResponse(
                             songRepository.generateAudioUploadUrl(
+                                songId = songId,
+                                requesterId = myUserId,
+                                fileName = receive<UploadAudioRequest>().fileName
+                            )
+                        )
+                    )
+                }
+                post("upload") {
+                    respond(
+                        UploadAudioPostResponse(
+                            songRepository.generateAudioUploadPost(
                                 songId = songId,
                                 requesterId = myUserId,
                                 fileName = receive<UploadAudioRequest>().fileName
