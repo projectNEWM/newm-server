@@ -62,7 +62,7 @@ internal class UserRepositoryImpl(
                 this.email = email
                 this.passwordHash = passwordHash
                 this.companyName = user.companyName
-                this.companyLogoUrl = user.companyLogoUrl.asValidUrl()
+                this.companyLogoUrl = user.companyLogoUrl?.asValidUrl()
                 this.companyIpRights = user.companyIpRights
             }
         }
