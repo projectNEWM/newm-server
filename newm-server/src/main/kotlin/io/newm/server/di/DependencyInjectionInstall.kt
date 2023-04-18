@@ -8,6 +8,7 @@ import io.newm.server.client.clientKoinModule
 import io.newm.server.config.configKoinModule
 import io.newm.server.features.cardano.cardanoKoinModule
 import io.newm.server.features.cloudinary.cloudinaryKoinModule
+import io.newm.server.features.collaboration.collaborationKoinModule
 import io.newm.server.features.daemon.daemonsKoinModule
 import io.newm.server.features.distribution.distributionKoinModule
 import io.newm.server.features.idenfy.idenfyKoinModule
@@ -34,6 +35,7 @@ fun Application.installDependencyInjection() {
             userKoinModule,
             authKoinModule,
             songKoinModule,
+            collaborationKoinModule,
             playlistKoinModule,
             cloudinaryKoinModule,
             awsKoinModule,

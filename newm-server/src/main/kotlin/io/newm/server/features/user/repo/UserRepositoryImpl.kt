@@ -1,24 +1,28 @@
 package io.newm.server.features.user.repo
 
-import io.newm.server.ktx.checkLength
 import io.ktor.util.logging.Logger
 import io.newm.server.auth.oauth.OAuthType
-import io.newm.shared.auth.Password
 import io.newm.server.auth.twofactor.repo.TwoFactorAuthRepository
-import io.newm.shared.exception.HttpBadRequestException
-import io.newm.shared.exception.HttpConflictException
-import io.newm.shared.exception.HttpForbiddenException
-import io.newm.shared.exception.HttpNotFoundException
-import io.newm.shared.exception.HttpUnauthorizedException
-import io.newm.shared.exception.HttpUnprocessableEntityException
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.model.User
 import io.newm.server.features.user.model.UserFilters
 import io.newm.server.features.user.oauth.providers.FacebookUserProvider
 import io.newm.server.features.user.oauth.providers.GoogleUserProvider
 import io.newm.server.features.user.oauth.providers.LinkedInUserProvider
-import io.newm.shared.ktx.*
+import io.newm.server.ktx.asValidEmail
+import io.newm.server.ktx.asValidUrl
+import io.newm.server.ktx.checkLength
+import io.newm.shared.auth.Password
+import io.newm.shared.exception.HttpBadRequestException
+import io.newm.shared.exception.HttpConflictException
+import io.newm.shared.exception.HttpForbiddenException
+import io.newm.shared.exception.HttpNotFoundException
+import io.newm.shared.exception.HttpUnauthorizedException
+import io.newm.shared.exception.HttpUnprocessableEntityException
 import io.newm.shared.koin.inject
+import io.newm.shared.ktx.debug
+import io.newm.shared.ktx.existsHavingId
+import io.newm.shared.ktx.isValidPassword
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf
 import java.util.UUID
@@ -58,7 +62,7 @@ internal class UserRepositoryImpl(
                 this.email = email
                 this.passwordHash = passwordHash
                 this.companyName = user.companyName
-                this.companyLogoUrl = user.companyLogoUrl.asValidUrl()
+                this.companyLogoUrl = user.companyLogoUrl?.asValidUrl()
                 this.companyIpRights = user.companyIpRights
             }
         }
@@ -191,18 +195,6 @@ internal class UserRepositoryImpl(
 
     private fun getUserEntityByEmail(email: String): UserEntity =
         UserEntity.getByEmail(email) ?: throw HttpNotFoundException("Doesn't exist: $email")
-
-    private fun String?.asValidEmail(): String {
-        if (isNullOrBlank()) throw HttpBadRequestException("Missing email")
-        if (!isValidEmail()) throw HttpUnprocessableEntityException("Invalid email: $this")
-        return this
-    }
-
-    private fun String?.asValidUrl(): String {
-        if (isNullOrBlank()) throw HttpBadRequestException("Missing url")
-        if (!isValidUrl()) throw HttpUnprocessableEntityException("Invalid url: $this")
-        return this
-    }
 
     private fun Password?.asValidPassword(confirm: Password?): Password {
         if (this == null || value.isBlank()) throw HttpBadRequestException("Missing password")
