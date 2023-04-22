@@ -23,6 +23,7 @@ import org.jetbrains.exposed.sql.mapLazy
 import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
 
@@ -34,9 +35,21 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var moods: Array<String>? by SongTable.moods
     var coverArtUrl: String? by SongTable.coverArtUrl
     var description: String? by SongTable.description
-    var credits: String? by SongTable.credits
-    var duration: Int? by SongTable.duration
+    var album: String? by SongTable.album
+    var track: Int? by SongTable.track
+    var language: String? by SongTable.language
+    var copyright: String? by SongTable.copyright
+    var parentalAdvisory: String? by SongTable.parentalAdvisory
+    var isrc: String? by SongTable.isrc
+    var iswc: String? by SongTable.iswc
+    var ipi: Array<String>? by SongTable.ipi
+    var releaseDate: LocalDate? by SongTable.releaseDate
+    var publicationDate: LocalDate? by SongTable.publicationDate
+    var lyricsUrl: String? by SongTable.lyricsUrl
+    var tokenAgreementUrl: String? by SongTable.tokenAgreementUrl
+    var clipUrl: String? by SongTable.clipUrl
     var streamUrl: String? by SongTable.streamUrl
+    var duration: Int? by SongTable.duration
     var nftPolicyId: String? by SongTable.nftPolicyId
     var nftName: String? by SongTable.nftName
     var mintingStatus: MintingStatus by SongTable.mintingStatus
@@ -52,9 +65,20 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         moods = moods?.toList(),
         coverArtUrl = coverArtUrl,
         description = description,
-        credits = credits,
-        duration = duration,
+        album = album,
+        track = track,
+        language = language,
+        copyright = copyright,
+        parentalAdvisory = parentalAdvisory,
+        isrc = isrc,
+        ipi = ipi?.toList(),
+        releaseDate = releaseDate,
+        publicationDate = publicationDate,
+        lyricsUrl = lyricsUrl,
+        tokenAgreementUrl = tokenAgreementUrl,
+        clipUrl = clipUrl,
         streamUrl = streamUrl,
+        duration = duration,
         nftPolicyId = nftPolicyId,
         nftName = nftName,
         mintingStatus = mintingStatus,
@@ -103,7 +127,7 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                 ops += (
                     (SongTable.title.lowerCase() like pattern)
                         or (SongTable.description.lowerCase() like pattern)
-                        or (SongTable.credits.lowerCase() like pattern)
+                        or (SongTable.album.lowerCase() like pattern)
                         or (SongTable.nftName.lowerCase() like pattern)
                     )
             }

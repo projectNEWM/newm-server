@@ -21,11 +21,11 @@ import io.newm.server.features.song.database.SongTable
 import io.newm.server.features.song.model.*
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
-import io.newm.shared.ktx.existsHavingId
-import io.newm.shared.ktx.toDate
 import io.newm.shared.koin.inject
+import io.newm.shared.ktx.existsHavingId
 import io.newm.shared.ktx.getConfigChild
 import io.newm.shared.ktx.getString
+import io.newm.shared.ktx.toDate
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.deleteAll
@@ -36,6 +36,7 @@ import org.junit.jupiter.api.Test
 import java.io.EOFException
 import java.io.File
 import java.time.Instant
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
 
@@ -71,44 +72,23 @@ class SongRoutesTests : BaseApplicationTests() {
         assertThat(song.genres).isEqualTo(testSong1.genres)
         assertThat(song.moods).isEqualTo(testSong1.moods)
         assertThat(song.description).isEqualTo(testSong1.description)
-        assertThat(song.credits).isEqualTo(testSong1.credits)
-        assertThat(song.duration).isEqualTo(testSong1.duration)
-        assertThat(song.streamUrl).isEqualTo(testSong1.streamUrl)
-        assertThat(song.nftPolicyId).isEqualTo(testSong1.nftPolicyId)
-        assertThat(song.nftName).isEqualTo(testSong1.nftName)
-        assertThat(song.mintingStatus).isEqualTo(testSong1.mintingStatus)
-        assertThat(song.marketplaceStatus).isEqualTo(testSong1.marketplaceStatus)
+        assertThat(song.album).isEqualTo(testSong1.album)
+        assertThat(song.track).isEqualTo(testSong1.track)
+        assertThat(song.language).isEqualTo(testSong1.language)
+        assertThat(song.copyright).isEqualTo(testSong1.copyright)
+        assertThat(song.parentalAdvisory).isEqualTo(testSong1.parentalAdvisory)
+        assertThat(song.isrc).isEqualTo(testSong1.isrc)
+        assertThat(song.ipi).isEqualTo(testSong1.ipi)
+        assertThat(song.releaseDate).isEqualTo(testSong1.releaseDate)
+        assertThat(song.lyricsUrl).isEqualTo(testSong1.lyricsUrl)
+        assertThat(song.mintingStatus).isEqualTo(MintingStatus.Undistributed)
+        assertThat(song.marketplaceStatus).isEqualTo(MarketplaceStatus.NotSelling)
     }
 
     @Test
     fun testGetSong() = runBlocking {
-        transaction {
-            KeyEntity.new(id = UUID.fromString("00000000-0000-0000-0000-000000000000")) {
-                this.address = testKey.address
-                this.vkey = testKey.vkey.toHexString()
-                this.skey = testKey.skey.toHexString()
-            }
-        }
-
         // Add Song directly into database
-        val song = transaction {
-            SongEntity.new {
-                ownerId = EntityID(testUserId, UserTable)
-                title = testSong1.title!!
-                genres = testSong1.genres!!.toTypedArray()
-                moods = testSong1.moods!!.toTypedArray()
-                coverArtUrl = testSong1.coverArtUrl
-                description = testSong1.description
-                credits = testSong1.credits
-                duration = testSong1.duration
-                streamUrl = testSong1.streamUrl
-                nftPolicyId = testSong1.nftPolicyId
-                nftName = testSong1.nftName
-                mintingStatus = testSong1.mintingStatus!!
-                marketplaceStatus = testSong1.marketplaceStatus!!
-                paymentKeyId = EntityID(testSong1.paymentKeyId!!, KeyTable)
-            }
-        }.toModel()
+        val song = addSongToDatabase()
 
         // Get it
         val response = client.get("v1/songs/${song.id}") {
@@ -121,32 +101,10 @@ class SongRoutesTests : BaseApplicationTests() {
 
     @Test
     fun testGetAllSongs() = runBlocking {
-        // Add Users + Songs directly into database
+        // Add Songs directly into database
         val expectedSongs = mutableListOf<Song>()
         for (offset in 0..30) {
-            val ownerId = transaction {
-                UserEntity.new {
-                    email = "artist$offset@newm.io"
-                }
-            }.id.value
-
-            expectedSongs += transaction {
-                SongEntity.new {
-                    this.ownerId = EntityID(ownerId, UserTable)
-                    title = "title$offset"
-                    genres = arrayOf("genre${offset}_0", "genre${offset}_1")
-                    moods = arrayOf("mood${offset}_0", "mood${offset}_1")
-                    coverArtUrl = "coverArtUrl$offset"
-                    description = "description$offset"
-                    credits = "credits$offset"
-                    duration = offset
-                    streamUrl = "streamUrl$offset"
-                    nftPolicyId = "nftPolicyId$offset"
-                    nftName = "nftName$offset"
-                    mintingStatus = MintingStatus.values()[offset % MintingStatus.values().size]
-                    marketplaceStatus = MarketplaceStatus.values()[offset % MarketplaceStatus.values().size]
-                }
-            }.toModel()
+            expectedSongs += addSongToDatabase(offset)
         }
 
         // Get all songs forcing pagination
@@ -173,32 +131,10 @@ class SongRoutesTests : BaseApplicationTests() {
 
     @Test
     fun testGetSongsByIds() = runBlocking {
-        // Add Users + Songs directly into database
+        // Add Songs directly into database
         val allSongs = mutableListOf<Song>()
         for (offset in 0..30) {
-            val ownerId = transaction {
-                UserEntity.new {
-                    email = "artist$offset@newm.io"
-                }
-            }.id.value
-
-            allSongs += transaction {
-                SongEntity.new {
-                    this.ownerId = EntityID(ownerId, UserTable)
-                    title = "title$offset"
-                    genres = arrayOf("genre${offset}_0", "genre${offset}_1")
-                    moods = arrayOf("mood${offset}_0", "mood${offset}_1")
-                    coverArtUrl = "coverArtUrl$offset"
-                    description = "description$offset"
-                    credits = "credits$offset"
-                    duration = offset
-                    streamUrl = "streamUrl$offset"
-                    nftPolicyId = "nftPolicyId$offset"
-                    nftName = "nftName$offset"
-                    mintingStatus = MintingStatus.values()[offset % MintingStatus.values().size]
-                    marketplaceStatus = MarketplaceStatus.values()[offset % MarketplaceStatus.values().size]
-                }
-            }.toModel()
+            allSongs += addSongToDatabase(offset)
         }
 
         // filter out 1st and last
@@ -230,32 +166,10 @@ class SongRoutesTests : BaseApplicationTests() {
 
     @Test
     fun testGetSongsByOwnerIds() = runBlocking {
-        // Add Users + Songs directly into database
+        // Add Songs directly into database
         val allSongs = mutableListOf<Song>()
         for (offset in 0..30) {
-            val ownerId = transaction {
-                UserEntity.new {
-                    email = "artist$offset@newm.io"
-                }
-            }.id.value
-
-            allSongs += transaction {
-                SongEntity.new {
-                    this.ownerId = EntityID(ownerId, UserTable)
-                    title = "title$offset"
-                    genres = arrayOf("genre${offset}_0", "genre${offset}_1")
-                    moods = arrayOf("mood${offset}_0", "mood${offset}_1")
-                    coverArtUrl = "coverArtUrl$offset"
-                    description = "description$offset"
-                    credits = "credits$offset"
-                    duration = offset
-                    streamUrl = "streamUrl$offset"
-                    nftPolicyId = "nftPolicyId$offset"
-                    nftName = "nftName$offset"
-                    mintingStatus = MintingStatus.values()[offset % MintingStatus.values().size]
-                    marketplaceStatus = MarketplaceStatus.values()[offset % MarketplaceStatus.values().size]
-                }
-            }.toModel()
+            allSongs += addSongToDatabase(offset)
         }
 
         // filter out 1st and last
@@ -287,32 +201,10 @@ class SongRoutesTests : BaseApplicationTests() {
 
     @Test
     fun testGetSongsByGenres() = runBlocking {
-        // Add Users + Songs directly into database
+        // Add Songs directly into database
         val allSongs = mutableListOf<Song>()
         for (offset in 0..30) {
-            val ownerId = transaction {
-                UserEntity.new {
-                    email = "artist$offset@newm.io"
-                }
-            }.id.value
-
-            allSongs += transaction {
-                SongEntity.new {
-                    this.ownerId = EntityID(ownerId, UserTable)
-                    title = "title$offset"
-                    genres = arrayOf("genre${offset}_0", "genre${offset}_1")
-                    moods = arrayOf("mood${offset}_0", "mood${offset}_1")
-                    coverArtUrl = "coverArtUrl$offset"
-                    description = "description$offset"
-                    credits = "credits$offset"
-                    duration = offset
-                    streamUrl = "streamUrl$offset"
-                    nftPolicyId = "nftPolicyId$offset"
-                    nftName = "nftName$offset"
-                    mintingStatus = MintingStatus.values()[offset % MintingStatus.values().size]
-                    marketplaceStatus = MarketplaceStatus.values()[offset % MarketplaceStatus.values().size]
-                }
-            }.toModel()
+            allSongs += addSongToDatabase(offset)
         }
 
         // filter out 1st and last and take only 1st genre of each
@@ -344,32 +236,10 @@ class SongRoutesTests : BaseApplicationTests() {
 
     @Test
     fun testGetSongsByMoods() = runBlocking {
-        // Add Users + Songs directly into database
+        // Add Songs directly into database
         val allSongs = mutableListOf<Song>()
         for (offset in 0..30) {
-            val ownerId = transaction {
-                UserEntity.new {
-                    email = "artist$offset@newm.io"
-                }
-            }.id.value
-
-            allSongs += transaction {
-                SongEntity.new {
-                    this.ownerId = EntityID(ownerId, UserTable)
-                    title = "title$offset"
-                    genres = arrayOf("genre${offset}_0", "genre${offset}_1")
-                    moods = arrayOf("mood${offset}_0", "mood${offset}_1")
-                    coverArtUrl = "coverArtUrl$offset"
-                    description = "description$offset"
-                    credits = "credits$offset"
-                    duration = offset
-                    streamUrl = "streamUrl$offset"
-                    nftPolicyId = "nftPolicyId$offset"
-                    nftName = "nftName$offset"
-                    mintingStatus = MintingStatus.values()[offset % MintingStatus.values().size]
-                    marketplaceStatus = MarketplaceStatus.values()[offset % MarketplaceStatus.values().size]
-                }
-            }.toModel()
+            allSongs += addSongToDatabase(offset)
         }
 
         // filter out 1st and last and take only 1st mood of each
@@ -401,32 +271,10 @@ class SongRoutesTests : BaseApplicationTests() {
 
     @Test
     fun testGetSongsByOlderThan() = runBlocking {
-        // Add Users + Songs directly into database
+        // Add Songs directly into database
         val allSongs = mutableListOf<Song>()
         for (offset in 0..30) {
-            val ownerId = transaction {
-                UserEntity.new {
-                    email = "artist$offset@newm.io"
-                }
-            }.id.value
-
-            allSongs += transaction {
-                SongEntity.new {
-                    this.ownerId = EntityID(ownerId, UserTable)
-                    title = "title$offset"
-                    genres = arrayOf("genre${offset}_0", "genre${offset}_1")
-                    moods = arrayOf("mood${offset}_0", "mood${offset}_1")
-                    coverArtUrl = "coverArtUrl$offset"
-                    description = "description$offset"
-                    credits = "credits$offset"
-                    duration = offset
-                    streamUrl = "streamUrl$offset"
-                    nftPolicyId = "nftPolicyId$offset"
-                    nftName = "nftName$offset"
-                    mintingStatus = MintingStatus.values()[offset % MintingStatus.values().size]
-                    marketplaceStatus = MarketplaceStatus.values()[offset % MarketplaceStatus.values().size]
-                }
-            }.toModel()
+            allSongs += addSongToDatabase(offset)
         }
 
         // filter out newest one
@@ -458,32 +306,10 @@ class SongRoutesTests : BaseApplicationTests() {
 
     @Test
     fun testGetSongsByNewerThan() = runBlocking {
-        // Add Users + Songs directly into database
+        // Add Songs directly into database
         val allSongs = mutableListOf<Song>()
         for (offset in 0..30) {
-            val ownerId = transaction {
-                UserEntity.new {
-                    email = "artist$offset@newm.io"
-                }
-            }.id.value
-
-            allSongs += transaction {
-                SongEntity.new {
-                    this.ownerId = EntityID(ownerId, UserTable)
-                    title = "title$offset"
-                    genres = arrayOf("genre${offset}_0", "genre${offset}_1")
-                    moods = arrayOf("mood${offset}_0", "mood${offset}_1")
-                    coverArtUrl = "coverArtUrl$offset"
-                    description = "description$offset"
-                    credits = "credits$offset"
-                    duration = offset
-                    streamUrl = "streamUrl$offset"
-                    nftPolicyId = "nftPolicyId$offset"
-                    nftName = "nftName$offset"
-                    mintingStatus = MintingStatus.values()[offset % MintingStatus.values().size]
-                    marketplaceStatus = MarketplaceStatus.values()[offset % MarketplaceStatus.values().size]
-                }
-            }.toModel()
+            allSongs += addSongToDatabase(offset)
         }
 
         // filter out oldest one
@@ -516,39 +342,16 @@ class SongRoutesTests : BaseApplicationTests() {
     @Test
     fun testGetSongsByPhrase() = runBlocking {
         val phrase = "ABCDE"
-        fun phraseOrBlank(offset: Int, target: Int) = if (offset % 4 == target) phrase else ""
 
-        // Add Users + Songs directly into database
+        // Add Songs directly into database
         val allSongs = mutableListOf<Song>()
         for (offset in 0..30) {
-            val ownerId = transaction {
-                UserEntity.new {
-                    email = "artist$offset@newm.io"
-                }
-            }.id.value
-
-            allSongs += transaction {
-                SongEntity.new {
-                    this.ownerId = EntityID(ownerId, UserTable)
-                    title = "title$offset ${phraseOrBlank(offset, 0)} blah blah"
-                    genres = arrayOf("genre${offset}_0", "genre${offset}_1")
-                    moods = arrayOf("mood${offset}_0", "mood${offset}_1")
-                    coverArtUrl = "coverArtUrl$offset"
-                    description = "description$offset ${phraseOrBlank(offset, 1)} blah blah"
-                    credits = "credits$offset ${phraseOrBlank(offset, 2)} blah blah"
-                    duration = offset
-                    streamUrl = "streamUrl$offset"
-                    nftPolicyId = "nftPolicyId$offset"
-                    nftName = "nftName$offset ${phraseOrBlank(offset, 3)} blah blah"
-                    mintingStatus = MintingStatus.values()[offset % MintingStatus.values().size]
-                    marketplaceStatus = MarketplaceStatus.values()[offset % MarketplaceStatus.values().size]
-                }
-            }.toModel()
+            allSongs += addSongToDatabase(offset = offset, phrase = phrase)
         }
 
         // filter out for phrase
         val expectedSongs = allSongs.filter {
-            phrase in it.title!! || phrase in it.description!! || phrase in it.credits!! || phrase in it.nftName!!
+            phrase in it.title!! || phrase in it.description!! || phrase in it.album!! || phrase in it.nftName!!
         }
 
         // Get all songs forcing pagination
@@ -576,24 +379,9 @@ class SongRoutesTests : BaseApplicationTests() {
 
     @Test
     fun testPatchSong() = runBlocking {
-        // Add Song1 directly into database
-        val songId = transaction {
-            SongEntity.new {
-                ownerId = EntityID(testUserId, UserTable)
-                title = testSong1.title!!
-                genres = testSong1.genres!!.toTypedArray()
-                moods = testSong1.moods!!.toTypedArray()
-                coverArtUrl = testSong1.coverArtUrl
-                description = testSong1.description
-                credits = testSong1.credits
-                duration = testSong1.duration
-                streamUrl = testSong1.streamUrl
-                nftPolicyId = testSong1.nftPolicyId
-                nftName = testSong1.nftName
-                mintingStatus = testSong1.mintingStatus!!
-                marketplaceStatus = testSong1.marketplaceStatus!!
-            }
-        }.id.value
+        // Add Song directly into database
+        val song1 = addSongToDatabase(ownerId = testUserId)
+        val songId = song1.id!!
 
         // Patch it with Song2
         val response = client.patch("v1/songs/$songId") {
@@ -604,42 +392,31 @@ class SongRoutesTests : BaseApplicationTests() {
         assertThat(response.status).isEqualTo(HttpStatusCode.NoContent)
 
         // Read Song directly from database & verify it
-        val song = transaction { SongEntity[songId] }.toModel()
-        assertThat(song.id).isEqualTo(songId)
-        assertThat(song.ownerId).isEqualTo(testUserId)
-        assertThat(song.title).isEqualTo(testSong2.title)
-        assertThat(song.genres).isEqualTo(testSong2.genres)
-        assertThat(song.moods).isEqualTo(testSong2.moods)
-        assertThat(song.description).isEqualTo(testSong2.description)
-        assertThat(song.credits).isEqualTo(testSong2.credits)
-        assertThat(song.duration).isEqualTo(testSong2.duration)
-        assertThat(song.streamUrl).isEqualTo(testSong2.streamUrl)
-        assertThat(song.nftPolicyId).isEqualTo(testSong2.nftPolicyId)
-        assertThat(song.nftName).isEqualTo(testSong2.nftName)
-        assertThat(song.mintingStatus).isEqualTo(testSong1.mintingStatus) // no change expected
-        assertThat(song.marketplaceStatus).isEqualTo(testSong1.marketplaceStatus) // no change expected
+        val song2 = transaction { SongEntity[songId] }.toModel()
+        assertThat(song2.id).isEqualTo(songId)
+        assertThat(song2.ownerId).isEqualTo(testUserId)
+        assertThat(song2.createdAt).isAtLeast(song1.createdAt)
+        assertThat(song2.title).isEqualTo(testSong2.title)
+        assertThat(song2.genres).isEqualTo(testSong2.genres)
+        assertThat(song2.moods).isEqualTo(testSong2.moods)
+        assertThat(song2.description).isEqualTo(testSong2.description)
+        assertThat(song2.album).isEqualTo(testSong2.album)
+        assertThat(song2.track).isEqualTo(testSong2.track)
+        assertThat(song2.language).isEqualTo(testSong2.language)
+        assertThat(song2.copyright).isEqualTo(testSong2.copyright)
+        assertThat(song2.parentalAdvisory).isEqualTo(testSong2.parentalAdvisory)
+        assertThat(song2.isrc).isEqualTo(testSong2.isrc)
+        assertThat(song2.ipi).isEqualTo(testSong2.ipi)
+        assertThat(song2.releaseDate).isEqualTo(testSong2.releaseDate)
+        assertThat(song2.lyricsUrl).isEqualTo(testSong2.lyricsUrl)
+        assertThat(song2.mintingStatus).isEqualTo(MintingStatus.Undistributed)
+        assertThat(song2.marketplaceStatus).isEqualTo(MarketplaceStatus.NotSelling)
     }
 
     @Test
     fun testDeleteSong() = runBlocking {
         // Add song directly into database
-        val songId = transaction {
-            SongEntity.new {
-                ownerId = EntityID(testUserId, UserTable)
-                title = testSong1.title!!
-                genres = testSong1.genres!!.toTypedArray()
-                moods = testSong1.moods!!.toTypedArray()
-                coverArtUrl = testSong1.coverArtUrl
-                description = testSong1.description
-                credits = testSong1.credits
-                duration = testSong1.duration
-                streamUrl = testSong1.streamUrl
-                nftPolicyId = testSong1.nftPolicyId
-                nftName = testSong1.nftName
-                mintingStatus = testSong1.mintingStatus!!
-                marketplaceStatus = testSong1.marketplaceStatus!!
-            }
-        }.id.value
+        val songId = addSongToDatabase(ownerId = testUserId).id!!
 
         // delete it
         val response = client.delete("v1/songs/$songId") {
@@ -655,24 +432,7 @@ class SongRoutesTests : BaseApplicationTests() {
     @Test
     fun testRequestAudioUpload() = runBlocking {
         // Add song directly into database
-        val songId = transaction {
-            SongEntity.new {
-                ownerId = EntityID(testUserId, UserTable)
-                title = testSong1.title!!
-                genres = testSong1.genres!!.toTypedArray()
-                moods = testSong1.moods!!.toTypedArray()
-                coverArtUrl = testSong1.coverArtUrl
-                description = testSong1.description
-                credits = testSong1.credits
-                duration = testSong1.duration
-                streamUrl = testSong1.streamUrl
-                nftPolicyId = testSong1.nftPolicyId
-                nftName = testSong1.nftName
-                mintingStatus = testSong1.mintingStatus!!
-                marketplaceStatus = testSong1.marketplaceStatus!!
-            }
-        }.id.value
-
+        val songId = addSongToDatabase(ownerId = testUserId).id!!
         val start = Instant.now()
 
         // Request upload
@@ -702,23 +462,7 @@ class SongRoutesTests : BaseApplicationTests() {
     @Test
     fun testRequestAudioPostUpload() = runBlocking {
         // Add song directly into database
-        val songId = transaction {
-            SongEntity.new {
-                ownerId = EntityID(testUserId, UserTable)
-                title = testSong1.title!!
-                genres = testSong1.genres!!.toTypedArray()
-                moods = testSong1.moods!!.toTypedArray()
-                coverArtUrl = testSong1.coverArtUrl
-                description = testSong1.description
-                credits = testSong1.credits
-                duration = testSong1.duration
-                streamUrl = testSong1.streamUrl
-                nftPolicyId = testSong1.nftPolicyId
-                nftName = testSong1.nftName
-                mintingStatus = testSong1.mintingStatus!!
-                marketplaceStatus = testSong1.marketplaceStatus!!
-            }
-        }.id.value
+        val songId = addSongToDatabase(ownerId = testUserId).id!!
 
         // Request upload
         val response = client.post("v1/songs/$songId/upload") {
@@ -765,23 +509,7 @@ class SongRoutesTests : BaseApplicationTests() {
     @Test
     fun testRequestAudioPostUploadTooLarge() = runBlocking {
         // Add song directly into database
-        val songId = transaction {
-            SongEntity.new {
-                ownerId = EntityID(testUserId, UserTable)
-                title = testSong1.title!!
-                genres = testSong1.genres!!.toTypedArray()
-                moods = testSong1.moods!!.toTypedArray()
-                coverArtUrl = testSong1.coverArtUrl
-                description = testSong1.description
-                credits = testSong1.credits
-                duration = testSong1.duration
-                streamUrl = testSong1.streamUrl
-                nftPolicyId = testSong1.nftPolicyId
-                nftName = testSong1.nftName
-                mintingStatus = testSong1.mintingStatus!!
-                marketplaceStatus = testSong1.marketplaceStatus!!
-            }
-        }.id.value
+        val songId = addSongToDatabase(ownerId = testUserId).id!!
 
         // Request upload
         val response = client.post("v1/songs/$songId/upload") {
@@ -992,16 +720,7 @@ class SongRoutesTests : BaseApplicationTests() {
         }
 
         // Add Song directly into database
-        val songId = transaction {
-            SongEntity.new {
-                ownerId = EntityID(testUserId, UserTable)
-                title = testSong1.title!!
-                genres = testSong1.genres!!.toTypedArray()
-                coverArtUrl = testSong1.coverArtUrl
-                description = testSong1.description
-                credits = testSong1.credits
-            }
-        }.id.value
+        val songId = addSongToDatabase(ownerId = testUserId).id!!
 
         // get required payment amount
         val response = client.get("v1/songs/$songId/mint/payment") {
@@ -1025,16 +744,8 @@ class SongRoutesTests : BaseApplicationTests() {
         }
 
         // Add Song directly into database
-        val songId = transaction {
-            SongEntity.new {
-                ownerId = EntityID(testUserId, UserTable)
-                title = testSong1.title!!
-                genres = testSong1.genres!!.toTypedArray()
-                coverArtUrl = testSong1.coverArtUrl
-                description = testSong1.description
-                credits = testSong1.credits
-            }
-        }.id.value
+        // Add song directly into database
+        val songId = addSongToDatabase(ownerId = testUserId).id!!
 
         // generate transaction
         val changeAddress = "addr_test1vrdqad0dwcg5stk9pzdknkrsurzkc8z9rqp9vyfrnrsgxkc4r8za2"
@@ -1050,4 +761,54 @@ class SongRoutesTests : BaseApplicationTests() {
         assertThat(actualCborHex).isEqualTo(expectedCborHex)
     }
      */
+}
+
+fun addSongToDatabase(offset: Int = 0, ownerId: UUID? = null, phrase: String? = null): Song {
+    val ownerEntityId = ownerId?.let {
+        EntityID(it, UserTable)
+    } ?: transaction {
+        UserEntity.new {
+            email = "artist$offset@newm.io"
+        }
+    }.id
+
+    val paymentKeyId = transaction {
+        KeyEntity.new {
+            this.address = ""
+            this.vkey = ""
+            this.skey = ""
+        }
+    }.id
+
+    fun phraseOrBlank(offset: Int, target: Int) = phrase?.takeIf { offset % 4 == target }.orEmpty()
+
+    return transaction {
+        SongEntity.new {
+            this.ownerId = ownerEntityId
+            title = "title$offset ${phraseOrBlank(offset, 0)} blah blah"
+            description = "description$offset ${phraseOrBlank(offset, 1)} blah blah"
+            album = "album$offset ${phraseOrBlank(offset, 2)} blah blah"
+            nftName = "nftName$offset ${phraseOrBlank(offset, 3)} blah blah"
+            genres = arrayOf("genre${offset}_0", "genre${offset}_1")
+            moods = arrayOf("mood${offset}_0", "mood${offset}_1")
+            coverArtUrl = "https://newm.io/cover$offset"
+            track = offset
+            language = "language$offset"
+            copyright = "copyright$offset"
+            parentalAdvisory = "parentalAdvisory$offset"
+            isrc = "isrc$offset"
+            ipi = arrayOf("ipi${offset}_0", "ipi${offset}_1")
+            releaseDate = LocalDate.of(2023, 1, offset % 31 + 1)
+            publicationDate = LocalDate.of(2023, 1, offset % 31 + 1)
+            lyricsUrl = "https://newm.io/lyrics$offset"
+            tokenAgreementUrl = "https://newm.io/agreement$offset"
+            clipUrl = "https://newm.io/clip$offset"
+            streamUrl = "https://newm.io/stream$offset"
+            duration = offset
+            nftPolicyId = "nftPolicyId$offset"
+            mintingStatus = MintingStatus.values()[offset % MintingStatus.values().size]
+            marketplaceStatus = MarketplaceStatus.values()[offset % MarketplaceStatus.values().size]
+            this.paymentKeyId = paymentKeyId
+        }
+    }.toModel()
 }

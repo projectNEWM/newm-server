@@ -21,13 +21,10 @@ import io.newm.server.features.playlist.database.PlaylistTable
 import io.newm.server.features.playlist.database.SongsInPlaylistsTable
 import io.newm.server.features.playlist.model.Playlist
 import io.newm.server.features.playlist.model.PlaylistIdBody
-import io.newm.server.features.song.database.SongEntity
+import io.newm.server.features.song.addSongToDatabase
 import io.newm.server.features.song.database.SongTable
-import io.newm.server.features.song.model.MarketplaceStatus
-import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongIdBody
-import io.newm.server.features.song.testSong1
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
 import io.newm.shared.ktx.exists
@@ -41,6 +38,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.time.LocalDateTime
+import java.util.UUID
 
 class PlaylistRoutesTests : BaseApplicationTests() {
 
@@ -76,12 +74,7 @@ class PlaylistRoutesTests : BaseApplicationTests() {
     @Test
     fun testGetPlaylist() = runBlocking {
         // Add Playlist directly into database
-        val playlist = transaction {
-            PlaylistEntity.new {
-                ownerId = EntityID(testUserId, UserTable)
-                name = testPlaylist1.name!!
-            }
-        }.toModel()
+        val playlist = addPLaylistToDatabase(ownerId = testUserId)
 
         // Get it
         val response = client.get("v1/playlists/${playlist.id}") {
@@ -94,21 +87,10 @@ class PlaylistRoutesTests : BaseApplicationTests() {
 
     @Test
     fun testGetAllPlaylists() = runBlocking {
-        // Add Users + Playlists directly into database
+        // Add Playlists directly into database
         val expectedPlaylists = mutableListOf<Playlist>()
         for (offset in 0..30) {
-            val ownerId = transaction {
-                UserEntity.new {
-                    email = "artist$offset@newm.io"
-                }
-            }.id.value
-
-            expectedPlaylists += transaction {
-                PlaylistEntity.new {
-                    this.ownerId = EntityID(ownerId, UserTable)
-                    name = "name$offset"
-                }
-            }.toModel()
+            expectedPlaylists += addPLaylistToDatabase(offset)
         }
 
         // Get all playlists forcing pagination
@@ -135,21 +117,10 @@ class PlaylistRoutesTests : BaseApplicationTests() {
 
     @Test
     fun testGetPlaylistsByIds() = runBlocking {
-        // Add Users + Playlists directly into database
+        // Add Playlists directly into database
         val allPlaylists = mutableListOf<Playlist>()
         for (offset in 0..30) {
-            val ownerId = transaction {
-                UserEntity.new {
-                    email = "artist$offset@newm.io"
-                }
-            }.id.value
-
-            allPlaylists += transaction {
-                PlaylistEntity.new {
-                    this.ownerId = EntityID(ownerId, UserTable)
-                    name = "name$offset"
-                }
-            }.toModel()
+            allPlaylists += addPLaylistToDatabase(offset)
         }
 
         // filter out 1st and last
@@ -181,21 +152,10 @@ class PlaylistRoutesTests : BaseApplicationTests() {
 
     @Test
     fun testGetPlaylistsByOwnerIds() = runBlocking {
-        // Add Users + Playlists directly into database
+        // Add Playlists directly into database
         val allPlaylists = mutableListOf<Playlist>()
         for (offset in 0..30) {
-            val ownerId = transaction {
-                UserEntity.new {
-                    email = "artist$offset@newm.io"
-                }
-            }.id.value
-
-            allPlaylists += transaction {
-                PlaylistEntity.new {
-                    this.ownerId = EntityID(ownerId, UserTable)
-                    name = "name$offset"
-                }
-            }.toModel()
+            allPlaylists += addPLaylistToDatabase(offset)
         }
 
         // filter out 1st and last
@@ -227,21 +187,10 @@ class PlaylistRoutesTests : BaseApplicationTests() {
 
     @Test
     fun testGetPlaylistsByOlderThan() = runBlocking {
-        // Add Users + Playlists directly into database
+        // Add Playlists directly into database
         val allPlaylists = mutableListOf<Playlist>()
         for (offset in 0..30) {
-            val ownerId = transaction {
-                UserEntity.new {
-                    email = "artist$offset@newm.io"
-                }
-            }.id.value
-
-            allPlaylists += transaction {
-                PlaylistEntity.new {
-                    this.ownerId = EntityID(ownerId, UserTable)
-                    name = "name$offset"
-                }
-            }.toModel()
+            allPlaylists += addPLaylistToDatabase(offset)
         }
 
         // filter out newest one
@@ -273,21 +222,10 @@ class PlaylistRoutesTests : BaseApplicationTests() {
 
     @Test
     fun testGetPlaylistsByNewerThan() = runBlocking {
-        // Add Users + Playlists directly into database
+        // Add Playlists directly into database
         val allPlaylists = mutableListOf<Playlist>()
         for (offset in 0..30) {
-            val ownerId = transaction {
-                UserEntity.new {
-                    email = "artist$offset@newm.io"
-                }
-            }.id.value
-
-            allPlaylists += transaction {
-                PlaylistEntity.new {
-                    this.ownerId = EntityID(ownerId, UserTable)
-                    name = "name$offset"
-                }
-            }.toModel()
+            allPlaylists += addPLaylistToDatabase(offset)
         }
 
         // filter out newest one
@@ -319,13 +257,8 @@ class PlaylistRoutesTests : BaseApplicationTests() {
 
     @Test
     fun testPatchPlaylist() = runBlocking {
-        // Add Playlist1 directly into database
-        val playlistId = transaction {
-            PlaylistEntity.new {
-                ownerId = EntityID(testUserId, UserTable)
-                name = testPlaylist1.name!!
-            }
-        }.id.value
+        // Add Playlist directly into database
+        val playlistId = addPLaylistToDatabase(ownerId = testUserId).id!!
 
         // Patch it with Playlist2
         val response = client.patch("v1/playlists/$playlistId") {
@@ -344,13 +277,8 @@ class PlaylistRoutesTests : BaseApplicationTests() {
 
     @Test
     fun testDeletePlaylist() = runBlocking {
-        // Add playlist directly into database
-        val playlistId = transaction {
-            PlaylistEntity.new {
-                ownerId = EntityID(testUserId, UserTable)
-                name = testPlaylist1.name!!
-            }
-        }.id.value
+        // Add Playlist directly into database
+        val playlistId = addPLaylistToDatabase(ownerId = testUserId).id!!
 
         // delete it
         val response = client.delete("v1/playlists/$playlistId") {
@@ -365,25 +293,11 @@ class PlaylistRoutesTests : BaseApplicationTests() {
 
     @Test
     fun testPutPlaylistSong() = runBlocking {
-        // Add playlist directly into database
-        val playlistId = transaction {
-            PlaylistEntity.new {
-                ownerId = EntityID(testUserId, UserTable)
-                name = testPlaylist1.name!!
-            }
-        }.id.value
+        // Add Playlist directly into database
+        val playlistId = addPLaylistToDatabase(ownerId = testUserId).id!!
 
         // Add Song directly into database
-        val songId = transaction {
-            SongEntity.new {
-                ownerId = EntityID(testUserId, UserTable)
-                title = testSong1.title!!
-                genres = testSong1.genres!!.toTypedArray()
-                coverArtUrl = testSong1.coverArtUrl
-                description = testSong1.description
-                credits = testSong1.credits
-            }
-        }.id.value
+        val songId = addSongToDatabase(ownerId = testUserId).id!!
 
         // Put song into playlist
         val response = client.put("v1/playlists/$playlistId/songs") {
@@ -404,25 +318,11 @@ class PlaylistRoutesTests : BaseApplicationTests() {
 
     @Test
     fun testDeletePlaylistSong() = runBlocking {
-        // Add playlist directly into database
-        val playlistId = transaction {
-            PlaylistEntity.new {
-                ownerId = EntityID(testUserId, UserTable)
-                name = testPlaylist1.name!!
-            }
-        }.id.value
+        // Add Playlist directly into database
+        val playlistId = addPLaylistToDatabase(ownerId = testUserId).id!!
 
         // Add Song directly into database
-        val songId = transaction {
-            SongEntity.new {
-                ownerId = EntityID(testUserId, UserTable)
-                title = testSong1.title!!
-                genres = testSong1.genres!!.toTypedArray()
-                coverArtUrl = testSong1.coverArtUrl
-                description = testSong1.description
-                credits = testSong1.credits
-            }
-        }.id.value
+        val songId = addSongToDatabase(ownerId = testUserId).id!!
 
         // Add song to playlist directly into database
         transaction {
@@ -449,33 +349,13 @@ class PlaylistRoutesTests : BaseApplicationTests() {
 
     @Test
     fun testGetPlaylistSongs() = runBlocking {
-        // Create playlist directly into database
-        val playlistId = transaction {
-            PlaylistEntity.new {
-                ownerId = EntityID(testUserId, UserTable)
-                name = testPlaylist1.name!!
-            }
-        }.id.value
+        // Add Playlist directly into database
+        val playlistId = addPLaylistToDatabase(ownerId = testUserId).id!!
 
         // Create songs directly into database
         val expectedSongs = mutableListOf<Song>()
         for (offset in 0..30) {
-            expectedSongs += transaction {
-                SongEntity.new {
-                    ownerId = EntityID(testUserId, UserTable)
-                    title = "title$offset"
-                    genres = arrayOf("genre${offset}_0", "genre${offset}_1")
-                    coverArtUrl = "coverArtUrl$offset"
-                    description = "description$offset"
-                    credits = "credits$offset"
-                    duration = offset
-                    streamUrl = "streamUrl$offset"
-                    nftPolicyId = "nftPolicyId$offset"
-                    nftName = "nftName$offset"
-                    mintingStatus = MintingStatus.values()[offset % MintingStatus.values().size]
-                    marketplaceStatus = MarketplaceStatus.values()[offset % MarketplaceStatus.values().size]
-                }
-            }.toModel()
+            expectedSongs += addSongToDatabase(offset, testUserId)
         }
 
         // add songs to playlist directly into database
@@ -523,12 +403,23 @@ class PlaylistRoutesTests : BaseApplicationTests() {
 
             if (++count == 10L) break
 
-            transaction {
-                PlaylistEntity.new {
-                    ownerId = EntityID(testUserId, UserTable)
-                    name = "playlist$count"
-                }
-            }
+            addPLaylistToDatabase(ownerId = testUserId, offset = count.toInt())
         }
     }
+}
+
+private fun addPLaylistToDatabase(offset: Int = 0, ownerId: UUID? = null): Playlist {
+    val ownerEntityId = ownerId?.let {
+        EntityID(it, UserTable)
+    } ?: transaction {
+        UserEntity.new {
+            email = "artist$offset@newm.io"
+        }
+    }.id
+    return transaction {
+        PlaylistEntity.new {
+            this.ownerId = ownerEntityId
+            name = "playlist$offset"
+        }
+    }.toModel()
 }
