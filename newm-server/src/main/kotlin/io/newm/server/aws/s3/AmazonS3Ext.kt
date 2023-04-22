@@ -47,7 +47,7 @@ private fun computeSignature(encodedPolicy: String, secretKey: String, region: S
     return HmacUtils(HmacAlgorithms.HMAC_SHA_256, signingKey).hmacHex(encodedPolicy)
 }
 
-private inline fun createScope(shortDate: String, region: String, service: String): String =
+private fun createScope(shortDate: String, region: String, service: String): String =
     "$shortDate/$region/$service/$KEY_TYPE_IDENTIFIER"
 
 /**

@@ -9,10 +9,13 @@ import com.google.iot.cbor.CborReader
 import com.google.iot.cbor.CborTag
 import com.google.protobuf.ByteString
 import com.google.protobuf.kotlin.toByteString
+import com.google.protobuf.kotlin.toByteStringUtf8
 import io.newm.chain.grpc.PlutusData
 import io.newm.chain.grpc.PlutusDataList
 import io.newm.chain.grpc.PlutusDataMap
 import io.newm.chain.grpc.PlutusDataMapItem
+import io.newm.chain.grpc.plutusData
+import io.newm.chain.grpc.plutusDataList
 import io.newm.chain.util.hexToByteArray
 import io.newm.chain.util.toHexString
 
@@ -118,4 +121,24 @@ fun PlutusData.toCborObject(): CborObject {
 
         else -> throw IllegalArgumentException("PlutusData must contain one of map, list, int, or bytes!")
     }
+}
+
+fun String.toPlutusData(): PlutusData {
+    return if (length > 64) {
+        plutusData {
+            list = plutusDataList {
+                listItem.addAll(
+                    this@toPlutusData.chunked(64) { chunk ->
+                        plutusData { bytes = chunk.toString().toByteStringUtf8() }
+                    }
+                )
+            }
+        }
+    } else {
+        plutusData { bytes = this@toPlutusData.toByteStringUtf8() }
+    }
+}
+
+fun Number.toPlutusData(): PlutusData {
+    return plutusData { int = this@toPlutusData.toLong() }
 }

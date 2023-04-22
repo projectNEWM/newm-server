@@ -38,4 +38,6 @@ data class User(
     val companyName: String? = null,
     val companyLogoUrl: String? = null,
     var companyIpRights: Boolean? = null
-)
+) {
+    val fullName: String by lazy { "$firstName $lastName".trim() }
+}

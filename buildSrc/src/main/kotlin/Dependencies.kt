@@ -66,7 +66,7 @@ object Dependencies {
     }
 
     object Ktor {
-        private const val VERSION = "2.2.4"
+        private const val VERSION = "2.3.0"
 
         const val SERVER_CORE = "io.ktor:ktor-server-core:$VERSION"
         const val SERVER_CIO = "io.ktor:ktor-server-cio:$VERSION"
@@ -89,7 +89,7 @@ object Dependencies {
     }
 
     object LogBack {
-        private const val VERSION = "1.4.6"
+        private const val VERSION = "1.4.7"
 
         const val CLASSIC = "ch.qos.logback:logback-classic:$VERSION"
     }
@@ -170,7 +170,7 @@ object Dependencies {
     }
 
     object SpringSecurity {
-        private const val VERSION = "6.0.2"
+        private const val VERSION = "6.0.3"
 
         const val CORE = "org.springframework.security:spring-security-core:$VERSION"
     }
