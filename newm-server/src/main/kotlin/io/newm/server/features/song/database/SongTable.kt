@@ -10,7 +10,9 @@ import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.javatime.CurrentDateTime
+import org.jetbrains.exposed.sql.javatime.date
 import org.jetbrains.exposed.sql.javatime.datetime
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
 
@@ -22,9 +24,21 @@ object SongTable : UUIDTable(name = "songs") {
     val moods: Column<Array<String>?> = textArray("moods").nullable()
     val coverArtUrl: Column<String?> = text("cover_art_url").nullable()
     val description: Column<String?> = text("description").nullable()
-    val credits: Column<String?> = text("credits").nullable()
-    val duration: Column<Int?> = integer("duration").nullable()
+    val album: Column<String?> = text("album").nullable()
+    val track: Column<Int?> = integer("track").nullable()
+    val language: Column<String?> = text("language").nullable()
+    val copyright: Column<String?> = text("copyright").nullable()
+    val parentalAdvisory: Column<String?> = text("parental_advisory").nullable()
+    val isrc: Column<String?> = text("isrc").nullable()
+    val iswc: Column<String?> = text("iswc").nullable()
+    val ipi: Column<Array<String>?> = textArray("ipi").nullable()
+    val releaseDate: Column<LocalDate?> = date("release_date").nullable()
+    val publicationDate: Column<LocalDate?> = date("publication_date").nullable()
+    val lyricsUrl: Column<String?> = text("lyrics_url").nullable()
+    val tokenAgreementUrl: Column<String?> = text("token_agreement_url").nullable()
+    val clipUrl: Column<String?> = text("clip_url").nullable()
     val streamUrl: Column<String?> = text("stream_url").nullable()
+    val duration: Column<Int?> = integer("duration").nullable()
     val nftPolicyId: Column<String?> = text("nft_policy_id").nullable()
     val nftName: Column<String?> = text("nft_name").nullable()
     val mintingStatus: Column<MintingStatus> =

@@ -1,11 +1,7 @@
 package io.newm.server.features.song
 
-import io.newm.server.features.cardano.model.Key
-import io.newm.server.features.song.model.MarketplaceStatus
-import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Song
-import java.time.LocalDateTime
-import java.util.*
+import java.time.LocalDate
 
 val testSong1 = Song(
     title = "Test Song 1",
@@ -13,14 +9,15 @@ val testSong1 = Song(
     moods = listOf("Mood 1.1", "Mood 1.2"),
     coverArtUrl = "https://projectnewm.io/song1.png",
     description = "Song 1 description",
-    credits = "Song 1 credits",
-    duration = 11111,
-    streamUrl = "https://projectnewm.io/song1.mp3",
-    nftPolicyId = "NFT Policy ID 1",
-    nftName = "NFT Name 1",
-    mintingStatus = MintingStatus.Undistributed,
-    marketplaceStatus = MarketplaceStatus.NotSelling,
-    paymentKeyId = UUID.fromString("00000000-0000-0000-0000-000000000000")
+    album = "Song 1 album",
+    track = 1,
+    language = "Song 1 language",
+    copyright = "Song 1 copyright",
+    parentalAdvisory = "Song 1 parentalAdvisory",
+    isrc = "Song 1 isrc",
+    ipi = listOf("Song 1 ipi 0", "Song 1 ipi 1"),
+    releaseDate = LocalDate.of(2023, 1, 1),
+    lyricsUrl = "https://projectnewm.io/lirycs1.txt",
 )
 
 val testSong2 = Song(
@@ -29,21 +26,13 @@ val testSong2 = Song(
     moods = listOf("Mood 2.1", "Mood 2.2"),
     coverArtUrl = "https://projectnewm.io/song2.png",
     description = "Song 2 description",
-    credits = "Song 2 credits",
-    duration = 22222,
-    streamUrl = "https://projectnewm.io/song2.mp3",
-    nftPolicyId = "NFT Policy ID 2",
-    nftName = "NFT Name 2",
-    mintingStatus = MintingStatus.Distributed,
-    marketplaceStatus = MarketplaceStatus.Selling
-)
-
-val testKey = Key(
-    id = UUID.fromString("00000000-0000-0000-0000-000000000000"),
-    createdAt = LocalDateTime.now(),
-    skey = ByteArray(0),
-    vkey = ByteArray(0),
-    address = "addr_test1vqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqd9tg5t",
-    script = null,
-    scriptAddress = null,
+    album = "Song 2 album",
+    track = 2,
+    language = "Song 2 language",
+    copyright = "Song 2 copyright",
+    parentalAdvisory = "Song 2 parentalAdvisory",
+    isrc = "Song 2 isrc",
+    ipi = listOf("Song 2 ipi 0", "Song 2 ipi 1"),
+    releaseDate = LocalDate.of(2023, 2, 2),
+    lyricsUrl = "https://projectnewm.io/lirycs2.txt",
 )

@@ -22,6 +22,7 @@ import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongFilters
 import io.newm.server.features.user.database.UserTable
+import io.newm.server.ktx.asValidUrl
 import io.newm.server.ktx.checkLength
 import io.newm.shared.exception.HttpForbiddenException
 import io.newm.shared.exception.HttpUnprocessableEntityException
@@ -61,13 +62,17 @@ internal class SongRepositoryImpl(
                 this.title = title
                 this.genres = genres.toTypedArray()
                 moods = song.moods?.toTypedArray()
-                coverArtUrl = song.coverArtUrl
+                coverArtUrl = song.coverArtUrl?.asValidUrl()
                 description = song.description
-                credits = song.credits
-                duration = song.duration
-                streamUrl = song.streamUrl
-                nftPolicyId = song.nftPolicyId
-                nftName = song.nftName
+                album = song.album
+                track = song.track
+                language = song.language
+                copyright = song.copyright
+                parentalAdvisory = song.parentalAdvisory
+                isrc = song.isrc
+                ipi = song.ipi?.toTypedArray()
+                releaseDate = song.releaseDate
+                lyricsUrl = song.lyricsUrl?.asValidUrl()
             }.id.value
         }
     }
@@ -82,15 +87,27 @@ internal class SongRepositoryImpl(
                 title?.let { entity.title = it }
                 genres?.let { entity.genres = it.toTypedArray() }
                 moods?.let { entity.moods = it.toTypedArray() }
-                coverArtUrl?.let { entity.coverArtUrl = it }
+                coverArtUrl?.let { entity.coverArtUrl = it.asValidUrl() }
                 description?.let { entity.description = it }
-                credits?.let { entity.credits = it }
-                duration?.let { entity.duration = it }
-                streamUrl?.let { entity.streamUrl = it }
-                nftPolicyId?.let { entity.nftPolicyId = it }
-                nftName?.let { entity.nftName = it }
+                album?.let { entity.album = it }
+                track?.let { entity.track = it }
+                language?.let { entity.language = it }
+                copyright?.let { entity.copyright = it }
+                parentalAdvisory?.let { entity.parentalAdvisory = it }
+                isrc?.let { entity.isrc = it }
+                iswc?.let { entity.iswc = it }
+                ipi?.let { entity.ipi = it.toTypedArray() }
+                releaseDate?.let { entity.releaseDate = it }
+                lyricsUrl?.let { entity.lyricsUrl = it.asValidUrl() }
                 if (requesterId == null) {
                     // don't allow updating these fields when invoked from REST API
+                    publicationDate?.let { entity.publicationDate = it }
+                    tokenAgreementUrl?.let { entity.tokenAgreementUrl = it }
+                    clipUrl?.let { entity.clipUrl = it.asValidUrl() }
+                    streamUrl?.let { entity.streamUrl = it.asValidUrl() }
+                    duration?.let { entity.duration = it }
+                    nftPolicyId?.let { entity.nftPolicyId = it }
+                    nftName?.let { entity.nftName = it }
                     mintingStatus?.let { entity.mintingStatus = it }
                     marketplaceStatus?.let { entity.marketplaceStatus = it }
                     paymentKeyId?.let { entity.paymentKeyId = EntityID(it, KeyTable) }
@@ -274,7 +291,13 @@ internal class SongRepositoryImpl(
         genres?.forEachIndexed { index, genre -> genre.checkLength("genres$index") }
         moods?.forEachIndexed { index, mood -> mood.checkLength("moods$index") }
         description?.checkLength("description", 250)
-        credits?.checkLength("credits")
+        album?.checkLength("album")
+        language?.checkLength("language")
+        copyright?.checkLength("copyright")
+        parentalAdvisory?.checkLength("parentalAdvisory")
+        isrc?.checkLength("isrc")
+        iswc?.checkLength("iswc")
+        ipi?.forEachIndexed { index, ipi -> ipi.checkLength("ipi$index") }
         nftName?.checkLength("nftName")
     }
 }

@@ -1,8 +1,10 @@
 package io.newm.server.features.song.model
 
+import io.newm.shared.serialization.LocalDateSerializer
 import io.newm.shared.serialization.LocalDateTimeSerializer
 import io.newm.shared.serialization.UUIDSerializer
 import kotlinx.serialization.Serializable
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -19,9 +21,23 @@ data class Song(
     val moods: List<String>? = null,
     val coverArtUrl: String? = null,
     val description: String? = null,
-    val credits: String? = null,
-    val duration: Int? = null,
+    val album: String? = null,
+    val track: Int? = null,
+    val language: String? = null,
+    val copyright: String? = null,
+    val parentalAdvisory: String? = null,
+    val isrc: String? = null,
+    val iswc: String? = null,
+    val ipi: List<String>? = null,
+    @Serializable(with = LocalDateSerializer::class)
+    val releaseDate: LocalDate? = null,
+    @Serializable(with = LocalDateSerializer::class)
+    val publicationDate: LocalDate? = null,
+    val lyricsUrl: String? = null,
+    val tokenAgreementUrl: String? = null,
+    val clipUrl: String? = null,
     val streamUrl: String? = null,
+    val duration: Int? = null,
     val nftPolicyId: String? = null,
     val nftName: String? = null,
     val mintingStatus: MintingStatus? = null,
@@ -35,8 +51,4 @@ data class Song(
     val arweaveTokenAgreement: String? = null,
     val arweaveClip: String? = null,
     val arweaveLyrics: String? = null,
-
-    val tokenAgreementUrl: String? = null,
-    val clipUrl: String? = null,
-    val lyricsUrl: String? = null,
 )
