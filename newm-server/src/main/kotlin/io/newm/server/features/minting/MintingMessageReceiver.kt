@@ -7,6 +7,7 @@ import io.newm.chain.grpc.monitorPaymentAddressRequest
 import io.newm.server.aws.SqsMessageReceiver
 import io.newm.server.features.arweave.repo.ArweaveRepository
 import io.newm.server.features.cardano.repo.CardanoRepository
+import io.newm.server.features.minting.repo.MintingRepository
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.repo.SongRepository
@@ -27,6 +28,7 @@ class MintingMessageReceiver : SqsMessageReceiver {
     private val songRepository: SongRepository by inject()
     private val cardanoRepository: CardanoRepository by inject()
     private val arweaveRepository: ArweaveRepository by inject()
+    private val mintingRepository: MintingRepository by inject()
     private val json: Json by inject()
     private val environment: ApplicationEnvironment by inject()
     private val queueUrl by lazy { environment.getConfigString("aws.sqs.minting.queueUrl") }
@@ -115,7 +117,9 @@ class MintingMessageReceiver : SqsMessageReceiver {
             }
 
             MintingStatus.Pending -> {
-                // TODO: Create and submit the mint transaction
+                // Create and submit the mint transaction
+                val song = songRepository.get(mintingStatusSqsMessage.songId)
+                mintingRepository.mint(song)
 
                 // Done submitting mint transaction. Move -> Minted
                 updateSongStatus(

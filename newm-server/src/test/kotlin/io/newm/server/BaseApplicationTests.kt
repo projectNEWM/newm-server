@@ -18,6 +18,8 @@ import io.newm.server.features.playlist.database.SongsInPlaylistsTable
 import io.newm.server.features.song.database.SongTable
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
+import io.newm.server.features.user.model.User
+import io.newm.shared.auth.Password
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -101,6 +103,29 @@ open class BaseApplicationTests {
     fun afterAll() {
         application.stop()
     }
+
+    protected fun addUserToDatabase(user: User): UUID = transaction {
+        UserEntity.new {
+            firstName = user.firstName
+            lastName = user.lastName
+            nickname = user.nickname
+            pictureUrl = user.pictureUrl
+            bannerUrl = user.bannerUrl
+            websiteUrl = user.websiteUrl
+            twitterUrl = user.twitterUrl
+            instagramUrl = user.instagramUrl
+            location = user.location
+            role = user.role
+            genre = user.genre
+            biography = user.biography
+            walletAddress = user.walletAddress
+            email = user.email!!
+            passwordHash = (user.newPassword ?: Password("dummyPassword")).toHash()
+            companyName = user.companyName
+            companyLogoUrl = user.companyLogoUrl
+            companyIpRights = user.companyIpRights
+        }
+    }.id.value
 
     companion object {
         @Container

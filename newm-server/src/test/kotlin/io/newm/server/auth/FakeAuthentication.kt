@@ -1,6 +1,5 @@
 package io.newm.server.auth
 
-import com.auth0.jwt.impl.NullClaim
 import com.auth0.jwt.interfaces.Claim
 import com.auth0.jwt.interfaces.Payload
 import io.ktor.http.auth.HttpAuthHeader
@@ -45,7 +44,20 @@ private class FakePayload(private val userId: String) : Payload {
 
     override fun getId(): String = ""
 
-    override fun getClaim(name: String?): Claim = NullClaim()
+    override fun getClaim(name: String?): Claim = object : Claim {
+        override fun isNull(): Boolean = true
+        override fun isMissing(): Boolean = true
+        override fun asBoolean(): Boolean? = null
+        override fun asInt(): Int? = null
+        override fun asLong(): Long? = null
+        override fun asDouble(): Double? = null
+        override fun asString(): String? = null
+        override fun asDate(): Date? = null
+        override fun <T : Any?> asArray(clazz: Class<T>?): Array<T>? = null
+        override fun <T : Any?> asList(clazz: Class<T>?): MutableList<T>? = null
+        override fun asMap(): MutableMap<String, Any>? = null
+        override fun <T : Any?> `as`(clazz: Class<T>?): T? = null
+    }
 
     override fun getClaims(): MutableMap<String, Claim> = mutableMapOf()
 }

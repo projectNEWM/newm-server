@@ -13,6 +13,7 @@ import io.newm.server.features.collaboration.collaborationKoinModule
 import io.newm.server.features.daemon.daemonsKoinModule
 import io.newm.server.features.distribution.distributionKoinModule
 import io.newm.server.features.idenfy.idenfyKoinModule
+import io.newm.server.features.minting.mintingKoinModule
 import io.newm.server.features.playlist.playlistKoinModule
 import io.newm.server.features.song.songKoinModule
 import io.newm.server.features.user.userKoinModule
@@ -45,6 +46,7 @@ fun Application.installDependencyInjection() {
             daemonsKoinModule,
             distributionKoinModule,
             arweaveKoinModule,
+            mintingKoinModule,
         )
     }
 }

@@ -28,7 +28,6 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.time.LocalDateTime
-import java.util.UUID
 
 class UserRoutesTests : BaseApplicationTests() {
 
@@ -566,29 +565,6 @@ class UserRoutesTests : BaseApplicationTests() {
         }
     }
 }
-
-private fun addUserToDatabase(user: User): UUID = transaction {
-    UserEntity.new {
-        firstName = user.firstName
-        lastName = user.lastName
-        nickname = user.nickname
-        pictureUrl = user.pictureUrl
-        bannerUrl = user.bannerUrl
-        websiteUrl = user.websiteUrl
-        twitterUrl = user.twitterUrl
-        instagramUrl = user.instagramUrl
-        location = user.location
-        role = user.role
-        genre = user.genre
-        biography = user.biography
-        walletAddress = user.walletAddress
-        email = user.email!!
-        passwordHash = user.newPassword!!.toHash()
-        companyName = user.companyName
-        companyLogoUrl = user.companyLogoUrl
-        companyIpRights = user.companyIpRights
-    }
-}.id.value
 
 private fun addUserToDatabase(offset: Int): User = transaction {
     UserEntity.new {
