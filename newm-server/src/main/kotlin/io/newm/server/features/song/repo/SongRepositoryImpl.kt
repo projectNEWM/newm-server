@@ -111,6 +111,10 @@ internal class SongRepositoryImpl(
                     mintingStatus?.let { entity.mintingStatus = it }
                     marketplaceStatus?.let { entity.marketplaceStatus = it }
                     paymentKeyId?.let { entity.paymentKeyId = EntityID(it, KeyTable) }
+                    arweaveCoverArtUrl?.let { entity.arweaveCoverArtUrl = it.asValidUrl() }
+                    arweaveLyricsUrl?.let { entity.arweaveLyricsUrl = it.asValidUrl() }
+                    arweaveClipUrl?.let { entity.arweaveClipUrl = it.asValidUrl() }
+                    arweaveTokenAgreementUrl?.let { entity.arweaveTokenAgreementUrl = it.asValidUrl() }
                 }
             }
         }

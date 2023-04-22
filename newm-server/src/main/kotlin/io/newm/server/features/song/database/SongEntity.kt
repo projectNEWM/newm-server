@@ -25,7 +25,7 @@ import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
 
 class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     val createdAt: LocalDateTime by SongTable.createdAt
@@ -55,6 +55,10 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var mintingStatus: MintingStatus by SongTable.mintingStatus
     var marketplaceStatus: MarketplaceStatus by SongTable.marketplaceStatus
     var paymentKeyId: EntityID<UUID>? by SongTable.paymentKeyId
+    var arweaveCoverArtUrl: String? by SongTable.arweaveCoverArtUrl
+    var arweaveLyricsUrl: String? by SongTable.arweaveLyricsUrl
+    var arweaveTokenAgreementUrl: String? by SongTable.arweaveTokenAgreementUrl
+    var arweaveClipUrl: String? by SongTable.arweaveClipUrl
 
     fun toModel(): Song = Song(
         id = id.value,
@@ -84,6 +88,10 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         mintingStatus = mintingStatus,
         marketplaceStatus = marketplaceStatus,
         paymentKeyId = paymentKeyId?.value,
+        arweaveCoverArtUrl = arweaveCoverArtUrl,
+        arweaveLyricsUrl = arweaveLyricsUrl,
+        arweaveTokenAgreementUrl = arweaveTokenAgreementUrl,
+        arweaveClipUrl = arweaveClipUrl
     )
 
     companion object : UUIDEntityClass<SongEntity>(SongTable) {

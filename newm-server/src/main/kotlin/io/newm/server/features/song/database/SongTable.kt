@@ -47,4 +47,8 @@ object SongTable : UUIDTable(name = "songs") {
         enumeration("marketplace_status", MarketplaceStatus::class).default(MarketplaceStatus.NotSelling)
     val paymentKeyId: Column<EntityID<UUID>?> =
         reference("payment_key_id", KeyTable, onDelete = ReferenceOption.NO_ACTION).nullable()
+    val arweaveCoverArtUrl: Column<String?> = text("arweave_cover_art_url").nullable()
+    val arweaveLyricsUrl: Column<String?> = text("arweave_lyrics_url").nullable()
+    val arweaveTokenAgreementUrl: Column<String?> = text("arweave_token_agreement_url").nullable()
+    val arweaveClipUrl: Column<String?> = text("arweave_clip_url").nullable()
 }

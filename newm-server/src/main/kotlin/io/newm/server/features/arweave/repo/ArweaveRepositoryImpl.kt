@@ -167,12 +167,12 @@ class ArweaveRepositoryImpl(
     override suspend fun uploadSongAssets(song: Song) {
         val songUpdateMutex = Mutex()
         listOfNotNull(
-            song.arweaveCoverArt?.let { null } ?: (
+            song.arweaveCoverArtUrl?.let { null } ?: (
                 song.coverArtUrl.asValidUrl().replace(IMAGE_WEBP_REPLACE_REGEX, ".webp") to "image/webp"
                 ),
-            song.arweaveTokenAgreement?.let { null } ?: (song.tokenAgreementUrl.asValidUrl() to "application/pdf"),
-            song.arweaveClip?.let { null } ?: (song.clipUrl.asValidUrl() to "audio/mpeg"),
-            song.arweaveLyrics?.let { null } ?: (song.lyricsUrl?.let { it.asValidUrl() to "text/plain" }),
+            song.arweaveTokenAgreementUrl?.let { null } ?: (song.tokenAgreementUrl.asValidUrl() to "application/pdf"),
+            song.arweaveClipUrl?.let { null } ?: (song.clipUrl.asValidUrl() to "audio/mpeg"),
+            song.arweaveLyricsUrl?.let { null } ?: (song.lyricsUrl?.let { it.asValidUrl() to "text/plain" }),
         ).map { (url, mimeType) ->
             async {
                 try {
@@ -207,17 +207,16 @@ class ArweaveRepositoryImpl(
                     awaitTransactionSettlement(transactionId)
 
                     songUpdateMutex.withLock {
-                        val dbSong = songRepository.get(song.id!!)
                         val songToUpdate = when (mimeType) {
-                            "image/webp" -> dbSong.copy(arweaveCoverArt = "ar://$transactionId")
-                            "application/pdf" -> dbSong.copy(arweaveTokenAgreement = "ar://$transactionId")
-                            "audio/mpeg" -> dbSong.copy(arweaveClip = "ar://$transactionId")
-                            "text/plain" -> dbSong.copy(arweaveLyrics = "ar://$transactionId")
+                            "image/webp" -> Song(arweaveCoverArtUrl = "ar://$transactionId")
+                            "application/pdf" -> Song(arweaveTokenAgreementUrl = "ar://$transactionId")
+                            "audio/mpeg" -> Song(arweaveClipUrl = "ar://$transactionId")
+                            "text/plain" -> Song(arweaveLyricsUrl = "ar://$transactionId")
                             else -> throw IllegalStateException()
                         }
 
                         // We're on chain now. Update the song record
-                        songRepository.update(song.id, songToUpdate)
+                        songRepository.update(song.id!!, songToUpdate)
                     }
                 } catch (e: Throwable) {
                     // just log and swallow all exceptions so others can potentially succeed
