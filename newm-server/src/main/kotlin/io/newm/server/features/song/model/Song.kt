@@ -4,6 +4,7 @@ import io.newm.shared.serialization.LocalDateSerializer
 import io.newm.shared.serialization.LocalDateTimeSerializer
 import io.newm.shared.serialization.UUIDSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
@@ -44,11 +45,12 @@ data class Song(
     val marketplaceStatus: MarketplaceStatus? = null,
     @Serializable(with = UUIDSerializer::class)
     val paymentKeyId: UUID? = null,
-
-    // FIXME: remove these and rebase on top of Walter's implementation. I just need them temporarily here so
-    // I can move forward with the code.
-    val arweaveCoverArt: String? = null,
-    val arweaveTokenAgreement: String? = null,
-    val arweaveClip: String? = null,
-    val arweaveLyrics: String? = null,
+    @Transient
+    val arweaveCoverArtUrl: String? = null,
+    @Transient
+    val arweaveLyricsUrl: String? = null,
+    @Transient
+    val arweaveTokenAgreementUrl: String? = null,
+    @Transient
+    val arweaveClipUrl: String? = null,
 )
