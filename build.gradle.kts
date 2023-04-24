@@ -104,8 +104,6 @@ subprojects {
             "EMAIL_AUTH_FROM" to "",
             "SENTRY_DSN" to "",
             "CLOUDINARY_URL" to "",
-            "AWS_ACCESS_KEY_ID" to "",
-            "AWS_SECRET_KEY" to "",
             "AWS_REGION" to "",
             "AWS_AUDIO_BUCKET" to "",
             "AWS_AUDIO_SQS_QUEUE_URL" to "",
