@@ -1,7 +1,7 @@
 package io.newm.server.features.song.repo
 
 import com.amazonaws.HttpMethod
-import com.amazonaws.auth.BasicAWSCredentials
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain
 import com.amazonaws.services.s3.AmazonS3
 import com.google.iot.cbor.CborInteger
 import io.ktor.server.application.ApplicationEnvironment
@@ -208,10 +208,7 @@ internal class SongRepositoryImpl(
         return s3.createPresignedPost {
             bucket = config.getString("bucketName")
             key = "$songId/$fileName"
-            credentials = BasicAWSCredentials(
-                environment.getConfigString("aws.accessKeyId"),
-                environment.getConfigString("aws.secretKey")
-            )
+            credentials = DefaultAWSCredentialsProviderChain.getInstance().credentials
             conditions = listOf(
                 ContentLengthRangeCondition(
                     config.getLong("minUploadSizeMB") * 1024 * 1024,
