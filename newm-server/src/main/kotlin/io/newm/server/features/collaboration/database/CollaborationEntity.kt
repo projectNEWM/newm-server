@@ -27,6 +27,7 @@ class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var email: String by CollaborationTable.email
     var role: String? by CollaborationTable.role
     var royaltyRate: Float? by CollaborationTable.royaltyRate
+    var credited: Boolean by CollaborationTable.credited
     var accepted: Boolean by CollaborationTable.accepted
 
     fun toModel(): Collaboration = Collaboration(
@@ -36,6 +37,7 @@ class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         email = email,
         role = role,
         royaltyRate = royaltyRate,
+        credited = credited,
         accepted = accepted,
     )
 
