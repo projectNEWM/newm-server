@@ -21,7 +21,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf
 import java.util.UUID
 
-internal class CollaborationRepositoryImpl() : CollaborationRepository {
+internal class CollaborationRepositoryImpl : CollaborationRepository {
 
     private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
 
@@ -39,6 +39,7 @@ internal class CollaborationRepositoryImpl() : CollaborationRepository {
                 this.email = email
                 this.role = collaboration.role
                 this.royaltyRate = collaboration.royaltyRate
+                collaboration.credited?.let { this.credited = it }
             }.id.value
         }
     }
@@ -54,6 +55,7 @@ internal class CollaborationRepositoryImpl() : CollaborationRepository {
             collaboration.email?.let { entity.email = it.asValidEmail() }
             collaboration.role?.let { entity.role = it }
             collaboration.royaltyRate?.let { entity.royaltyRate = it }
+            collaboration.credited?.let { entity.credited = it }
         }
     }
 

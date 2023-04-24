@@ -17,5 +17,6 @@ data class Collaboration(
     val email: String? = null,
     var role: String? = null,
     val royaltyRate: Float? = null,
+    val credited: Boolean? = null,
     val accepted: Boolean? = null
 )

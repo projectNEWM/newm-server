@@ -61,7 +61,8 @@ class CollaborationRoutesTests : BaseApplicationTests() {
             songId = songId,
             email = "collaborator@email.com",
             role = "Role",
-            royaltyRate = 0.5f
+            royaltyRate = 0.5f,
+            credited = true
         )
 
         // Post
@@ -80,18 +81,20 @@ class CollaborationRoutesTests : BaseApplicationTests() {
         assertThat(actualCollaboration.email).isEqualTo(expectedCollaboration.email)
         assertThat(actualCollaboration.role).isEqualTo(expectedCollaboration.role)
         assertThat(actualCollaboration.royaltyRate).isEqualTo(expectedCollaboration.royaltyRate)
+        assertThat(actualCollaboration.credited).isEqualTo(expectedCollaboration.credited)
         assertThat(actualCollaboration.accepted).isEqualTo(false)
     }
 
     @Test
     fun testPatchCollaboration() = runBlocking {
         // Add Collaboration directly into database
-        val collaboration1 = addCollaborationToDatabase(testUserId, 1)
+        val collaboration1 = addCollaborationToDatabase(testUserId)
 
         val collaboration2 = Collaboration(
             email = "collaborator2@email.com",
             role = "Role2",
-            royaltyRate = 0.2f
+            royaltyRate = 0.2f,
+            credited = false
         )
 
         // Patch collaboration1 with collaboration2
@@ -110,13 +113,14 @@ class CollaborationRoutesTests : BaseApplicationTests() {
         assertThat(collaboration.email).isEqualTo(collaboration2.email)
         assertThat(collaboration.role).isEqualTo(collaboration2.role)
         assertThat(collaboration.royaltyRate).isEqualTo(collaboration2.royaltyRate)
+        assertThat(collaboration.credited).isEqualTo(collaboration1.credited)
         assertThat(collaboration.accepted).isEqualTo(collaboration1.accepted)
     }
 
     @Test
     fun testDeleteCollaboration() = runBlocking {
         // Add Collaboration directly into database
-        val collaborationId = addCollaborationToDatabase(testUserId, 1).id!!
+        val collaborationId = addCollaborationToDatabase(testUserId).id!!
 
         // delete it
         val response = client.delete("v1/collaborations/$collaborationId") {
@@ -132,7 +136,7 @@ class CollaborationRoutesTests : BaseApplicationTests() {
     @Test
     fun testGetCollaboration() = runBlocking {
         // Add Collaboration directly into database
-        val expectedCollaboration = addCollaborationToDatabase(testUserId, 1)
+        val expectedCollaboration = addCollaborationToDatabase(testUserId)
 
         // Get it
         val response = client.get("v1/collaborations/${expectedCollaboration.id}") {
@@ -433,7 +437,7 @@ class CollaborationRoutesTests : BaseApplicationTests() {
     }
 }
 
-private fun addCollaborationToDatabase(userId: UUID, offset: Int, email: String? = null): Collaboration {
+private fun addCollaborationToDatabase(userId: UUID, offset: Int = 0, email: String? = null): Collaboration {
     val songId = transaction {
         SongEntity.new {
             ownerId = EntityID(userId, UserTable)
@@ -447,6 +451,7 @@ private fun addCollaborationToDatabase(userId: UUID, offset: Int, email: String?
             this.email = email ?: "collaborator$offset@email.com"
             role = "Role$offset"
             royaltyRate = 1f / (offset + 2)
+            credited = (offset % 2) == 1
             accepted = (offset % 2) == 0
         }
     }.toModel()

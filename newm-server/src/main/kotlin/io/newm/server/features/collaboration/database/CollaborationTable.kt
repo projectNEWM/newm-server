@@ -17,5 +17,6 @@ object CollaborationTable : UUIDTable(name = "collaborations") {
     val email: Column<String> = text("email")
     val role: Column<String?> = text("role").nullable()
     val royaltyRate: Column<Float?> = float("royalty_rate").nullable()
+    val credited: Column<Boolean> = bool("credited").default(false)
     val accepted: Column<Boolean> = bool("accepted").default(false)
 }
