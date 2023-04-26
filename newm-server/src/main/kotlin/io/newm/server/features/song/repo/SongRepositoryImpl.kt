@@ -256,7 +256,7 @@ internal class SongRepositoryImpl(
         checkRequester(songId, requesterId)
 
         val key = Key.generateNew()
-        val keyId = cardanoRepository.add(key)
+        val keyId = cardanoRepository.saveKey(key)
         val amount = configRepository.getLong(CONFIG_ID_MINT_PRICE)
         val transaction = cardanoRepository.buildTransaction {
             this.sourceUtxos.addAll(sourceUtxos)

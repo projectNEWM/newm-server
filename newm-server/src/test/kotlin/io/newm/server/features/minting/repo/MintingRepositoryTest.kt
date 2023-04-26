@@ -291,7 +291,7 @@ class MintingRepositoryTest : BaseApplicationTests() {
             mintingStatus = MintingStatus.Pending
         )
 
-        val mintingRepository = MintingRepositoryImpl(mockk(), collabRepository)
+        val mintingRepository = MintingRepositoryImpl(mockk(), collabRepository, mockk(), mockk())
 
         val plutusDataHex =
             mintingRepository.buildStreamTokenMetadata(song, primaryArtist, collabs).toCborObject().toCborByteArray()

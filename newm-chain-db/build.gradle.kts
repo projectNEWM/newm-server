@@ -48,11 +48,6 @@ dependencies {
     implementation(Dependencies.Cbor.CBOR)
     implementation(Dependencies.ApacheCommonsCodec.ALL)
     implementation(Dependencies.BouncyCastle.BCPROV)
-    implementation(Dependencies.SpringSecurity.CORE) {
-        // We don't care about other spring stuff.
-        // We just like using Encryptors.stronger
-        exclude(group = "org.springframework")
-    }
 
     testImplementation(Dependencies.JUnit.JUPITER)
     testImplementation(Dependencies.Mockk.MOCKK)

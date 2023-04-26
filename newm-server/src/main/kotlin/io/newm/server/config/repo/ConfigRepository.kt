@@ -10,4 +10,5 @@ interface ConfigRepository {
     suspend fun getInts(id: String): List<Int>
     suspend fun getBoolean(id: String): Boolean
     suspend fun getBooleans(id: String): List<Boolean>
+    suspend fun putString(id: String, value: String)
 }

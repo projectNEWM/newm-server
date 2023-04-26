@@ -8,7 +8,7 @@
         <minimumEventLevel>WARN</minimumEventLevel>
         <minimumBreadcrumbLevel>DEBUG</minimumBreadcrumbLevel>
     </appender>
-    <root level="trace">
+    <root level="INFO">
         <appender-ref ref="STDOUT"/>
         <appender-ref ref="Sentry"/>
     </root>

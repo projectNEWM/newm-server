@@ -24,6 +24,7 @@ class KeyEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var address: String by KeyTable.address
     var script: String? by KeyTable.script
     var scriptAddress: String? by KeyTable.scriptAddress
+    var name: String? by KeyTable.name
 
     fun toModel(skeyBytes: ByteArray): Key = Key(
         id = id.value,

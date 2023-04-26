@@ -6,20 +6,26 @@ import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.install
 import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.response.respond
-import io.newm.shared.exception.HttpStatusException
 import io.newm.server.logging.captureToSentry
+import io.newm.shared.exception.HttpStatusException
+import io.newm.shared.koin.inject
 import org.jetbrains.exposed.dao.exceptions.EntityNotFoundException
 import org.jetbrains.exposed.exceptions.ExposedSQLException
+import org.koin.core.parameter.parametersOf
+import org.slf4j.Logger
 
 fun Application.installStatusPages() {
     install(StatusPages) {
+        val logger: Logger by inject { parametersOf(javaClass.simpleName) }
         exception<Throwable> { call, cause ->
             when (cause) {
                 is HttpStatusException -> call.respondStatus(cause.statusCode, cause)
                 is EntityNotFoundException -> call.respondStatus(HttpStatusCode.NotFound, cause)
                 is IllegalArgumentException,
                 is ExposedSQLException -> call.respondStatus(HttpStatusCode.UnprocessableEntity, cause)
+
                 else -> {
+                    logger.error("InternalServerError", cause)
                     call.respondStatus(HttpStatusCode.InternalServerError, cause)
                     cause.captureToSentry()
                 }

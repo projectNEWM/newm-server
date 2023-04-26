@@ -33,4 +33,5 @@ object UserTable : UUIDTable(name = "users") {
     val companyName: Column<String?> = text("company_name").nullable()
     val companyLogoUrl: Column<String?> = text("company_logo_url").nullable()
     val companyIpRights: Column<Boolean?> = bool("company_ip_rights").nullable()
+    val admin: Column<Boolean> = bool("admin").default(false)
 }

@@ -7,6 +7,7 @@ import io.ktor.util.logging.Logger
 import io.newm.server.auth.jwt.JwtType
 import io.newm.server.auth.jwt.database.JwtEntity
 import io.newm.server.features.user.database.UserTable
+import io.newm.server.ktx.getSecureConfigString
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.debug
 import io.newm.shared.ktx.existsHavingId
@@ -25,7 +26,7 @@ class JwtRepositoryImpl(
 
     private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
 
-    override suspend fun create(type: JwtType, userId: UUID): String {
+    override suspend fun create(type: JwtType, userId: UUID, admin: Boolean): String {
         logger.debug { "create: type = $type, userId = $userId" }
 
         val expiresAt = LocalDateTime
@@ -47,7 +48,8 @@ class JwtRepositoryImpl(
             .withSubject(userId.toString())
             .withExpiresAt(expiresAt.toDate())
             .withClaim("type", type.name)
-            .sign(Algorithm.HMAC256(environment.getConfigString("jwt.secret")))
+            .withClaim("admin", admin)
+            .sign(Algorithm.HMAC256(environment.getSecureConfigString("jwt.secret")))
     }
 
     override suspend fun delete(jwtId: UUID) {

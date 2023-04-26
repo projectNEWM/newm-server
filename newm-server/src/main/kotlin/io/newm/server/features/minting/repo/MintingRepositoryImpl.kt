@@ -2,10 +2,13 @@ package io.newm.server.features.minting.repo
 
 import com.google.common.annotations.VisibleForTesting
 import io.newm.chain.grpc.PlutusData
+import io.newm.chain.grpc.Utxo
 import io.newm.chain.grpc.plutusData
 import io.newm.chain.grpc.plutusDataList
 import io.newm.chain.grpc.plutusDataMap
 import io.newm.chain.grpc.plutusDataMapItem
+import io.newm.server.config.repo.ConfigRepository
+import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.collaboration.model.Collaboration
 import io.newm.server.features.collaboration.model.CollaborationFilters
 import io.newm.server.features.collaboration.repo.CollaborationRepository
@@ -23,6 +26,8 @@ import kotlin.time.Duration.Companion.seconds
 class MintingRepositoryImpl(
     private val userRepository: UserRepository,
     private val collabRepository: CollaborationRepository,
+    private val cardanoRepository: CardanoRepository,
+    private val configRepository: ConfigRepository,
 ) : MintingRepository {
 
     private val log: Logger by inject { parametersOf(javaClass.simpleName) }
@@ -41,9 +46,33 @@ class MintingRepositoryImpl(
             0,
             Integer.MAX_VALUE
         )
-        val metadata = buildStreamTokenMetadata(song, user, collabs)
+        val cip68Metadata = buildStreamTokenMetadata(song, user, collabs)
+        val paymentKey = cardanoRepository.getKey(song.paymentKeyId!!)
+        val mintPriceLovelace = configRepository.getString("mint.price")
+        val paymentUtxo = cardanoRepository.queryLiveUtxos(paymentKey.address)
+            .first { it.lovelace == mintPriceLovelace && it.nativeAssetsCount == 0 }
+        val cashRegisterKey =
+            requireNotNull(cardanoRepository.getKeyByName("cashRegister")) { "cashRegister key not defined!" }
+        val cashRegisterUtxos = cardanoRepository.queryLiveUtxos(cashRegisterKey.address)
+            .filter { it.nativeAssetsCount == 0 }
+            .sortedByDescending { it.lovelace.toLong() }
+            .take(5)
+        val transactionBuilderResponse =
+            buildMintingTransaction(paymentUtxo, cashRegisterUtxos, cashRegisterKey.address)
+        TODO("Finish building tx and submit it.")
+    }
 
-        TODO("Mint the song on the blockchain.")
+    private suspend fun buildMintingTransaction(
+        paymentUtxo: Utxo,
+        cashRegisterUtxos: List<Utxo>,
+        changeAddress: String,
+    ) = cardanoRepository.buildTransaction {
+        with(sourceUtxos) {
+            add(paymentUtxo)
+            addAll(cashRegisterUtxos)
+        }
+
+        this.changeAddress = changeAddress
     }
 
     @VisibleForTesting

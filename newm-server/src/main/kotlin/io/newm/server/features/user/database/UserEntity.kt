@@ -43,6 +43,7 @@ class UserEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var companyName: String? by UserTable.companyName
     var companyLogoUrl: String? by UserTable.companyLogoUrl
     var companyIpRights: Boolean? by UserTable.companyIpRights
+    var admin: Boolean by UserTable.admin
 
     fun toModel(includeAll: Boolean = true) = User(
         id = id.value,

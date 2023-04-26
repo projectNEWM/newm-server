@@ -1,14 +1,17 @@
 package io.newm.server.features.cardano.model
 
+import com.firehose.model.CliKeyPair
 import com.google.iot.cbor.CborArray
 import com.google.iot.cbor.CborByteString
 import com.google.iot.cbor.CborInteger
+import com.google.iot.cbor.CborReader
 import io.newm.chain.util.Bech32
 import io.newm.chain.util.Blake2b
 import io.newm.chain.util.Constants.PAYMENT_ADDRESS_PREFIX_MAINNET
 import io.newm.chain.util.Constants.PAYMENT_ADDRESS_PREFIX_TESTNET
 import io.newm.chain.util.Constants.PAYMENT_ADDRESS_SCRIPT_PREFIX_MAINNET
 import io.newm.chain.util.Constants.PAYMENT_ADDRESS_SCRIPT_PREFIX_TESTNET
+import io.newm.chain.util.hexToByteArray
 import io.newm.chain.util.toHexString
 import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.shared.koin.inject
@@ -21,7 +24,7 @@ import org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters
 import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters
 import java.security.SecureRandom
 import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
 import kotlin.concurrent.getOrSet
 
 @Serializable
@@ -83,6 +86,28 @@ data class Key(
                 skey = skey,
                 vkey = vkey,
                 address = vkeyToAddress(vkey),
+                script = null,
+                scriptAddress = null,
+                createdAt = LocalDateTime.now(),
+            )
+        }
+
+        suspend fun createFromCliKeys(keyPair: CliKeyPair): Key {
+            val skeyBytes = keyPair.skey?.let { skey ->
+                (
+                    CborReader.createFromByteArray(skey.cborHex.hexToByteArray(), 0, 1)
+                        .readDataItem() as CborByteString
+                    ).byteArrayValue()[0]
+            } ?: ByteArray(0)
+            val vkeyBytes = (
+                CborReader.createFromByteArray(keyPair.vkey.cborHex.hexToByteArray(), 0, 1)
+                    .readDataItem() as CborByteString
+                ).byteArrayValue()[0]
+
+            return Key(
+                skey = skeyBytes,
+                vkey = vkeyBytes,
+                address = vkeyToAddress(vkeyBytes),
                 script = null,
                 scriptAddress = null,
                 createdAt = LocalDateTime.now(),

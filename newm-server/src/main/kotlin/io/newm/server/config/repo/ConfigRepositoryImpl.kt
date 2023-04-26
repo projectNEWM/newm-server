@@ -28,4 +28,10 @@ internal class ConfigRepositoryImpl : ConfigRepository {
     override suspend fun getBoolean(id: String): Boolean = getString(id).toBoolean()
 
     override suspend fun getBooleans(id: String): List<Boolean> = getStrings(id).map(String::toBoolean)
+
+    override suspend fun putString(id: String, value: String): Unit = transaction {
+        ConfigEntity.new(id) {
+            this.value = value
+        }
+    }
 }
