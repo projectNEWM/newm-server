@@ -5,6 +5,7 @@ import com.amazonaws.services.sqs.model.SendMessageRequest
 import io.ktor.server.application.ApplicationEnvironment
 import io.newm.chain.grpc.monitorPaymentAddressRequest
 import io.newm.server.aws.SqsMessageReceiver
+import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.features.arweave.repo.ArweaveRepository
 import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.minting.repo.MintingRepository
@@ -29,6 +30,7 @@ class MintingMessageReceiver : SqsMessageReceiver {
     private val cardanoRepository: CardanoRepository by inject()
     private val arweaveRepository: ArweaveRepository by inject()
     private val mintingRepository: MintingRepository by inject()
+    private val configRepository: ConfigRepository by inject()
     private val json: Json by inject()
     private val environment: ApplicationEnvironment by inject()
     private val queueUrl by lazy { environment.getConfigString("aws.sqs.minting.queueUrl") }
@@ -48,11 +50,11 @@ class MintingMessageReceiver : SqsMessageReceiver {
 
             MintingStatus.MintingPaymentRequested -> {
                 val song = songRepository.get(mintingStatusSqsMessage.songId)
-                val paymentKey = cardanoRepository.get(song.paymentKeyId!!)
+                val paymentKey = cardanoRepository.getKey(song.paymentKeyId!!)
                 val response = cardanoRepository.awaitPayment(
                     monitorPaymentAddressRequest {
                         this.address = paymentKey.address
-                        this.lovelace = "6000000" // FIXME: do not hardcode payment amount
+                        this.lovelace = configRepository.getString("mint.price")
                         this.timeoutMs = TimeUnit.HOURS.toMillis(1L) // FIXME: do not hardcode duration to await payment
                     }
                 )

@@ -5,16 +5,18 @@ import com.viartemev.ktor.flyway.Info
 import com.viartemev.ktor.flyway.Migrate
 import com.viartemev.ktor.flyway.Validate
 import com.zaxxer.hikari.HikariDataSource
-import io.ktor.server.application.*
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+import io.newm.server.ktx.getSecureConfigString
 import io.newm.shared.ktx.getConfigString
 import org.jetbrains.exposed.sql.Database
 
-fun Application.initializeDatabase() {
+suspend fun Application.initializeDatabase() {
     val ds = HikariDataSource().apply {
         driverClassName = environment.getConfigString("database.driverClassName")
-        jdbcUrl = environment.getConfigString("database.jdbcUrl")
-        username = environment.getConfigString("database.username")
-        password = environment.getConfigString("database.password")
+        jdbcUrl = environment.getSecureConfigString("database.jdbcUrl")
+        username = environment.getSecureConfigString("database.username")
+        password = environment.getSecureConfigString("database.password")
         isAutoCommit = false
         transactionIsolation = "TRANSACTION_REPEATABLE_READ"
         connectionTimeout = 40_000L

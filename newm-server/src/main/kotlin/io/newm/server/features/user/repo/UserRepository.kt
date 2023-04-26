@@ -8,7 +8,7 @@ import java.util.UUID
 
 interface UserRepository {
     suspend fun add(user: User)
-    suspend fun find(email: String, password: Password): UUID
+    suspend fun find(email: String, password: Password): Pair<UUID, Boolean>
     suspend fun findOrAdd(oauthType: OAuthType, oauthAccessToken: String): UUID
     suspend fun exists(userId: UUID): Boolean
     suspend fun get(userId: UUID, includeAll: Boolean = true): User

@@ -13,4 +13,5 @@ object KeyTable : UUIDTable(name = "keys") {
     val address: Column<String> = text("address")
     val script: Column<String?> = text("script").nullable()
     val scriptAddress: Column<String?> = text("script_address").nullable()
+    val name: Column<String?> = text("name").nullable()
 }

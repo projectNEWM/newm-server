@@ -16,7 +16,7 @@ object Dependencies {
     }
 
     object KotlinPlugin {
-        const val VERSION = "1.8.20"
+        const val VERSION = "1.8.21"
         const val JVM_ID = "jvm"
         const val SERIALIZATION_ID = "plugin.serialization"
     }
@@ -132,7 +132,7 @@ object Dependencies {
     }
 
     object FlywayDB {
-        private const val VERSION = "9.16.3"
+        private const val VERSION = "9.17.0"
 
         const val ALL = "org.flywaydb:flyway-core:$VERSION"
     }
@@ -183,13 +183,15 @@ object Dependencies {
     }
 
     object Aws {
-        private const val VERSION = "1.12.450"
+        private const val VERSION = "1.12.457"
+        private const val JAXB_VERSION = "2.3.1"
 
         const val BOM = "com.amazonaws:aws-java-sdk-bom:$VERSION"
         const val S3 = "com.amazonaws:aws-java-sdk-s3"
         const val SQS = "com.amazonaws:aws-java-sdk-sqs"
         const val KMS = "com.amazonaws:aws-java-sdk-kms"
         const val SECRETS_MANAGER = "com.amazonaws:aws-java-sdk-secretsmanager"
+        const val JAXB = "javax.xml.bind:jaxb-api:$JAXB_VERSION"
     }
 
     object Arweave {
@@ -201,7 +203,7 @@ object Dependencies {
     }
 
     object JUnit {
-        private const val VERSION = "5.9.2"
+        private const val VERSION = "5.9.3"
 
         const val JUPITER = "org.junit.jupiter:junit-jupiter:$VERSION"
     }
@@ -225,7 +227,7 @@ object Dependencies {
     }
 
     object Sentry {
-        private const val VERSION = "6.17.0"
+        private const val VERSION = "6.18.0"
 
         const val CORE = "io.sentry:sentry:$VERSION"
         const val LOGBACK = "io.sentry:sentry-logback:$VERSION"
@@ -238,7 +240,7 @@ object Dependencies {
     }
 
     object Grpc {
-        private const val VERSION = "1.54.0"
+        private const val VERSION = "1.54.1"
 
         const val STUB = "io.grpc:grpc-stub:$VERSION"
         const val API = "io.grpc:grpc-api:$VERSION"

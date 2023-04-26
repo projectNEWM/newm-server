@@ -68,13 +68,14 @@ internal class UserRepositoryImpl(
         }
     }
 
-    override suspend fun find(email: String, password: Password): UUID {
+    override suspend fun find(email: String, password: Password): Pair<UUID, Boolean> {
         logger.debug { "find: email = $email" }
         return transaction {
             val entity = getUserEntityByEmail(email)
             entity.checkNonOAuth()
+            // logger.warn { "password: ${password.toHash()}" }
             password.checkAuth(entity.passwordHash)
-            entity.id.value
+            entity.id.value to entity.admin
         }
     }
 

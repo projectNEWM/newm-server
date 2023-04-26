@@ -70,6 +70,11 @@ dependencies {
     implementation(Dependencies.ApacheCommonsEmail.ALL)
     implementation(Dependencies.JBCrypt.ALL)
     implementation(Dependencies.BouncyCastle.BCPROV)
+    implementation(Dependencies.SpringSecurity.CORE) {
+        // We don't care about other spring stuff.
+        // We just like using Encryptors.stronger
+        exclude(group = "org.springframework")
+    }
     implementation(Dependencies.Cbor.CBOR)
     implementation(Dependencies.Caffeine.ALL)
 
@@ -80,6 +85,7 @@ dependencies {
     implementation(Dependencies.Aws.SQS)
     implementation(Dependencies.Aws.KMS)
     implementation(Dependencies.Aws.SECRETS_MANAGER)
+    implementation(Dependencies.Aws.JAXB)
 
     implementation(Dependencies.Arweave.ARWEAVE4S)
     implementation(Dependencies.Arweave.SCALA_JAVA8_COMPAT)
@@ -102,6 +108,9 @@ tasks {
 
         // defaults to all, so removing this overrides the normal, non-fat jar
         archiveClassifier.set("")
+
+        // ensure gRPC stuff gets merged in
+        mergeServiceFiles()
     }
 }
 

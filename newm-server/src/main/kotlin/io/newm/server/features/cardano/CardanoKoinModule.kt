@@ -7,6 +7,7 @@ import io.ktor.server.application.ApplicationEnvironment
 import io.newm.chain.grpc.NewmChainGrpcKt.NewmChainCoroutineStub
 import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.cardano.repo.CardanoRepositoryImpl
+import io.newm.shared.ktx.getConfigBoolean
 import io.newm.shared.ktx.getConfigInt
 import io.newm.shared.ktx.getConfigString
 import org.koin.dsl.module
@@ -16,7 +17,8 @@ val cardanoKoinModule = module {
         CardanoRepositoryImpl(
             get(),
             get(),
-            get<ApplicationEnvironment>().getConfigString("aws.kms.keyId")
+            get<ApplicationEnvironment>().getConfigString("aws.kms.keyId"),
+            get(),
         )
     }
     single<NewmChainCoroutineStub> {
@@ -24,7 +26,14 @@ val cardanoKoinModule = module {
         val host = environment.getConfigString("newmChain.host")
         val port = environment.getConfigInt("newmChain.port")
         val jwt = environment.getConfigString("newmChain.jwt")
-        val channel = ManagedChannelBuilder.forAddress(host, port).useTransportSecurity().build()
+        val secure = environment.getConfigBoolean("newmChain.secure")
+        val channel = ManagedChannelBuilder.forAddress(host, port).apply {
+            if (secure) {
+                useTransportSecurity()
+            } else {
+                usePlaintext()
+            }
+        }.build()
         NewmChainCoroutineStub(channel).withInterceptors(
             MetadataUtils.newAttachHeadersInterceptor(
                 Metadata().apply {

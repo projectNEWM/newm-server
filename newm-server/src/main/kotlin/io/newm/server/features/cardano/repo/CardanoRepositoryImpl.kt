@@ -6,6 +6,7 @@ import com.amazonaws.services.kms.model.DecryptRequest
 import com.amazonaws.services.kms.model.DecryptResult
 import com.amazonaws.services.kms.model.EncryptRequest
 import com.amazonaws.services.kms.model.EncryptResult
+import io.newm.server.features.cardano.model.EncryptionRequest
 import com.github.benmanes.caffeine.cache.Caffeine
 import io.ktor.network.util.DefaultByteBufferPool
 import io.newm.chain.grpc.IsMainnetRequest
@@ -13,19 +14,27 @@ import io.newm.chain.grpc.MonitorPaymentAddressRequest
 import io.newm.chain.grpc.NewmChainGrpcKt.NewmChainCoroutineStub
 import io.newm.chain.grpc.TransactionBuilderRequestKt
 import io.newm.chain.grpc.TransactionBuilderResponse
+import io.newm.chain.grpc.Utxo
+import io.newm.chain.grpc.queryUtxosRequest
 import io.newm.chain.util.b64ToByteArray
 import io.newm.chain.util.toB64String
 import io.newm.chain.util.toHexString
 import io.newm.kogmios.protocols.model.QueryCurrentProtocolBabbageParametersResult
+import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.features.cardano.database.KeyEntity
+import io.newm.server.features.cardano.database.KeyTable
 import io.newm.server.features.cardano.model.Key
-import io.newm.shared.ktx.debug
 import io.newm.shared.koin.inject
+import io.newm.shared.ktx.debug
+import io.newm.shared.ktx.isValidHex
+import io.newm.shared.ktx.isValidPassword
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf
 import org.slf4j.Logger
+import org.springframework.security.crypto.encrypt.BytesEncryptor
+import org.springframework.security.crypto.encrypt.Encryptors
 import java.time.Duration
-import java.util.*
+import java.util.UUID
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
@@ -34,14 +43,17 @@ internal class CardanoRepositoryImpl(
     private val client: NewmChainCoroutineStub,
     private val kms: AWSKMSAsync,
     private val kmsKeyId: String,
+    private val configRepository: ConfigRepository,
 ) : CardanoRepository {
 
     private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
 
     private var _isMainnet: Boolean? = null
 
-    override suspend fun add(key: Key): UUID {
-        logger.debug { "add: key = $key" }
+    private var _bytesEncryptor: BytesEncryptor? = null
+
+    override suspend fun saveKey(key: Key, name: String?): UUID {
+        logger.debug { "add: key = $key, name: $name" }
         val eSkey = encryptSkey(key.skey)
         return transaction {
             KeyEntity.new {
@@ -50,16 +62,26 @@ internal class CardanoRepositoryImpl(
                 vkey = key.vkey.toHexString()
                 script = key.script
                 scriptAddress = key.scriptAddress
+                this.name = name
             }.id.value
         }
     }
 
-    override suspend fun get(keyId: UUID): Key {
+    override suspend fun getKey(keyId: UUID): Key {
         logger.debug { "get: keyId = $keyId" }
         val keyEntity = transaction {
             KeyEntity[keyId]
         }
         return keyEntity.toModel(decryptSkey(keyEntity.skey))
+    }
+
+    override suspend fun getKeyByName(name: String): Key? {
+        logger.debug { "getByName: name = $name" }
+        return transaction {
+            KeyEntity.find { KeyTable.name eq name }.firstOrNull()
+        }?.let {
+            it.toModel(decryptSkey(it.skey))
+        }
     }
 
     override suspend fun isMainnet(): Boolean {
@@ -80,6 +102,15 @@ internal class CardanoRepositoryImpl(
         .expireAfterWrite(Duration.ofHours(1))
         .build<Long, QueryCurrentProtocolBabbageParametersResult>()
 
+    override suspend fun queryLiveUtxos(address: String): List<Utxo> {
+        val response = client.queryLiveUtxos(
+            queryUtxosRequest {
+                this.address = address
+            }
+        )
+        return response.utxosList
+    }
+
     override suspend fun buildTransaction(block: TransactionBuilderRequestKt.Dsl.() -> Unit): TransactionBuilderResponse {
         val request = io.newm.chain.grpc.transactionBuilderRequest {
             block.invoke(this)
@@ -89,10 +120,25 @@ internal class CardanoRepositoryImpl(
 
     override suspend fun awaitPayment(request: MonitorPaymentAddressRequest) = client.monitorPaymentAddress(request)
 
-    private suspend fun encryptSkey(skey: ByteArray): String {
+    override suspend fun saveEncryptionParams(encryptionRequest: EncryptionRequest) {
+        require(encryptionRequest.s.isValidHex()) { "Salt value is not a hex string!" }
+        require(encryptionRequest.s.length >= 16) { "Salt value is not long enough!" }
+        require(encryptionRequest.password.length > 30) { "Password is not long enough!" }
+        require(encryptionRequest.password.isValidPassword()) { "Password must have upper,lower,number characters!" }
+        require(!configRepository.exists("encryption.salt")) { "Salt already exists in config table!" }
+        require(!configRepository.exists("encryption.password")) { "Password already exists in config table!" }
+
+        val cipherSalt = encryptKmsBytes(encryptionRequest.s.toByteArray())
+        val cipherPassword = encryptKmsBytes(encryptionRequest.password.toByteArray())
+
+        configRepository.putString(CONFIG_KEY_ENCRYPTION_SALT, cipherSalt)
+        configRepository.putString(CONFIG_KEY_ENCRYPTION_PASSWORD, cipherPassword)
+    }
+
+    private suspend fun encryptKmsBytes(bytes: ByteArray): String {
         val plaintextBuffer = DefaultByteBufferPool.borrow()
         try {
-            plaintextBuffer.put(skey)
+            plaintextBuffer.put(bytes)
             plaintextBuffer.flip()
             return suspendCoroutine { continuation ->
                 kms.encryptAsync(
@@ -116,10 +162,17 @@ internal class CardanoRepositoryImpl(
         }
     }
 
-    private suspend fun decryptSkey(b64Skey: String): ByteArray {
+    val kmsCache = Caffeine.newBuilder().expireAfterWrite(Duration.ofDays(1)).build<String, ByteArray>()
+
+    private suspend fun decryptKmsString(cipherText: String): ByteArray {
+        val cachedPlaintext = kmsCache.getIfPresent(cipherText)
+        if (cachedPlaintext != null) {
+            return cachedPlaintext
+        }
+
         val ciphertextBuffer = DefaultByteBufferPool.borrow()
         try {
-            ciphertextBuffer.put(b64Skey.b64ToByteArray())
+            ciphertextBuffer.put(cipherText.b64ToByteArray())
             ciphertextBuffer.flip()
 
             return suspendCoroutine { continuation ->
@@ -127,6 +180,7 @@ internal class CardanoRepositoryImpl(
                     DecryptRequest().withKeyId(kmsKeyId).withCiphertextBlob(ciphertextBuffer),
                     object : AsyncHandler<DecryptRequest, DecryptResult> {
                         override fun onError(exception: Exception) {
+                            kmsCache.invalidate(cipherText)
                             continuation.resumeWithException(exception)
                         }
 
@@ -134,6 +188,7 @@ internal class CardanoRepositoryImpl(
                             val plaintextBuffer = result.plaintext.asReadOnlyBuffer()
                             val plaintext = ByteArray(plaintextBuffer.remaining())
                             plaintextBuffer.get(plaintext)
+                            kmsCache.put(cipherText, plaintext)
                             continuation.resume(plaintext)
                         }
                     }
@@ -142,5 +197,31 @@ internal class CardanoRepositoryImpl(
         } finally {
             DefaultByteBufferPool.recycle(ciphertextBuffer)
         }
+    }
+
+    private suspend fun encryptSkey(bytes: ByteArray): String {
+        return getEncryptor().encrypt(bytes).toB64String()
+    }
+
+    private suspend fun decryptSkey(ciphertext: String): ByteArray {
+        return getEncryptor().decrypt(ciphertext.b64ToByteArray())
+    }
+
+    private suspend fun getEncryptor(): BytesEncryptor {
+        return _bytesEncryptor ?: run {
+            require(configRepository.exists(CONFIG_KEY_ENCRYPTION_SALT))
+            require(configRepository.exists(CONFIG_KEY_ENCRYPTION_PASSWORD))
+            val cipherTextSalt = configRepository.getString(CONFIG_KEY_ENCRYPTION_SALT)
+            val cipherTextPassword = configRepository.getString(CONFIG_KEY_ENCRYPTION_PASSWORD)
+            val salt = String(decryptKmsString(cipherTextSalt), Charsets.UTF_8)
+            val password = String(decryptKmsString(cipherTextPassword), Charsets.UTF_8)
+            _bytesEncryptor = Encryptors.stronger(password, salt)
+            _bytesEncryptor!!
+        }
+    }
+
+    companion object {
+        private const val CONFIG_KEY_ENCRYPTION_SALT = "encryption.salt"
+        private const val CONFIG_KEY_ENCRYPTION_PASSWORD = "encryption.password"
     }
 }

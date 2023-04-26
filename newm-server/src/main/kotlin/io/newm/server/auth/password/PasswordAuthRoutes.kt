@@ -15,6 +15,7 @@ fun Routing.createPasswordAuthRoutes() {
 
     post("$AUTH_PATH/login") {
         val (email, password) = receive<LoginRequest>()
-        respond(jwtRepository.createLoginResponse(userRepository.find(email, password)))
+        val (uuid, admin) = userRepository.find(email, password)
+        respond(jwtRepository.createLoginResponse(uuid, admin))
     }
 }
