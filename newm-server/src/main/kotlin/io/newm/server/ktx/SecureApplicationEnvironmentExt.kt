@@ -6,6 +6,7 @@ import com.amazonaws.services.secretsmanager.model.GetSecretValueRequest
 import com.amazonaws.services.secretsmanager.model.GetSecretValueResult
 import com.github.benmanes.caffeine.cache.Caffeine
 import io.ktor.server.application.ApplicationEnvironment
+import io.ktor.server.config.ApplicationConfig
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.getString
 import kotlinx.coroutines.sync.Mutex
@@ -30,8 +31,10 @@ private val secretsCache =
  * of key/value pairs from secrets manager and then lookup the path value. Otherwise, just return the set value
  * as-is.
  */
-suspend fun ApplicationEnvironment.getSecureConfigString(path: String): String {
-    val configValue = config.getString(path)
+suspend fun ApplicationEnvironment.getSecureConfigString(path: String): String = config.getSecureString(path)
+
+suspend fun ApplicationConfig.getSecureString(path: String): String {
+    val configValue = getString(path)
     if (!configValue.startsWith("arn:aws:secretsmanager")) {
         return configValue
     }

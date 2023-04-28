@@ -15,5 +15,6 @@ fun Routing.createAuthenticationRoutes() {
     createOAuthRoutes(OAuthType.Google)
     createOAuthRoutes(OAuthType.Facebook)
     createOAuthRoutes(OAuthType.LinkedIn)
+    createOAuthRoutes(OAuthType.Apple)
     createJwtRoutes()
 }
