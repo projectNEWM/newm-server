@@ -22,7 +22,11 @@ fun Application.installStatusPages() {
                 is HttpStatusException -> call.respondStatus(cause.statusCode, cause)
                 is EntityNotFoundException -> call.respondStatus(HttpStatusCode.NotFound, cause)
                 is IllegalArgumentException,
-                is ExposedSQLException -> call.respondStatus(HttpStatusCode.UnprocessableEntity, cause)
+                is ExposedSQLException -> {
+                    logger.error(cause.message, cause)
+                    call.respondStatus(HttpStatusCode.UnprocessableEntity, cause)
+                    cause.captureToSentry()
+                }
 
                 else -> {
                     logger.error("InternalServerError", cause)

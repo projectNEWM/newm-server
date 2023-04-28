@@ -34,8 +34,8 @@ build
 # test files
 startServer.sh
 stopServer.sh
-createKey_localhost.sh
-createEncryptor_localhost.sh
+createKey_*.sh
+createEncryptor_*.sh
 
 .elasticbeanstalk
 
