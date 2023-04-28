@@ -2,6 +2,8 @@ package io.newm.shared.ktx
 
 import at.favre.lib.crypto.bcrypt.BCrypt
 import java.net.URL
+import java.net.URLConnection
+import java.net.URLStreamHandler
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -25,6 +27,14 @@ private val HEX_REGEX = Regex(
     option = RegexOption.IGNORE_CASE,
 )
 
+// Allows validating URL format ignoring the protocol value (e.g., "s3:", "ar:")
+private object DummyURLHandler : URLStreamHandler() {
+    override fun openConnection(url: URL): URLConnection = object : URLConnection(url) {
+        override fun connect() {
+        }
+    }
+}
+
 fun String.toUUID(): UUID = UUID.fromString(this)
 
 fun String.isValidEmail(): Boolean = EMAIL_REGEX.matches(this)
@@ -34,7 +44,7 @@ fun String.isValidPassword(): Boolean = PASSWORD_REGEX.matches(this)
 fun String.isValidHex(): Boolean = HEX_REGEX.matches(this)
 
 fun String.isValidUrl(): Boolean = try {
-    URL(this).toURI()
+    URL(null, this, DummyURLHandler).toURI()
     true
 } catch (_: Exception) {
     false
