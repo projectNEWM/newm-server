@@ -6,6 +6,7 @@ import io.newm.server.auth.twofactor.repo.TwoFactorAuthRepository
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.model.User
 import io.newm.server.features.user.model.UserFilters
+import io.newm.server.features.user.oauth.providers.AppleUserProvider
 import io.newm.server.features.user.oauth.providers.FacebookUserProvider
 import io.newm.server.features.user.oauth.providers.GoogleUserProvider
 import io.newm.server.features.user.oauth.providers.LinkedInUserProvider
@@ -31,6 +32,7 @@ internal class UserRepositoryImpl(
     private val googleUserProvider: GoogleUserProvider,
     private val facebookUserProvider: FacebookUserProvider,
     private val linkedInUserProvider: LinkedInUserProvider,
+    private val appleUserProvider: AppleUserProvider,
     private val twoFactorAuthRepository: TwoFactorAuthRepository
 ) : UserRepository {
 
@@ -86,6 +88,7 @@ internal class UserRepositoryImpl(
             OAuthType.Google -> googleUserProvider.getUser(oauthAccessToken)
             OAuthType.Facebook -> facebookUserProvider.getUser(oauthAccessToken)
             OAuthType.LinkedIn -> linkedInUserProvider.getUser(oauthAccessToken)
+            OAuthType.Apple -> appleUserProvider.getUser(oauthAccessToken)
         }
         logger.debug { "findOrAdd: oauthUser = $user" }
 

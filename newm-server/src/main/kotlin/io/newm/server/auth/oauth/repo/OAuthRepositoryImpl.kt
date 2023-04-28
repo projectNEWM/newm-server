@@ -7,10 +7,11 @@ import io.ktor.http.Parameters
 import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.util.logging.Logger
 import io.newm.server.auth.oauth.OAuthType
-import io.newm.server.ktx.getSecureConfigString
+import io.newm.server.ktx.getSecureString
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.debug
-import io.newm.shared.ktx.getConfigString
+import io.newm.shared.ktx.getConfigChild
+import io.newm.shared.ktx.getString
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.koin.core.parameter.parametersOf
@@ -18,7 +19,9 @@ import org.koin.core.parameter.parametersOf
 @Serializable
 private data class TokenResponse(
     @SerialName("access_token")
-    val accessToken: String
+    val accessToken: String,
+    @SerialName("refresh_token")
+    val refreshToken: String
 )
 
 class OAuthRepositoryImpl(
@@ -30,16 +33,19 @@ class OAuthRepositoryImpl(
     override suspend fun getAccessToken(type: OAuthType, code: String, redirectUri: String): String {
         logger.debug { "getAccessToken: type = $type, redirectUri=$redirectUri" }
 
-        val configPath = "oauth.${type.name.lowercase()}"
-        return httpClient.submitForm(
-            url = environment.getConfigString("$configPath.accessTokenUrl"),
-            formParameters = Parameters.build {
-                append("grant_type", "authorization_code")
-                append("code", code)
-                append("redirect_uri", redirectUri)
-                append("client_id", environment.getSecureConfigString("$configPath.clientId"))
-                append("client_secret", environment.getSecureConfigString("$configPath.clientSecret"))
-            }
-        ).body<TokenResponse>().accessToken
+        return with(environment.getConfigChild("oauth.${type.name.lowercase()}")) {
+            val resp = httpClient.submitForm(
+                url = getString("accessTokenUrl"),
+                formParameters = Parameters.build {
+                    append("grant_type", "authorization_code")
+                    append("code", code)
+                    append("redirect_uri", redirectUri)
+                    append("client_id", getSecureString("clientId"))
+                    append("client_secret", getSecureString("clientSecret"))
+                }
+            ).body<TokenResponse>()
+            // currently for Apple, accessToken is useless and refreshToken is really what we want
+            if (type == OAuthType.Apple) resp.refreshToken else resp.accessToken
+        }
     }
 }

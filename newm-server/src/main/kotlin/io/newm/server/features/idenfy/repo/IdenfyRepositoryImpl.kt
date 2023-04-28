@@ -13,7 +13,7 @@ import io.newm.server.features.idenfy.model.IdenfyCreateSessionResponse
 import io.newm.server.features.idenfy.model.IdenfySessionResult
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.model.UserVerificationStatus
-import io.newm.server.ktx.getSecureConfigString
+import io.newm.server.ktx.getSecureString
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.debug
 import io.newm.shared.ktx.getBoolean
@@ -48,8 +48,8 @@ class IdenfyRepositoryImpl(
             httpClient.post(getString("sessionUrl")) {
                 contentType(ContentType.Application.Json)
                 basicAuth(
-                    username = environment.getSecureConfigString("idenfy.apiKey"),
-                    password = environment.getSecureConfigString("idenfy.apiSecret"),
+                    username = getSecureString("apiKey"),
+                    password = getSecureString("apiSecret"),
                 )
                 setBody(IdenfyCreateSessionRequest(userId.toString()))
             }.body()
