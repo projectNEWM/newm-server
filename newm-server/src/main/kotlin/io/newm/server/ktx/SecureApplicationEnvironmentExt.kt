@@ -57,3 +57,29 @@ suspend fun ApplicationEnvironment.getSecureConfigString(path: String): String {
         }
     }
 }
+
+/**
+ * If the configured environment variable points to an AWS Secrets Manager arn resource, retrieve the map
+ * of key/value pairs from secrets manager and then lookup the path value. Otherwise, just return the set value
+ * as-is.
+ */
+fun ApplicationEnvironment.getSecureConfigStringSync(path: String): String {
+    val configValue = config.getString(path)
+    if (!configValue.startsWith("arn:aws:secretsmanager")) {
+        return configValue
+    }
+
+    val found = secretsCache.getIfPresent(configValue)?.get(path)
+    if (found != null) {
+        return found
+    }
+
+    try {
+        val result = secretsManager.getSecretValue(GetSecretValueRequest().withSecretId(configValue))
+        val secretsMap: Map<String, String> = json.decodeFromString(result.secretString)
+        secretsCache.put(configValue, secretsMap)
+        return secretsMap[path] ?: throw IllegalArgumentException("No secret found for $path !")
+    } catch (e: Exception) {
+        throw IllegalArgumentException("No secret found for $path !")
+    }
+}
