@@ -11,6 +11,10 @@ data class AudioMessage(
     val status: String?
         get() = detail?.status
 
+    val transcodingType: String? by lazy {
+        detail?.userMetadata?.transcodingType
+    }
+
     val durationInMs: Int? by lazy {
         detail?.outputGroupDetails?.firstOrNull()?.outputDetails?.firstOrNull()?.durationInMs
     }
@@ -24,7 +28,9 @@ data class AudioMessage(
         @SerialName("outputGroupDetails")
         val outputGroupDetails: List<OutputGroupDetail>?,
         @SerialName("status")
-        val status: String?
+        val status: String?,
+        @SerialName("userMetadata")
+        val userMetadata: UserMetadata?
     ) {
         @Serializable
         data class OutputGroupDetail(
@@ -39,5 +45,11 @@ data class AudioMessage(
                 val durationInMs: Int?
             )
         }
+
+        @Serializable
+        data class UserMetadata(
+            @SerialName("transcodingType")
+            val transcodingType: String?
+        )
     }
 }

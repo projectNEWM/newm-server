@@ -23,7 +23,7 @@ class AudioMessageReceiver : SqsMessageReceiver {
 
     override suspend fun onMessageReceived(message: Message) {
         val msg: AudioMessage = json.decodeFromString(message.body)
-        logger.debug { "Audio job status: ${msg.status}" }
+        logger.debug { "Audio ${msg.transcodingType} job status: ${msg.status}" }
 
         if (msg.status != "COMPLETE") return
 
@@ -39,9 +39,14 @@ class AudioMessageReceiver : SqsMessageReceiver {
             .substringBefore('/')
             .toUUID()
 
-        val hostUrl = environment.getConfigString("aws.cloudFront.audioStream.hostUrl")
-        val streamUrl = "$hostUrl/$shortPath"
-
-        repository.update(songId, Song(duration = duration, streamUrl = streamUrl))
+        when (msg.transcodingType) {
+            "stream" -> {
+                val hostUrl = environment.getConfigString("aws.cloudFront.audioStream.hostUrl")
+                repository.update(songId, Song(duration = duration, streamUrl = "$hostUrl/$shortPath"))
+            }
+            "clip" -> {
+                repository.update(songId, Song(clipUrl = fullPath))
+            }
+        }
     }
 }

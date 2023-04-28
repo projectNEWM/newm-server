@@ -232,7 +232,13 @@ internal class SongRepositoryImpl(
             if (!s3.doesObjectExist(bucketName, filePath)) {
                 throw HttpUnprocessableEntityException("missing: $filePath")
             }
-            update(songId, Song(mintingStatus = MintingStatus.StreamTokenAgreementApproved))
+            update(
+                songId = songId,
+                song = Song(
+                    mintingStatus = MintingStatus.StreamTokenAgreementApproved,
+                    tokenAgreementUrl = s3.getUrl(bucketName, filePath).toString()
+                )
+            )
         } else {
             update(songId, Song(mintingStatus = MintingStatus.Undistributed))
             s3.deleteObject(bucketName, filePath)
