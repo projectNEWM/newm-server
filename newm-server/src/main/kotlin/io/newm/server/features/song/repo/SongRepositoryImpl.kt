@@ -13,6 +13,7 @@ import io.newm.server.aws.s3.createPresignedPost
 import io.newm.server.aws.s3.model.ContentLengthRangeCondition
 import io.newm.server.aws.s3.model.PresignedPost
 import io.newm.server.config.repo.ConfigRepository
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_PRICE
 import io.newm.server.features.cardano.database.KeyTable
 import io.newm.server.features.cardano.model.Key
 import io.newm.server.features.cardano.repo.CardanoRepository
@@ -38,8 +39,6 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf
 import java.time.Instant
 import java.util.UUID
-
-private const val CONFIG_ID_MINT_PRICE = "mint.price"
 
 internal class SongRepositoryImpl(
     private val environment: ApplicationEnvironment,
@@ -248,7 +247,7 @@ internal class SongRepositoryImpl(
     override suspend fun getMintingPaymentAmount(songId: UUID, requesterId: UUID): String {
         logger.debug { "getMintingPaymentAmount: songId = $songId" }
         // We might need to change this code in the future if we're charging NEWM tokens in addition to ada
-        return CborInteger.create(configRepository.getLong(CONFIG_ID_MINT_PRICE)).toCborByteArray().toHexString()
+        return CborInteger.create(configRepository.getLong(CONFIG_KEY_MINT_PRICE)).toCborByteArray().toHexString()
     }
 
     override suspend fun generateMintingPaymentTransaction(
@@ -263,7 +262,7 @@ internal class SongRepositoryImpl(
 
         val key = Key.generateNew()
         val keyId = cardanoRepository.saveKey(key)
-        val amount = configRepository.getLong(CONFIG_ID_MINT_PRICE)
+        val amount = configRepository.getLong(CONFIG_KEY_MINT_PRICE)
         val transaction = cardanoRepository.buildTransaction {
             this.sourceUtxos.addAll(sourceUtxos)
             this.outputUtxos.add(

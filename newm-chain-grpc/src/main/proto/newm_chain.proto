@@ -76,7 +76,7 @@ message SigningKey {
 }
 
 message Signature {
-  bytes pkh = 1;
+  bytes vkey = 1;
   bytes sig = 2;
 }
 

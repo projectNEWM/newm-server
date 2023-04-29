@@ -1,13 +1,28 @@
 package io.newm.server.features.minting.repo
 
 import com.google.common.annotations.VisibleForTesting
+import com.google.protobuf.kotlin.toByteString
 import io.newm.chain.grpc.PlutusData
+import io.newm.chain.grpc.RedeemerTag
+import io.newm.chain.grpc.Signature
 import io.newm.chain.grpc.Utxo
+import io.newm.chain.grpc.nativeAsset
+import io.newm.chain.grpc.outputUtxo
 import io.newm.chain.grpc.plutusData
 import io.newm.chain.grpc.plutusDataList
 import io.newm.chain.grpc.plutusDataMap
 import io.newm.chain.grpc.plutusDataMapItem
+import io.newm.chain.grpc.redeemer
+import io.newm.chain.grpc.signature
+import io.newm.chain.util.Sha3
+import io.newm.chain.util.hexToByteArray
 import io.newm.server.config.repo.ConfigRepository
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_CIP68_POLICY
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_CIP68_SCRIPT_ADDRESS
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_PRICE
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_SCRIPT_UTXO_REFERENCE
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_STARTER_TOKEN_UTXO_REFERENCE
+import io.newm.server.features.cardano.model.Key
 import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.collaboration.model.Collaboration
 import io.newm.server.features.collaboration.model.CollaborationFilters
@@ -16,11 +31,16 @@ import io.newm.server.features.song.model.Song
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.model.User
 import io.newm.server.features.user.repo.UserRepository
+import io.newm.server.ktx.sign
+import io.newm.server.ktx.toReferenceUtxo
 import io.newm.shared.koin.inject
+import io.newm.shared.ktx.toHexString
+import io.newm.txbuilder.ktx.toCborObject
 import io.newm.txbuilder.ktx.toPlutusData
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf
 import org.slf4j.Logger
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 class MintingRepositoryImpl(
@@ -32,7 +52,7 @@ class MintingRepositoryImpl(
 
     private val log: Logger by inject { parametersOf(javaClass.simpleName) }
 
-    override suspend fun mint(song: Song) {
+    override suspend fun mint(song: Song): String {
         val user = userRepository.get(song.ownerId!!)
         val collabs = collabRepository.getAll(
             user.id!!,
@@ -49,7 +69,9 @@ class MintingRepositoryImpl(
         )
         val cip68Metadata = buildStreamTokenMetadata(song, user, collabs)
         val paymentKey = cardanoRepository.getKey(song.paymentKeyId!!)
-        val mintPriceLovelace = configRepository.getString("mint.price")
+        val mintPriceLovelace = configRepository.getString(CONFIG_KEY_MINT_PRICE)
+        val cip68ScriptAddress = configRepository.getString(CONFIG_KEY_MINT_CIP68_SCRIPT_ADDRESS)
+        val cip68Policy = configRepository.getString(CONFIG_KEY_MINT_CIP68_POLICY)
         val paymentUtxo = cardanoRepository.queryLiveUtxos(paymentKey.address)
             .first { it.lovelace == mintPriceLovelace && it.nativeAssetsCount == 0 }
         val cashRegisterKey =
@@ -58,22 +80,207 @@ class MintingRepositoryImpl(
             .filter { it.nativeAssetsCount == 0 }
             .sortedByDescending { it.lovelace.toLong() }
             .take(5)
-        val transactionBuilderResponse =
-            buildMintingTransaction(paymentUtxo, cashRegisterUtxos, cashRegisterKey.address)
-        TODO("Finish building tx and submit it.")
+        require(cashRegisterUtxos.isNotEmpty()) { "cashRegister has no utxos!" }
+        val (refTokenName, fracTokenName) = calculateTokenNames(cashRegisterUtxos.first())
+        val collateralKey =
+            requireNotNull(cardanoRepository.getKeyByName("collateral")) { "collateral key not defined!" }
+        val collateralUtxo = requireNotNull(
+            cardanoRepository.queryLiveUtxos(collateralKey.address)
+                .filter { it.nativeAssetsCount == 0 }
+                .maxByOrNull { it.lovelace.toLong() }
+        ) { "collateral utxo not found!" }
+        val starterTokenUtxoReference =
+            configRepository.getString(CONFIG_KEY_MINT_STARTER_TOKEN_UTXO_REFERENCE).toReferenceUtxo()
+        val scriptUtxoReference = configRepository.getString(CONFIG_KEY_MINT_SCRIPT_UTXO_REFERENCE).toReferenceUtxo()
+
+        val signingKeys = listOf(cashRegisterKey, paymentKey, collateralKey)
+
+        var transactionBuilderResponse =
+            buildMintingTransaction(
+                paymentUtxo,
+                cashRegisterUtxos,
+                cashRegisterKey.address,
+                collateralUtxo,
+                collateralKey.address,
+                cip68ScriptAddress,
+                cip68Metadata,
+                cip68Policy,
+                refTokenName,
+                fracTokenName,
+                user.walletAddress!!,
+                requiredSigners = signingKeys,
+                starterTokenUtxoReference,
+                scriptUtxoReference,
+                signatures = signTransactionDummy(signingKeys.size)
+            )
+
+        val transactionIdBytes = transactionBuilderResponse.transactionId.hexToByteArray()
+
+        // get signatures for this transaction
+        transactionBuilderResponse =
+            buildMintingTransaction(
+                paymentUtxo,
+                cashRegisterUtxos,
+                cashRegisterKey.address,
+                collateralUtxo,
+                collateralKey.address,
+                cip68ScriptAddress,
+                cip68Metadata,
+                cip68Policy,
+                refTokenName,
+                fracTokenName,
+                user.walletAddress,
+                requiredSigners = signingKeys,
+                starterTokenUtxoReference,
+                scriptUtxoReference,
+                signatures = signTransaction(transactionIdBytes, signingKeys),
+            )
+        val submitTransactionResponse = cardanoRepository.submitTransaction(transactionBuilderResponse.transactionCbor)
+        return if (submitTransactionResponse.result == "MsgAcceptTx") {
+            submitTransactionResponse.txId
+        } else {
+            throw IllegalStateException(submitTransactionResponse.result)
+        }
     }
 
-    private suspend fun buildMintingTransaction(
+    @VisibleForTesting
+    internal fun signTransaction(
+        transactionIdBytes: ByteArray,
+        signingKeys: List<Key>
+    ): List<Signature> = signingKeys.map { key ->
+        signature {
+            vkey = key.vkey.toByteString()
+            sig = key.sign(transactionIdBytes).toByteString()
+        }
+    }
+
+    @VisibleForTesting
+    internal fun signTransactionDummy(signatureCount: Int) = List(signatureCount) {
+        signature {
+            vkey = ByteArray(32).toByteString()
+            sig = ByteArray(64).toByteString()
+        }
+    }
+
+    @VisibleForTesting
+    internal suspend fun buildMintingTransaction(
         paymentUtxo: Utxo,
         cashRegisterUtxos: List<Utxo>,
         changeAddress: String,
+        collateralUtxo: Utxo,
+        collateralReturnAddress: String,
+        cip68ScriptAddress: String,
+        cip68Metadata: PlutusData,
+        cip68Policy: String,
+        refTokenName: String,
+        fracTokenName: String,
+        artistWalletAddress: String,
+        requiredSigners: List<Key>,
+        starterTokenUtxoReference: Utxo,
+        mintScriptUtxoReference: Utxo,
+        signatures: List<Signature> = emptyList()
     ) = cardanoRepository.buildTransaction {
         with(sourceUtxos) {
-            add(paymentUtxo)
             addAll(cashRegisterUtxos)
+            add(paymentUtxo)
+        }
+        with(outputUtxos) {
+            // reference NFT output to cip68 script address
+            add(
+                outputUtxo {
+                    address = cip68ScriptAddress
+                    // lovelace = "0" auto-calculated minutxo
+                    nativeAssets.add(
+                        nativeAsset {
+                            policy = cip68Policy
+                            name = refTokenName
+                            amount = "1"
+                        }
+                    )
+                    datum = cip68Metadata.toCborObject().toCborByteArray().toHexString()
+                }
+            )
+
+            // fraction SFT output to the artist's wallet
+            // TODO: split among collaborators
+            add(
+                outputUtxo {
+                    address = artistWalletAddress
+                    // lovelace = "0" auto-calculated minutxo
+                    nativeAssets.add(
+                        nativeAsset {
+                            policy = cip68Policy
+                            name = fracTokenName
+                            amount = "100000000"
+                        }
+                    )
+                }
+            )
         }
 
+        // TODO: if our cash register goes over CONFIG_KEY_MINT_CASH_REGISTER_COLLECTION_AMOUNT + CONFIG_KEY_MINT_CASH_REGISTER_MIN_AMOUNT
+        // Then return change into the moneybox bucket after adding an output for MIN_AMOUNT to the cash register
         this.changeAddress = changeAddress
+
+        with(mintTokens) {
+            add(
+                nativeAsset {
+                    policy = cip68Policy
+                    name = refTokenName
+                    amount = "1"
+                }
+            )
+            add(
+                nativeAsset {
+                    policy = cip68Policy
+                    name = fracTokenName
+                    amount = "100000000"
+                }
+            )
+        }
+
+        collateralUtxos.add(collateralUtxo)
+        this.collateralReturnAddress = collateralReturnAddress
+
+        this.requiredSigners.addAll(requiredSigners.map { key -> key.requiredSigner().toByteString() })
+
+        with(referenceInputs) {
+            add(starterTokenUtxoReference)
+            add(mintScriptUtxoReference)
+        }
+
+        if (signatures.isNotEmpty()) {
+            this.signatures.addAll(signatures)
+        }
+
+        redeemers.add(
+            redeemer {
+                tag = RedeemerTag.MINT
+                index = 0L
+                data = plutusData {
+                    constr = 0
+                    list = plutusDataList { }
+                }
+                // calculated
+                // exUnits = exUnits {
+                //    mem = 2895956L
+                //    steps = 793695629L
+                // }
+            }
+        )
+    }
+
+    /**
+     * Return the token name for the reference token (100) and the fractional tokens (444)
+     */
+    @VisibleForTesting
+    internal fun calculateTokenNames(utxo: Utxo): Pair<String, String> {
+        val txHash = Sha3.hash256(utxo.hash.hexToByteArray())
+        val txHashHex = (ByteArray(1) { utxo.ix.toByte() } + txHash).copyOfRange(0, 27).toHexString()
+        return Pair(
+            PREFIX_REF_TOKEN + txHashHex,
+            PREFIX_FRAC_TOKEN + txHashHex,
+        )
     }
 
     @VisibleForTesting
@@ -270,7 +477,7 @@ class MintingRepositoryImpl(
                         plutusDataMapItem {
                             mapItemKey = "song_duration".toPlutusData()
                             mapItemValue =
-                                song.duration!!.seconds.toIsoString().toPlutusData()
+                                song.duration!!.milliseconds.inWholeSeconds.seconds.toIsoString().toPlutusData()
                         }
                     )
                     add(
@@ -676,5 +883,8 @@ class MintingRepositoryImpl(
             "Producer",
             "Executive Producer"
         )
+
+        private const val PREFIX_REF_TOKEN = "2831303029" // (100)
+        private const val PREFIX_FRAC_TOKEN = "2834343429" // (444)
     }
 }

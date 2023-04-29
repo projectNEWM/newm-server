@@ -6,6 +6,8 @@ import io.ktor.server.application.ApplicationEnvironment
 import io.newm.chain.grpc.monitorPaymentAddressRequest
 import io.newm.server.aws.SqsMessageReceiver
 import io.newm.server.config.repo.ConfigRepository
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_MONITOR_PAYMENT_ADDRESS_TIMEOUT_MIN
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_PRICE
 import io.newm.server.features.arweave.repo.ArweaveRepository
 import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.minting.repo.MintingRepository
@@ -22,7 +24,7 @@ import kotlinx.serialization.json.Json
 import org.koin.core.parameter.parametersOf
 import org.slf4j.Logger
 import java.util.UUID
-import java.util.concurrent.TimeUnit
+import kotlin.time.Duration.Companion.minutes
 
 class MintingMessageReceiver : SqsMessageReceiver {
     private val log: Logger by inject { parametersOf(javaClass.simpleName) }
@@ -41,11 +43,11 @@ class MintingMessageReceiver : SqsMessageReceiver {
 
         when (mintingStatusSqsMessage.mintingStatus) {
             MintingStatus.Undistributed -> {
-                TODO()
+                throw IllegalStateException("No SQS message expected for MintingStatus: ${MintingStatus.Undistributed}!")
             }
 
             MintingStatus.StreamTokenAgreementApproved -> {
-                TODO()
+                throw IllegalStateException("No SQS message expected for MintingStatus: ${MintingStatus.StreamTokenAgreementApproved}!")
             }
 
             MintingStatus.MintingPaymentRequested -> {
@@ -53,9 +55,10 @@ class MintingMessageReceiver : SqsMessageReceiver {
                 val paymentKey = cardanoRepository.getKey(song.paymentKeyId!!)
                 val response = cardanoRepository.awaitPayment(
                     monitorPaymentAddressRequest {
-                        this.address = paymentKey.address
-                        this.lovelace = configRepository.getString("mint.price")
-                        this.timeoutMs = TimeUnit.HOURS.toMillis(1L) // FIXME: do not hardcode duration to await payment
+                        address = paymentKey.address
+                        lovelace = configRepository.getString(CONFIG_KEY_MINT_PRICE)
+                        timeoutMs =
+                            configRepository.getLong(CONFIG_KEY_MINT_MONITOR_PAYMENT_ADDRESS_TIMEOUT_MIN).minutes.inWholeMilliseconds
                     }
                 )
                 if (response.success) {
@@ -68,7 +71,7 @@ class MintingMessageReceiver : SqsMessageReceiver {
             }
 
             MintingStatus.MintingPaymentReceived -> {
-                // Payment received. Move -> ReadyToDistribute
+                // Payment received. Move -> AwaitingCollaboratorApproval
                 updateSongStatus(
                     songId = mintingStatusSqsMessage.songId,
                     mintingStatus = MintingStatus.AwaitingCollaboratorApproval
@@ -77,12 +80,16 @@ class MintingMessageReceiver : SqsMessageReceiver {
 
             MintingStatus.AwaitingCollaboratorApproval -> {
                 // TODO: Check to see if all collaborators have approved. Also check this each time we get a new approval in
+                // Temporarily, assume they have all approved.
+                val allApproved = true
 
-                // Payment received. Move -> ReadyToDistribute
-                updateSongStatus(
-                    songId = mintingStatusSqsMessage.songId,
-                    mintingStatus = MintingStatus.AwaitingCollaboratorApproval
-                )
+                if (allApproved) {
+                    // Collaborators approve. Move -> ReadyToDistribute
+                    updateSongStatus(
+                        songId = mintingStatusSqsMessage.songId,
+                        mintingStatus = MintingStatus.ReadyToDistribute
+                    )
+                }
             }
 
             MintingStatus.ReadyToDistribute -> {
@@ -98,6 +105,16 @@ class MintingMessageReceiver : SqsMessageReceiver {
             MintingStatus.SubmittedForDistribution -> {
                 // TODO: Add some monitoring job that will poll the distribution service for when the distribution
                 // is done. Let that monitoring job move it to either Distributed or Declined status
+                // Temporarily, assume it distributed successfully
+                val isDistributed = true
+
+                if (isDistributed) {
+                    // Done distributing. Move -> Distributed
+                    updateSongStatus(
+                        songId = mintingStatusSqsMessage.songId,
+                        mintingStatus = MintingStatus.Distributed
+                    )
+                }
             }
 
             MintingStatus.Distributed -> {

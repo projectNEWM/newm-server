@@ -12,14 +12,21 @@ import io.newm.server.auth.twofactor.database.TwoFactorAuthTable
 import io.newm.server.config.database.ConfigTable
 import io.newm.server.features.cardano.database.KeyTable
 import io.newm.server.features.cardano.repo.CardanoRepository
+import io.newm.server.features.collaboration.database.CollaborationEntity
 import io.newm.server.features.collaboration.database.CollaborationTable
+import io.newm.server.features.collaboration.model.Collaboration
+import io.newm.server.features.collaboration.model.CollaborationStatus
 import io.newm.server.features.playlist.database.PlaylistTable
 import io.newm.server.features.playlist.database.SongsInPlaylistsTable
+import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.database.SongTable
+import io.newm.server.features.song.model.Song
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
 import io.newm.server.features.user.model.User
+import io.newm.server.ktx.asValidUrl
 import io.newm.shared.auth.Password
+import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -128,6 +135,44 @@ open class BaseApplicationTests {
             companyIpRights = user.companyIpRights
         }
     }.id.value
+
+    protected fun addCollabToDatabase(collab: Collaboration): UUID = transaction {
+        CollaborationEntity.new {
+            email = collab.email!!
+            songId = EntityID(collab.songId!!, SongTable)
+            role = collab.role
+            credited = collab.credited!!
+            royaltyRate = collab.royaltyRate
+            status = CollaborationStatus.Accepted
+        }.id.value
+    }
+
+    protected fun addSongToDatabase(song: Song): UUID = transaction {
+        SongEntity.new {
+            ownerId = EntityID(song.ownerId!!, UserTable)
+            title = song.title!!
+            genres = song.genres!!.toTypedArray()
+            moods = song.moods?.toTypedArray()
+            coverArtUrl = song.coverArtUrl?.asValidUrl()
+            description = song.description
+            album = song.album
+            track = song.track
+            language = song.language
+            copyright = song.copyright
+            parentalAdvisory = song.parentalAdvisory
+            isrc = song.isrc
+            ipi = song.ipi?.toTypedArray()
+            releaseDate = song.releaseDate
+            lyricsUrl = song.lyricsUrl?.asValidUrl()
+            arweaveClipUrl = song.arweaveClipUrl
+            arweaveCoverArtUrl = song.arweaveCoverArtUrl
+            arweaveLyricsUrl = song.arweaveLyricsUrl
+            arweaveTokenAgreementUrl = song.arweaveTokenAgreementUrl
+            releaseDate = song.releaseDate
+            publicationDate = song.publicationDate
+            duration = song.duration
+        }.id.value
+    }
 
     companion object {
         @Container

@@ -201,9 +201,16 @@ class TransactionBuilder(
     suspend fun build(): ByteArray {
         validateInputs()
         val auxData: CborObject? = createAuxData()
+        val startingScriptDataHash = scriptDataHash
         createScriptDataHash()
         calculateTemporaryCollateral()
         calculateTxFees(auxData)
+
+        if (startingScriptDataHash == null) {
+            // recalculate scriptDataHash now that we've calculated proper exUnits
+            scriptDataHash = null
+            createScriptDataHash()
+        }
 
         // assemble the final transaction now that fees and collateral are correct
         val txBody = createTxBody()
@@ -492,7 +499,7 @@ class TransactionBuilder(
         val rawSignatures = signatures?.map { signature ->
             CborArray.create(
                 listOf(
-                    CborByteString.create(signature.pkh.toByteArray()),
+                    CborByteString.create(signature.vkey.toByteArray()),
                     CborByteString.create(signature.sig.toByteArray()),
                 )
             )
@@ -711,6 +718,6 @@ class TransactionBuilder(
 
         internal const val AUX_DATA_TAG = 259
 
-        private val DUMMY_TOTAL_COLLATERAL = 4000000L // 4 ada
+        private const val DUMMY_TOTAL_COLLATERAL = 4000000L // 4 ada
     }
 }

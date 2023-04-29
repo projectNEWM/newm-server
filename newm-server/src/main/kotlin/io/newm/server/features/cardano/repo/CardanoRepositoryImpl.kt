@@ -6,23 +6,28 @@ import com.amazonaws.services.kms.model.DecryptRequest
 import com.amazonaws.services.kms.model.DecryptResult
 import com.amazonaws.services.kms.model.EncryptRequest
 import com.amazonaws.services.kms.model.EncryptResult
-import io.newm.server.features.cardano.model.EncryptionRequest
 import com.github.benmanes.caffeine.cache.Caffeine
+import com.google.protobuf.ByteString
 import io.ktor.network.util.DefaultByteBufferPool
 import io.newm.chain.grpc.IsMainnetRequest
 import io.newm.chain.grpc.MonitorPaymentAddressRequest
 import io.newm.chain.grpc.NewmChainGrpcKt.NewmChainCoroutineStub
+import io.newm.chain.grpc.SubmitTransactionResponse
 import io.newm.chain.grpc.TransactionBuilderRequestKt
 import io.newm.chain.grpc.TransactionBuilderResponse
 import io.newm.chain.grpc.Utxo
 import io.newm.chain.grpc.queryUtxosRequest
+import io.newm.chain.grpc.submitTransactionRequest
 import io.newm.chain.util.b64ToByteArray
 import io.newm.chain.util.toB64String
 import io.newm.chain.util.toHexString
 import io.newm.kogmios.protocols.model.QueryCurrentProtocolBabbageParametersResult
 import io.newm.server.config.repo.ConfigRepository
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_ENCRYPTION_PASSWORD
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_ENCRYPTION_SALT
 import io.newm.server.features.cardano.database.KeyEntity
 import io.newm.server.features.cardano.database.KeyTable
+import io.newm.server.features.cardano.model.EncryptionRequest
 import io.newm.server.features.cardano.model.Key
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.debug
@@ -118,6 +123,13 @@ internal class CardanoRepositoryImpl(
         return client.transactionBuilder(request)
     }
 
+    override suspend fun submitTransaction(cborBytes: ByteString): SubmitTransactionResponse {
+        val request = submitTransactionRequest {
+            cbor = cborBytes
+        }
+        return client.submitTransaction(request)
+    }
+
     override suspend fun awaitPayment(request: MonitorPaymentAddressRequest) = client.monitorPaymentAddress(request)
 
     override suspend fun saveEncryptionParams(encryptionRequest: EncryptionRequest) {
@@ -125,8 +137,8 @@ internal class CardanoRepositoryImpl(
         require(encryptionRequest.s.length >= 16) { "Salt value is not long enough!" }
         require(encryptionRequest.password.length > 30) { "Password is not long enough!" }
         require(encryptionRequest.password.isValidPassword()) { "Password must have upper,lower,number characters!" }
-        require(!configRepository.exists("encryption.salt")) { "Salt already exists in config table!" }
-        require(!configRepository.exists("encryption.password")) { "Password already exists in config table!" }
+        require(!configRepository.exists(CONFIG_KEY_ENCRYPTION_SALT)) { "Salt already exists in config table!" }
+        require(!configRepository.exists(CONFIG_KEY_ENCRYPTION_PASSWORD)) { "Password already exists in config table!" }
 
         val cipherSalt = encryptKmsBytes(encryptionRequest.s.toByteArray())
         val cipherPassword = encryptKmsBytes(encryptionRequest.password.toByteArray())
@@ -209,8 +221,8 @@ internal class CardanoRepositoryImpl(
 
     private suspend fun getEncryptor(): BytesEncryptor {
         return _bytesEncryptor ?: run {
-            require(configRepository.exists(CONFIG_KEY_ENCRYPTION_SALT))
-            require(configRepository.exists(CONFIG_KEY_ENCRYPTION_PASSWORD))
+            require(configRepository.exists(CONFIG_KEY_ENCRYPTION_SALT)) { "$CONFIG_KEY_ENCRYPTION_SALT Not found in db!" }
+            require(configRepository.exists(CONFIG_KEY_ENCRYPTION_PASSWORD)) { "$CONFIG_KEY_ENCRYPTION_PASSWORD Not found in db!" }
             val cipherTextSalt = configRepository.getString(CONFIG_KEY_ENCRYPTION_SALT)
             val cipherTextPassword = configRepository.getString(CONFIG_KEY_ENCRYPTION_PASSWORD)
             val salt = String(decryptKmsString(cipherTextSalt), Charsets.UTF_8)
@@ -218,10 +230,5 @@ internal class CardanoRepositoryImpl(
             _bytesEncryptor = Encryptors.stronger(password, salt)
             _bytesEncryptor!!
         }
-    }
-
-    companion object {
-        private const val CONFIG_KEY_ENCRYPTION_SALT = "encryption.salt"
-        private const val CONFIG_KEY_ENCRYPTION_PASSWORD = "encryption.password"
     }
 }
