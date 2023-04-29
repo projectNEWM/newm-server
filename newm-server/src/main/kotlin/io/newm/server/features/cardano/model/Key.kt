@@ -65,6 +65,10 @@ data class Key(
         return result
     }
 
+    fun requiredSigner(): ByteArray {
+        return Bech32.decode(address).bytes.copyOfRange(1, 29)
+    }
+
     companion object {
         private val cardanoRepository: CardanoRepository by inject()
         private val scriptPrefixTag = ByteArray(1) { 0x00 }

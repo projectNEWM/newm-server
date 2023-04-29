@@ -190,26 +190,33 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
     }
 
     override suspend fun transactionBuilder(request: TransactionBuilderRequest): TransactionBuilderResponse {
-        return txSubmitClientPool.useInstance { txSubmitClient ->
-            val stateQueryClient = txSubmitClient as StateQueryClient
-            val protocolParams =
-                stateQueryClient.currentProtocolParameters().result as QueryCurrentProtocolBabbageParametersResult
-            val calculateTxExecutionUnits: suspend (ByteArray) -> EvaluationResult = { cborBytes ->
-                val evaluateResponse = txSubmitClient.evaluate(cborBytes.toHexString())
-                println("evaluateResponse: ${evaluateResponse.result}")
-                if (evaluateResponse.result !is EvaluationResult) {
-                    throw IllegalStateException(evaluateResponse.result.toString())
+        try {
+            return txSubmitClientPool.useInstance { txSubmitClient ->
+                val stateQueryClient = txSubmitClient as StateQueryClient
+                val protocolParams =
+                    stateQueryClient.currentProtocolParameters().result as QueryCurrentProtocolBabbageParametersResult
+                val calculateTxExecutionUnits: suspend (ByteArray) -> EvaluationResult = { cborBytes ->
+                    val evaluateResponse = txSubmitClient.evaluate(cborBytes.toHexString())
+                    if (evaluateResponse.result !is EvaluationResult) {
+                        throw IllegalStateException(evaluateResponse.result.toString())
+                    }
+                    (evaluateResponse.result as EvaluationResult)
                 }
-                (evaluateResponse.result as EvaluationResult)
-            }
 
-            val (txId, cborBytes) = TransactionBuilder.transactionBuilder(protocolParams, calculateTxExecutionUnits) {
-                loadFrom(request)
+                val (txId, cborBytes) = TransactionBuilder.transactionBuilder(
+                    protocolParams,
+                    calculateTxExecutionUnits
+                ) {
+                    loadFrom(request)
+                }
+                transactionBuilderResponse {
+                    transactionId = txId
+                    transactionCbor = cborBytes.toByteString()
+                }
             }
-            transactionBuilderResponse {
-                transactionId = txId
-                transactionCbor = cborBytes.toByteString()
-            }
+        } catch (e: Throwable) {
+            log.error("TransactionBuilder error!", e)
+            throw e
         }
     }
 

@@ -4,11 +4,11 @@ import com.google.iot.cbor.CborArray
 import com.google.iot.cbor.CborByteString
 import io.newm.chain.util.Constants.STAKE_ADDRESS_KEY_PREFIX_MAINNET
 import io.newm.chain.util.Constants.STAKE_ADDRESS_KEY_PREFIX_TESTNET
-import org.apache.commons.codec.binary.Hex
 import org.slf4j.LoggerFactory
 import java.math.BigDecimal
 import java.math.BigInteger
-import java.util.*
+import java.util.Base64
+import java.util.HexFormat
 
 private val log by lazy { LoggerFactory.getLogger("CardanoKtx") }
 
@@ -31,19 +31,19 @@ fun CborArray.elementToHexString(index: Int): String {
 }
 
 fun ByteArray.toHexString(): String {
-    return Hex.encodeHexString(this, true)
+    return HexFormat.of().formatHex(this)
 }
 
 fun Array<ByteArray>.toHexString(): String {
     val builder = StringBuilder()
     this.forEach { bytes ->
-        builder.append(Hex.encodeHex(bytes, true))
+        builder.append(HexFormat.of().formatHex(bytes))
     }
     return builder.toString()
 }
 
 fun String.hexToByteArray(): ByteArray {
-    return Hex.decodeHex(this)
+    return HexFormat.of().parseHex(this)
 }
 
 fun String.b64ToByteArray(): ByteArray {

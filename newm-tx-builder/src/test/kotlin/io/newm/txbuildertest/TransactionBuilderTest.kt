@@ -90,7 +90,8 @@ class TransactionBuilderTest {
                 signatures {
                     add(
                         signature {
-                            pkh = ByteString.fromHex("fc993172aa4ff02f2dec9985a6a359fb69a0ce80c85a06b3b195e54e9d0e18ae")
+                            vkey =
+                                ByteString.fromHex("fc993172aa4ff02f2dec9985a6a359fb69a0ce80c85a06b3b195e54e9d0e18ae")
                             sig =
                                 ByteString.fromHex("6bae0b5a169ce71481fa2c37f70cfee13ffa0f78c03b33fe05d209ea79ebad99831edde9e00242ad7ab31058da70cf1cab4163a67c3ad3346d98c1033c959d0b")
                         }

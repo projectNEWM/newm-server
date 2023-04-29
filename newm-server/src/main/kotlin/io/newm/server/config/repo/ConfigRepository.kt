@@ -11,4 +11,17 @@ interface ConfigRepository {
     suspend fun getBoolean(id: String): Boolean
     suspend fun getBooleans(id: String): List<Boolean>
     suspend fun putString(id: String, value: String)
+
+    companion object {
+        const val CONFIG_KEY_ENCRYPTION_SALT = "encryption.salt"
+        const val CONFIG_KEY_ENCRYPTION_PASSWORD = "encryption.password"
+        const val CONFIG_KEY_MINT_PRICE = "mint.price"
+        const val CONFIG_KEY_MINT_CASH_REGISTER_MIN_AMOUNT = "mint.cashRegisterMinAmount"
+        const val CONFIG_KEY_MINT_CASH_REGISTER_COLLECTION_AMOUNT = "mint.cashRegisterCollectionAmount"
+        const val CONFIG_KEY_MINT_CIP68_POLICY = "mint.cip68Policy"
+        const val CONFIG_KEY_MINT_CIP68_SCRIPT_ADDRESS = "mint.cip68ScriptAddress"
+        const val CONFIG_KEY_MINT_SCRIPT_UTXO_REFERENCE = "mint.scriptUtxoReference"
+        const val CONFIG_KEY_MINT_STARTER_TOKEN_UTXO_REFERENCE = "mint.starterTokenUtxoReference"
+        const val CONFIG_KEY_MINT_MONITOR_PAYMENT_ADDRESS_TIMEOUT_MIN = "mint.monitorPaymentAddressTimeoutMin"
+    }
 }
