@@ -49,9 +49,9 @@ suspend fun ApplicationConfig.getSecureString(path: String): String {
                     override fun onSuccess(request: GetSecretValueRequest, result: GetSecretValueResult) {
                         val secretsMap: Map<String, String> = json.decodeFromString(result.secretString)
                         secretsCache.put(configValue, secretsMap)
-                        secretsMap[path]?.let {
+                        secretsMap[fullPath]?.let {
                             continuation.resume(it)
-                        } ?: continuation.resumeWithException(IllegalArgumentException("No secret found for $path !"))
+                        } ?: continuation.resumeWithException(IllegalArgumentException("No secret found for $fullPath !"))
                     }
 
                     override fun onError(exception: Exception) {
