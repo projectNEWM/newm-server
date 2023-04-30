@@ -8,6 +8,7 @@ import com.github.benmanes.caffeine.cache.Caffeine
 import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.server.config.ApplicationConfig
 import io.newm.shared.koin.inject
+import io.newm.shared.ktx.getChildFullPath
 import io.newm.shared.ktx.getString
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -39,8 +40,9 @@ suspend fun ApplicationConfig.getSecureString(path: String): String {
         return configValue
     }
 
+    val fullPath = getChildFullPath(path)
     secretsMutex.withLock {
-        return secretsCache.getIfPresent(configValue)?.get(path) ?: suspendCoroutine { continuation ->
+        return secretsCache.getIfPresent(configValue)?.get(fullPath) ?: suspendCoroutine { continuation ->
             secretsManager.getSecretValueAsync(
                 GetSecretValueRequest().withSecretId(configValue),
                 object : AsyncHandler<GetSecretValueRequest, GetSecretValueResult> {

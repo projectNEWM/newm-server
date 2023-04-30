@@ -3,7 +3,7 @@ package io.newm.shared.ktx
 import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.server.config.ApplicationConfig
 
-fun ApplicationEnvironment.getConfigChild(path: String): ApplicationConfig = config.config(path)
+fun ApplicationEnvironment.getConfigChild(path: String): ApplicationConfig = config.getChild(path)
 
 fun ApplicationEnvironment.getConfigChildren(path: String): List<ApplicationConfig> = config.getChildren(path)
 
