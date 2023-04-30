@@ -1,10 +1,20 @@
 package io.newm.shared.ktx
 
 import io.ktor.server.config.ApplicationConfig
+import java.util.Collections.synchronizedMap
+import java.util.WeakHashMap
+
+private val fullPathPerConfig = synchronizedMap(WeakHashMap<ApplicationConfig, String>())
+
+fun ApplicationConfig.getChildFullPath(path: String): String = fullPathPerConfig[this]?.let { "$it.$path" } ?: path
+
+fun ApplicationConfig.getChild(path: String): ApplicationConfig = config(path).also { child ->
+    fullPathPerConfig[child] = getChildFullPath(path)
+}
 
 fun ApplicationConfig.getChildren(path: String): List<ApplicationConfig> {
-    val config = config(path)
-    return config.toMap().map { config.config(it.key) }
+    val config = getChild(path)
+    return config.toMap().map { config.getChild(it.key) }
 }
 
 fun ApplicationConfig.getString(path: String): String = property(path).getString()
