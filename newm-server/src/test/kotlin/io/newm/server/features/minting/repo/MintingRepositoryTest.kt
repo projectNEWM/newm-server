@@ -5,6 +5,7 @@ import io.mockk.coEvery
 import io.mockk.mockk
 import io.newm.server.BaseApplicationTests
 import io.newm.server.features.collaboration.model.Collaboration
+import io.newm.server.features.collaboration.model.CollaborationStatus
 import io.newm.server.features.collaboration.repo.CollaborationRepository
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Song
@@ -143,7 +144,7 @@ class MintingRepositoryTest : BaseApplicationTests() {
                 role = "Artwork",
                 royaltyRate = 0.0f,
                 credited = true,
-                accepted = true,
+                status = CollaborationStatus.Accepted,
             ),
             Collaboration(
                 id = UUID.randomUUID(),
@@ -153,7 +154,7 @@ class MintingRepositoryTest : BaseApplicationTests() {
                 role = "Artist",
                 royaltyRate = 10.0f,
                 credited = true,
-                accepted = true,
+                status = CollaborationStatus.Accepted,
             ),
             Collaboration(
                 id = UUID.randomUUID(),
@@ -163,7 +164,7 @@ class MintingRepositoryTest : BaseApplicationTests() {
                 role = "Artist",
                 royaltyRate = 10.0f,
                 credited = true,
-                accepted = true,
+                status = CollaborationStatus.Accepted,
             ),
             Collaboration(
                 id = UUID.randomUUID(),
@@ -173,7 +174,7 @@ class MintingRepositoryTest : BaseApplicationTests() {
                 role = "Author (Lyrics)",
                 royaltyRate = 0.0f,
                 credited = true,
-                accepted = true,
+                status = CollaborationStatus.Accepted,
             ),
             Collaboration(
                 id = UUID.randomUUID(),
@@ -183,7 +184,7 @@ class MintingRepositoryTest : BaseApplicationTests() {
                 role = "Author (Lyrics)",
                 royaltyRate = 0.0f,
                 credited = true,
-                accepted = true,
+                status = CollaborationStatus.Accepted,
             ),
             Collaboration(
                 id = UUID.randomUUID(),
@@ -193,7 +194,7 @@ class MintingRepositoryTest : BaseApplicationTests() {
                 role = "Author (Lyrics)",
                 royaltyRate = 0.0f,
                 credited = true,
-                accepted = true,
+                status = CollaborationStatus.Accepted,
             ),
             Collaboration(
                 id = UUID.randomUUID(),
@@ -203,7 +204,7 @@ class MintingRepositoryTest : BaseApplicationTests() {
                 role = "Author (Lyrics)",
                 royaltyRate = 0.0f,
                 credited = true,
-                accepted = true,
+                status = CollaborationStatus.Accepted,
             ),
             Collaboration(
                 id = UUID.randomUUID(),
@@ -213,7 +214,7 @@ class MintingRepositoryTest : BaseApplicationTests() {
                 role = "Author (Lyrics)",
                 royaltyRate = 0.0f,
                 credited = true,
-                accepted = true,
+                status = CollaborationStatus.Accepted,
             ),
             Collaboration(
                 id = UUID.randomUUID(),
@@ -223,7 +224,7 @@ class MintingRepositoryTest : BaseApplicationTests() {
                 role = "Author (Lyrics)",
                 royaltyRate = 0.0f,
                 credited = true,
-                accepted = true,
+                status = CollaborationStatus.Accepted,
             ),
             Collaboration(
                 id = UUID.randomUUID(),
@@ -233,7 +234,7 @@ class MintingRepositoryTest : BaseApplicationTests() {
                 role = "Author (Lyrics)",
                 royaltyRate = 0.0f,
                 credited = true,
-                accepted = true,
+                status = CollaborationStatus.Accepted,
             ),
             Collaboration(
                 id = UUID.randomUUID(),
@@ -243,7 +244,7 @@ class MintingRepositoryTest : BaseApplicationTests() {
                 role = "Author (Lyrics)",
                 royaltyRate = 0.0f,
                 credited = true,
-                accepted = true,
+                status = CollaborationStatus.Accepted,
             ),
             Collaboration(
                 id = UUID.randomUUID(),
@@ -253,7 +254,7 @@ class MintingRepositoryTest : BaseApplicationTests() {
                 role = "Synthesizer",
                 royaltyRate = 0.0f,
                 credited = true,
-                accepted = true,
+                status = CollaborationStatus.Accepted,
             ),
             Collaboration(
                 id = UUID.randomUUID(),
@@ -263,7 +264,7 @@ class MintingRepositoryTest : BaseApplicationTests() {
                 role = "Producer",
                 royaltyRate = 0.0f,
                 credited = true,
-                accepted = true,
+                status = CollaborationStatus.Accepted,
             ),
         )
 

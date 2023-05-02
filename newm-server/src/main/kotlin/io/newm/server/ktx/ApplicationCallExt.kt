@@ -61,9 +61,6 @@ val ApplicationCall.ownerIds: List<UUID>?
 val ApplicationCall.songIds: List<UUID>?
     get() = parameters["songIds"]?.splitAndTrim()?.map(String::toUUID)
 
-val ApplicationCall.emails: List<String>?
-    get() = parameters["emails"]?.splitAndTrim()
-
 val ApplicationCall.genres: List<String>?
     get() = parameters["genres"]?.splitAndTrim()
 

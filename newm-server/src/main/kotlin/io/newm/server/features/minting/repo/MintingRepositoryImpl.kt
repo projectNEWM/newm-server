@@ -37,11 +37,12 @@ class MintingRepositoryImpl(
         val collabs = collabRepository.getAll(
             user.id!!,
             CollaborationFilters(
+                inbound = null,
                 songIds = listOf(song.id!!),
                 olderThan = null,
                 newerThan = null,
                 ids = null,
-                emails = null
+                statuses = null
             ),
             0,
             Integer.MAX_VALUE

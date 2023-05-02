@@ -9,6 +9,7 @@ import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.patch
 import io.ktor.client.request.post
+import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
@@ -18,6 +19,8 @@ import io.newm.server.features.collaboration.database.CollaborationEntity
 import io.newm.server.features.collaboration.database.CollaborationTable
 import io.newm.server.features.collaboration.model.Collaboration
 import io.newm.server.features.collaboration.model.CollaborationIdBody
+import io.newm.server.features.collaboration.model.CollaborationReply
+import io.newm.server.features.collaboration.model.CollaborationStatus
 import io.newm.server.features.collaboration.model.Collaborator
 import io.newm.server.features.model.CountResponse
 import io.newm.server.features.song.database.SongEntity
@@ -62,7 +65,7 @@ class CollaborationRoutesTests : BaseApplicationTests() {
             email = "collaborator@email.com",
             role = "Role",
             royaltyRate = 0.5f,
-            credited = true
+            credited = true,
         )
 
         // Post
@@ -82,7 +85,7 @@ class CollaborationRoutesTests : BaseApplicationTests() {
         assertThat(actualCollaboration.role).isEqualTo(expectedCollaboration.role)
         assertThat(actualCollaboration.royaltyRate).isEqualTo(expectedCollaboration.royaltyRate)
         assertThat(actualCollaboration.credited).isEqualTo(expectedCollaboration.credited)
-        assertThat(actualCollaboration.accepted).isEqualTo(false)
+        assertThat(actualCollaboration.status).isEqualTo(CollaborationStatus.Editing)
     }
 
     @Test
@@ -114,7 +117,7 @@ class CollaborationRoutesTests : BaseApplicationTests() {
         assertThat(collaboration.role).isEqualTo(collaboration2.role)
         assertThat(collaboration.royaltyRate).isEqualTo(collaboration2.royaltyRate)
         assertThat(collaboration.credited).isEqualTo(collaboration1.credited)
-        assertThat(collaboration.accepted).isEqualTo(collaboration1.accepted)
+        assertThat(collaboration.status).isEqualTo(CollaborationStatus.Editing)
     }
 
     @Test
@@ -198,6 +201,42 @@ class CollaborationRoutesTests : BaseApplicationTests() {
     }
 
     @Test
+    fun testGetCollaborationsByInbound() = runBlocking {
+        // Create collaboration invitations send from others to testUser1
+        val expectedCollaborations = mutableListOf<Collaboration>()
+        for (offset in 0..30) {
+            expectedCollaborations += addCollaborationToDatabase(offset = offset, email = testUserEmail)
+        }
+
+        // Create collaboration invitations send from testUser1 to others - these should be filtered out
+        for (offset in 31..40) {
+            addCollaborationToDatabase(ownerId = testUserId, offset = offset)
+        }
+
+        // Get all collaborations forcing pagination
+        var offset = 0
+        val limit = 5
+        val actualCollaborations = mutableListOf<Collaboration>()
+        while (true) {
+            val response = client.get("v1/collaborations") {
+                bearerAuth(testUserToken)
+                accept(ContentType.Application.Json)
+                parameter("offset", offset)
+                parameter("limit", limit)
+                parameter("inbound", true)
+            }
+            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+            val collaborations = response.body<List<Collaboration>>()
+            if (collaborations.isEmpty()) break
+            actualCollaborations += collaborations
+            offset += limit
+        }
+
+        // verify all
+        assertThat(actualCollaborations).isEqualTo(expectedCollaborations)
+    }
+
+    @Test
     fun testGetCollaborationsByIds() = runBlocking {
         // Add collaborations directly into database
         val allCollaborations = mutableListOf<Collaboration>()
@@ -268,38 +307,39 @@ class CollaborationRoutesTests : BaseApplicationTests() {
     }
 
     @Test
-    fun testGetCollaborationsByEmails() = runBlocking {
+    fun testGetCollaborationsByStatuses() = runBlocking {
         // Add collaborations directly into database
         val allCollaborations = mutableListOf<Collaboration>()
         for (offset in 0..30) {
             allCollaborations += addCollaborationToDatabase(testUserId, offset)
         }
 
-        // filter out 1st and last
-        val expectedCollaborations = allCollaborations.subList(1, allCollaborations.size - 1)
-        val emails = expectedCollaborations.map { it.email }.joinToString()
+        for (expectedStatus in CollaborationStatus.values()) {
+            // filter out
+            val expectedCollaborations = allCollaborations.filter { it.status == expectedStatus }
 
-        // Get all collaborations forcing pagination
-        var offset = 0
-        val limit = 5
-        val actualCollaborations = mutableListOf<Collaboration>()
-        while (true) {
-            val response = client.get("v1/collaborations") {
-                bearerAuth(testUserToken)
-                accept(ContentType.Application.Json)
-                parameter("offset", offset)
-                parameter("limit", limit)
-                parameter("emails", emails)
+            // Get all collaborations forcing pagination
+            var offset = 0
+            val limit = 5
+            val actualCollaborations = mutableListOf<Collaboration>()
+            while (true) {
+                val response = client.get("v1/collaborations") {
+                    bearerAuth(testUserToken)
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("statuses", expectedStatus)
+                }
+                assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+                val collaborations = response.body<List<Collaboration>>()
+                if (collaborations.isEmpty()) break
+                actualCollaborations += collaborations
+                offset += limit
             }
-            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
-            val collaborations = response.body<List<Collaboration>>()
-            if (collaborations.isEmpty()) break
-            actualCollaborations += collaborations
-            offset += limit
-        }
 
-        // verify all
-        assertThat(actualCollaborations).isEqualTo(expectedCollaborations)
+            // verify all
+            assertThat(actualCollaborations).isEqualTo(expectedCollaborations)
+        }
     }
 
     @Test
@@ -435,12 +475,66 @@ class CollaborationRoutesTests : BaseApplicationTests() {
             addCollaborationToDatabase(testUserId, count.toInt())
         }
     }
+
+    @Test
+    fun testCollaborationReplyAccepted() = runBlocking {
+        // Add Collaboration invitation directly into database
+        val collaborationId = addCollaborationToDatabase(
+            email = testUserEmail,
+            status = CollaborationStatus.Waiting
+        ).id!!
+
+        // reply
+        val response = client.put("v1/collaborations/$collaborationId/reply") {
+            bearerAuth(testUserToken)
+            contentType(ContentType.Application.Json)
+            setBody(CollaborationReply(true))
+        }
+        assertThat(response.status).isEqualTo(HttpStatusCode.NoContent)
+
+        // check status directly from database
+        val status = transaction { CollaborationEntity[collaborationId].status }
+        assertThat(status).isEqualTo(CollaborationStatus.Accepted)
+    }
+
+    @Test
+    fun testCollaborationReplyRejected() = runBlocking {
+        // Add Collaboration invitation directly into database
+        val collaborationId = addCollaborationToDatabase(
+            email = testUserEmail,
+            status = CollaborationStatus.Waiting
+        ).id!!
+
+        // reply
+        val response = client.put("v1/collaborations/$collaborationId/reply") {
+            bearerAuth(testUserToken)
+            contentType(ContentType.Application.Json)
+            setBody(CollaborationReply(false))
+        }
+        assertThat(response.status).isEqualTo(HttpStatusCode.NoContent)
+
+        // check status directly from database
+        val status = transaction { CollaborationEntity[collaborationId].status }
+        assertThat(status).isEqualTo(CollaborationStatus.Rejected)
+    }
 }
 
-private fun addCollaborationToDatabase(userId: UUID, offset: Int = 0, email: String? = null): Collaboration {
+private fun addCollaborationToDatabase(
+    ownerId: UUID? = null,
+    offset: Int = 0,
+    email: String? = null,
+    status: CollaborationStatus? = null
+): Collaboration {
+    val ownerEntityId = ownerId?.let {
+        EntityID(it, UserTable)
+    } ?: transaction {
+        UserEntity.new {
+            this.email = "artist$offset@newm.io"
+        }
+    }.id
     val songId = transaction {
         SongEntity.new {
-            ownerId = EntityID(userId, UserTable)
+            this.ownerId = ownerEntityId
             title = "Song$offset"
             genres = arrayOf("Genre$offset")
         }.id
@@ -452,7 +546,7 @@ private fun addCollaborationToDatabase(userId: UUID, offset: Int = 0, email: Str
             role = "Role$offset"
             royaltyRate = 1f / (offset + 2)
             credited = (offset % 2) == 1
-            accepted = (offset % 2) == 0
+            this.status = status ?: CollaborationStatus.values()[offset % CollaborationStatus.values().size]
         }
     }.toModel()
 }
