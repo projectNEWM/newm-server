@@ -1,5 +1,6 @@
 package io.newm.server.features.collaboration.database
 
+import io.newm.server.features.collaboration.model.CollaborationStatus
 import io.newm.server.features.song.database.SongTable
 import io.newm.server.features.song.database.SongTable.defaultExpression
 import org.jetbrains.exposed.dao.id.EntityID
@@ -18,5 +19,6 @@ object CollaborationTable : UUIDTable(name = "collaborations") {
     val role: Column<String?> = text("role").nullable()
     val royaltyRate: Column<Float?> = float("royalty_rate").nullable()
     val credited: Column<Boolean> = bool("credited").default(false)
-    val accepted: Column<Boolean> = bool("accepted").default(false)
+    val status: Column<CollaborationStatus> =
+        enumeration("status", CollaborationStatus::class).default(CollaborationStatus.Editing)
 }

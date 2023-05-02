@@ -57,10 +57,12 @@ open class BaseApplicationTests {
         }
     }
 
+    protected val testUserEmail: String = "tester@projectnewm.io"
+
     protected val testUserId: UUID by lazy {
         transaction {
             UserEntity.new {
-                email = "tester@projectnewm.io"
+                email = testUserEmail
             }
         }.id.value
     }

@@ -4,6 +4,7 @@ import io.ktor.util.logging.Logger
 import io.newm.server.features.collaboration.database.CollaborationEntity
 import io.newm.server.features.collaboration.model.Collaboration
 import io.newm.server.features.collaboration.model.CollaborationFilters
+import io.newm.server.features.collaboration.model.CollaborationStatus
 import io.newm.server.features.collaboration.model.Collaborator
 import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.database.SongTable
@@ -52,6 +53,7 @@ internal class CollaborationRepositoryImpl : CollaborationRepository {
         transaction {
             val entity = CollaborationEntity[collaborationId]
             entity.checkSongState(requesterId)
+            entity.checkStatus()
             collaboration.email?.let { entity.email = it.asValidEmail() }
             collaboration.role?.let { entity.role = it }
             collaboration.royaltyRate?.let { entity.royaltyRate = it }
@@ -64,6 +66,7 @@ internal class CollaborationRepositoryImpl : CollaborationRepository {
         transaction {
             val entity = CollaborationEntity[collaborationId]
             entity.checkSongState(requesterId)
+            entity.checkStatus()
             entity.delete()
         }
     }
@@ -120,13 +123,30 @@ internal class CollaborationRepositoryImpl : CollaborationRepository {
         }
     }
 
-    private fun CollaborationEntity.checkSongState(requesterId: UUID, edit: Boolean = true) =
-        checkSongState(songId.value, requesterId, edit)
+    override suspend fun reply(collaborationId: UUID, requesterId: UUID, accepted: Boolean) {
+        logger.debug { "reply: collaborationId = $collaborationId, accepted = $accepted" }
+        transaction {
+            val collaboration = CollaborationEntity[collaborationId]
+            val user = UserEntity[requesterId]
+            if (!collaboration.email.equals(user.email, ignoreCase = true)) {
+                throw HttpForbiddenException("Operation allowed only by collaborator")
+            }
+            collaboration.checkStatus(CollaborationStatus.Waiting)
+            collaboration.status = if (accepted) CollaborationStatus.Accepted else CollaborationStatus.Rejected
+        }
+    }
 
-    private fun checkSongState(songId: UUID, requesterId: UUID, edit: Boolean = true) {
+    private fun CollaborationEntity.checkSongState(requesterId: UUID, edit: Boolean = true) =
+        checkSongState(songId.value, requesterId, email, edit)
+
+    private fun checkSongState(songId: UUID, requesterId: UUID, email: String? = null, edit: Boolean = true) {
         with(SongEntity[songId]) {
             if (ownerId.value != requesterId) {
-                throw HttpForbiddenException("Operation allowed only by owner")
+                if (edit) {
+                    throw HttpForbiddenException("Operation allowed only by owner")
+                } else if (!UserEntity[requesterId].email.equals(email, ignoreCase = true)) {
+                    throw HttpForbiddenException("Operation allowed only by owner or collaborator")
+                }
             }
             if (edit && mintingStatus != MintingStatus.Undistributed) {
                 throw HttpUnprocessableEntityException("Operation only allowed when mintingStatus = Undistributed")
@@ -136,5 +156,11 @@ internal class CollaborationRepositoryImpl : CollaborationRepository {
 
     private fun Collaboration.checkFieldLengths() {
         role?.checkLength("role")
+    }
+
+    private fun CollaborationEntity.checkStatus(status: CollaborationStatus = CollaborationStatus.Editing) {
+        if (this.status != status) {
+            throw HttpUnprocessableEntityException("Operation only allowed when status = $status")
+        }
     }
 }

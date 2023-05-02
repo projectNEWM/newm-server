@@ -14,4 +14,5 @@ interface CollaborationRepository {
     suspend fun getAllCount(userId: UUID, filters: CollaborationFilters): Long
     suspend fun getCollaborators(userId: UUID, offset: Int, limit: Int): List<Collaborator>
     suspend fun getCollaboratorCount(userId: UUID): Long
+    suspend fun reply(collaborationId: UUID, requesterId: UUID, accepted: Boolean)
 }

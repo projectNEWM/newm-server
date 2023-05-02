@@ -2,7 +2,9 @@ package io.newm.server.features.collaboration.database
 
 import io.newm.server.features.collaboration.model.Collaboration
 import io.newm.server.features.collaboration.model.CollaborationFilters
+import io.newm.server.features.collaboration.model.CollaborationStatus
 import io.newm.server.features.song.database.SongTable
+import io.newm.server.features.user.database.UserEntity
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
@@ -28,7 +30,7 @@ class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var role: String? by CollaborationTable.role
     var royaltyRate: Float? by CollaborationTable.royaltyRate
     var credited: Boolean by CollaborationTable.credited
-    var accepted: Boolean by CollaborationTable.accepted
+    var status: CollaborationStatus by CollaborationTable.status
 
     fun toModel(): Collaboration = Collaboration(
         id = id.value,
@@ -38,14 +40,19 @@ class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         role = role,
         royaltyRate = royaltyRate,
         credited = credited,
-        accepted = accepted,
+        status = status
     )
 
     companion object : UUIDEntityClass<CollaborationEntity>(CollaborationTable) {
 
         fun all(userId: UUID, filters: CollaborationFilters): SizedIterable<CollaborationEntity> {
+            val inbound = filters.inbound == true
             val ops = mutableListOf<Op<Boolean>>()
-            ops += SongTable.ownerId eq userId
+            ops += if (inbound) {
+                CollaborationTable.email.lowerCase() eq UserEntity[userId].email.lowercase()
+            } else {
+                SongTable.ownerId eq userId
+            }
             with(filters) {
                 olderThan?.let {
                     ops += CollaborationTable.createdAt less it
@@ -59,18 +66,22 @@ class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                 songIds?.let {
                     ops += CollaborationTable.songId inList it
                 }
-                emails?.let {
-                    ops += CollaborationTable.email.lowerCase() inList it.map(String::lowercase)
+                statuses?.let {
+                    ops += CollaborationTable.status inList it
                 }
             }
-            return CollaborationEntity.wrapRows(
-                CollaborationTable.join(
-                    otherTable = SongTable,
-                    joinType = JoinType.INNER,
-                    additionalConstraint = { CollaborationTable.songId eq SongTable.id }
-                ).slice(CollaborationTable.columns)
-                    .select(AndOp(ops))
-            )
+            val andOp = AndOp(ops)
+            return if (inbound) {
+                find(andOp)
+            } else {
+                CollaborationEntity.wrapRows(
+                    CollaborationTable.join(
+                        otherTable = SongTable,
+                        joinType = JoinType.INNER,
+                        additionalConstraint = { CollaborationTable.songId eq SongTable.id }
+                    ).slice(CollaborationTable.columns).select(andOp)
+                )
+            }
         }
 
         fun collaborators(userId: UUID): SizedIterable<Pair<String, Long>> {
