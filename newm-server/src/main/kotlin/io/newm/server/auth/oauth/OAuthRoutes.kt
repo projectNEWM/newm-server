@@ -20,9 +20,7 @@ fun Routing.createOAuthRoutes(type: OAuthType) {
     post("$AUTH_PATH/login/${type.name.lowercase()}") {
         val req = receive<OAuthLoginRequest>()
         val oauthAccessToken = req.accessToken ?: req.code?.let { code ->
-            req.redirectUri?.let { redirectUri ->
-                oAuthRepository.getAccessToken(type, code, redirectUri)
-            } ?: throw HttpBadRequestException("missing redirectUri")
+            oAuthRepository.getAccessToken(type, code, req.redirectUri)
         } ?: throw HttpBadRequestException("missing code")
         respond(jwtRepository.createLoginResponse(userRepository.findOrAdd(type, oauthAccessToken)))
     }
