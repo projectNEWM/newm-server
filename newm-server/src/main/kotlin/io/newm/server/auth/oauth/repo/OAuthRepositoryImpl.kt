@@ -30,7 +30,7 @@ class OAuthRepositoryImpl(
 ) : OAuthRepository {
     private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
 
-    override suspend fun getAccessToken(type: OAuthType, code: String, redirectUri: String): String {
+    override suspend fun getAccessToken(type: OAuthType, code: String, redirectUri: String?): String {
         logger.debug { "getAccessToken: type = $type, redirectUri=$redirectUri" }
 
         return with(environment.getConfigChild("oauth.${type.name.lowercase()}")) {
@@ -39,7 +39,7 @@ class OAuthRepositoryImpl(
                 formParameters = Parameters.build {
                     append("grant_type", "authorization_code")
                     append("code", code)
-                    append("redirect_uri", redirectUri)
+                    redirectUri?.let { append("redirect_uri", it) }
                     append("client_id", getSecureString("clientId"))
                     append("client_secret", getSecureString("clientSecret"))
                 }
