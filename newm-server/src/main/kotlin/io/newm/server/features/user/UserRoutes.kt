@@ -12,11 +12,13 @@ import io.newm.server.ktx.limit
 import io.newm.server.ktx.offset
 import io.newm.server.ktx.restrictToMe
 import io.newm.server.features.model.CountResponse
+import io.newm.server.features.user.model.UserIdBody
 import io.newm.server.features.user.model.userFilters
 import io.newm.server.features.user.repo.UserRepository
 import io.newm.shared.ktx.delete
 import io.newm.shared.ktx.get
 import io.newm.shared.ktx.patch
+import io.newm.shared.ktx.post
 import io.newm.shared.ktx.put
 import io.newm.shared.koin.inject
 
@@ -51,6 +53,10 @@ fun Routing.createUserRoutes() {
         get {
             respond(repository.getAll(userFilters, offset, limit))
         }
+        post {
+            respond(UserIdBody(repository.add(receive())))
+        }
+        // TODO: Deprecated - remove next "PUT" route after client migration to previous "POST" (CU-85zt07yec)
         put {
             repository.add(receive())
             respond(HttpStatusCode.NoContent)

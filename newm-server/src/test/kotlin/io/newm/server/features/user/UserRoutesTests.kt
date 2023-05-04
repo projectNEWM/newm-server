@@ -8,6 +8,7 @@ import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.patch
+import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
@@ -20,6 +21,7 @@ import io.newm.server.features.model.CountResponse
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
 import io.newm.server.features.user.model.User
+import io.newm.server.features.user.model.UserIdBody
 import io.newm.shared.ktx.existsHavingId
 import io.newm.shared.ktx.toHash
 import kotlinx.coroutines.runBlocking
@@ -39,6 +41,53 @@ class UserRoutesTests : BaseApplicationTests() {
         }
     }
 
+    @Test
+    fun testPostUser() = runBlocking {
+        val startTime = LocalDateTime.now()
+
+        // Put 2FA code directly into database
+        transaction {
+            TwoFactorAuthEntity.new {
+                email = testUser1.email!!
+                codeHash = testUser1.authCode!!.toHash()
+                expiresAt = LocalDateTime.now().plusSeconds(10)
+            }
+        }
+
+        // Post User
+        val response = client.post("v1/users") {
+            contentType(ContentType.Application.Json)
+            setBody(testUser1)
+        }
+        assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+        val userId = response.body<UserIdBody>().userId
+
+        // Read User directly from database & verify it
+        val (user, passwordHash) = transaction {
+            UserEntity[userId].let { it.toModel() to it.passwordHash!! }
+        }
+        assertThat(user.createdAt).isAtLeast(startTime)
+        assertThat(user.firstName).isEqualTo(testUser1.firstName)
+        assertThat(user.lastName).isEqualTo(testUser1.lastName)
+        assertThat(user.nickname).isEqualTo(testUser1.nickname)
+        assertThat(user.pictureUrl).isEqualTo(testUser1.pictureUrl)
+        assertThat(user.bannerUrl).isEqualTo(testUser1.bannerUrl)
+        assertThat(user.websiteUrl).isEqualTo(testUser1.websiteUrl)
+        assertThat(user.twitterUrl).isEqualTo(testUser1.twitterUrl)
+        assertThat(user.instagramUrl).isEqualTo(testUser1.instagramUrl)
+        assertThat(user.location).isEqualTo(testUser1.location)
+        assertThat(user.role).isEqualTo(testUser1.role)
+        assertThat(user.genre).isEqualTo(testUser1.genre)
+        assertThat(user.biography).isEqualTo(testUser1.biography)
+        assertThat(user.walletAddress).isEqualTo(testUser1.walletAddress)
+        assertThat(user.email).isEqualTo(testUser1.email)
+        assertThat(testUser1.newPassword!!.verify(passwordHash)).isTrue()
+        assertThat(user.companyName).isEqualTo(testUser1.companyName)
+        assertThat(user.companyLogoUrl).isEqualTo(testUser1.companyLogoUrl)
+        assertThat(user.companyIpRights).isEqualTo(testUser1.companyIpRights)
+    }
+
+    // TODO: Deprecated - remove next test when as part of CU-85zt07yec
     @Test
     fun testPutUser() = runBlocking {
         val startTime = LocalDateTime.now()

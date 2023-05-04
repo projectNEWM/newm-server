@@ -38,14 +38,14 @@ internal class UserRepositoryImpl(
 
     private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
 
-    override suspend fun add(user: User) {
+    override suspend fun add(user: User): UUID {
         logger.debug { "add: user = $user" }
 
         user.checkFieldLengths()
         val email = user.email.asValidEmail().asVerifiedEmail(user.authCode)
         val passwordHash = user.newPassword.asValidPassword(user.confirmPassword).toHash()
 
-        transaction {
+        return transaction {
             email.checkEmailUnique()
             UserEntity.new {
                 this.firstName = user.firstName
@@ -66,7 +66,7 @@ internal class UserRepositoryImpl(
                 this.companyName = user.companyName
                 this.companyLogoUrl = user.companyLogoUrl?.asValidUrl()
                 this.companyIpRights = user.companyIpRights
-            }
+            }.id.value
         }
     }
 
