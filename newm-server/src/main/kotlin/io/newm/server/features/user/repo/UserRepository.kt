@@ -7,7 +7,7 @@ import io.newm.server.features.user.model.UserFilters
 import java.util.UUID
 
 interface UserRepository {
-    suspend fun add(user: User)
+    suspend fun add(user: User): UUID
     suspend fun find(email: String, password: Password): Pair<UUID, Boolean>
     suspend fun findOrAdd(oauthType: OAuthType, oauthAccessToken: String): UUID
     suspend fun exists(userId: UUID): Boolean
