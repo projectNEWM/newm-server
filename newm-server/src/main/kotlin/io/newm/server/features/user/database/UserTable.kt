@@ -7,6 +7,7 @@ import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.javatime.CurrentDateTime
 import org.jetbrains.exposed.sql.javatime.datetime
 import java.time.LocalDateTime
+import java.util.UUID
 
 object UserTable : UUIDTable(name = "users") {
     val createdAt: Column<LocalDateTime> = datetime("created_at").defaultExpression(CurrentDateTime)
@@ -34,4 +35,11 @@ object UserTable : UUIDTable(name = "users") {
     val companyLogoUrl: Column<String?> = text("company_logo_url").nullable()
     val companyIpRights: Column<Boolean?> = bool("company_ip_rights").nullable()
     val admin: Column<Boolean> = bool("admin").default(false)
+    val distributionUserId: Column<UUID?> = uuid("distribution_user_id").nullable()
+    val distributionArtistId: Column<Long?> = long("distribution_artist_id").nullable()
+    val distributionParticipantId: Column<Long?> = long("distribution_participant_id").nullable()
+    val distributionSubscriptionId: Column<Long?> = long("distribution_subscription_id").nullable()
+    val distributionLabelId: Column<Long?> = long("distribution_label_id").nullable()
+    val distributionIsni: Column<String?> = text("distribution_isni").nullable()
+    val distributionIpn: Column<String?> = text("distribution_ipn").nullable()
 }

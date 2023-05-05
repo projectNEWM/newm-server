@@ -14,7 +14,7 @@ import org.jetbrains.exposed.sql.javatime.date
 import org.jetbrains.exposed.sql.javatime.datetime
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
 
 object SongTable : UUIDTable(name = "songs") {
     val createdAt: Column<LocalDateTime> = datetime("created_at").defaultExpression(CurrentDateTime)
@@ -52,4 +52,5 @@ object SongTable : UUIDTable(name = "songs") {
     val arweaveLyricsUrl: Column<String?> = text("arweave_lyrics_url").nullable()
     val arweaveTokenAgreementUrl: Column<String?> = text("arweave_token_agreement_url").nullable()
     val arweaveClipUrl: Column<String?> = text("arweave_clip_url").nullable()
+    val distributionTrackId: Column<Long?> = long("distribution_track_id").nullable()
 }

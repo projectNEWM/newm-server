@@ -184,8 +184,8 @@ class ArweaveRepositoryImpl(
                         throw response.status.toException("Error downloading url: $url")
                     }
 
-                    val webpBytes: ByteArray = response.body()
-                    val arweaveData = Data(webpBytes)
+                    val bodyBytes: ByteArray = response.body()
+                    val arweaveData = Data(bodyBytes)
                     val reward = calculatePrice(arweaveData)
                     val lastTx = getLastWalletTransaction()
                     val tags = buildTags(mapOf("Content-Type" to mimeType))

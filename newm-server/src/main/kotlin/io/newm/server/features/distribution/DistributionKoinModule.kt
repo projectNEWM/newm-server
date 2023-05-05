@@ -4,5 +4,5 @@ import io.newm.server.features.distribution.eveara.EvearaDistributionRepositoryI
 import org.koin.dsl.module
 
 val distributionKoinModule = module {
-    single<DistributionRepository> { EvearaDistributionRepositoryImpl() }
+    single<DistributionRepository> { EvearaDistributionRepositoryImpl(get(), get()) }
 }

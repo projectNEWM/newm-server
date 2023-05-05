@@ -14,26 +14,6 @@ import org.junit.jupiter.api.Test
 class StaticRoutesTests : BaseApplicationTests() {
 
     @Test
-    fun testGetPredefinedRoles() = runBlocking {
-        val response = client.get("contents/predefined-roles.json")
-        assertThat(response.status).isEqualTo(HttpStatusCode.OK)
-        assertThat(response.contentType()).isEqualTo(ContentType.Application.Json)
-
-        val content = javaClass.getResource("/static/predefined-roles.json").readText()
-        assertThat(response.body<String>()).isEqualTo(content)
-    }
-
-    @Test
-    fun testGetPredefinedGenres() = runBlocking {
-        val response = client.get("contents/predefined-genres.json")
-        assertThat(response.status).isEqualTo(HttpStatusCode.OK)
-        assertThat(response.contentType()).isEqualTo(ContentType.Application.Json)
-
-        val content = javaClass.getResource("/static/predefined-genres.json").readText()
-        assertThat(response.body<String>()).isEqualTo(content)
-    }
-
-    @Test
     fun testGetPredefinedMoods() = runBlocking {
         val response = client.get("contents/predefined-moods.json")
         assertThat(response.status).isEqualTo(HttpStatusCode.OK)

@@ -5,6 +5,7 @@ import io.newm.shared.auth.Password
 import io.newm.shared.serialization.LocalDateTimeSerializer
 import io.newm.shared.serialization.UUIDSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -37,7 +38,20 @@ data class User(
     val verificationStatus: UserVerificationStatus? = null,
     val companyName: String? = null,
     val companyLogoUrl: String? = null,
-    var companyIpRights: Boolean? = null
+    var companyIpRights: Boolean? = null,
+    @Serializable(with = UUIDSerializer::class)
+    @Transient
+    var distributionUserId: UUID? = null,
+    @Transient
+    var distributionArtistId: Long? = null,
+    @Transient
+    var distributionParticipantId: Long? = null,
+    @Transient
+    var distributionSubscriptionId: Long? = null,
+    @Transient
+    var distributionLabelId: Long? = null,
+    var distributionIsni: String? = null,
+    var distributionIpn: String? = null,
 ) {
-    val fullName: String by lazy { "$firstName $lastName".trim() }
+    val stageOrFullName: String by lazy { nickname ?: "$firstName $lastName".trim() }
 }

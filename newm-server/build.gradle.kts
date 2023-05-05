@@ -84,6 +84,8 @@ dependencies {
     implementation(Dependencies.Cbor.CBOR)
     implementation(Dependencies.Caffeine.ALL)
 
+    implementation(Dependencies.Quartz.ALL)
+
     implementation(Dependencies.Cloudinary.ALL)
 
     implementation(platform(Dependencies.Aws.BOM))
