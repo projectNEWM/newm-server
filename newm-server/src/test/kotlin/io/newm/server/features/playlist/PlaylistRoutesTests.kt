@@ -31,8 +31,10 @@ import io.newm.shared.ktx.exists
 import io.newm.shared.ktx.existsHavingId
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.dao.id.EntityID
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.neq
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteAll
+import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.junit.jupiter.api.BeforeEach
@@ -47,6 +49,7 @@ class PlaylistRoutesTests : BaseApplicationTests() {
         transaction {
             PlaylistTable.deleteAll()
             SongTable.deleteAll()
+            UserTable.deleteWhere { id neq testUserId }
         }
     }
 
@@ -125,7 +128,7 @@ class PlaylistRoutesTests : BaseApplicationTests() {
 
         // filter out 1st and last
         val expectedPlaylists = allPlaylists.subList(1, allPlaylists.size - 1)
-        val ids = expectedPlaylists.map { it.id }.joinToString()
+        val ids = expectedPlaylists.joinToString { it.id.toString() }
 
         // Get all playlists forcing pagination
         var offset = 0
@@ -160,7 +163,7 @@ class PlaylistRoutesTests : BaseApplicationTests() {
 
         // filter out 1st and last
         val expectedPlaylists = allPlaylists.subList(1, allPlaylists.size - 1)
-        val ownerIds = expectedPlaylists.map { it.ownerId }.joinToString()
+        val ownerIds = expectedPlaylists.joinToString { it.ownerId.toString() }
 
         // Get all playlists forcing pagination
         var offset = 0

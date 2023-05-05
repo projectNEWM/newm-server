@@ -3,6 +3,7 @@ package io.newm.server.features.collaboration.repo
 import io.newm.server.features.collaboration.model.Collaboration
 import io.newm.server.features.collaboration.model.CollaborationFilters
 import io.newm.server.features.collaboration.model.Collaborator
+import io.newm.server.features.collaboration.model.CollaboratorFilters
 import java.util.UUID
 
 interface CollaborationRepository {
@@ -12,7 +13,7 @@ interface CollaborationRepository {
     suspend fun get(collaborationId: UUID, requesterId: UUID): Collaboration
     suspend fun getAll(userId: UUID, filters: CollaborationFilters, offset: Int, limit: Int): List<Collaboration>
     suspend fun getAllCount(userId: UUID, filters: CollaborationFilters): Long
-    suspend fun getCollaborators(userId: UUID, offset: Int, limit: Int): List<Collaborator>
-    suspend fun getCollaboratorCount(userId: UUID): Long
+    suspend fun getCollaborators(userId: UUID, filters: CollaboratorFilters, offset: Int, limit: Int): List<Collaborator>
+    suspend fun getCollaboratorCount(userId: UUID, filters: CollaboratorFilters): Long
     suspend fun reply(collaborationId: UUID, requesterId: UUID, accepted: Boolean)
 }

@@ -30,7 +30,9 @@ import io.newm.server.features.user.database.UserTable
 import io.newm.shared.ktx.existsHavingId
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.dao.id.EntityID
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.neq
 import org.jetbrains.exposed.sql.deleteAll
+import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -44,6 +46,7 @@ class CollaborationRoutesTests : BaseApplicationTests() {
         transaction {
             CollaborationTable.deleteAll()
             SongTable.deleteAll()
+            UserTable.deleteWhere { id neq testUserId }
         }
     }
 
@@ -246,7 +249,7 @@ class CollaborationRoutesTests : BaseApplicationTests() {
 
         // filter out 1st and last
         val expectedCollaborations = allCollaborations.subList(1, allCollaborations.size - 1)
-        val ids = expectedCollaborations.map { it.id }.joinToString()
+        val ids = expectedCollaborations.joinToString { it.id.toString() }
 
         // Get all collaborations forcing pagination
         var offset = 0
@@ -281,7 +284,7 @@ class CollaborationRoutesTests : BaseApplicationTests() {
 
         // filter out 1st and last
         val expectedCollaborations = allCollaborations.subList(1, allCollaborations.size - 1)
-        val songIds = expectedCollaborations.map { it.songId }.joinToString()
+        val songIds = expectedCollaborations.joinToString { it.songId.toString() }
 
         // Get all collaborations forcing pagination
         var offset = 0
@@ -444,6 +447,120 @@ class CollaborationRoutesTests : BaseApplicationTests() {
                 accept(ContentType.Application.Json)
                 parameter("offset", offset)
                 parameter("limit", limit)
+            }
+            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+            val collaborators = response.body<List<Collaborator>>()
+            if (collaborators.isEmpty()) break
+            actualCollaborators += collaborators
+            offset += limit
+        }
+
+        // verify all
+        val actualSorted = actualCollaborators.sortedBy { it.email }
+        val expectedSorted = expectedCollaborators.sortedBy { it.email }
+        assertThat(actualSorted).isEqualTo(expectedSorted)
+    }
+
+    @Test
+    fun testGetCollaboratorsBySongId() = runBlocking {
+        // Add Collaborations directly into database
+        val allCollaborators = mutableListOf<Collaborator>()
+        val allCollaborations = mutableListOf<Collaboration>()
+        for (offset in 0..30) {
+            val email = "collaborator$offset@email.com"
+            val user = if (offset % 2 == 0) {
+                transaction {
+                    UserEntity.new {
+                        this.email = email
+                    }
+                }.toModel(false)
+            } else {
+                null
+            }
+            val songCount = (offset % 4) + 1
+            for (i in 1..songCount) {
+                allCollaborations += addCollaborationToDatabase(testUserId, i, email)
+            }
+            allCollaborators += Collaborator(email, songCount.toLong(), user)
+        }
+
+        // filter out 1st and last
+        val expectedCollaborators = allCollaborators.subList(1, allCollaborators.size - 1)
+        val songIds = allCollaborations.filter {
+            it.email != allCollaborators.first().email && it.email != allCollaborators.last().email
+        }.joinToString { it.songId.toString() }
+
+        // Get all collaborations forcing pagination
+        var offset = 0
+        val limit = 5
+        val actualCollaborators = mutableListOf<Collaborator>()
+        while (true) {
+            val response = client.get("v1/collaborations/collaborators") {
+                bearerAuth(testUserToken)
+                accept(ContentType.Application.Json)
+                parameter("offset", offset)
+                parameter("limit", limit)
+                parameter("songIds", songIds)
+            }
+            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+            val collaborators = response.body<List<Collaborator>>()
+            if (collaborators.isEmpty()) break
+            actualCollaborators += collaborators
+            offset += limit
+        }
+
+        // verify all
+        val actualSorted = actualCollaborators.sortedBy { it.email }
+        val expectedSorted = expectedCollaborators.sortedBy { it.email }
+        assertThat(actualSorted).isEqualTo(expectedSorted)
+    }
+
+    @Test
+    fun testGetCollaboratorsByPhrase() = runBlocking {
+        val phrase = "abcde"
+        fun phraseOrBlank(offset: Int, target: Int) = phrase.takeIf { offset % 3 == target }.orEmpty()
+
+        // Add Collaborations directly into database
+        val allCollaborators = mutableListOf<Collaborator>()
+        val allCollaborations = mutableListOf<Collaboration>()
+        for (offset in 0..30) {
+            val email = "collaborator${phraseOrBlank(offset, 0)}$offset@email.com"
+            val user = if (offset % 2 == 0) {
+                transaction {
+                    UserEntity.new {
+                        this.email = email
+                        firstName = "First${phraseOrBlank(offset, 1)}$offset"
+                        lastName = "Last${phraseOrBlank(offset, 2)}$offset"
+                    }
+                }.toModel(false)
+            } else {
+                null
+            }
+            val songCount = (offset % 4) + 1
+            for (i in 1..songCount) {
+                allCollaborations += addCollaborationToDatabase(testUserId, i, email)
+            }
+            allCollaborators += Collaborator(email, songCount.toLong(), user)
+        }
+
+        // filter out for phrase
+        val expectedCollaborators = allCollaborators.filter { collab ->
+            collab.email!!.contains(phrase) ||
+                collab.user?.firstName?.contains(phrase) == true ||
+                collab.user?.lastName?.contains(phrase) == true
+        }
+
+        // Get all collaborations forcing pagination
+        var offset = 0
+        val limit = 5
+        val actualCollaborators = mutableListOf<Collaborator>()
+        while (true) {
+            val response = client.get("v1/collaborations/collaborators") {
+                bearerAuth(testUserToken)
+                accept(ContentType.Application.Json)
+                parameter("offset", offset)
+                parameter("limit", limit)
+                parameter("phrase", phrase)
             }
             assertThat(response.status).isEqualTo(HttpStatusCode.OK)
             val collaborators = response.body<List<Collaborator>>()

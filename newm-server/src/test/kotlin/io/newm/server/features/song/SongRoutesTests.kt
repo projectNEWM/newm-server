@@ -28,7 +28,9 @@ import io.newm.shared.ktx.getString
 import io.newm.shared.ktx.toDate
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.dao.id.EntityID
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.neq
 import org.jetbrains.exposed.sql.deleteAll
+import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
@@ -47,6 +49,7 @@ class SongRoutesTests : BaseApplicationTests() {
         transaction {
             SongTable.deleteAll()
             KeyTable.deleteAll()
+            UserTable.deleteWhere { id neq testUserId }
         }
     }
 
@@ -139,7 +142,7 @@ class SongRoutesTests : BaseApplicationTests() {
 
         // filter out 1st and last
         val expectedSongs = allSongs.subList(1, allSongs.size - 1)
-        val ids = expectedSongs.map { it.id }.joinToString()
+        val ids = expectedSongs.joinToString { it.id.toString() }
 
         // Get all songs forcing pagination
         var offset = 0
@@ -174,7 +177,7 @@ class SongRoutesTests : BaseApplicationTests() {
 
         // filter out 1st and last
         val expectedSongs = allSongs.subList(1, allSongs.size - 1)
-        val ownerIds = expectedSongs.map { it.ownerId }.joinToString()
+        val ownerIds = expectedSongs.joinToString { it.ownerId.toString() }
 
         // Get all songs forcing pagination
         var offset = 0
@@ -346,7 +349,7 @@ class SongRoutesTests : BaseApplicationTests() {
         // Add Songs directly into database
         val allSongs = mutableListOf<Song>()
         for (offset in 0..30) {
-            allSongs += addSongToDatabase(offset = offset, phrase = phrase)
+            allSongs += addSongToDatabase(offset = offset, phrase = phrase.takeIf { offset % 2 == 0 })
         }
 
         // filter out for phrase

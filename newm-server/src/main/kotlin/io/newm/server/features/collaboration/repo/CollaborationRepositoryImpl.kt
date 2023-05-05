@@ -6,6 +6,7 @@ import io.newm.server.features.collaboration.model.Collaboration
 import io.newm.server.features.collaboration.model.CollaborationFilters
 import io.newm.server.features.collaboration.model.CollaborationStatus
 import io.newm.server.features.collaboration.model.Collaborator
+import io.newm.server.features.collaboration.model.CollaboratorFilters
 import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.database.SongTable
 import io.newm.server.features.song.model.MintingStatus
@@ -86,7 +87,7 @@ internal class CollaborationRepositoryImpl : CollaborationRepository {
         offset: Int,
         limit: Int
     ): List<Collaboration> {
-        logger.debug { "getAll: userId  $userId, filters = $filters, offset = $offset, limit = $limit" }
+        logger.debug { "getAll: userId = $userId, filters = $filters, offset = $offset, limit = $limit" }
         return transaction {
             CollaborationEntity.all(userId, filters)
                 .limit(n = limit, offset = offset.toLong())
@@ -95,16 +96,21 @@ internal class CollaborationRepositoryImpl : CollaborationRepository {
     }
 
     override suspend fun getAllCount(userId: UUID, filters: CollaborationFilters): Long {
-        logger.debug { "getAllCount: userId  $userId, filters = $filters" }
+        logger.debug { "getAllCount: userId = $userId, filters = $filters" }
         return transaction {
             CollaborationEntity.all(userId, filters).count()
         }
     }
 
-    override suspend fun getCollaborators(userId: UUID, offset: Int, limit: Int): List<Collaborator> {
-        logger.debug { "getCollaborators: userId  $userId, offset = $offset, limit = $limit" }
+    override suspend fun getCollaborators(
+        userId: UUID,
+        filters: CollaboratorFilters,
+        offset: Int,
+        limit: Int
+    ): List<Collaborator> {
+        logger.debug { "getCollaborators: userId = $userId, filters = $filters, offset = $offset, limit = $limit" }
         return transaction {
-            CollaborationEntity.collaborators(userId)
+            CollaborationEntity.collaborators(userId, filters)
                 .limit(n = limit, offset = offset.toLong())
                 .map { (email, songCount) ->
                     Collaborator(
@@ -116,10 +122,10 @@ internal class CollaborationRepositoryImpl : CollaborationRepository {
         }
     }
 
-    override suspend fun getCollaboratorCount(userId: UUID): Long {
-        logger.debug { "getCollaboratorCount: userId  $userId" }
+    override suspend fun getCollaboratorCount(userId: UUID, filters: CollaboratorFilters): Long {
+        logger.debug { "getCollaboratorCount: userId = $userId, filters = $filters" }
         return transaction {
-            CollaborationEntity.collaborators(userId).count()
+            CollaborationEntity.collaborators(userId, filters).count()
         }
     }
 
