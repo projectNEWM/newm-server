@@ -3,8 +3,10 @@ package io.newm.server.features.collaboration.database
 import io.newm.server.features.collaboration.model.Collaboration
 import io.newm.server.features.collaboration.model.CollaborationFilters
 import io.newm.server.features.collaboration.model.CollaborationStatus
+import io.newm.server.features.collaboration.model.CollaboratorFilters
 import io.newm.server.features.song.database.SongTable
 import io.newm.server.features.user.database.UserEntity
+import io.newm.server.features.user.database.UserTable
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
@@ -16,9 +18,11 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
 import org.jetbrains.exposed.sql.count
 import org.jetbrains.exposed.sql.lowerCase
 import org.jetbrains.exposed.sql.mapLazy
+import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.select
 import java.time.LocalDateTime
 import java.util.UUID
@@ -84,15 +88,34 @@ class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             }
         }
 
-        fun collaborators(userId: UUID): SizedIterable<Pair<String, Long>> {
-            return CollaborationTable.join(
-                otherTable = SongTable,
-                joinType = JoinType.INNER,
-                additionalConstraint = { CollaborationTable.songId eq SongTable.id }
-            ).slice(CollaborationTable.email.lowerCase(), SongTable.id.count())
-                .select { SongTable.ownerId eq userId }
-                .groupBy(CollaborationTable.email.lowerCase())
-                .mapLazy { it[CollaborationTable.email.lowerCase()] to it[SongTable.id.count()] }
+        fun collaborators(userId: UUID, filters: CollaboratorFilters): SizedIterable<Pair<String, Long>> {
+            val ops = mutableListOf<Op<Boolean>>()
+            ops += SongTable.ownerId eq userId
+            with(filters) {
+                songIds?.let {
+                    ops += CollaborationTable.songId inList it
+                }
+                phrase?.let {
+                    val pattern = "%${it.lowercase()}%"
+                    ops += (
+                        (CollaborationTable.email.lowerCase() like pattern)
+                            or (UserTable.firstName.lowerCase() like pattern)
+                            or (UserTable.lastName.lowerCase() like pattern)
+                        )
+                }
+                return CollaborationTable.join(
+                    otherTable = SongTable,
+                    joinType = JoinType.INNER,
+                    additionalConstraint = { CollaborationTable.songId eq SongTable.id }
+                ).join(
+                    otherTable = UserTable,
+                    joinType = JoinType.LEFT,
+                    additionalConstraint = { CollaborationTable.email.lowerCase() eq UserTable.email.lowerCase() }
+                ).slice(CollaborationTable.email.lowerCase(), SongTable.id.count())
+                    .select(AndOp(ops))
+                    .groupBy(CollaborationTable.email.lowerCase())
+                    .mapLazy { it[CollaborationTable.email.lowerCase()] to it[SongTable.id.count()] }
+            }
         }
     }
 }

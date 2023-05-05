@@ -10,6 +10,7 @@ import io.newm.server.auth.jwt.AUTH_JWT
 import io.newm.server.features.collaboration.model.CollaborationIdBody
 import io.newm.server.features.collaboration.model.CollaborationReply
 import io.newm.server.features.collaboration.model.collaborationFilters
+import io.newm.server.features.collaboration.model.collaboratorFilters
 import io.newm.server.features.collaboration.repo.CollaborationRepository
 import io.newm.server.features.model.CountResponse
 import io.newm.server.ktx.collaborationId
@@ -57,10 +58,10 @@ fun Routing.createCollaborationRoutes() {
             }
             route("collaborators") {
                 get {
-                    respond(repository.getCollaborators(myUserId, offset, limit))
+                    respond(repository.getCollaborators(myUserId, collaboratorFilters, offset, limit))
                 }
                 get("count") {
-                    respond(CountResponse(repository.getAllCount(myUserId, collaborationFilters)))
+                    respond(CountResponse(repository.getCollaboratorCount(myUserId, collaboratorFilters)))
                 }
             }
         }
