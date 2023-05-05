@@ -23,5 +23,10 @@ interface ConfigRepository {
         const val CONFIG_KEY_MINT_SCRIPT_UTXO_REFERENCE = "mint.scriptUtxoReference"
         const val CONFIG_KEY_MINT_STARTER_TOKEN_UTXO_REFERENCE = "mint.starterTokenUtxoReference"
         const val CONFIG_KEY_MINT_MONITOR_PAYMENT_ADDRESS_TIMEOUT_MIN = "mint.monitorPaymentAddressTimeoutMin"
+        const val CONFIG_KEY_SCHEDULER_EVEARA_SYNC = "scheduler.evearaSync"
+        const val CONFIG_KEY_EVEARA_SERVER = "eveara.server"
+        const val CONFIG_KEY_EVEARA_CLIENT_ID = "eveara.clientId"
+        const val CONFIG_KEY_EVEARA_CLIENT_SECRET = "eveara.clientSecret"
+        const val CONFIG_KEY_EVEARA_PARTNER_SUBSCRIPTION_ID = "eveara.partnerSubscriptionId"
     }
 }

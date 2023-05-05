@@ -54,4 +54,6 @@ data class Song(
     val arweaveTokenAgreementUrl: String? = null,
     @Transient
     val arweaveClipUrl: String? = null,
+    @Transient
+    val distributionTrackId: Long? = null,
 )

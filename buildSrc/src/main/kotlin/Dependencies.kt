@@ -264,6 +264,12 @@ object Dependencies {
         const val PROTOC = "com.google.protobuf:protoc:$VERSION"
     }
 
+    object Quartz {
+        private const val VERSION = "2.3.2"
+
+        const val ALL = "org.quartz-scheduler:quartz:$VERSION"
+    }
+
     object SSLKickstart {
         private const val VERSION = "7.4.11"
 

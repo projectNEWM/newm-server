@@ -1,4 +1,5 @@
 [
+  "Deprecated. Use /v1/distribution/roles instead.",
   "Arranger",
   "Backup Singer",
   "Composer",

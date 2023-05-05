@@ -34,7 +34,7 @@ internal class UserRepositoryImpl(
     private val facebookUserProvider: FacebookUserProvider,
     private val linkedInUserProvider: LinkedInUserProvider,
     private val appleUserProvider: AppleUserProvider,
-    private val twoFactorAuthRepository: TwoFactorAuthRepository
+    private val twoFactorAuthRepository: TwoFactorAuthRepository,
 ) : UserRepository {
 
     private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
@@ -67,6 +67,7 @@ internal class UserRepositoryImpl(
                 this.companyName = user.companyName
                 this.companyLogoUrl = user.companyLogoUrl?.asValidUrl()
                 this.companyIpRights = user.companyIpRights
+                this.distributionUserId = distributionUserId
             }.id.value
         }
     }

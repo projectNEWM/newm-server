@@ -60,6 +60,7 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var arweaveLyricsUrl: String? by SongTable.arweaveLyricsUrl
     var arweaveTokenAgreementUrl: String? by SongTable.arweaveTokenAgreementUrl
     var arweaveClipUrl: String? by SongTable.arweaveClipUrl
+    var distributionTrackId: Long? by SongTable.distributionTrackId
 
     fun toModel(): Song = Song(
         id = id.value,
@@ -93,7 +94,8 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         arweaveCoverArtUrl = arweaveCoverArtUrl,
         arweaveLyricsUrl = arweaveLyricsUrl,
         arweaveTokenAgreementUrl = arweaveTokenAgreementUrl,
-        arweaveClipUrl = arweaveClipUrl
+        arweaveClipUrl = arweaveClipUrl,
+        distributionTrackId = distributionTrackId,
     )
 
     companion object : UUIDEntityClass<SongEntity>(SongTable) {

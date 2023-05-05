@@ -44,6 +44,13 @@ class UserEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var companyLogoUrl: String? by UserTable.companyLogoUrl
     var companyIpRights: Boolean? by UserTable.companyIpRights
     var admin: Boolean by UserTable.admin
+    var distributionUserId: UUID? by UserTable.distributionUserId
+    var distributionArtistId: Long? by UserTable.distributionArtistId
+    var distributionParticipantId: Long? by UserTable.distributionParticipantId
+    var distributionSubscriptionId: Long? by UserTable.distributionSubscriptionId
+    var distributionLabelId: Long? by UserTable.distributionLabelId
+    var distributionIsni: String? by UserTable.distributionIsni
+    var distributionIpn: String? by UserTable.distributionIpn
 
     fun toModel(includeAll: Boolean = true) = User(
         id = id.value,
@@ -67,7 +74,14 @@ class UserEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         verificationStatus = verificationStatus.takeIf { includeAll },
         companyName = companyName,
         companyLogoUrl = companyLogoUrl,
-        companyIpRights = companyIpRights
+        companyIpRights = companyIpRights,
+        distributionUserId = distributionUserId,
+        distributionArtistId = distributionArtistId,
+        distributionParticipantId = distributionParticipantId,
+        distributionSubscriptionId = distributionSubscriptionId,
+        distributionLabelId = distributionLabelId,
+        distributionIsni = distributionIsni,
+        distributionIpn = distributionIpn,
     )
 
     companion object : UUIDEntityClass<UserEntity>(UserTable) {

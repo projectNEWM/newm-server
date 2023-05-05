@@ -380,7 +380,7 @@ class MintingRepositoryImpl(
                                                 listItem.addAll(
                                                     visualArtists.map { collab ->
                                                         UserEntity.getByEmail(collab.email!!)!!
-                                                            .toModel(false).fullName
+                                                            .toModel(false).stageOrFullName
                                                             .toPlutusData()
                                                     }
                                                 )
@@ -388,7 +388,7 @@ class MintingRepositoryImpl(
                                         }
                                     } else {
                                         UserEntity.getByEmail(visualArtists[0].email!!)!!
-                                            .toModel(false).fullName.toPlutusData()
+                                            .toModel(false).stageOrFullName.toPlutusData()
                                     }
                                 }
                             )
@@ -588,7 +588,7 @@ class MintingRepositoryImpl(
                                             listItem.addAll(
                                                 lyricists.map { collab ->
                                                     UserEntity.getByEmail(collab.email!!)!!
-                                                        .toModel(false).fullName.toPlutusData()
+                                                        .toModel(false).stageOrFullName.toPlutusData()
                                                 }
                                             )
                                         }
@@ -610,8 +610,8 @@ class MintingRepositoryImpl(
                                             listItem.addAll(
                                                 contributingArtists.map { collab ->
                                                     "${
-                                                        UserEntity.getByEmail(collab.email!!)!!.toModel(false)
-                                                            .let { it.nickname ?: it.fullName }
+                                                        UserEntity.getByEmail(collab.email!!)!!
+                                                            .toModel(false).stageOrFullName
                                                     }, ${collab.role}".toPlutusData()
                                                 }
                                             )
@@ -635,7 +635,7 @@ class MintingRepositoryImpl(
                                                 listItem.addAll(
                                                     mixEngineers.map { collab ->
                                                         UserEntity.getByEmail(collab.email!!)!!
-                                                            .toModel(false).fullName
+                                                            .toModel(false).stageOrFullName
                                                             .toPlutusData()
                                                     }
                                                 )
@@ -643,7 +643,7 @@ class MintingRepositoryImpl(
                                         }
                                     } else {
                                         UserEntity.getByEmail(mixEngineers[0].email!!)!!
-                                            .toModel(false).fullName.toPlutusData()
+                                            .toModel(false).stageOrFullName.toPlutusData()
                                     }
                                 }
                             )
@@ -667,14 +667,14 @@ class MintingRepositoryImpl(
                                                 listItem.addAll(
                                                     masteringEngineers.map { collab ->
                                                         UserEntity.getByEmail(collab.email!!)!!
-                                                            .toModel(false).fullName.toPlutusData()
+                                                            .toModel(false).stageOrFullName.toPlutusData()
                                                     }
                                                 )
                                             }
                                         }
                                     } else {
                                         UserEntity.getByEmail(masteringEngineers[0].email!!)!!
-                                            .toModel(false).fullName.toPlutusData()
+                                            .toModel(false).stageOrFullName.toPlutusData()
                                     }
                                 }
                             )
@@ -698,14 +698,14 @@ class MintingRepositoryImpl(
                                                 listItem.addAll(
                                                     recordingEngineers.map { collab ->
                                                         UserEntity.getByEmail(collab.email!!)!!
-                                                            .toModel(false).fullName.toPlutusData()
+                                                            .toModel(false).stageOrFullName.toPlutusData()
                                                     }
                                                 )
                                             }
                                         }
                                     } else {
                                         UserEntity.getByEmail(recordingEngineers[0].email!!)!!
-                                            .toModel(false).fullName.toPlutusData()
+                                            .toModel(false).stageOrFullName.toPlutusData()
                                     }
                                 }
                             )
@@ -726,7 +726,7 @@ class MintingRepositoryImpl(
                                                 listItem.addAll(
                                                     producers.map { collab ->
                                                         UserEntity.getByEmail(collab.email!!)!!
-                                                            .toModel(false).let { it.nickname ?: it.fullName }
+                                                            .toModel(false).stageOrFullName
                                                             .toPlutusData()
                                                     }
                                                 )
@@ -734,7 +734,7 @@ class MintingRepositoryImpl(
                                         }
                                     } else {
                                         UserEntity.getByEmail(producers[0].email!!)!!
-                                            .toModel(false).fullName.toPlutusData()
+                                            .toModel(false).stageOrFullName.toPlutusData()
                                     }
                                 }
                             )
