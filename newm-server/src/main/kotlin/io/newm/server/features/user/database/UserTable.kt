@@ -1,6 +1,6 @@
 package io.newm.server.features.user.database
 
-import io.newm.server.auth.oauth.OAuthType
+import io.newm.server.auth.oauth.model.OAuthType
 import io.newm.server.features.user.model.UserVerificationStatus
 import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.Column

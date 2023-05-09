@@ -8,14 +8,16 @@ import io.ktor.client.request.get
 import io.ktor.client.request.headers
 import io.ktor.client.request.parameter
 import io.ktor.http.ContentType
+import io.ktor.server.application.ApplicationEnvironment
+import io.newm.server.auth.oauth.model.OAuthTokens
 import io.newm.server.features.user.oauth.OAuthUser
 import io.newm.server.features.user.oauth.OAuthUserProvider
+import io.newm.shared.exception.HttpBadRequestException
+import io.newm.shared.ktx.getConfigString
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-
-private const val ENDPOINT_URL = "https://graph.facebook.com/v13.0/me"
 
 @Serializable
 private data class FacebookUser(
@@ -43,10 +45,17 @@ private data class Picture(
     )
 }
 
-internal class FacebookUserProvider(private val httpClient: HttpClient) : OAuthUserProvider {
-    override suspend fun getUser(token: String): OAuthUser = coroutineScope {
+internal class FacebookUserProvider(
+    environment: ApplicationEnvironment,
+    private val httpClient: HttpClient
+) : OAuthUserProvider {
+
+    private val userInfoUrl = environment.getConfigString("oauth.facebook.userInfoUrl")
+
+    override suspend fun getUser(tokens: OAuthTokens): OAuthUser = coroutineScope {
+        val token = tokens.accessToken ?: throw HttpBadRequestException("Facebook OAuth requires accessToken")
         val pictureJob = async {
-            httpClient.get("$ENDPOINT_URL/picture") {
+            httpClient.get("$userInfoUrl/picture") {
                 parameter(key = "type", value = "large")
                 parameter(key = "redirect", value = false)
                 headers {
@@ -56,7 +65,7 @@ internal class FacebookUserProvider(private val httpClient: HttpClient) : OAuthU
             }.body<Picture>()
         }
         val userJob = async {
-            httpClient.get(ENDPOINT_URL) {
+            httpClient.get(userInfoUrl) {
                 parameter(
                     key = "fields",
                     value = "id,first_name,last_name,email"

@@ -5,6 +5,8 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.Routing
 import io.newm.server.auth.AUTH_PATH
 import io.newm.server.auth.jwt.repo.JwtRepository
+import io.newm.server.auth.oauth.model.OAuthLoginRequest
+import io.newm.server.auth.oauth.model.OAuthType
 import io.newm.server.auth.oauth.repo.OAuthRepository
 import io.newm.server.auth.password.createLoginResponse
 import io.newm.shared.koin.inject
@@ -19,9 +21,9 @@ fun Routing.createOAuthRoutes(type: OAuthType) {
 
     post("$AUTH_PATH/login/${type.name.lowercase()}") {
         val req = receive<OAuthLoginRequest>()
-        val oauthAccessToken = req.accessToken ?: req.code?.let { code ->
-            oAuthRepository.getAccessToken(type, code, req.redirectUri)
+        val oauthTokens = req.oauthTokens ?: req.code?.let { code ->
+            oAuthRepository.getTokens(type, code, req.redirectUri)
         } ?: throw HttpBadRequestException("missing code")
-        respond(jwtRepository.createLoginResponse(userRepository.findOrAdd(type, oauthAccessToken)))
+        respond(jwtRepository.createLoginResponse(userRepository.findOrAdd(type, oauthTokens)))
     }
 }

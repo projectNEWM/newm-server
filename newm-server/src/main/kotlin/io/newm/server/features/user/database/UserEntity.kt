@@ -1,6 +1,6 @@
 package io.newm.server.features.user.database
 
-import io.newm.server.auth.oauth.OAuthType
+import io.newm.server.auth.oauth.model.OAuthType
 import io.newm.server.features.user.model.User
 import io.newm.server.features.user.model.UserFilters
 import io.newm.server.features.user.model.UserVerificationStatus

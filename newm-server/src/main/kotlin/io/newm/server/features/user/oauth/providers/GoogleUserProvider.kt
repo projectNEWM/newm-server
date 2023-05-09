@@ -8,12 +8,14 @@ import io.ktor.client.request.get
 import io.ktor.client.request.headers
 import io.ktor.client.request.parameter
 import io.ktor.http.ContentType
+import io.ktor.server.application.ApplicationEnvironment
+import io.newm.server.auth.oauth.model.OAuthTokens
 import io.newm.server.features.user.oauth.OAuthUser
 import io.newm.server.features.user.oauth.OAuthUserProvider
+import io.newm.shared.exception.HttpBadRequestException
+import io.newm.shared.ktx.getConfigString
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-
-private const val ENDPOINT_URL = "https://www.googleapis.com/oauth2/v2/userinfo"
 
 @Serializable
 private data class GoogleUser(
@@ -29,15 +31,24 @@ private data class GoogleUser(
     override val email: String? = null
 ) : OAuthUser
 
-internal class GoogleUserProvider(private val httpClient: HttpClient) : OAuthUserProvider {
-    override suspend fun getUser(token: String): OAuthUser = httpClient.get(ENDPOINT_URL) {
-        parameter(
-            key = "fields",
-            value = "id,given_name,family_name,picture,email"
-        )
-        headers {
-            accept(ContentType.Application.Json)
-            bearerAuth(token)
-        }
-    }.body<GoogleUser>()
+internal class GoogleUserProvider(
+    environment: ApplicationEnvironment,
+    private val httpClient: HttpClient
+) : OAuthUserProvider {
+
+    private val userInfoUrl = environment.getConfigString("oauth.google.userInfoUrl")
+
+    override suspend fun getUser(tokens: OAuthTokens): OAuthUser {
+        val token = tokens.accessToken ?: throw HttpBadRequestException("Google OAuth requires accessToken")
+        return httpClient.get(userInfoUrl) {
+            parameter(
+                key = "fields",
+                value = "id,given_name,family_name,picture,email"
+            )
+            headers {
+                accept(ContentType.Application.Json)
+                bearerAuth(token)
+            }
+        }.body<GoogleUser>()
+    }
 }

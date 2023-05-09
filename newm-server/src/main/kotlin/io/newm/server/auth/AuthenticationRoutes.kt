@@ -2,7 +2,7 @@ package io.newm.server.auth
 
 import io.ktor.server.routing.Routing
 import io.newm.server.auth.jwt.createJwtRoutes
-import io.newm.server.auth.oauth.OAuthType
+import io.newm.server.auth.oauth.model.OAuthType
 import io.newm.server.auth.oauth.createOAuthRoutes
 import io.newm.server.auth.password.createPasswordAuthRoutes
 import io.newm.server.auth.twofactor.createTwoFactorAuthRoutes

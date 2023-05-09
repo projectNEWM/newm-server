@@ -1,7 +1,8 @@
 package io.newm.server.features.user.repo
 
 import io.ktor.util.logging.Logger
-import io.newm.server.auth.oauth.OAuthType
+import io.newm.server.auth.oauth.model.OAuthTokens
+import io.newm.server.auth.oauth.model.OAuthType
 import io.newm.server.auth.twofactor.repo.TwoFactorAuthRepository
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.model.User
@@ -81,14 +82,14 @@ internal class UserRepositoryImpl(
         }
     }
 
-    override suspend fun findOrAdd(oauthType: OAuthType, oauthAccessToken: String): UUID {
+    override suspend fun findOrAdd(oauthType: OAuthType, oauthTokens: OAuthTokens): UUID {
         logger.debug { "findOrAdd: oauthType = $oauthType" }
 
         val user = when (oauthType) {
-            OAuthType.Google -> googleUserProvider.getUser(oauthAccessToken)
-            OAuthType.Facebook -> facebookUserProvider.getUser(oauthAccessToken)
-            OAuthType.LinkedIn -> linkedInUserProvider.getUser(oauthAccessToken)
-            OAuthType.Apple -> appleUserProvider.getUser(oauthAccessToken)
+            OAuthType.Google -> googleUserProvider.getUser(oauthTokens)
+            OAuthType.Facebook -> facebookUserProvider.getUser(oauthTokens)
+            OAuthType.LinkedIn -> linkedInUserProvider.getUser(oauthTokens)
+            OAuthType.Apple -> appleUserProvider.getUser(oauthTokens)
         }
         logger.debug { "findOrAdd: oauthUser = $user" }
 
