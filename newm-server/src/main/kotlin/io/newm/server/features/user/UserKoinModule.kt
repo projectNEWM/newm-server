@@ -10,8 +10,8 @@ import org.koin.dsl.module
 
 val userKoinModule = module {
     single<UserRepository> { UserRepositoryImpl(get(), get(), get(), get(), get()) }
-    single { GoogleUserProvider(get()) }
-    single { FacebookUserProvider(get()) }
-    single { LinkedInUserProvider(get()) }
-    single { AppleUserProvider(get(), get()) }
+    single { GoogleUserProvider(get(), get()) }
+    single { FacebookUserProvider(get(), get()) }
+    single { LinkedInUserProvider(get(), get()) }
+    single { AppleUserProvider(get()) }
 }

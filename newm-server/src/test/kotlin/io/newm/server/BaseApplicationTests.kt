@@ -24,6 +24,10 @@ import io.newm.server.features.song.model.Song
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
 import io.newm.server.features.user.model.User
+import io.newm.server.features.user.oauth.providers.AppleUserProvider
+import io.newm.server.features.user.oauth.providers.FacebookUserProvider
+import io.newm.server.features.user.oauth.providers.GoogleUserProvider
+import io.newm.server.features.user.oauth.providers.LinkedInUserProvider
 import io.newm.server.ktx.asValidUrl
 import io.newm.shared.auth.Password
 import org.jetbrains.exposed.dao.id.EntityID
@@ -104,6 +108,10 @@ open class BaseApplicationTests {
         loadKoinModules(
             module {
                 single { mockk<CardanoRepository>(relaxed = true) }
+                single { mockk<GoogleUserProvider>(relaxed = true) }
+                single { mockk<FacebookUserProvider>(relaxed = true) }
+                single { mockk<LinkedInUserProvider>(relaxed = true) }
+                single { mockk<AppleUserProvider>(relaxed = true) }
             }
         )
     }

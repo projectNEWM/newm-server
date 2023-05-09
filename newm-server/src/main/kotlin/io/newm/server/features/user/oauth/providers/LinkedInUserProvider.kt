@@ -8,15 +8,16 @@ import io.ktor.client.request.get
 import io.ktor.client.request.headers
 import io.ktor.client.request.parameter
 import io.ktor.http.ContentType
+import io.ktor.server.application.ApplicationEnvironment
+import io.newm.server.auth.oauth.model.OAuthTokens
 import io.newm.server.features.user.oauth.OAuthUser
 import io.newm.server.features.user.oauth.OAuthUserProvider
+import io.newm.shared.exception.HttpBadRequestException
+import io.newm.shared.ktx.getConfigString
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-
-private const val USER_ENDPOINT_URL = "https://api.linkedin.com/v2/me"
-private const val EMAIL_ENDPOINT_URL = "https://api.linkedin.com/v2/clientAwareMemberHandles"
 
 @Serializable
 private data class LinkedInUser(
@@ -113,11 +114,18 @@ private data class EmailHandle(
         get() = elements?.firstOrNull { it.primary == true }?.email ?: elements?.firstOrNull()?.email
 }
 
-internal class LinkedInUserProvider(private val httpClient: HttpClient) : OAuthUserProvider {
+internal class LinkedInUserProvider(
+    environment: ApplicationEnvironment,
+    private val httpClient: HttpClient
+) : OAuthUserProvider {
 
-    override suspend fun getUser(token: String): OAuthUser = coroutineScope {
+    private val userInfoUrl = environment.getConfigString("oauth.linkedin.userInfoUrl")
+    private val userExtraInfoUrl = environment.getConfigString("oauth.linkedin.userExtraInfoUrl")
+
+    override suspend fun getUser(tokens: OAuthTokens): OAuthUser = coroutineScope {
+        val token = tokens.accessToken ?: throw HttpBadRequestException("LinkedIn OAuth requires accessToken")
         val emailJob = async {
-            httpClient.get(EMAIL_ENDPOINT_URL) {
+            httpClient.get(userExtraInfoUrl) {
                 parameter(key = "q", value = "members")
                 parameter(
                     key = "projection",
@@ -130,7 +138,7 @@ internal class LinkedInUserProvider(private val httpClient: HttpClient) : OAuthU
             }.body<EmailHandle>()
         }
         val userJob = async {
-            httpClient.get(USER_ENDPOINT_URL) {
+            httpClient.get(userInfoUrl) {
                 parameter(
                     key = "projection",
                     value = "(id,localizedFirstName,localizedLastName,profilePicture(displayImage~:playableStreams))"
