@@ -10,6 +10,7 @@ import io.ktor.server.config.ApplicationConfig
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.getChildFullPath
 import io.newm.shared.ktx.getString
+import io.newm.shared.ktx.splitAndTrim
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.decodeFromString
@@ -33,6 +34,8 @@ private val secretsCache =
  * as-is.
  */
 suspend fun ApplicationEnvironment.getSecureConfigString(path: String): String = config.getSecureString(path)
+
+suspend fun ApplicationEnvironment.getSecureConfigStrings(path: String): List<String> = config.getSecureStrings(path)
 
 suspend fun ApplicationConfig.getSecureString(path: String): String {
     val configValue = getString(path)
@@ -62,3 +65,5 @@ suspend fun ApplicationConfig.getSecureString(path: String): String {
         }
     }
 }
+
+suspend fun ApplicationConfig.getSecureStrings(path: String): List<String> = getSecureString(path).splitAndTrim()
