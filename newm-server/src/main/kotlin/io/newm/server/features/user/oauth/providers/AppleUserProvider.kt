@@ -10,8 +10,9 @@ import io.ktor.server.application.ApplicationEnvironment
 import io.newm.server.auth.oauth.model.OAuthTokens
 import io.newm.server.features.user.oauth.OAuthUser
 import io.newm.server.features.user.oauth.OAuthUserProvider
-import io.newm.server.ktx.getSecureConfigString
+import io.newm.server.ktx.getSecureConfigStrings
 import io.newm.server.ktx.toRSAKeyProvider
+import io.newm.server.ktx.withAnyOfAudience
 import io.newm.shared.exception.HttpBadRequestException
 import io.newm.shared.exception.HttpUnauthorizedException
 import io.newm.shared.ktx.getConfigString
@@ -42,7 +43,7 @@ internal class AppleUserProvider(
                 .toRSAKeyProvider()
         )
     ).withIssuer("https://appleid.apple.com")
-        .withAudience(runBlocking { environment.getSecureConfigString("oauth.apple.clientId") })
+        .withAnyOfAudience(runBlocking { environment.getSecureConfigStrings("oauth.apple.audiences") })
         .withClaimPresence("sub")
         .withClaimPresence("email")
         .build()
