@@ -142,6 +142,18 @@ internal class CollaborationRepositoryImpl : CollaborationRepository {
         }
     }
 
+    override suspend fun invite(songId: UUID) {
+        logger.debug { "invite: songId = $songId" }
+        val emails = mutableListOf<String>()
+        transaction {
+            CollaborationEntity.findBySongId(songId).forEach { collab ->
+                collab.status = CollaborationStatus.Waiting
+                emails += collab.email
+            }
+        }
+        // TODO: Send invitation email to all or only unregistered Collaborators?
+    }
+
     private fun CollaborationEntity.checkSongState(requesterId: UUID, edit: Boolean = true) =
         checkSongState(songId.value, requesterId, email, edit)
 

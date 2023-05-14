@@ -17,6 +17,7 @@ import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_PRI
 import io.newm.server.features.cardano.database.KeyTable
 import io.newm.server.features.cardano.model.Key
 import io.newm.server.features.cardano.repo.CardanoRepository
+import io.newm.server.features.collaboration.repo.CollaborationRepository
 import io.newm.server.features.distribution.DistributionRepository
 import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.model.MintingStatus
@@ -46,6 +47,7 @@ internal class SongRepositoryImpl(
     private val configRepository: ConfigRepository,
     private val cardanoRepository: CardanoRepository,
     private val distributionRepository: DistributionRepository,
+    private val collaborationRepository: CollaborationRepository,
 ) : SongRepository {
 
     private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
@@ -238,6 +240,7 @@ internal class SongRepositoryImpl(
                     tokenAgreementUrl = s3.getUrl(bucketName, filePath).toString()
                 )
             )
+            collaborationRepository.invite(songId)
         } else {
             update(songId, Song(mintingStatus = MintingStatus.Undistributed))
             s3.deleteObject(bucketName, filePath)

@@ -88,6 +88,9 @@ class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             }
         }
 
+        fun findBySongId(songId: UUID): SizedIterable<CollaborationEntity> =
+            find { CollaborationTable.songId eq songId }
+
         fun collaborators(userId: UUID, filters: CollaboratorFilters): SizedIterable<Pair<String, Long>> {
             val ops = mutableListOf<Op<Boolean>>()
             ops += SongTable.ownerId eq userId
