@@ -290,7 +290,7 @@ class MintingRepositoryTest : BaseApplicationTests() {
     fun `buildStreamTokenMetadata test`(): Unit = runBlocking {
         setupDatabase()
 
-        val songRepository: SongRepository = SongRepositoryImpl(mockk(), mockk(), mockk(), mockk(), mockk())
+        val songRepository: SongRepository = SongRepositoryImpl(mockk(), mockk(), mockk(), mockk(), mockk(), mockk())
         val collabRepository: CollaborationRepository = CollaborationRepositoryImpl()
         val mintingRepository = MintingRepositoryImpl(mockk(), collabRepository, mockk(), mockk())
 
@@ -363,7 +363,7 @@ class MintingRepositoryTest : BaseApplicationTests() {
             )
 
         val cardanoRepository = CardanoRepositoryImpl(client, mockk(), "", mockk())
-        val songRepository: SongRepository = SongRepositoryImpl(mockk(), mockk(), mockk(), mockk(), mockk())
+        val songRepository: SongRepository = SongRepositoryImpl(mockk(), mockk(), mockk(), mockk(), mockk(), mockk())
         val collabRepository: CollaborationRepository = CollaborationRepositoryImpl()
         val mintingRepository = MintingRepositoryImpl(mockk(), collabRepository, cardanoRepository, mockk())
 
