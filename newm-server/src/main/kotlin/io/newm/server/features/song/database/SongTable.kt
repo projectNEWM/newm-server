@@ -36,6 +36,7 @@ object SongTable : UUIDTable(name = "songs") {
     val publicationDate: Column<LocalDate?> = date("publication_date").nullable()
     val lyricsUrl: Column<String?> = text("lyrics_url").nullable()
     val tokenAgreementUrl: Column<String?> = text("token_agreement_url").nullable()
+    val originalAudioUrl: Column<String?> = text("original_audio_url").nullable()
     val clipUrl: Column<String?> = text("clip_url").nullable()
     val streamUrl: Column<String?> = text("stream_url").nullable()
     val duration: Column<Int?> = integer("duration").nullable()

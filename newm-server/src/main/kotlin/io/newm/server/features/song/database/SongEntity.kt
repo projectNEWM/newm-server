@@ -47,6 +47,7 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var publicationDate: LocalDate? by SongTable.publicationDate
     var lyricsUrl: String? by SongTable.lyricsUrl
     var tokenAgreementUrl: String? by SongTable.tokenAgreementUrl
+    var originalAudioUrl: String? by SongTable.originalAudioUrl
     var clipUrl: String? by SongTable.clipUrl
     var streamUrl: String? by SongTable.streamUrl
     var duration: Int? by SongTable.duration
@@ -80,6 +81,7 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         publicationDate = publicationDate,
         lyricsUrl = lyricsUrl,
         tokenAgreementUrl = tokenAgreementUrl,
+        originalAudioUrl = originalAudioUrl,
         clipUrl = clipUrl,
         streamUrl = streamUrl,
         duration = duration,

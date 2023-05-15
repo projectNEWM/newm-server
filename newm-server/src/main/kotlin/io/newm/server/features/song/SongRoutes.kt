@@ -16,9 +16,8 @@ import io.newm.server.features.song.model.MintPaymentRequest
 import io.newm.server.features.song.model.MintPaymentResponse
 import io.newm.server.features.song.model.SongIdBody
 import io.newm.server.features.song.model.StreamTokenAgreementRequest
-import io.newm.server.features.song.model.UploadAudioPostResponse
-import io.newm.server.features.song.model.UploadAudioRequest
-import io.newm.server.features.song.model.UploadAudioResponse
+import io.newm.server.features.song.model.AudioUploadRequest
+import io.newm.server.features.song.model.AudioUploadResponse
 import io.newm.server.features.song.model.songFilters
 import io.newm.server.features.song.repo.SongRepository
 import io.newm.shared.ktx.delete
@@ -65,24 +64,13 @@ fun Routing.createSongRoutes() {
                     songRepository.delete(songId, myUserId)
                     respond(HttpStatusCode.NoContent)
                 }
-                post("audio") {
-                    respond(
-                        UploadAudioResponse(
-                            songRepository.generateAudioUploadUrl(
-                                songId = songId,
-                                requesterId = myUserId,
-                                fileName = receive<UploadAudioRequest>().fileName
-                            )
-                        )
-                    )
-                }
                 post("upload") {
                     respond(
-                        UploadAudioPostResponse(
-                            songRepository.generateAudioUploadPost(
+                        AudioUploadResponse(
+                            songRepository.generateAudioUpload(
                                 songId = songId,
                                 requesterId = myUserId,
-                                fileName = receive<UploadAudioRequest>().fileName
+                                fileName = receive<AudioUploadRequest>().fileName
                             )
                         )
                     )

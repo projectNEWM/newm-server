@@ -15,8 +15,7 @@ interface SongRepository {
     suspend fun getAllCount(filters: SongFilters): Long
     suspend fun getGenres(filters: SongFilters, offset: Int, limit: Int): List<String>
     suspend fun getGenreCount(filters: SongFilters): Long
-    suspend fun generateAudioUploadUrl(songId: UUID, requesterId: UUID, fileName: String): String
-    suspend fun generateAudioUploadPost(songId: UUID, requesterId: UUID, fileName: String): PresignedPost
+    suspend fun generateAudioUpload(songId: UUID, requesterId: UUID, fileName: String): PresignedPost
     suspend fun processStreamTokenAgreement(songId: UUID, requesterId: UUID, accepted: Boolean)
 
     suspend fun getMintingPaymentAmount(songId: UUID, requesterId: UUID): String

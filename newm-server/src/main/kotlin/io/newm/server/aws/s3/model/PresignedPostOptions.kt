@@ -11,7 +11,7 @@ class PresignedPostOptions(
     val expiresSeconds: Long = 3600L
 )
 
-class PresignedPostOptionBuilder() {
+class PresignedPostOptionBuilder {
     var bucket: String? = null
     var key: String? = null
     var credentials: AWSCredentials? = null
