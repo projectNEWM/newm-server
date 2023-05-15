@@ -36,6 +36,7 @@ data class Song(
     val publicationDate: LocalDate? = null,
     val lyricsUrl: String? = null,
     val tokenAgreementUrl: String? = null,
+    val originalAudioUrl: String? = null,
     val clipUrl: String? = null,
     val streamUrl: String? = null,
     val duration: Int? = null,

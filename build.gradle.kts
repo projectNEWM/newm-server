@@ -31,10 +31,6 @@ subprojects {
         mavenCentral()
     }
 
-    tasks.withType<Test> {
-        useJUnitPlatform()
-    }
-
     tasks.withType<DependencyUpdatesTask> {
         // Example 1: reject all non stable versions
         rejectVersionIf {
@@ -84,7 +80,12 @@ subprojects {
     }
 
     tasks.withType<Test> {
+        useJUnitPlatform()
         maxHeapSize = "8192m"
+        environment = mapOf(
+            "AWS_ACCESS_KEY_ID" to "TEST",
+            "AWS_SECRET_KEY" to "12345678"
+        )
     }
 }
 

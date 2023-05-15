@@ -1,7 +1,5 @@
 package io.newm.server.features.song
 
-import com.amazonaws.HttpMethod
-import com.amazonaws.services.s3.AmazonS3
 import com.google.common.truth.Truth.assertThat
 import com.google.iot.cbor.CborInteger
 import io.ktor.client.*
@@ -24,8 +22,8 @@ import io.newm.server.features.user.database.UserTable
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.existsHavingId
 import io.newm.shared.ktx.getConfigChild
+import io.newm.shared.ktx.getConfigString
 import io.newm.shared.ktx.getString
-import io.newm.shared.ktx.toDate
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.neq
@@ -37,10 +35,9 @@ import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.io.EOFException
 import java.io.File
-import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
 
 class SongRoutesTests : BaseApplicationTests() {
 
@@ -434,31 +431,36 @@ class SongRoutesTests : BaseApplicationTests() {
 
     @Test
     fun testRequestAudioUpload() = runBlocking {
-        // Add song directly into database
+        val environment: ApplicationEnvironment by inject()
+        val region = environment.getConfigString("aws.region")
+        val bucketName = environment.getConfigString("aws.s3.audio.bucketName")
+        val bucketUrl = "https://$bucketName.s3.$region.amazonaws.com"
         val songId = addSongToDatabase(ownerId = testUserId).id!!
-        val start = Instant.now()
+        val fileName = "test1.wav"
+        val key = "$songId/$fileName"
+        val fileUrl = "$bucketUrl/$key"
 
         // Request upload
-        val response = client.post("v1/songs/$songId/audio") {
+        val response = client.post("v1/songs/$songId/upload") {
             bearerAuth(testUserToken)
             contentType(ContentType.Application.Json)
-            setBody(UploadAudioRequest("test1.mp3"))
+            setBody(AudioUploadRequest(fileName))
         }
         assertThat(response.status).isEqualTo(HttpStatusCode.OK)
-        val resp = response.body<UploadAudioResponse>()
-
-        // allow for some variation on ttl
-        val s3 by inject<AmazonS3>()
-        val validUrls = mutableListOf<String>()
-        for (ttl in 180L..182L) {
-            validUrls += s3.generatePresignedUrl(
-                "test-audio",
-                "$songId/test1.mp3",
-                start.plusSeconds(ttl).toDate(),
-                HttpMethod.PUT
-            ).toString()
+        with(response.body<AudioUploadResponse>()) {
+            assertThat(url).isEqualTo(bucketUrl)
+            assertThat(fields.size).isEqualTo(7)
+            assertThat(fields["bucket"]).isEqualTo(bucketName)
+            assertThat(fields["key"]).isEqualTo(key)
+            assertThat(fields["X-Amz-Algorithm"]).isEqualTo("AWS4-HMAC-SHA256")
+            assertThat(fields).containsKey("X-Amz-Credential")
+            assertThat(fields).containsKey("X-Amz-Date")
+            assertThat(fields).containsKey("policy")
+            assertThat(fields).containsKey("X-Amz-Signature")
         }
-        assertThat(resp.uploadUrl).isIn(validUrls)
+
+        val originalAudioUrl = transaction { SongEntity[songId].originalAudioUrl }
+        assertThat(originalAudioUrl).isEqualTo(fileUrl)
     }
 
     @Disabled("Disabled because this test requires real AWS credentials")
@@ -471,10 +473,10 @@ class SongRoutesTests : BaseApplicationTests() {
         val response = client.post("v1/songs/$songId/upload") {
             bearerAuth(testUserToken)
             contentType(ContentType.Application.Json)
-            setBody(UploadAudioRequest("test1.mp3"))
+            setBody(AudioUploadRequest("test1.mp3"))
         }
         assertThat(response.status).isEqualTo(HttpStatusCode.OK)
-        val resp = response.body<UploadAudioPostResponse>()
+        val resp = response.body<AudioUploadResponse>()
 
         // create a new HttpClient to work around loop back network in test environment
         val localClient = HttpClient()
@@ -518,10 +520,10 @@ class SongRoutesTests : BaseApplicationTests() {
         val response = client.post("v1/songs/$songId/upload") {
             bearerAuth(testUserToken)
             contentType(ContentType.Application.Json)
-            setBody(UploadAudioRequest("test1.mp3"))
+            setBody(AudioUploadRequest("test1.mp3"))
         }
         assertThat(response.status).isEqualTo(HttpStatusCode.OK)
-        val resp = response.body<UploadAudioPostResponse>()
+        val resp = response.body<AudioUploadResponse>()
 
         // create a new HttpClient to work around loop back network in test environment
         val localClient = HttpClient()
@@ -805,6 +807,7 @@ fun addSongToDatabase(offset: Int = 0, ownerId: UUID? = null, phrase: String? = 
             publicationDate = LocalDate.of(2023, 1, offset % 31 + 1)
             lyricsUrl = "https://newm.io/lyrics$offset"
             tokenAgreementUrl = "https://newm.io/agreement$offset"
+            originalAudioUrl = "https://newm.io/audio$offset"
             clipUrl = "https://newm.io/clip$offset"
             streamUrl = "https://newm.io/stream$offset"
             duration = offset

@@ -1,6 +1,5 @@
 package io.newm.server.features.song.repo
 
-import com.amazonaws.HttpMethod
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain
 import com.amazonaws.services.s3.AmazonS3
 import com.google.iot.cbor.CborInteger
@@ -29,16 +28,15 @@ import io.newm.server.ktx.checkLength
 import io.newm.shared.exception.HttpForbiddenException
 import io.newm.shared.exception.HttpUnprocessableEntityException
 import io.newm.shared.koin.inject
+import io.newm.shared.ktx.megabytesToBytes
 import io.newm.shared.ktx.debug
 import io.newm.shared.ktx.getConfigChild
 import io.newm.shared.ktx.getConfigString
 import io.newm.shared.ktx.getLong
 import io.newm.shared.ktx.getString
-import io.newm.shared.ktx.toDate
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf
-import java.time.Instant
 import java.util.UUID
 
 internal class SongRepositoryImpl(
@@ -104,6 +102,7 @@ internal class SongRepositoryImpl(
                     // don't allow updating these fields when invoked from REST API
                     publicationDate?.let { entity.publicationDate = it }
                     tokenAgreementUrl?.let { entity.tokenAgreementUrl = it }
+                    originalAudioUrl?.let { entity.originalAudioUrl = it.asValidUrl() }
                     clipUrl?.let { entity.clipUrl = it.asValidUrl() }
                     streamUrl?.let { entity.streamUrl = it.asValidUrl() }
                     duration?.let { entity.duration = it }
@@ -169,51 +168,33 @@ internal class SongRepositoryImpl(
         }
     }
 
-    override suspend fun generateAudioUploadUrl(
-        songId: UUID,
-        requesterId: UUID,
-        fileName: String
-    ): String {
-        logger.debug { "generateAudioUploadUrl: songId = $songId, fileName = $fileName" }
-
-        if ('/' in fileName) throw HttpUnprocessableEntityException("Invalid fileName: $fileName")
-
-        checkRequester(songId, requesterId)
-
-        val config = environment.getConfigChild("aws.s3.audio")
-        val expiration = Instant.now()
-            .plusSeconds(config.getLong("timeToLive"))
-            .toDate()
-
-        return s3.generatePresignedUrl(
-            config.getString("bucketName"),
-            "$songId/$fileName",
-            expiration,
-            HttpMethod.PUT
-        ).toString()
-    }
-
-    override suspend fun generateAudioUploadPost(
+    override suspend fun generateAudioUpload(
         songId: UUID,
         requesterId: UUID,
         fileName: String
     ): PresignedPost {
-        logger.debug { "generateAudioUploadUrl: songId = $songId, fileName = $fileName" }
+        logger.debug { "generateAudioUpload: songId = $songId, fileName = $fileName" }
 
         if ('/' in fileName) throw HttpUnprocessableEntityException("Invalid fileName: $fileName")
 
-        checkRequester(songId, requesterId)
-
         val config = environment.getConfigChild("aws.s3.audio")
+        val bucket = config.getString("bucketName")
+        val key = "$songId/$fileName"
+        val url = s3.getUrl(bucket, key).toString()
+        transaction {
+            val entity = SongEntity[songId]
+            entity.checkRequester(requesterId)
+            entity.originalAudioUrl = url
+        }
 
         return s3.createPresignedPost {
-            bucket = config.getString("bucketName")
-            key = "$songId/$fileName"
+            this.bucket = bucket
+            this.key = key
             credentials = DefaultAWSCredentialsProviderChain.getInstance().credentials
             conditions = listOf(
                 ContentLengthRangeCondition(
-                    config.getLong("minUploadSizeMB") * 1024 * 1024,
-                    config.getLong("maxUploadSizeMB") * 1024 * 1024
+                    min = config.getLong("minUploadSizeMB").megabytesToBytes(),
+                    max = config.getLong("maxUploadSizeMB").megabytesToBytes()
                 )
             )
             expiresSeconds = config.getLong("timeToLive")
