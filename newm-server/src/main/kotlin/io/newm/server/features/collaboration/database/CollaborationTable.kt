@@ -19,6 +19,7 @@ object CollaborationTable : UUIDTable(name = "collaborations") {
     val role: Column<String?> = text("role").nullable()
     val royaltyRate: Column<Float?> = float("royalty_rate").nullable()
     val credited: Column<Boolean> = bool("credited").default(false)
+    val featured: Column<Boolean> = bool("featured").default(false)
     val status: Column<CollaborationStatus> =
         enumeration("status", CollaborationStatus::class).default(CollaborationStatus.Editing)
 }

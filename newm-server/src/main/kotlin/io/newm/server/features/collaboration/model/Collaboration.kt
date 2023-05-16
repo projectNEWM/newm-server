@@ -18,5 +18,6 @@ data class Collaboration(
     var role: String? = null,
     val royaltyRate: Float? = null,
     val credited: Boolean? = null,
+    val featured: Boolean? = null,
     val status: CollaborationStatus? = null
 )

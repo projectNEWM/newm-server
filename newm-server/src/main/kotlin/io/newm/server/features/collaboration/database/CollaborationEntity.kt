@@ -7,6 +7,7 @@ import io.newm.server.features.collaboration.model.CollaboratorFilters
 import io.newm.server.features.song.database.SongTable
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
+import io.newm.shared.ktx.exists
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
@@ -19,6 +20,7 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.count
 import org.jetbrains.exposed.sql.lowerCase
 import org.jetbrains.exposed.sql.mapLazy
@@ -34,6 +36,7 @@ class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var role: String? by CollaborationTable.role
     var royaltyRate: Float? by CollaborationTable.royaltyRate
     var credited: Boolean by CollaborationTable.credited
+    var featured: Boolean by CollaborationTable.featured
     var status: CollaborationStatus by CollaborationTable.status
 
     fun toModel(): Collaboration = Collaboration(
@@ -44,10 +47,14 @@ class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         role = role,
         royaltyRate = royaltyRate,
         credited = credited,
+        featured = featured,
         status = status
     )
 
     companion object : UUIDEntityClass<CollaborationEntity>(CollaborationTable) {
+        fun exists(songId: UUID, email: String): Boolean = exists {
+            (CollaborationTable.songId eq songId) and (CollaborationTable.email.lowerCase() eq email.lowercase())
+        }
 
         fun all(userId: UUID, filters: CollaborationFilters): SizedIterable<CollaborationEntity> {
             val inbound = filters.inbound == true
