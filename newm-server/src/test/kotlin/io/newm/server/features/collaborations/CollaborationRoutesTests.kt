@@ -69,6 +69,7 @@ class CollaborationRoutesTests : BaseApplicationTests() {
             role = "Role",
             royaltyRate = 0.5f,
             credited = true,
+            featured = true
         )
 
         // Post
@@ -88,6 +89,7 @@ class CollaborationRoutesTests : BaseApplicationTests() {
         assertThat(actualCollaboration.role).isEqualTo(expectedCollaboration.role)
         assertThat(actualCollaboration.royaltyRate).isEqualTo(expectedCollaboration.royaltyRate)
         assertThat(actualCollaboration.credited).isEqualTo(expectedCollaboration.credited)
+        assertThat(actualCollaboration.featured).isEqualTo(expectedCollaboration.featured)
         assertThat(actualCollaboration.status).isEqualTo(CollaborationStatus.Editing)
     }
 
@@ -99,8 +101,9 @@ class CollaborationRoutesTests : BaseApplicationTests() {
         val collaboration2 = Collaboration(
             email = "collaborator2@email.com",
             role = "Role2",
-            royaltyRate = 0.2f,
-            credited = false
+            royaltyRate = 2 * collaboration1.royaltyRate!!,
+            credited = !collaboration1.credited!!,
+            featured = !collaboration1.featured!!,
         )
 
         // Patch collaboration1 with collaboration2
@@ -119,7 +122,8 @@ class CollaborationRoutesTests : BaseApplicationTests() {
         assertThat(collaboration.email).isEqualTo(collaboration2.email)
         assertThat(collaboration.role).isEqualTo(collaboration2.role)
         assertThat(collaboration.royaltyRate).isEqualTo(collaboration2.royaltyRate)
-        assertThat(collaboration.credited).isEqualTo(collaboration1.credited)
+        assertThat(collaboration.credited).isEqualTo(collaboration2.credited)
+        assertThat(collaboration.featured).isEqualTo(collaboration2.featured)
         assertThat(collaboration.status).isEqualTo(CollaborationStatus.Editing)
     }
 
@@ -663,6 +667,7 @@ private fun addCollaborationToDatabase(
             role = "Role$offset"
             royaltyRate = 1f / (offset + 2)
             credited = (offset % 2) == 1
+            featured = (offset % 2) == 0
             this.status = status ?: CollaborationStatus.values()[offset % CollaborationStatus.values().size]
         }
     }.toModel()

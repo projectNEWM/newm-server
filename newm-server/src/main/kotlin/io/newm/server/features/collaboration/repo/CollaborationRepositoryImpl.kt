@@ -14,6 +14,7 @@ import io.newm.server.features.user.database.UserEntity
 import io.newm.server.ktx.asMandatoryField
 import io.newm.server.ktx.asValidEmail
 import io.newm.server.ktx.checkLength
+import io.newm.shared.exception.HttpConflictException
 import io.newm.shared.exception.HttpForbiddenException
 import io.newm.shared.exception.HttpUnprocessableEntityException
 import io.newm.shared.koin.inject
@@ -36,12 +37,14 @@ internal class CollaborationRepositoryImpl : CollaborationRepository {
 
         return transaction {
             checkSongState(songId, requesterId)
+            checkUniqueEmail(songId, email)
             CollaborationEntity.new {
                 this.songId = EntityID(songId, SongTable)
                 this.email = email
                 this.role = collaboration.role
                 this.royaltyRate = collaboration.royaltyRate
                 collaboration.credited?.let { this.credited = it }
+                collaboration.featured?.let { this.featured = it }
             }.id.value
         }
     }
@@ -55,10 +58,11 @@ internal class CollaborationRepositoryImpl : CollaborationRepository {
             val entity = CollaborationEntity[collaborationId]
             entity.checkSongState(requesterId)
             entity.checkStatus()
-            collaboration.email?.let { entity.email = it.asValidEmail() }
+            collaboration.email?.let { entity.email = it.asValidUniqueEmail(entity) }
             collaboration.role?.let { entity.role = it }
             collaboration.royaltyRate?.let { entity.royaltyRate = it }
             collaboration.credited?.let { entity.credited = it }
+            collaboration.featured?.let { entity.featured = it }
         }
     }
 
@@ -179,6 +183,20 @@ internal class CollaborationRepositoryImpl : CollaborationRepository {
     private fun CollaborationEntity.checkStatus(status: CollaborationStatus = CollaborationStatus.Editing) {
         if (this.status != status) {
             throw HttpUnprocessableEntityException("Operation only allowed when status = $status")
+        }
+    }
+
+    private fun String.asValidUniqueEmail(entity: CollaborationEntity): String {
+        val email = asValidEmail()
+        if (!email.equals(entity.email, ignoreCase = true)) {
+            checkUniqueEmail(entity.songId.value, this)
+        }
+        return email
+    }
+
+    private fun checkUniqueEmail(songId: UUID, email: String) {
+        if (CollaborationEntity.exists(songId, email)) {
+            throw HttpConflictException("Collaboration already exists: songId = $songId, email = $email")
         }
     }
 }
