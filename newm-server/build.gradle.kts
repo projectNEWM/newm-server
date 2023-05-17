@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.util.capitalizeDecapitalize.toLowerCaseAsciiOnly
+
 plugins {
     application
     id(Dependencies.VersionsPlugin.ID)
@@ -16,6 +18,10 @@ ktlint {
 
 application {
     mainClass.set("io.newm.server.ApplicationKt")
+}
+
+val integTestImplementation by configurations.creating {
+    extendsFrom(configurations.testImplementation.get())
 }
 
 dependencies {
@@ -99,6 +105,8 @@ dependencies {
     testImplementation(Dependencies.TestContainers.CORE)
     testImplementation(Dependencies.TestContainers.JUINT)
     testImplementation(Dependencies.TestContainers.POSTGRESQL)
+
+    integTestImplementation(Dependencies.Typesafe.CONFIG)
 }
 
 tasks {
@@ -123,4 +131,37 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
         )
         jvmTarget = "17"
     }
+}
+
+sourceSets {
+    create("integTest") {
+        compileClasspath += sourceSets.main.get().output
+        runtimeClasspath += sourceSets.main.get().output
+    }
+}
+
+fun Test.configTest(instance: String) {
+    description = "Runs integration tests against the $instance newm instance"
+    group = "verification"
+    testClassesDirs = sourceSets["integTest"].output.classesDirs
+    classpath = sourceSets["integTest"].runtimeClasspath
+    // Gradle makes us explicitly pass environment variables :-(
+    // https://docs.gradle.org/current/userguide/common_caching_problems.html
+    if ("NEWM_EMAIL" in System.getenv()) {
+        environment("NEWM_EMAIL", System.getenv()["NEWM_EMAIL"] as String)
+    }
+    if ("NEWM_PASSWORD" in System.getenv()) {
+        environment("NEWM_PASSWORD", System.getenv()["NEWM_PASSWORD"] as String)
+    }
+    if ("NEWM_BASEURL" in System.getenv()) {
+        environment("NEWM_BASEURL", System.getenv()["NEWM_BASEURL"] as String)
+    }
+    systemProperty("newm.env", instance.toLowerCaseAsciiOnly())
+}
+task<Test>("integTestGarage") {
+    configTest("Garage")
+}
+
+task<Test>("integTestStudio") {
+    configTest("Studio")
 }

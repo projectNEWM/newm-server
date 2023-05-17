@@ -278,4 +278,9 @@ object Dependencies {
         const val JUINT = "org.testcontainers:junit-jupiter:$VERSION"
         const val POSTGRESQL = "org.testcontainers:postgresql:$VERSION"
     }
+
+    object Typesafe {
+        private const val VERSION = "1.4.2"
+        const val CONFIG = "com.typesafe:config:$VERSION"
+    }
 }
