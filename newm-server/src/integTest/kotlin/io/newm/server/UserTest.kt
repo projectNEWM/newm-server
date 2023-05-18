@@ -46,6 +46,7 @@ class UserTest {
         }
         assertThat(response.status).isEqualTo(HttpStatusCode.NotFound)
     }
+
     @Test
     fun `invalid user id returns Unprocessable Entity`() = runBlocking {
         val response = TestContext.client.get("${TestContext.baseUrl}/v1/users/-1") {
