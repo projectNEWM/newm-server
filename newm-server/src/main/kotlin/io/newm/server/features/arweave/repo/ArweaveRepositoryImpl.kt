@@ -121,7 +121,7 @@ class ArweaveRepositoryImpl(
         val submitResponse = toJava(submitFuture).await() as Response<*>
         when (submitResponse.code()) {
             200 -> {
-                /* no-op */
+                // no-op
             }
 
             208 -> log.warn("Transaction already processed: $signedTransaction")
