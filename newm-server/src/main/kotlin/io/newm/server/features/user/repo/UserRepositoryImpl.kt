@@ -76,9 +76,9 @@ internal class UserRepositoryImpl(
         logger.debug { "find: email = $email" }
         return transaction {
             val entity = getUserEntityByEmail(email)
-            entity.checkNonOAuth()
-            // logger.warn { "password: ${password.toHash()}" }
             password.checkAuth(entity.passwordHash)
+            entity.oauthType = null
+            entity.oauthId = null
             entity.id.value to entity.admin
         }
     }
@@ -94,24 +94,17 @@ internal class UserRepositoryImpl(
         }
         logger.debug { "findOrAdd: oauthUser = $user" }
 
-        val pictureUrl = user.pictureUrl?.asValidUrl()
         val email = user.email.asValidEmail()
-
         return transaction {
-            UserEntity.getId(
-                oauthType = oauthType,
-                oauthId = user.id
-            ) ?: let {
-                email.checkEmailUnique()
-                UserEntity.new {
-                    this.oauthType = oauthType
-                    this.oauthId = user.id
-                    this.firstName = user.firstName
-                    this.lastName = user.lastName
-                    this.pictureUrl = pictureUrl
-                    this.email = email
-                }.id.value
+            val entity = UserEntity.getByEmail(email) ?: UserEntity.new {
+                this.firstName = user.firstName
+                this.lastName = user.lastName
+                this.pictureUrl = user.pictureUrl?.asValidUrl()
+                this.email = email
             }
+            entity.oauthType = oauthType
+            entity.oauthId = user.id
+            entity.id.value
         }
     }
 
@@ -165,13 +158,14 @@ internal class UserRepositoryImpl(
             user.biography?.let { entity.biography = it }
             user.walletAddress?.let { entity.walletAddress = it }
             email?.let {
-                it.checkEmailUnique()
+                it.checkEmailUnique(entity.email)
                 entity.email = it
             }
             passwordHash?.let {
-                entity.checkNonOAuth()
-                user.currentPassword.checkAuth(entity.passwordHash)
-                entity.passwordHash = it
+                if (entity.oauthType == null || entity.passwordHash != null) {
+                    user.currentPassword.checkAuth(entity.passwordHash)
+                }
+                entity.passwordHash = passwordHash
             }
             user.companyName?.let { entity.companyName = it }
             user.companyLogoUrl?.let { entity.companyLogoUrl = it.asValidUrl() }
@@ -186,9 +180,7 @@ internal class UserRepositoryImpl(
         val passwordHash = user.newPassword.asValidPassword(user.confirmPassword).toHash()
 
         transaction {
-            val entity = getUserEntityByEmail(email)
-            entity.checkNonOAuth()
-            entity.passwordHash = passwordHash
+            getUserEntityByEmail(email).passwordHash = passwordHash
         }
     }
 
@@ -216,17 +208,15 @@ internal class UserRepositoryImpl(
         return this
     }
 
-    private fun String.checkEmailUnique() {
-        if (UserEntity.existsByEmail(this)) throw HttpConflictException("Already exists: $this")
+    private fun String.checkEmailUnique(currentEmail: String? = null) {
+        if (!equals(currentEmail, ignoreCase = true) && UserEntity.existsByEmail(this)) {
+            throw HttpConflictException("Already exists: $this")
+        }
     }
 
     private fun Password?.checkAuth(hash: String?) {
         if (this == null) throw HttpBadRequestException("Missing password")
         if (hash == null || !verify(hash)) throw HttpUnauthorizedException("Invalid password")
-    }
-
-    private fun UserEntity.checkNonOAuth() {
-        if (oauthType != null) throw HttpForbiddenException("Not allowed for OAuth Users")
     }
 
     private fun User.checkFieldLengths() {
