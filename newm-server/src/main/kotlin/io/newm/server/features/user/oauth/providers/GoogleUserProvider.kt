@@ -1,7 +1,6 @@
 package io.newm.server.features.user.oauth.providers
 
 import io.ktor.client.HttpClient
-import io.ktor.client.call.body
 import io.ktor.client.request.accept
 import io.ktor.client.request.bearerAuth
 import io.ktor.client.request.get
@@ -12,6 +11,7 @@ import io.ktor.server.application.ApplicationEnvironment
 import io.newm.server.auth.oauth.model.OAuthTokens
 import io.newm.server.features.user.oauth.OAuthUser
 import io.newm.server.features.user.oauth.OAuthUserProvider
+import io.newm.server.ktx.checkedBody
 import io.newm.shared.exception.HttpBadRequestException
 import io.newm.shared.ktx.getConfigString
 import kotlinx.serialization.SerialName
@@ -49,6 +49,6 @@ internal class GoogleUserProvider(
                 accept(ContentType.Application.Json)
                 bearerAuth(token)
             }
-        }.body<GoogleUser>()
+        }.checkedBody<GoogleUser>()
     }
 }

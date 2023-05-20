@@ -5,7 +5,6 @@ import io.newm.server.features.user.model.User
 import io.newm.server.features.user.model.UserFilters
 import io.newm.server.features.user.model.UserVerificationStatus
 import io.newm.shared.ktx.exists
-import io.newm.shared.ktx.getId
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
@@ -15,7 +14,6 @@ import org.jetbrains.exposed.sql.SizedIterable
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
-import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.lowerCase
 import java.time.LocalDateTime
 import java.util.UUID
@@ -113,10 +111,6 @@ class UserEntity(id: EntityID<UUID>) : UUIDEntity(id) {
 
         fun existsByEmail(email: String): Boolean = exists {
             UserTable.email.lowerCase() eq email.lowercase()
-        }
-
-        fun getId(oauthType: OAuthType, oauthId: String): UUID? = UserTable.getId {
-            (UserTable.oauthType eq oauthType) and (UserTable.oauthId eq oauthId)
         }
     }
 }

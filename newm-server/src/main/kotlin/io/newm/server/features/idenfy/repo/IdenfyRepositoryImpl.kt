@@ -1,7 +1,6 @@
 package io.newm.server.features.idenfy.repo
 
 import io.ktor.client.HttpClient
-import io.ktor.client.call.body
 import io.ktor.client.request.basicAuth
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -13,6 +12,7 @@ import io.newm.server.features.idenfy.model.IdenfyCreateSessionResponse
 import io.newm.server.features.idenfy.model.IdenfySessionResult
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.model.UserVerificationStatus
+import io.newm.server.ktx.checkedBody
 import io.newm.server.ktx.getSecureString
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.debug
@@ -52,7 +52,7 @@ class IdenfyRepositoryImpl(
                     password = getSecureString("apiSecret"),
                 )
                 setBody(IdenfyCreateSessionRequest(userId.toString()))
-            }.body()
+            }.checkedBody()
         }
     }
 
