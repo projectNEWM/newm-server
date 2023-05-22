@@ -7,6 +7,7 @@ import io.grpc.Metadata
 import io.grpc.stub.MetadataUtils
 import io.newm.chain.grpc.MonitorAddressRequest
 import io.newm.chain.grpc.NewmChainGrpcKt
+import io.newm.chain.grpc.QueryTransactionConfirmationCountResponse
 import io.newm.chain.grpc.QueryUtxosRequest
 import io.newm.chain.grpc.QueryUtxosResponse
 import io.newm.chain.grpc.SubmitTransactionRequest
@@ -14,6 +15,7 @@ import io.newm.chain.grpc.SubmitTransactionResponse
 import io.newm.chain.grpc.monitorNativeAssetsRequest
 import io.newm.chain.grpc.monitorPaymentAddressRequest
 import io.newm.chain.grpc.nativeAsset
+import io.newm.chain.grpc.queryTransactionConfirmationCountRequest
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
@@ -118,6 +120,42 @@ class GrpcTests {
 
         println("utxos: $queryUtxosResponse")
         println("liveUtxos: $queryLiveUtxosResponse")
+    }
+
+    @Test
+    @Disabled
+    fun `test queryTransactionConfirmations`() = runBlocking {
+        // plainText for localhost testing only. use SSL later.
+        val channel = ManagedChannelBuilder.forAddress("localhost", 3737).usePlaintext().build()
+        val client =
+            NewmChainGrpcKt.NewmChainCoroutineStub(channel).withInterceptors(
+                MetadataUtils.newAttachHeadersInterceptor(
+                    Metadata().apply {
+                        put(
+                            Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER),
+                            "Bearer <JWT_TOKEN_HERE_DO_NOT_COMMIT>"
+                        )
+                    }
+                )
+            )
+
+        val request = queryTransactionConfirmationCountRequest {
+            with(txIds) {
+                add("a8ebbe98a73d733dd1664fddab025582900bf9bf64b1999128e53534a864ea24")
+                add("21024c6f9aec5d227b33dedf380b3e05777364c8dcd010511ed16450b9164507")
+                add("0000000000000000000000000000000000000000000000000000000000000000")
+            }
+        }
+
+        val response = client.queryTransactionConfirmationCount(request)
+        println(response.toString())
+        assertThat(response).isInstanceOf(QueryTransactionConfirmationCountResponse::class.java)
+        assertThat(response.txIdToConfirmationCountMap["0000000000000000000000000000000000000000000000000000000000000000"]).isEqualTo(
+            0L
+        )
+        assertThat(response.txIdToConfirmationCountMap["a8ebbe98a73d733dd1664fddab025582900bf9bf64b1999128e53534a864ea24"]).isGreaterThan(
+            response.txIdToConfirmationCountMap["21024c6f9aec5d227b33dedf380b3e05777364c8dcd010511ed16450b9164507"]
+        )
     }
 
     @Test

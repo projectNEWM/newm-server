@@ -52,6 +52,7 @@ import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.innerJoin
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.insertAndGetId
+import org.jetbrains.exposed.sql.max
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -59,6 +60,7 @@ import org.jetbrains.exposed.sql.update
 import org.slf4j.LoggerFactory
 import java.math.BigInteger
 import java.time.Duration
+import kotlin.math.max
 
 class LedgerRepositoryImpl : LedgerRepository {
     private val log by lazy { LoggerFactory.getLogger("LedgerRepository") }
@@ -743,6 +745,25 @@ class LedgerRepositoryImpl : LedgerRepository {
             NativeAssetMonitorLogTable.id greater afterId
         }.orderBy(NativeAssetMonitorLogTable.id).map { row ->
             row[NativeAssetMonitorLogTable.id].value to row[NativeAssetMonitorLogTable.monitorNativeAssetsResponseBytes]
+        }
+    }
+
+    override fun queryTransactionConfirmationCounts(txIds: List<String>): Map<String, Long> {
+        return transaction {
+            val tipBlockExpression = LedgerUtxosTable.blockCreated.max()
+            val tipBlock: Long = LedgerUtxosTable.slice(tipBlockExpression).selectAll().firstOrNull()?.let {
+                it[tipBlockExpression]
+            } ?: 0L
+
+            val ledgerMap = LedgerUtxosTable
+                .slice(LedgerUtxosTable.txId, LedgerUtxosTable.blockCreated)
+                .select { LedgerUtxosTable.txId inList txIds }.withDistinct().associate { row ->
+                    val txId = row[LedgerUtxosTable.txId]
+                    val blockCreated = row[LedgerUtxosTable.blockCreated]
+                    txId to max(tipBlock - blockCreated, 0L)
+                }
+
+            txIds.associateWith { txId -> (ledgerMap[txId] ?: 0L) }
         }
     }
 
