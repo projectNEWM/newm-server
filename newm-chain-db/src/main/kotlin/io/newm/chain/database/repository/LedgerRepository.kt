@@ -56,4 +56,6 @@ interface LedgerRepository {
     fun queryNativeAssetLogsAfter(afterTableId: Long?): List<Pair<Long, ByteArray>>
 
     fun queryLedgerAssetMetadataList(assetId: Long, parentId: Long? = null): List<LedgerAssetMetadata>
+
+    fun queryTransactionConfirmationCounts(txIds: List<String>): Map<String, Long>
 }

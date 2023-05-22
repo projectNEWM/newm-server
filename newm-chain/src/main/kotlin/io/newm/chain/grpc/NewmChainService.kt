@@ -78,6 +78,14 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
         }
     }
 
+    override suspend fun queryTransactionConfirmationCount(request: QueryTransactionConfirmationCountRequest): QueryTransactionConfirmationCountResponse {
+        return queryTransactionConfirmationCountResponse {
+            txIdToConfirmationCount.putAll(
+                ledgerRepository.queryTransactionConfirmationCounts(request.txIdsList)
+            )
+        }
+    }
+
     override suspend fun submitTransaction(request: SubmitTransactionRequest): SubmitTransactionResponse {
         val cbor = request.cbor.toByteArray()
         return txSubmitClientPool.useInstance { client ->

@@ -10,6 +10,7 @@ service NewmChain {
   rpc QueryCurrentEpoch (QueryCurrentEpochRequest) returns (QueryCurrentEpochResponse) {}
   rpc QueryUtxos (QueryUtxosRequest) returns (QueryUtxosResponse) {}
   rpc QueryLiveUtxos (QueryUtxosRequest) returns (QueryUtxosResponse) {}
+  rpc QueryTransactionConfirmationCount (QueryTransactionConfirmationCountRequest) returns (QueryTransactionConfirmationCountResponse) {}
   rpc MonitorAddress (MonitorAddressRequest) returns (stream MonitorAddressResponse) {}
   rpc IsMainnet (IsMainnetRequest) returns (IsMainnetResponse) {}
   rpc MonitorPaymentAddress (MonitorPaymentAddressRequest) returns (MonitorPaymentAddressResponse) {}
@@ -44,6 +45,14 @@ message QueryUtxosRequest {
 
 message QueryUtxosResponse {
   repeated Utxo utxos = 1;
+}
+
+message QueryTransactionConfirmationCountRequest {
+  repeated string tx_ids = 1;
+}
+
+message QueryTransactionConfirmationCountResponse {
+  map<string, uint64> tx_id_to_confirmation_count = 1;
 }
 
 message Utxo {
