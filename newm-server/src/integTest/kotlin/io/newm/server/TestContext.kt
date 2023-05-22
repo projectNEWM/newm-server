@@ -15,7 +15,7 @@ import io.newm.shared.auth.Password
 import kotlinx.coroutines.runBlocking
 
 object TestContext {
-    private val config = ConfigFactory.load("${System.getProperty("newm.env")}.conf")
+    val config = ConfigFactory.load("${System.getProperty("newm.env")}.conf")
     val baseUrl: String = config.getString("newm.baseUrl")
     val email: String = config.getString("newm.email")
     val password: String = config.getString("newm.password")
