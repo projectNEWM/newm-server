@@ -141,8 +141,7 @@ class SongsTest {
 
         assertThat(formResp.status.value).isIn(200..204)
 
-        // wait for transcoding to finish
-        // poll server until Song is updated
+        // poll server until Song transcode work is complete
         try {
             withTimeout(Duration.ofMinutes(2).toMillis()) {
                 var pollCount = 0
