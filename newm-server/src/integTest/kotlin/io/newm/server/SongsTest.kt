@@ -17,6 +17,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.append
 import io.ktor.http.contentType
+import io.ktor.http.isSuccess
 import io.ktor.utils.io.core.buildPacket
 import io.ktor.utils.io.core.writeFully
 import io.newm.server.features.model.CountResponse
@@ -43,7 +44,7 @@ class SongsTest {
         )
         assertThat(createSongResponse.status).isEqualTo(HttpStatusCode.OK)
         val resp = createSongResponse.body<SongIdBody>()
-        assertThat(resp.songId)
+        assertThat(resp.songId).isNotNull()
     }
 
     @Test
@@ -58,20 +59,24 @@ class SongsTest {
 
     @Test
     fun `Get an existing song`(): Unit = runBlocking {
+        val title = "[TEST] ${String.randomString(8)}"
         val createSongResponse = createSong(
             Song(
-                title = "[TEST] ${String.randomString(8)}",
+                title = title,
                 genres = listOf("Synthwave", "Synthpop")
             )
         )
         assertThat(createSongResponse.status).isEqualTo(HttpStatusCode.OK)
         val resp = createSongResponse.body<SongIdBody>()
-        assertThat(resp.songId)
+        assertThat(resp.songId).isNotNull()
 
         val getSongResponse = TestContext.client.get("${TestContext.baseUrl}/v1/songs/${resp.songId}") {
             bearerAuth(TestContext.loginResponse.accessToken)
         }
         assertThat(getSongResponse.status).isEqualTo(HttpStatusCode.OK)
+        val song = getSongResponse.body<Song>()
+        assertThat(song.title).isEqualTo(title)
+        assertThat(song.genres).containsExactly("Synthwave", "Synthpop")
     }
 
     @Test
@@ -139,7 +144,7 @@ class SongsTest {
             }
         }
 
-        assertThat(formResp.status.value).isIn(200..204)
+        assertThat(formResp.status.isSuccess()).isTrue()
 
         // poll server until Song transcode work is complete
         try {
