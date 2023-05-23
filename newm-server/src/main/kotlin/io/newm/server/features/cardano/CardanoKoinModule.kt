@@ -7,9 +7,11 @@ import io.ktor.server.application.ApplicationEnvironment
 import io.newm.chain.grpc.NewmChainGrpcKt.NewmChainCoroutineStub
 import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.cardano.repo.CardanoRepositoryImpl
+import io.newm.server.ktx.getSecureConfigString
 import io.newm.shared.ktx.getConfigBoolean
 import io.newm.shared.ktx.getConfigInt
 import io.newm.shared.ktx.getConfigString
+import kotlinx.coroutines.runBlocking
 import org.koin.dsl.module
 
 val cardanoKoinModule = module {
@@ -17,7 +19,7 @@ val cardanoKoinModule = module {
         CardanoRepositoryImpl(
             get(),
             get(),
-            get<ApplicationEnvironment>().getConfigString("aws.kms.keyId"),
+            runBlocking { get<ApplicationEnvironment>().getSecureConfigString("aws.kms.keyId") },
             get(),
         )
     }
@@ -25,7 +27,7 @@ val cardanoKoinModule = module {
         val environment = get<ApplicationEnvironment>()
         val host = environment.getConfigString("newmChain.host")
         val port = environment.getConfigInt("newmChain.port")
-        val jwt = environment.getConfigString("newmChain.jwt")
+        val jwt = runBlocking { environment.getSecureConfigString("newmChain.jwt") }
         val secure = environment.getConfigBoolean("newmChain.secure")
         val channel = ManagedChannelBuilder.forAddress(host, port).apply {
             if (secure) {
