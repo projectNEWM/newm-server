@@ -1,17 +1,14 @@
 package io.newm.server.features.distribution.model
 
-import io.newm.shared.serialization.UUIDSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import java.util.UUID
 
 @Serializable
 data class UpdateTrackRequest(
     @SerialName("uuid")
-    @Serializable(with = UUIDSerializer::class)
-    val uuid: UUID,
+    val uuid: String,
     @SerialName("name")
-    val trackFileName: String,
+    val name: String,
     @SerialName("stereo_isrc")
     val stereoIsrc: String? = null,
     @SerialName("iswc")
@@ -23,7 +20,7 @@ data class UpdateTrackRequest(
     @SerialName("explicit")
     val explicit: Int? = null, // Explicit : 0-Clean, 1-Explicit, 2-Not Required
     @SerialName("availability")
-    val availability: List<Int> = listOf(1, 2), // 1 = Download, 2 = Streaming
+    val availability: List<Int>, // 1 = Download, 2 = Streaming
     @SerialName("artists")
     val artists: List<Long>? = null,
     @SerialName("featured_artists")

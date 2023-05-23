@@ -10,6 +10,9 @@ service NewmChain {
   rpc QueryCurrentEpoch (QueryCurrentEpochRequest) returns (QueryCurrentEpochResponse) {}
   rpc QueryUtxos (QueryUtxosRequest) returns (QueryUtxosResponse) {}
   rpc QueryLiveUtxos (QueryUtxosRequest) returns (QueryUtxosResponse) {}
+  rpc QueryUtxosByOutputRef (QueryUtxosOutputRefRequest) returns (QueryUtxosResponse) {}
+  rpc QueryUtxosByStakeAddress (QueryUtxosRequest) returns (QueryUtxosResponse) {}
+  rpc QueryDatumByHash (QueryDatumByHashRequest) returns (QueryDatumByHashResponse) {}
   rpc QueryTransactionConfirmationCount (QueryTransactionConfirmationCountRequest) returns (QueryTransactionConfirmationCountResponse) {}
   rpc MonitorAddress (MonitorAddressRequest) returns (stream MonitorAddressResponse) {}
   rpc IsMainnet (IsMainnetRequest) returns (IsMainnetResponse) {}
@@ -45,6 +48,19 @@ message QueryUtxosRequest {
 
 message QueryUtxosResponse {
   repeated Utxo utxos = 1;
+}
+
+message QueryUtxosOutputRefRequest {
+  string hash = 1;
+  sint64 ix = 2;
+}
+
+message QueryDatumByHashRequest {
+  string datum_hash = 1;
+}
+
+message QueryDatumByHashResponse {
+  optional PlutusData datum = 1;
 }
 
 message QueryTransactionConfirmationCountRequest {

@@ -330,8 +330,8 @@ class MintingRepositoryTest : BaseApplicationTests() {
                 ix = 1
             }
         )
-        assertThat(refTokenName).isEqualTo("28313030290138c741df813afd1e2ba521d6b798dcabbc813ac7ba84467080b9")
-        assertThat(fracTokenName).isEqualTo("28343434290138c741df813afd1e2ba521d6b798dcabbc813ac7ba84467080b9")
+        assertThat(refTokenName).isEqualTo("000643b00138c741df813afd1e2ba521d6b798dcabbc813ac7ba84467080b9b6")
+        assertThat(fracTokenName).isEqualTo("001bc2800138c741df813afd1e2ba521d6b798dcabbc813ac7ba84467080b9b6")
 
         val (identityRefTokenName, identityFracTokenName) = mintingRepository.calculateTokenNames(
             utxo {
@@ -339,8 +339,8 @@ class MintingRepositoryTest : BaseApplicationTests() {
                 ix = 0
             }
         )
-        assertThat(identityRefTokenName).isEqualTo("283130302900a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d8")
-        assertThat(identityFracTokenName).isEqualTo("283434342900a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d8")
+        assertThat(identityRefTokenName).isEqualTo("000643b000a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a")
+        assertThat(identityFracTokenName).isEqualTo("001bc28000a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a")
     }
 
     @Test

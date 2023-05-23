@@ -6,10 +6,14 @@ import kotlinx.serialization.Serializable
 import java.util.UUID
 
 @Serializable
-data class AddParticipantPaypalRequest(
+data class UpdateArtistRequest(
     @SerialName("uuid")
     @Serializable(with = UUIDSerializer::class)
-    val uuid: UUID,
-    @SerialName("paypal_email_id")
-    val paypalEmailId: String
+    val evearaUserUuid: UUID,
+    @SerialName("name")
+    val name: String,
+    @SerialName("country")
+    val country: String? = null,
+    @SerialName("outlets_profile")
+    val outletsProfile: OutletsProfile? = null
 )

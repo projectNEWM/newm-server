@@ -8,5 +8,5 @@ data class LabelData(
     @SerialName("label_name")
     val labelName: String,
     @SerialName("label_id")
-    val labelId: String
+    val labelId: Long
 )

@@ -27,6 +27,7 @@ import io.newm.chain.model.NativeAsset
 import io.newm.chain.model.SpentUtxo
 import io.newm.chain.model.Utxo
 import io.newm.chain.util.Bech32
+import io.newm.chain.util.Blake2b
 import io.newm.chain.util.Constants.TX_DEST_UTXOS_INDEX
 import io.newm.chain.util.Constants.TX_SPENT_UTXOS_INDEX
 import io.newm.chain.util.Constants.UTXO_ADDRESS_INDEX
@@ -35,6 +36,7 @@ import io.newm.chain.util.Constants.UTXO_DATUM_INDEX
 import io.newm.chain.util.Constants.UTXO_SCRIPT_REF_INDEX
 import io.newm.chain.util.elementToByteArray
 import io.newm.chain.util.elementToInt
+import io.newm.chain.util.hexToByteArray
 import io.newm.chain.util.toHexString
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
@@ -90,14 +92,13 @@ class LedgerRepositoryImpl : LedgerRepository {
                     { ledgerAssetId },
                     { LedgerAssetsTable.id },
                     { LedgerUtxoAssetsTable.ledgerUtxoId eq ledgerUtxoId }
-                )
-                    .selectAll().map { naRow ->
-                        NativeAsset(
-                            name = naRow[LedgerAssetsTable.name],
-                            policy = naRow[LedgerAssetsTable.policy],
-                            amount = BigInteger(naRow[LedgerUtxoAssetsTable.amount])
-                        )
-                    }
+                ).selectAll().map { naRow ->
+                    NativeAsset(
+                        name = naRow[LedgerAssetsTable.name],
+                        policy = naRow[LedgerAssetsTable.policy],
+                        amount = BigInteger(naRow[LedgerUtxoAssetsTable.amount])
+                    )
+                }
 
                 Utxo(
                     hash = row[LedgerUtxosTable.txId],
@@ -109,6 +110,42 @@ class LedgerRepositoryImpl : LedgerRepository {
                     scriptRef = row[LedgerUtxosTable.scriptRef],
                 )
             }.toHashSet()
+    }
+
+    override fun queryUtxosByStakeAddress(address: String): Set<Utxo> = transaction {
+        LedgerUtxosTable.innerJoin(
+            LedgerTable,
+            { ledgerId },
+            { LedgerTable.id },
+            { LedgerTable.stakeAddress eq address }
+        ).select {
+            LedgerUtxosTable.blockSpent.isNull() and LedgerUtxosTable.slotSpent.isNull()
+        }.map { row ->
+            val ledgerUtxoId = row[LedgerUtxosTable.id].value
+
+            val nativeAssets = LedgerUtxoAssetsTable.innerJoin(
+                LedgerAssetsTable,
+                { ledgerAssetId },
+                { LedgerAssetsTable.id },
+                { LedgerUtxoAssetsTable.ledgerUtxoId eq ledgerUtxoId }
+            ).selectAll().map { naRow ->
+                NativeAsset(
+                    name = naRow[LedgerAssetsTable.name],
+                    policy = naRow[LedgerAssetsTable.policy],
+                    amount = BigInteger(naRow[LedgerUtxoAssetsTable.amount])
+                )
+            }
+
+            Utxo(
+                hash = row[LedgerUtxosTable.txId],
+                ix = row[LedgerUtxosTable.txIx].toLong(),
+                lovelace = BigInteger(row[LedgerUtxosTable.lovelace]),
+                nativeAssets = nativeAssets,
+                datumHash = row[LedgerUtxosTable.datumHash],
+                datum = row[LedgerUtxosTable.datum],
+                scriptRef = row[LedgerUtxosTable.scriptRef],
+            )
+        }.toHashSet()
     }
 
     override fun queryPublicKeyHashByOutputRef(hash: String, ix: Int): String? = transaction {
@@ -126,6 +163,40 @@ class LedgerRepositoryImpl : LedgerRepository {
                     null
                 }
             }.firstOrNull()
+    }
+
+    override fun queryUtxosByOutputRef(hash: String, ix: Int): Set<Utxo> = transaction {
+        LedgerUtxosTable.select {
+            (LedgerUtxosTable.txId eq hash) and
+                (LedgerUtxosTable.txIx eq ix) and
+                LedgerUtxosTable.blockSpent.isNull() and
+                LedgerUtxosTable.slotSpent.isNull()
+        }.map { row ->
+            val ledgerUtxoId = row[LedgerUtxosTable.id].value
+
+            val nativeAssets = LedgerUtxoAssetsTable.innerJoin(
+                LedgerAssetsTable,
+                { ledgerAssetId },
+                { LedgerAssetsTable.id },
+                { LedgerUtxoAssetsTable.ledgerUtxoId eq ledgerUtxoId }
+            ).selectAll().map { naRow ->
+                NativeAsset(
+                    name = naRow[LedgerAssetsTable.name],
+                    policy = naRow[LedgerAssetsTable.policy],
+                    amount = BigInteger(naRow[LedgerUtxoAssetsTable.amount])
+                )
+            }
+
+            Utxo(
+                hash = row[LedgerUtxosTable.txId],
+                ix = row[LedgerUtxosTable.txIx].toLong(),
+                lovelace = BigInteger(row[LedgerUtxosTable.lovelace]),
+                nativeAssets = nativeAssets,
+                datumHash = row[LedgerUtxosTable.datumHash],
+                datum = row[LedgerUtxosTable.datum],
+                scriptRef = row[LedgerUtxosTable.scriptRef],
+            )
+        }.toHashSet()
     }
 
     override suspend fun queryLiveUtxos(address: String): Set<Utxo> {
@@ -527,7 +598,8 @@ class LedgerRepositoryImpl : LedgerRepository {
                 row[ledgerId] = ledgerTableId
                 row[txId] = createdUtxo.hash
                 row[txIx] = createdUtxo.ix.toInt()
-                row[datumHash] = createdUtxo.datumHash
+                row[datumHash] = createdUtxo.datumHash ?: createdUtxo.datum?.hexToByteArray()
+                    ?.let { Blake2b.hash256(it).toHexString() }
                 row[datum] = createdUtxo.datum
                 row[scriptRef] = createdUtxo.scriptRef
                 row[lovelace] = createdUtxo.lovelace.toString()
@@ -781,6 +853,14 @@ class LedgerRepositoryImpl : LedgerRepository {
                 }
 
             txIds.associateWith { txId -> (ledgerMap[txId] ?: 0L) }
+        }
+    }
+
+    override fun queryDatumByHash(datumHashHex: String): String? {
+        return transaction {
+            LedgerUtxosTable.select { LedgerUtxosTable.datumHash eq datumHashHex }.firstOrNull()?.let { row ->
+                row[LedgerUtxosTable.datum]
+            }
         }
     }
 

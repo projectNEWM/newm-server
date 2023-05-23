@@ -60,4 +60,10 @@ interface LedgerRepository {
     fun queryTransactionConfirmationCounts(txIds: List<String>): Map<String, Long>
 
     fun queryPublicKeyHashByOutputRef(hash: String, ix: Int): String?
+
+    fun queryDatumByHash(datumHashHex: String): String?
+
+    fun queryUtxosByOutputRef(hash: String, ix: Int): Set<Utxo>
+
+    fun queryUtxosByStakeAddress(address: String): Set<Utxo>
 }

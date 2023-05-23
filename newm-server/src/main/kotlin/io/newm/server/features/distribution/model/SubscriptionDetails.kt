@@ -14,9 +14,9 @@ data class SubscriptionDetails(
     @SerialName("duration")
     val duration: String,
     @SerialName("total_number_of_artist")
-    val totalNumberOfArtist: Int,
+    val totalNumberOfArtist: String,
     @SerialName("total_number_of_tracks")
-    val totalNumberOfTracks: Int,
+    val totalNumberOfTracks: String,
     @SerialName("total_number_of_albums")
-    val totalNumberOfAlbums: Int
+    val totalNumberOfAlbums: String,
 )

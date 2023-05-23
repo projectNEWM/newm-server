@@ -10,5 +10,5 @@ data class AddTrackResponse(
     @SerialName("success")
     val success: Boolean,
     @SerialName("track_id")
-    val trackId: String
+    val trackId: Long,
 )

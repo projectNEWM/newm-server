@@ -10,7 +10,5 @@ data class AddArtistResponse(
     @SerialName("success")
     val success: Boolean,
     @SerialName("artist_id")
-    val artistId: String,
-    @SerialName("artist_name")
-    val artistName: String
+    val artistId: Long,
 )

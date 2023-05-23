@@ -82,6 +82,7 @@ object Dependencies {
         const val CLIENT_CORE = "io.ktor:ktor-client-core:$VERSION"
         const val CLIENT_CIO = "io.ktor:ktor-client-cio:$VERSION"
         const val CLIENT_CONTENT_NEGOTIATION = "io.ktor:ktor-client-content-negotiation:$VERSION"
+        const val CLIENT_LOGGING = "io.ktor:ktor-client-logging:$VERSION"
         const val CLIENT_SERIALIZATION = "io.ktor:ktor-client-serialization:$VERSION"
         const val SERIALIZATION = "io.ktor:ktor-serialization:$VERSION"
         const val SERIALIZATION_JSON = "io.ktor:ktor-serialization-kotlinx-json:$VERSION"

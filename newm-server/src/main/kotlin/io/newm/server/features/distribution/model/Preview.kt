@@ -4,9 +4,9 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class AddParticipantPaypalResponse(
-    @SerialName("message")
-    val message: String,
-    @SerialName("success")
-    val success: Boolean
+data class Preview(
+    @SerialName("start_at")
+    val startAt: Long,
+    @SerialName("duration")
+    val duration: Long
 )

@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class EvearaOutlet(
     @SerialName("process_duration_dates")
-    val processDurationDates: Int,
+    val processDurationDates: Long,
     @SerialName("dolby_enabled")
     val dolbyEnabled: Boolean,
     @SerialName("store_name")

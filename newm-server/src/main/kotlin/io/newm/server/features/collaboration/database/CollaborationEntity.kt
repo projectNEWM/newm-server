@@ -39,6 +39,7 @@ class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var credited: Boolean by CollaborationTable.credited
     var featured: Boolean by CollaborationTable.featured
     var status: CollaborationStatus by CollaborationTable.status
+    var distributionArtistId: Long? by CollaborationTable.distributionArtistId
 
     fun toModel(): Collaboration = Collaboration(
         id = id.value,
@@ -49,7 +50,8 @@ class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         royaltyRate = royaltyRate,
         credited = credited,
         featured = featured,
-        status = status
+        status = status,
+        distributionArtistId = distributionArtistId,
     )
 
     companion object : UUIDEntityClass<CollaborationEntity>(CollaborationTable) {

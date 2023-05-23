@@ -10,7 +10,7 @@ data class GetUserResponse(
     @SerialName("success")
     val success: Boolean,
     @SerialName("total_records")
-    val totalRecords: Int,
+    val totalRecords: Long,
     @SerialName("data")
     val users: List<UserResponse>,
 )

@@ -1,5 +1,6 @@
 package io.newm.server.features.user.model
 
+import com.google.common.annotations.VisibleForTesting
 import io.newm.server.auth.oauth.model.OAuthType
 import io.newm.shared.auth.Password
 import io.newm.shared.serialization.LocalDateTimeSerializer
@@ -19,6 +20,7 @@ data class User(
     val oauthId: String? = null,
     val firstName: String? = null,
     val lastName: String? = null,
+    @VisibleForTesting // nickname should be accessed through stageOrFullName
     val nickname: String? = null,
     val pictureUrl: String? = null,
     val bannerUrl: String? = null,
@@ -39,9 +41,8 @@ data class User(
     val companyName: String? = null,
     val companyLogoUrl: String? = null,
     var companyIpRights: Boolean? = null,
-    @Serializable(with = UUIDSerializer::class)
     @Transient
-    var distributionUserId: UUID? = null,
+    var distributionUserId: String? = null,
     @Transient
     var distributionArtistId: Long? = null,
     @Transient
@@ -52,8 +53,22 @@ data class User(
     var distributionLabelId: Long? = null,
     var distributionIsni: String? = null,
     var distributionIpn: String? = null,
+    @Transient
+    var distributionNewmParticipantId: Long? = null,
 ) {
     val stageOrFullName: String by lazy { stageOrFullNameOf(nickname, firstName, lastName) }
+
+    val companyOrStageOrFullName: String by lazy {
+        if (companyIpRights == true && !companyName.isNullOrBlank()) {
+            companyName
+        } else {
+            stageOrFullNameOf(
+                nickname,
+                firstName,
+                lastName
+            )
+        }
+    }
 
     companion object {
         fun stageOrFullNameOf(

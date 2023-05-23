@@ -128,6 +128,8 @@ internal class SongRepositoryImpl(
                     arweaveLyricsUrl?.let { entity.arweaveLyricsUrl = it.asValidUrl() }
                     arweaveClipUrl?.let { entity.arweaveClipUrl = it.asValidUrl() }
                     arweaveTokenAgreementUrl?.let { entity.arweaveTokenAgreementUrl = it.asValidUrl() }
+                    distributionTrackId?.let { entity.distributionTrackId = it }
+                    distributionReleaseId?.let { entity.distributionReleaseId = it }
                 }
             }
         }
@@ -303,7 +305,7 @@ internal class SongRepositoryImpl(
     }
 
     override suspend fun distribute(songId: UUID) {
-        val song = SongEntity[songId]
+        val song = get(songId)
 
         distributionRepository.distributeSong(song)
     }

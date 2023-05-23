@@ -59,12 +59,12 @@ import io.newm.kogmios.protocols.model.OriginString
 import io.newm.kogmios.protocols.model.PointDetail
 import io.newm.kogmios.protocols.model.PointDetailOrOrigin
 import io.newm.shared.daemon.Daemon
+import io.newm.shared.koin.inject
 import io.newm.shared.ktx.debug
 import io.newm.shared.ktx.getConfigBoolean
 import io.newm.shared.ktx.getConfigInt
 import io.newm.shared.ktx.getConfigSplitStrings
 import io.newm.shared.ktx.getConfigString
-import io.newm.shared.koin.inject
 import io.newm.txbuilder.ktx.cborHexToPlutusData
 import io.newm.txbuilder.ktx.toPlutusData
 import kotlinx.coroutines.CancellationException
@@ -701,9 +701,9 @@ class BlockDaemon(
                             batch.addAll(
                                 ledgerAssets.filter { it.supply > BigInteger.ZERO }.map { ledgerAsset ->
                                     val metadataLedgerAsset = if (ledgerAsset.name.matches(CIP68_USER_TOKEN_REGEX)) {
-                                        val name = "2831303029${ledgerAsset.name.substring(10)}"
+                                        val name = "$CIP68_REFERENCE_TOKEN_PREFIX${ledgerAsset.name.substring(8)}"
                                         ledgerRepository.queryLedgerAsset(ledgerAsset.policy, name) ?: run {
-                                            log.warn("No LedgerAsset found for name: '$name' !")
+                                            log.warn("No LedgerAsset found for: '${ledgerAsset.policy}.$name' !")
                                             ledgerAsset
                                         }
                                     } else {
@@ -749,10 +749,10 @@ class BlockDaemon(
                                         metadataBatch.add(bos.toByteArray())
 
                                         val prefixes =
-                                            listOf("2832323229", "2833333329", "2834343429") // (222), (333), (444)
+                                            listOf("000de140", "0014df10", "001bc280") // (222), (333), (444)
 
                                         prefixes.forEach { prefix ->
-                                            val name = prefix + updatedNativeAsset.name.substring(10)
+                                            val name = prefix + updatedNativeAsset.name.substring(8)
                                             ledgerRepository.queryLedgerAsset(updatedNativeAsset.policy, name)
                                                 ?.let { nativeAsset ->
                                                     val bos1 = ByteArrayOutputStream()
@@ -793,8 +793,9 @@ class BlockDaemon(
         private val ASSET_NAME_METADATA_TAG = MetadataString("name")
         private val ASSET_IMAGE_METADATA_TAG = MetadataString("image")
         private val ASSET_DESCRIPTION_METADATA_TAG = MetadataString("description")
-        private val CIP68_REFERENCE_TOKEN_REGEX = Regex("^2831303029.*$") // (100)TokenName
+        private const val CIP68_REFERENCE_TOKEN_PREFIX = "000643b0"
+        private val CIP68_REFERENCE_TOKEN_REGEX = Regex("^000643b0.*$") // (100)TokenName
         private val CIP68_USER_TOKEN_REGEX =
-            Regex("^283[234]3[234]3[234]29.*$") // (222)TokenName, (333)TokenName, (444)TokenName
+            Regex("^00(0de14|14df1|1bc28)0.*$") // (222)TokenName, (333)TokenName, (444)TokenName
     }
 }

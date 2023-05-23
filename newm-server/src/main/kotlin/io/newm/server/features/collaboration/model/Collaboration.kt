@@ -19,5 +19,6 @@ data class Collaboration(
     val royaltyRate: Float? = null,
     val credited: Boolean? = null,
     val featured: Boolean? = null,
-    val status: CollaborationStatus? = null
+    val status: CollaborationStatus? = null,
+    val distributionArtistId: Long? = null,
 )

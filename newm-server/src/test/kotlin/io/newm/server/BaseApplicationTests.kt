@@ -2,6 +2,7 @@ package io.newm.server
 
 import com.zaxxer.hikari.HikariDataSource
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.config.ApplicationConfig
@@ -9,6 +10,7 @@ import io.ktor.server.testing.TestApplication
 import io.mockk.mockk
 import io.newm.server.auth.jwt.database.JwtTable
 import io.newm.server.auth.twofactor.database.TwoFactorAuthTable
+import io.newm.server.config.database.ConfigEntity
 import io.newm.server.config.database.ConfigTable
 import io.newm.server.features.cardano.database.KeyTable
 import io.newm.server.features.cardano.repo.CardanoRepository
@@ -43,6 +45,8 @@ import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 import java.util.UUID
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 @Testcontainers
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -58,6 +62,11 @@ open class BaseApplicationTests {
         application.createClient {
             install(ContentNegotiation) {
                 json()
+            }
+            install(HttpTimeout) {
+                requestTimeoutMillis = 2.minutes.inWholeMilliseconds
+                connectTimeoutMillis = 10.seconds.inWholeMilliseconds
+                socketTimeoutMillis = 30.seconds.inWholeMilliseconds
             }
         }.also { client ->
             loadKoinModules(
@@ -180,7 +189,14 @@ open class BaseApplicationTests {
             releaseDate = song.releaseDate
             publicationDate = song.publicationDate
             duration = song.duration
+            originalAudioUrl = song.originalAudioUrl
         }.id.value
+    }
+
+    protected fun addConfigToDatabase(id: String, value: String) = transaction {
+        ConfigEntity.new(id) {
+            this.value = value
+        }
     }
 
     companion object {
