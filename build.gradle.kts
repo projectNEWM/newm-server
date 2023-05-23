@@ -1,4 +1,5 @@
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 buildscript {
     repositories {
@@ -79,12 +80,16 @@ subprojects {
         }
     }
 
+    tasks.withType<ShadowJar> {
+        isZip64 = true
+    }
+
     tasks.withType<Test> {
         useJUnitPlatform()
         maxHeapSize = "8192m"
         environment = mapOf(
             "AWS_ACCESS_KEY_ID" to "TEST",
-            "AWS_SECRET_KEY" to "12345678"
+            "AWS_SECRET_ACCESS_KEY" to "12345678"
         )
     }
 }

@@ -7,6 +7,7 @@ import io.grpc.Metadata
 import io.grpc.stub.MetadataUtils
 import io.newm.chain.grpc.MonitorAddressRequest
 import io.newm.chain.grpc.NewmChainGrpcKt
+import io.newm.chain.grpc.QueryDatumByHashResponse
 import io.newm.chain.grpc.QueryTransactionConfirmationCountResponse
 import io.newm.chain.grpc.QueryUtxosRequest
 import io.newm.chain.grpc.QueryUtxosResponse
@@ -15,7 +16,10 @@ import io.newm.chain.grpc.SubmitTransactionResponse
 import io.newm.chain.grpc.monitorNativeAssetsRequest
 import io.newm.chain.grpc.monitorPaymentAddressRequest
 import io.newm.chain.grpc.nativeAsset
+import io.newm.chain.grpc.queryDatumByHashRequest
 import io.newm.chain.grpc.queryTransactionConfirmationCountRequest
+import io.newm.chain.grpc.queryUtxosOutputRefRequest
+import io.newm.chain.grpc.queryUtxosRequest
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
@@ -53,6 +57,97 @@ class GrpcTests {
         assertThat(testUtxo.nativeAssetsList[0].policy).isEqualTo("3ab25c853f0f188f43b34b2df5cb98737a4de7e19028ec9d1a414a55")
         assertThat(testUtxo.nativeAssetsList[0].name).isEqualTo("4e45574d5f31")
         assertThat(testUtxo.nativeAssetsList[0].amount.toLong()).isEqualTo(1L)
+    }
+
+    @Test
+    @Disabled
+    fun `test queryUtxosByStakeAddress`() = runBlocking {
+        // plainText for localhost testing only. use SSL later.
+        val channel = ManagedChannelBuilder.forAddress("localhost", 3737).usePlaintext().build()
+        val client =
+            NewmChainGrpcKt.NewmChainCoroutineStub(channel).withInterceptors(
+                MetadataUtils.newAttachHeadersInterceptor(
+                    Metadata().apply {
+                        put(
+                            Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER),
+                            "Bearer <JWT_TOKEN_HERE_DO_NOT_COMMIT>"
+                        )
+                    }
+                )
+            )
+        val request = queryUtxosRequest {
+            address = "stake_test1uqagcu8t578mglz6q9lr3vzz2j6wj4zmgcvuec42ddc58vcacpguy"
+        }
+        val response = client.queryUtxosByStakeAddress(request)
+        assertThat(response).isInstanceOf(QueryUtxosResponse::class.java)
+        assertThat(response.utxosList.size).isGreaterThan(4)
+        val testUtxo =
+            response.utxosList.first { it.hash == "bfbf405d57b198594b5731eb502a377489020bd48e84b5344289ea1c6b3a4646" }
+        assertThat(testUtxo).isNotNull()
+        assertThat(testUtxo.ix).isEqualTo(1L)
+        assertThat(testUtxo.datum.cborHex).isEqualTo("")
+        assertThat(testUtxo.nativeAssetsList.size).isEqualTo(17)
+        assertThat(testUtxo.nativeAssetsList[0].policy).isEqualTo("52366a9f74840bb47d0509393c18343f376250de1a01e0a43619e471")
+        assertThat(testUtxo.nativeAssetsList[0].name).isEqualTo("74426967546f6b656e4e616d653038")
+        assertThat(testUtxo.nativeAssetsList[0].amount.toLong()).isEqualTo(8L)
+    }
+
+    @Test
+    @Disabled
+    fun `test queryUtxosByOutputRef`() = runBlocking {
+        // plainText for localhost testing only. use SSL later.
+        val channel = ManagedChannelBuilder.forAddress("localhost", 3737).usePlaintext().build()
+        val client =
+            NewmChainGrpcKt.NewmChainCoroutineStub(channel).withInterceptors(
+                MetadataUtils.newAttachHeadersInterceptor(
+                    Metadata().apply {
+                        put(
+                            Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER),
+                            "Bearer <JWT_TOKEN_HERE_DO_NOT_COMMIT>"
+                        )
+                    }
+                )
+            )
+        val request = queryUtxosOutputRefRequest {
+            hash = "23024af80670da4b8d4c192f63b5d7119dc59e7b3ae83ef2cd798350f9b59cd4"
+            ix = 1L
+        }
+        val response = client.queryUtxosByOutputRef(request)
+        assertThat(response).isInstanceOf(QueryUtxosResponse::class.java)
+        assertThat(response.utxosList.size).isEqualTo(1)
+        val testUtxo =
+            response.utxosList.first { it.hash == "23024af80670da4b8d4c192f63b5d7119dc59e7b3ae83ef2cd798350f9b59cd4" }
+        assertThat(testUtxo).isNotNull()
+        assertThat(testUtxo.ix).isEqualTo(1L)
+        assertThat(testUtxo.datumHash).isEqualTo("2ecb792a1da27a4e8a3c7ff126eb4b721ea7d6708f84162a82c097f4ace8f4d1")
+        assertThat(testUtxo.datum.cborHex).isEqualTo("d8799f581c602a7e54f9c569c770ba6f732af3077d8b06e14b84abc8d0151635d8581c3ab25c853f0f188f43b34b2df5cb98737a4de7e19028ec9d1a414a55464e45574d5f31581c9bb822cdf2c6c79657c0e8ec24308487dbd35750c084e271620d9d8040ff")
+        assertThat(testUtxo.nativeAssetsList.size).isEqualTo(1)
+        assertThat(testUtxo.nativeAssetsList[0].policy).isEqualTo("3ab25c853f0f188f43b34b2df5cb98737a4de7e19028ec9d1a414a55")
+        assertThat(testUtxo.nativeAssetsList[0].name).isEqualTo("4e45574d5f31")
+        assertThat(testUtxo.nativeAssetsList[0].amount.toLong()).isEqualTo(1L)
+    }
+
+    @Test
+    @Disabled
+    fun `test queryDatumByHash`() = runBlocking {
+        // plainText for localhost testing only. use SSL later.
+        val channel = ManagedChannelBuilder.forAddress("localhost", 3737).usePlaintext().build()
+        val client =
+            NewmChainGrpcKt.NewmChainCoroutineStub(channel).withInterceptors(
+                MetadataUtils.newAttachHeadersInterceptor(
+                    Metadata().apply {
+                        put(
+                            Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER),
+                            "Bearer <JWT_TOKEN_HERE_DO_NOT_COMMIT>"
+                        )
+                    }
+                )
+            )
+        val request =
+            queryDatumByHashRequest { datumHash = "2ecb792a1da27a4e8a3c7ff126eb4b721ea7d6708f84162a82c097f4ace8f4d1" }
+        val response = client.queryDatumByHash(request)
+        assertThat(response).isInstanceOf(QueryDatumByHashResponse::class.java)
+        assertThat(response.datum.cborHex).isEqualTo("d8799f581c602a7e54f9c569c770ba6f732af3077d8b06e14b84abc8d0151635d8581c3ab25c853f0f188f43b34b2df5cb98737a4de7e19028ec9d1a414a55464e45574d5f31581c9bb822cdf2c6c79657c0e8ec24308487dbd35750c084e271620d9d8040ff")
     }
 
     @Test

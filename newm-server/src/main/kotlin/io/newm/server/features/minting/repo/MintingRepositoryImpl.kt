@@ -276,7 +276,7 @@ class MintingRepositoryImpl(
     @VisibleForTesting
     internal fun calculateTokenNames(utxo: Utxo): Pair<String, String> {
         val txHash = Sha3.hash256(utxo.hash.hexToByteArray())
-        val txHashHex = (ByteArray(1) { utxo.ix.toByte() } + txHash).copyOfRange(0, 27).toHexString()
+        val txHashHex = (ByteArray(1) { utxo.ix.toByte() } + txHash).copyOfRange(0, 28).toHexString()
         return Pair(
             PREFIX_REF_TOKEN + txHashHex,
             PREFIX_FRAC_TOKEN + txHashHex,
@@ -757,7 +757,7 @@ class MintingRepositoryImpl(
                                     add(
                                         plutusDataMapItem {
                                             mapItemKey = "name".toPlutusData()
-                                            mapItemValue = user.nickname!!.toPlutusData()
+                                            mapItemValue = user.stageOrFullName.toPlutusData()
                                         }
                                     )
                                 }
@@ -775,7 +775,7 @@ class MintingRepositoryImpl(
                                                     plutusDataMapItem {
                                                         mapItemKey = "name".toPlutusData()
                                                         mapItemValue = UserEntity.getByEmail(collab.email!!)!!
-                                                            .toModel(false).nickname!!.toPlutusData()
+                                                            .toModel(false).stageOrFullName.toPlutusData()
                                                     }
                                                 )
                                             }
@@ -884,7 +884,7 @@ class MintingRepositoryImpl(
             "Executive Producer"
         )
 
-        private const val PREFIX_REF_TOKEN = "2831303029" // (100)
-        private const val PREFIX_FRAC_TOKEN = "2834343429" // (444)
+        private const val PREFIX_REF_TOKEN = "000643b0" // (100)
+        private const val PREFIX_FRAC_TOKEN = "001bc280" // (444)
     }
 }

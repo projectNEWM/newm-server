@@ -23,6 +23,31 @@ fun String?.asValidUrl(): String {
     return this
 }
 
+/**
+ * Converts an s3://url into a bucket and key pair.
+ */
+fun String.toBucketAndKey(): Pair<String, String> {
+    val bucket = substringAfter("s3://").substringBefore('/')
+    val key = substringAfter(bucket).substringAfter('/')
+    return bucket to key
+}
+
+fun String.getFileNameWithExtensionFromUrl(): String {
+    return substringBefore('?', missingDelimiterValue = this).substringAfterLast('/')
+}
+
+fun String.toAudioContentType(): String {
+    return when (lowercase().substringAfterLast('.', missingDelimiterValue = this)) {
+        "flac" -> "audio/x-flac"
+        "mp3" -> "audio/mpeg"
+        "wav" -> "audio/wav"
+        "ogg" -> "audio/ogg"
+        "aiff", "aif" -> "audio/aiff"
+        "m4a" -> "audio/mp4"
+        else -> "audio/*"
+    }
+}
+
 fun String.toReferenceUtxo(): Utxo {
     val parts = this.split('#')
     return utxo {

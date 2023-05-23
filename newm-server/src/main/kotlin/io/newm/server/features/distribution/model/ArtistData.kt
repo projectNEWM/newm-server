@@ -4,9 +4,9 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class UpdateTrackResponse(
-    @SerialName("message")
-    val message: String,
-    @SerialName("success")
-    val success: Boolean
+data class ArtistData(
+    @SerialName("artist_name")
+    val artistName: String,
+    @SerialName("artist_id")
+    val artistId: Long
 )

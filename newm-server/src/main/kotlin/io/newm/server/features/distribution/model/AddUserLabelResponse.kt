@@ -11,6 +11,4 @@ data class AddUserLabelResponse(
     val success: Boolean,
     @SerialName("label_id")
     val labelId: Long,
-    @SerialName("label_name")
-    val labelName: String
 )

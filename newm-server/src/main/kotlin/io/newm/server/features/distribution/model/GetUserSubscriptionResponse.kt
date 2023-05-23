@@ -8,7 +8,7 @@ data class GetUserSubscriptionResponse(
     @SerialName("message")
     val message: String,
     @SerialName("total_records")
-    val totalRecords: Int,
+    val totalRecords: Long,
     @SerialName("success")
     val success: Boolean,
     @SerialName("data")

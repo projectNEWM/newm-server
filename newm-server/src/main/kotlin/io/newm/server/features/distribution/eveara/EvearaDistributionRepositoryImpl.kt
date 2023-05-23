@@ -1,27 +1,35 @@
 package io.newm.server.features.distribution.eveara
 
+import com.amazonaws.HttpMethod
+import com.amazonaws.services.s3.AmazonS3
 import com.github.benmanes.caffeine.cache.Caffeine
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.ServerResponseException
+import io.ktor.client.plugins.timeout
 import io.ktor.client.request.accept
 import io.ktor.client.request.bearerAuth
 import io.ktor.client.request.delete
 import io.ktor.client.request.forms.InputProvider
-import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.forms.formData
+import io.ktor.client.request.forms.submitFormWithBinaryData
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
+import io.ktor.client.request.patch
 import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsChannel
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
+import io.ktor.http.quote
 import io.ktor.server.application.ApplicationEnvironment
+import io.ktor.utils.io.core.isNotEmpty
+import io.ktor.utils.io.core.readBytes
 import io.ktor.utils.io.streams.asInput
 import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_EVEARA_CLIENT_ID
@@ -32,10 +40,10 @@ import io.newm.server.features.collaboration.model.CollaborationFilters
 import io.newm.server.features.collaboration.model.CollaborationStatus
 import io.newm.server.features.collaboration.repo.CollaborationRepository
 import io.newm.server.features.distribution.DistributionRepository
+import io.newm.server.features.distribution.model.AddAlbumRequest
+import io.newm.server.features.distribution.model.AddAlbumResponse
 import io.newm.server.features.distribution.model.AddArtistRequest
 import io.newm.server.features.distribution.model.AddArtistResponse
-import io.newm.server.features.distribution.model.AddParticipantPaypalRequest
-import io.newm.server.features.distribution.model.AddParticipantPaypalResponse
 import io.newm.server.features.distribution.model.AddParticipantRequest
 import io.newm.server.features.distribution.model.AddParticipantResponse
 import io.newm.server.features.distribution.model.AddTrackResponse
@@ -45,45 +53,80 @@ import io.newm.server.features.distribution.model.AddUserRequest
 import io.newm.server.features.distribution.model.AddUserResponse
 import io.newm.server.features.distribution.model.AddUserSubscriptionRequest
 import io.newm.server.features.distribution.model.AddUserSubscriptionResponse
+import io.newm.server.features.distribution.model.CoverImage
 import io.newm.server.features.distribution.model.DeleteUserLabelResponse
+import io.newm.server.features.distribution.model.DistributeFutureReleaseRequest
+import io.newm.server.features.distribution.model.DistributeReleaseRequest
+import io.newm.server.features.distribution.model.DistributeReleaseResponse
+import io.newm.server.features.distribution.model.EvearaSimpleResponse
+import io.newm.server.features.distribution.model.GetAlbumResponse
 import io.newm.server.features.distribution.model.GetArtistResponse
 import io.newm.server.features.distribution.model.GetCountriesResponse
 import io.newm.server.features.distribution.model.GetGenresResponse
 import io.newm.server.features.distribution.model.GetLanguagesResponse
 import io.newm.server.features.distribution.model.GetOutletsResponse
+import io.newm.server.features.distribution.model.GetParticipantsResponse
 import io.newm.server.features.distribution.model.GetRolesResponse
+import io.newm.server.features.distribution.model.GetTrackStatusResponse
+import io.newm.server.features.distribution.model.GetTracksResponse
+import io.newm.server.features.distribution.model.GetUserLabelResponse
 import io.newm.server.features.distribution.model.GetUserResponse
 import io.newm.server.features.distribution.model.GetUserSubscriptionResponse
+import io.newm.server.features.distribution.model.OutletsDetail
+import io.newm.server.features.distribution.model.Participant
+import io.newm.server.features.distribution.model.Preview
 import io.newm.server.features.distribution.model.Subscription
+import io.newm.server.features.distribution.model.Track
+import io.newm.server.features.distribution.model.UpdateArtistRequest
+import io.newm.server.features.distribution.model.UpdateArtistResponse
 import io.newm.server.features.distribution.model.UpdateTrackRequest
-import io.newm.server.features.distribution.model.UpdateTrackResponse
+import io.newm.server.features.distribution.model.UpdateUserLabelRequest
 import io.newm.server.features.distribution.model.UpdateUserLabelResponse
-import io.newm.server.features.song.database.SongEntity
+import io.newm.server.features.distribution.model.UpdateUserRequest
+import io.newm.server.features.distribution.model.ValidateAlbumResponse
 import io.newm.server.features.song.model.Song
-import io.newm.server.features.user.database.UserEntity
+import io.newm.server.features.song.model.SongBarcodeType
+import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.features.user.model.User
+import io.newm.server.features.user.repo.UserRepository
+import io.newm.server.ktx.asValidUrl
+import io.newm.server.ktx.getFileNameWithExtensionFromUrl
 import io.newm.server.ktx.getSecureConfigString
+import io.newm.server.ktx.toAudioContentType
+import io.newm.server.ktx.toBucketAndKey
+import io.newm.server.logging.logRequestJson
+import io.newm.shared.exception.HttpStatusException.Companion.toException
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.getConfigString
+import io.newm.shared.ktx.info
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.koin.core.parameter.parametersOf
 import org.slf4j.Logger
 import java.io.File
 import java.time.Duration
-import java.util.UUID
+import java.time.Instant
+import java.time.LocalDate
+import java.time.temporal.ChronoUnit
+import java.util.Date
+import kotlin.time.Duration.Companion.minutes
 
 class EvearaDistributionRepositoryImpl(
     private val collabRepository: CollaborationRepository,
     private val configRepository: ConfigRepository,
 ) : DistributionRepository {
     private val log: Logger by inject { parametersOf(javaClass.simpleName) }
+    private val userRepository: UserRepository by inject()
+    private val songRepository: SongRepository by inject()
     private val httpClient: HttpClient by inject()
+    private val amazonS3: AmazonS3 by inject()
     private val applicationEnvironment: ApplicationEnvironment by inject()
     private val evearaServer by lazy { applicationEnvironment.getConfigString(CONFIG_KEY_EVEARA_SERVER) }
-    private val evearaApiBaseUrl by lazy { "https://$evearaServer/api/v2.0" }
+    private val evearaApiBaseUrl by lazy { "https://$evearaServer/api/v2.1" }
     private suspend fun evearaClientId() =
         applicationEnvironment.getSecureConfigString(CONFIG_KEY_EVEARA_CLIENT_ID)
 
@@ -170,7 +213,7 @@ class EvearaDistributionRepositoryImpl(
                 bearerAuth(getEvearaApiToken())
             }
             if (!response.status.isSuccess()) {
-                throw ServerResponseException(response, "Error getting genres!")
+                throw ServerResponseException(response, "Error getting genres!: ${response.bodyAsText()}")
             }
             val getGenresResponse: GetGenresResponse = response.body()
             if (!getGenresResponse.success) {
@@ -188,7 +231,7 @@ class EvearaDistributionRepositoryImpl(
                 bearerAuth(getEvearaApiToken())
             }
             if (!response.status.isSuccess()) {
-                throw ServerResponseException(response, "Error getting roles!")
+                throw ServerResponseException(response, "Error getting roles!: ${response.bodyAsText()}")
             }
             val getRolesResponse: GetRolesResponse = response.body()
             if (!getRolesResponse.success) {
@@ -206,7 +249,7 @@ class EvearaDistributionRepositoryImpl(
                 bearerAuth(getEvearaApiToken())
             }
             if (!response.status.isSuccess()) {
-                throw ServerResponseException(response, "Error getting languages!")
+                throw ServerResponseException(response, "Error getting languages!: ${response.bodyAsText()}")
             }
             val getLanguagesResponse: GetLanguagesResponse = response.body()
             if (!getLanguagesResponse.success) {
@@ -224,7 +267,7 @@ class EvearaDistributionRepositoryImpl(
                 bearerAuth(getEvearaApiToken())
             }
             if (!response.status.isSuccess()) {
-                throw ServerResponseException(response, "Error getting countries!")
+                throw ServerResponseException(response, "Error getting countries!: ${response.bodyAsText()}")
             }
             val getCountriesResponse: GetCountriesResponse = response.body()
             if (!getCountriesResponse.success) {
@@ -235,14 +278,15 @@ class EvearaDistributionRepositoryImpl(
         }
     }
 
-    override suspend fun getOutlets(): GetOutletsResponse = outletsMutex.withLock {
+    override suspend fun getOutlets(user: User): GetOutletsResponse = outletsMutex.withLock {
         outletsCache.getIfPresent(-1) ?: run {
             val response = httpClient.get("$evearaApiBaseUrl/outlets") {
                 accept(ContentType.Application.Json)
                 bearerAuth(getEvearaApiToken())
+                parameter("uuid", user.distributionUserId!!)
             }
             if (!response.status.isSuccess()) {
-                throw ServerResponseException(response, "Error getting outlets!")
+                throw ServerResponseException(response, "Error getting outlets!: ${response.bodyAsText()}")
             }
             val getOutletsResponse: GetOutletsResponse = response.body()
             if (!getOutletsResponse.success) {
@@ -263,14 +307,14 @@ class EvearaDistributionRepositoryImpl(
             bearerAuth(getEvearaApiToken())
             setBody(
                 AddUserRequest(
-                    firstName = user.firstName,
-                    lastName = user.lastName,
+                    firstName = user.firstName.ifBlank { "---" },
+                    lastName = user.lastName.ifBlank { "---" },
                     email = user.email,
-                )
+                ).logRequestJson(log)
             )
         }
         if (!response.status.isSuccess()) {
-            throw ServerResponseException(response, "Error adding user!")
+            throw ServerResponseException(response, "Error adding user!: ${response.bodyAsText()}")
         }
         val addUserResponse: AddUserResponse = response.body()
         if (!addUserResponse.success) {
@@ -280,15 +324,18 @@ class EvearaDistributionRepositoryImpl(
         return addUserResponse
     }
 
-    override suspend fun getUser(userId: UUID): GetUserResponse {
-        val response = httpClient.get("$evearaApiBaseUrl/users/$userId") {
+    override suspend fun getUser(user: User): GetUserResponse {
+        val response = httpClient.get("$evearaApiBaseUrl/users") {
             accept(ContentType.Application.Json)
             bearerAuth(getEvearaApiToken())
-            parameter("search_term", "")
-            parameter("uuid", userId)
+            if (user.distributionUserId != null) {
+                parameter("uuid", user.distributionUserId)
+            } else {
+                parameter("search_term", user.email!!)
+            }
         }
         if (!response.status.isSuccess()) {
-            throw ServerResponseException(response, "Error getting user!")
+            throw ServerResponseException(response, "Error getting user!: ${response.bodyAsText()}")
         }
         val getUserResponse: GetUserResponse = response.body()
         if (!getUserResponse.success) {
@@ -296,6 +343,35 @@ class EvearaDistributionRepositoryImpl(
         }
 
         return getUserResponse
+    }
+
+    override suspend fun updateUser(user: User): EvearaSimpleResponse {
+        requireNotNull(user.distributionUserId) { "User.distributionUserId must not be null!" }
+        requireNotNull(user.firstName) { "User.firstName must not be null!" }
+        requireNotNull(user.lastName) { "User.lastName must not be null!" }
+        requireNotNull(user.email) { "User.email must not be null!" }
+        val response = httpClient.put("$evearaApiBaseUrl/users") {
+            contentType(ContentType.Application.Json)
+            accept(ContentType.Application.Json)
+            bearerAuth(getEvearaApiToken())
+            setBody(
+                UpdateUserRequest(
+                    uuid = user.distributionUserId!!,
+                    firstName = user.firstName.ifBlank { "---" },
+                    lastName = user.lastName.ifBlank { "---" },
+                    email = user.email,
+                ).logRequestJson(log)
+            )
+        }
+        if (!response.status.isSuccess()) {
+            throw ServerResponseException(response, "Error updating user!: ${response.bodyAsText()}")
+        }
+        val updateUserResponse: EvearaSimpleResponse = response.body()
+        if (!updateUserResponse.success) {
+            throw ServerResponseException(response, "Error updating user! success==false")
+        }
+
+        return updateUserResponse
     }
 
     override suspend fun addUserSubscription(user: User): AddUserSubscriptionResponse {
@@ -315,11 +391,11 @@ class EvearaDistributionRepositoryImpl(
                             partnerReferenceId = user.id.toString(),
                         )
                     )
-                )
+                ).logRequestJson(log)
             )
         }
         if (!response.status.isSuccess()) {
-            throw ServerResponseException(response, "Error adding user subscription!")
+            throw ServerResponseException(response, "Error adding user subscription!: ${response.bodyAsText()}")
         }
         val addUserSubscriptionResponse: AddUserSubscriptionResponse = response.body()
         if (!addUserSubscriptionResponse.success) {
@@ -336,24 +412,18 @@ class EvearaDistributionRepositoryImpl(
             parameter("uuid", user.distributionUserId)
         }
         if (!response.status.isSuccess()) {
-            throw ServerResponseException(response, "Error getting user subscription!")
+            throw ServerResponseException(response, "Error getting user subscription!: ${response.bodyAsText()}")
         }
         val getUserSubscriptionResponse: GetUserSubscriptionResponse = response.body()
         if (!getUserSubscriptionResponse.success) {
             throw ServerResponseException(response, "Error getting user subscription! success==false")
         }
 
-        if (getUserSubscriptionResponse.subscriptions.isEmpty()) {
-            throw ServerResponseException(response, "Error getting user subscription! subscriptions.isEmpty()")
-        }
-
         return getUserSubscriptionResponse
     }
 
     override suspend fun addUserLabel(user: User): AddUserLabelResponse {
-        require(user.companyIpRights == true) { "User.companyIpRights must be true!" }
         requireNotNull(user.distributionUserId) { "User.distributionUserId must not be null!" }
-        requireNotNull(user.companyName) { "User.companyName must not be null!" }
         val response = httpClient.post("$evearaApiBaseUrl/labels") {
             contentType(ContentType.Application.Json)
             accept(ContentType.Application.Json)
@@ -361,12 +431,12 @@ class EvearaDistributionRepositoryImpl(
             setBody(
                 AddUserLabelRequest(
                     uuid = user.distributionUserId!!,
-                    name = user.companyName,
-                )
+                    name = user.companyOrStageOrFullName,
+                ).logRequestJson(log)
             )
         }
         if (!response.status.isSuccess()) {
-            throw ServerResponseException(response, "Error adding user label!")
+            throw ServerResponseException(response, "Error adding user label!: ${response.bodyAsText()}")
         }
         val addUserLabelResponse: AddUserLabelResponse = response.body()
         if (!addUserLabelResponse.success) {
@@ -377,22 +447,20 @@ class EvearaDistributionRepositoryImpl(
     }
 
     override suspend fun updateUserLabel(user: User): UpdateUserLabelResponse {
-        require(user.companyIpRights == true) { "User.companyIpRights must be true!" }
         requireNotNull(user.distributionLabelId) { "User.distributionLabelId must not be null!" }
-        requireNotNull(user.companyName) { "User.companyName must not be null!" }
         val response = httpClient.put("$evearaApiBaseUrl/labels/${user.distributionLabelId}") {
             contentType(ContentType.Application.Json)
             accept(ContentType.Application.Json)
             bearerAuth(getEvearaApiToken())
             setBody(
-                AddUserLabelRequest(
+                UpdateUserLabelRequest(
                     uuid = user.distributionUserId!!,
-                    name = user.companyName,
-                )
+                    name = user.companyOrStageOrFullName,
+                ).logRequestJson(log)
             )
         }
         if (!response.status.isSuccess()) {
-            throw ServerResponseException(response, "Error updating user label!")
+            throw ServerResponseException(response, "Error updating user label!: ${response.bodyAsText()}")
         }
         val updateUserLabelResponse: UpdateUserLabelResponse = response.body()
         if (!updateUserLabelResponse.success) {
@@ -400,6 +468,24 @@ class EvearaDistributionRepositoryImpl(
         }
 
         return updateUserLabelResponse
+    }
+
+    override suspend fun getUserLabel(user: User): GetUserLabelResponse {
+        requireNotNull(user.distributionUserId) { "User.distributionUserId must not be null!" }
+        val response = httpClient.get("$evearaApiBaseUrl/labels") {
+            accept(ContentType.Application.Json)
+            bearerAuth(getEvearaApiToken())
+            parameter("uuid", user.distributionUserId)
+        }
+        if (!response.status.isSuccess()) {
+            throw ServerResponseException(response, "Error getting user label!: ${response.bodyAsText()}")
+        }
+        val getUserLabelResponse: GetUserLabelResponse = response.body()
+        if (!getUserLabelResponse.success) {
+            throw ServerResponseException(response, "Error getting user label! success==false")
+        }
+
+        return getUserLabelResponse
     }
 
     override suspend fun deleteUserLabel(user: User): DeleteUserLabelResponse {
@@ -410,7 +496,7 @@ class EvearaDistributionRepositoryImpl(
             bearerAuth(getEvearaApiToken())
         }
         if (!response.status.isSuccess()) {
-            throw ServerResponseException(response, "Error deleting user label!")
+            throw ServerResponseException(response, "Error deleting user label!: ${response.bodyAsText()}")
         }
         val deleteUserLabelResponse: DeleteUserLabelResponse = response.body()
         if (!deleteUserLabelResponse.success) {
@@ -428,7 +514,7 @@ class EvearaDistributionRepositoryImpl(
             setBody(addArtistRequest)
         }
         if (!response.status.isSuccess()) {
-            throw ServerResponseException(response, "Error adding artist!")
+            throw ServerResponseException(response, "Error adding artist!: ${response.bodyAsText()}")
         }
         val addArtistResponse: AddArtistResponse = response.body()
         if (!addArtistResponse.success) {
@@ -438,17 +524,54 @@ class EvearaDistributionRepositoryImpl(
         return addArtistResponse
     }
 
-    override suspend fun getArtist(artistId: String): GetArtistResponse {
-        val response = httpClient.get("$evearaApiBaseUrl/artists/$artistId") {
+    override suspend fun updateArtist(artistId: Long, updateArtistRequest: UpdateArtistRequest): UpdateArtistResponse {
+        val response = httpClient.put("$evearaApiBaseUrl/artists/$artistId") {
+            contentType(ContentType.Application.Json)
             accept(ContentType.Application.Json)
             bearerAuth(getEvearaApiToken())
+            setBody(updateArtistRequest)
         }
         if (!response.status.isSuccess()) {
-            throw ServerResponseException(response, "Error getting artist!")
+            throw ServerResponseException(response, "Error updating artist!")
+        }
+        val updateArtistResponse: UpdateArtistResponse = response.body()
+        if (!updateArtistResponse.success) {
+            throw ServerResponseException(response, "Error updating artist! success==false")
+        }
+
+        return updateArtistResponse
+    }
+
+    override suspend fun getArtist(user: User): GetArtistResponse {
+        val response = httpClient.get("$evearaApiBaseUrl/artists/${user.distributionArtistId}") {
+            accept(ContentType.Application.Json)
+            bearerAuth(getEvearaApiToken())
+            parameter("uuid", user.distributionUserId)
+        }
+        if (!response.status.isSuccess()) {
+            throw ServerResponseException(response, "Error getting artist!: ${response.bodyAsText()}")
         }
         val getArtistResponse: GetArtistResponse = response.body()
         if (!getArtistResponse.success) {
             throw ServerResponseException(response, "Error getting artist! success==false")
+        }
+
+        return getArtistResponse
+    }
+
+    override suspend fun getArtists(user: User): GetArtistResponse {
+        val response = httpClient.get("$evearaApiBaseUrl/artists") {
+            accept(ContentType.Application.Json)
+            bearerAuth(getEvearaApiToken())
+            parameter("uuid", user.distributionUserId)
+            parameter("limit", 10_000)
+        }
+        if (!response.status.isSuccess()) {
+            throw ServerResponseException(response, "Error getting artists!: ${response.bodyAsText()}")
+        }
+        val getArtistResponse: GetArtistResponse = response.body()
+        if (!getArtistResponse.success) {
+            throw ServerResponseException(response, "Error getting artists! success==false")
         }
 
         return getArtistResponse
@@ -474,11 +597,11 @@ class EvearaDistributionRepositoryImpl(
                     name = user.stageOrFullName,
                     isni = user.distributionIsni,
                     ipn = user.distributionIpn,
-                )
+                ).logRequestJson(log)
             )
         }
         if (!response.status.isSuccess()) {
-            throw ServerResponseException(response, "Error adding participant!")
+            throw ServerResponseException(response, "Error adding participant!: ${response.bodyAsText()}")
         }
         val addParticipantResponse: AddParticipantResponse = response.body()
         if (!addParticipantResponse.success) {
@@ -488,7 +611,7 @@ class EvearaDistributionRepositoryImpl(
         return addParticipantResponse
     }
 
-    override suspend fun updateParticipant(user: User): AddParticipantResponse {
+    override suspend fun updateParticipant(user: User): EvearaSimpleResponse {
         requireNotNull(user.distributionParticipantId) { "User.distributionParticipantId must not be null!" }
         val response = httpClient.put("$evearaApiBaseUrl/participants/${user.distributionParticipantId}") {
             contentType(ContentType.Application.Json)
@@ -504,9 +627,9 @@ class EvearaDistributionRepositoryImpl(
             )
         }
         if (!response.status.isSuccess()) {
-            throw ServerResponseException(response, "Error updating participant!")
+            throw ServerResponseException(response, "Error updating participant!: ${response.bodyAsText()}")
         }
-        val addParticipantResponse: AddParticipantResponse = response.body()
+        val addParticipantResponse: EvearaSimpleResponse = response.body()
         if (!addParticipantResponse.success) {
             throw ServerResponseException(response, "Error updating participant! success==false")
         }
@@ -514,53 +637,55 @@ class EvearaDistributionRepositoryImpl(
         return addParticipantResponse
     }
 
-    override suspend fun addParticipantPaypal(user: User, paypalEmail: String): AddParticipantPaypalResponse {
+    override suspend fun getParticipants(user: User): GetParticipantsResponse {
         requireNotNull(user.distributionUserId) { "User.distributionUserId must not be null!" }
-        requireNotNull(user.distributionParticipantId) { "User.distributionParticipantId must not be null!" }
-        val response = httpClient.post("$evearaApiBaseUrl/participants/paypal/${user.distributionParticipantId}") {
-            contentType(ContentType.Application.Json)
+        val response = httpClient.get("$evearaApiBaseUrl/participants") {
             accept(ContentType.Application.Json)
             bearerAuth(getEvearaApiToken())
-            setBody(
-                AddParticipantPaypalRequest(
-                    uuid = user.distributionUserId!!,
-                    paypalEmailId = paypalEmail,
-                )
-            )
+            parameter("uuid", user.distributionUserId)
         }
         if (!response.status.isSuccess()) {
-            throw ServerResponseException(response, "Error adding participant paypal!")
+            throw ServerResponseException(response, "Error getting participant!: ${response.bodyAsText()}")
         }
-        val addParticipantPaypalResponse: AddParticipantPaypalResponse = response.body()
-        if (!addParticipantPaypalResponse.success) {
-            throw ServerResponseException(response, "Error adding participant paypal! success==false")
+        val getParticipantsResponse: GetParticipantsResponse = response.body()
+        if (!getParticipantsResponse.success) {
+            throw ServerResponseException(response, "Error getting participant! success==false")
         }
 
-        return addParticipantPaypalResponse
+        return getParticipantsResponse
     }
 
-    override suspend fun addTrack(evearaUserId: UUID, trackFile: File): AddTrackResponse {
-        val response = httpClient.post("$evearaApiBaseUrl/tracks") {
-            contentType(ContentType.MultiPart.FormData)
-            accept(ContentType.Application.Json)
-            bearerAuth(getEvearaApiToken())
-            setBody(
-                MultiPartFormDataContent(
-                    formData {
-                        append("uuid", evearaUserId.toString())
-                        append(
-                            "track_file",
-                            InputProvider { trackFile.inputStream().asInput() },
-                            Headers.build {
-                                append(HttpHeaders.ContentDisposition, "filename=${trackFile.name}")
-                            }
-                        )
+    override suspend fun addTrack(user: User, trackFile: File): AddTrackResponse {
+        requireNotNull(user.distributionUserId) { "User.distributionUserId must not be null!" }
+
+        val response = httpClient.submitFormWithBinaryData(
+            "$evearaApiBaseUrl/tracks",
+            formData {
+                // Eveara API expects values to be quoted
+                append("uuid".quote(), user.distributionUserId.toString())
+                append(
+                    "track_file".quote(),
+                    InputProvider(trackFile.length()) { trackFile.inputStream().asInput() },
+                    Headers.build {
+                        append(HttpHeaders.ContentType, trackFile.name.toAudioContentType())
+                        append(HttpHeaders.ContentDisposition, "filename=${trackFile.name.quote()}")
                     }
                 )
-            )
+            }
+        ) {
+            bearerAuth(getEvearaApiToken())
+            timeout {
+                // Increase timeout for large files
+                requestTimeoutMillis = 10.minutes.inWholeMilliseconds
+            }
+            // dump the form data to a file for debugging
+            // (body as MultiPartFormDataContent).writeTo(File("/tmp/track-upload-form-data.txt").writeChannel())
         }
         if (!response.status.isSuccess()) {
-            throw ServerResponseException(response, "Error adding track!")
+            throw ServerResponseException(
+                response,
+                "Error adding track for user uuid: ${user.distributionUserId}!: ${response.bodyAsText()}"
+            )
         }
         val addTrackResponse: AddTrackResponse = response.body()
         if (!addTrackResponse.success) {
@@ -570,7 +695,8 @@ class EvearaDistributionRepositoryImpl(
         return addTrackResponse
     }
 
-    override suspend fun updateTrack(trackId: Long, user: User, song: Song): UpdateTrackResponse {
+    override suspend fun updateTrack(user: User, trackId: Long, song: Song): EvearaSimpleResponse {
+        requireNotNull(user.distributionUserId) { "User.distributionUserId must not be null!" }
         val genres = getGenres().genres
         val languages = getLanguages().languages
         val collabs = collabRepository.getAll(
@@ -586,7 +712,12 @@ class EvearaDistributionRepositoryImpl(
             0,
             Integer.MAX_VALUE
         )
-        require(collabs.all { it.status == CollaborationStatus.Accepted }) { "All Collaborations must be accepted!" }
+
+        val artistIds = listOf(user.distributionArtistId!!) +
+            collabs.filter { it.role == "Artist" && it.featured == false && it.email != user.email }
+                .map { it.distributionArtistId!! }.distinct()
+        val featuredArtistIds = collabs.filter { it.featured == true && it.email != user.email }
+            .map { it.distributionArtistId!! }.distinct().takeIf { it.isNotEmpty() }
 
         val response = httpClient.put("$evearaApiBaseUrl/tracks/$trackId") {
             contentType(ContentType.Application.Json)
@@ -594,33 +725,29 @@ class EvearaDistributionRepositoryImpl(
             bearerAuth(getEvearaApiToken())
             setBody(
                 UpdateTrackRequest(
-                    uuid = user.id,
-                    trackFileName = song.originalAudioUrl!!.substringAfterLast("/"),
+                    uuid = user.distributionUserId!!,
+                    name = song.title!!,
                     stereoIsrc = song.isrc,
                     iswc = song.iswc,
                     genre = song.genres?.mapNotNull { songGenreName -> genres.firstOrNull { it.name == songGenreName }?.genreId },
-                    language = languages.find { it.name == song.language }?.languageCode,
+                    language = languages.find { it.name == song.language }?.code,
                     explicit = if (song.parentalAdvisory.equals("Non-Explicit", ignoreCase = true)) {
                         0 // Clean
                     } else {
                         1 // Explicit
                     },
-                    artists = (
-                        listOf(user.distributionArtistId!!) +
-                            collabs.filter { it.role == "Artist" && it.featured == false && it.email != user.email }
-                                .map { UserEntity.getByEmail(it.email!!)!!.distributionArtistId!! }
-                        ).distinct(),
-                    featuredArtists = collabs.filter { it.featured == true }
-                        .map { UserEntity.getByEmail(it.email!!)!!.distributionArtistId!! }.distinct(),
+                    availability = listOf(1, 2), // 1 = Download, 2 = Streaming
+                    artists = artistIds,
+                    featuredArtists = featuredArtistIds,
                     albumOnly = false,
                     lyrics = null, // TODO: Implement lyrics later.
-                )
+                ).logRequestJson(log)
             )
         }
         if (!response.status.isSuccess()) {
-            throw ServerResponseException(response, "Error updating track!")
+            throw ServerResponseException(response, "Error updating track!: ${response.bodyAsText()}")
         }
-        val updateTrackResponse: UpdateTrackResponse = response.body()
+        val updateTrackResponse: EvearaSimpleResponse = response.body()
         if (!updateTrackResponse.success) {
             throw ServerResponseException(response, "Error updating track! success==false")
         }
@@ -628,8 +755,669 @@ class EvearaDistributionRepositoryImpl(
         return updateTrackResponse
     }
 
-    override suspend fun distributeSong(song: SongEntity) {
-        // TODO: Implement later. Focus on completing minting code first. Assume we have distributed to Eveara successfully.
+    override suspend fun getTracks(user: User): GetTracksResponse {
+        requireNotNull(user.distributionUserId) { "User.distributionUserId must not be null!" }
+        val response = httpClient.get("$evearaApiBaseUrl/tracks") {
+            accept(ContentType.Application.Json)
+            bearerAuth(getEvearaApiToken())
+            parameter("uuid", user.distributionUserId)
+        }
+        if (!response.status.isSuccess()) {
+            throw ServerResponseException(response, "Error getting tracks!: ${response.bodyAsText()}")
+        }
+        val getTracksResponse: GetTracksResponse = response.body()
+        if (!getTracksResponse.success) {
+            throw ServerResponseException(response, "Error getting tracks! success==false")
+        }
+
+        return getTracksResponse
+    }
+
+    override suspend fun deleteTrack(user: User, trackId: Long): EvearaSimpleResponse {
+        requireNotNull(user.distributionUserId) { "User.distributionUserId must not be null!" }
+        val response = httpClient.delete("$evearaApiBaseUrl/tracks/$trackId") {
+            accept(ContentType.Application.Json)
+            bearerAuth(getEvearaApiToken())
+            parameter("uuid", user.distributionUserId)
+        }
+        if (!response.status.isSuccess()) {
+            throw ServerResponseException(response, "Error deleting track!: ${response.bodyAsText()}")
+        }
+        val deleteTrackResponse: EvearaSimpleResponse = response.body()
+        if (!deleteTrackResponse.success) {
+            throw ServerResponseException(response, "Error deleting track! success==false")
+        }
+
+        return deleteTrackResponse
+    }
+
+    override suspend fun isTrackStatusCompleted(user: User, trackId: Long): Boolean {
+        val response = httpClient.get("$evearaApiBaseUrl/tracks/$trackId/status") {
+            accept(ContentType.Application.Json)
+            bearerAuth(getEvearaApiToken())
+            parameter("uuid", user.distributionUserId!!)
+        }
+        if (!response.status.isSuccess()) {
+            throw ServerResponseException(response, "Error getting track status!")
+        }
+        val getTrackStatusResponse: GetTrackStatusResponse = response.body()
+        if (!getTrackStatusResponse.success) {
+            throw ServerResponseException(response, "Error getting track status!: ${response.bodyAsText()}")
+        }
+
+        log.info { "Track status: ${getTrackStatusResponse.trackStatus.stereo}" }
+
+        return getTrackStatusResponse.trackStatus.stereo?.equals("Completed", ignoreCase = true) ?: false
+    }
+
+    override suspend fun addAlbum(user: User, trackId: Long, song: Song): AddAlbumResponse {
+        requireNotNull(user.distributionUserId) { "User.distributionUserId must not be null!" }
+        val collabs = collabRepository.getAll(
+            user.id!!,
+            CollaborationFilters(
+                inbound = null,
+                songIds = listOf(song.id!!),
+                olderThan = null,
+                newerThan = null,
+                ids = null,
+                statuses = null,
+            ),
+            0,
+            Integer.MAX_VALUE
+        )
+        val artistIds = listOf(user.distributionArtistId!!) +
+            collabs.filter { it.role == "Artist" && it.featured == false && it.email != user.email }
+                .map { it.distributionArtistId!! }.distinct()
+        val featuredArtistIds = collabs.filter { it.featured == true && it.email != user.email }
+            .map { it.distributionArtistId!! }.distinct().takeIf { it.isNotEmpty() }
+        val response = httpClient.post("$evearaApiBaseUrl/albums") {
+            contentType(ContentType.Application.Json)
+            accept(ContentType.Application.Json)
+            bearerAuth(getEvearaApiToken())
+            setBody(
+                AddAlbumRequest(
+                    uuid = user.distributionUserId!!,
+                    name = song.title, // NOTE: for single, track title is used as album name
+                    artistIds = artistIds,
+                    subscriptionId = user.distributionSubscriptionId!!,
+                    eanUpc = song.barcodeNumber,
+                    productCodeType = if (song.barcodeNumber == null || song.barcodeType == SongBarcodeType.Ean) {
+                        "ean"
+                    } else if (song.barcodeType == SongBarcodeType.Upc) {
+                        "upc"
+                    } else {
+                        "jan"
+                    },
+                    labelId = user.distributionLabelId,
+                    productType = "single",
+                    codeAutoGenerate = song.barcodeNumber == null,
+                    productFormat = "stereo",
+                    coverImage = CoverImage(
+                        url = song.coverArtUrl.asValidUrl(),
+                        extension = song.coverArtUrl.asValidUrl().substringAfterLast(".").lowercase(),
+                    ),
+                    originalReleaseDate = song.releaseDate,
+                    tracks = listOf(
+                        Track(
+                            trackId = trackId,
+                            artistIds = artistIds,
+                            featuredArtists = featuredArtistIds,
+                            preview = Preview(startAt = 0, duration = 30), // TODO: Allow user to specify this later
+                            participants = listOf(
+                                Participant(
+                                    id = user.distributionNewmParticipantId!!,
+                                    roleId = listOf(
+                                        getRoles().roles.first {
+                                            it.name.equals(
+                                                "Publisher",
+                                                ignoreCase = true
+                                            )
+                                        }.roleId
+                                    ),
+                                    payoutSharePercentage = 100, // NEWM takes 100% so we can then pay out based on stream token holdings
+                                ),
+                                Participant(
+                                    id = user.distributionParticipantId!!,
+                                    roleId = listOf(
+                                        getRoles().roles.first {
+                                            it.name.equals(
+                                                "Artist",
+                                                ignoreCase = true
+                                            )
+                                        }.roleId
+                                    ),
+                                    payoutSharePercentage = 0,
+                                )
+                            )
+                        )
+                    ),
+                ).logRequestJson(log)
+            )
+        }
+        if (!response.status.isSuccess()) {
+            throw ServerResponseException(response, "Error adding album!: ${response.bodyAsText()}")
+        }
+        val addAlbumResponse: AddAlbumResponse = response.body()
+        if (!addAlbumResponse.success) {
+            throw ServerResponseException(response, "Error adding album! success==false")
+        }
+
+        return addAlbumResponse
+    }
+
+    override suspend fun getAlbums(user: User): GetAlbumResponse {
+        requireNotNull(user.distributionUserId) { "User.distributionUserId must not be null!" }
+        val response = httpClient.get("$evearaApiBaseUrl/albums") {
+            contentType(ContentType.Application.Json)
+            accept(ContentType.Application.Json)
+            bearerAuth(getEvearaApiToken())
+            parameter("uuid", user.distributionUserId!!)
+            parameter("limit", 10_000)
+        }
+        if (!response.status.isSuccess()) {
+            throw ServerResponseException(response, "Error getting album!: ${response.bodyAsText()}")
+        }
+        val getAlbumResponse: GetAlbumResponse = response.body()
+        if (!getAlbumResponse.success) {
+            throw ServerResponseException(response, "Error getting album! success==false")
+        }
+
+        return getAlbumResponse
+    }
+
+    override suspend fun updateAlbum(user: User, trackId: Long, song: Song): EvearaSimpleResponse {
+        requireNotNull(user.distributionUserId) { "User.distributionUserId must not be null!" }
+        requireNotNull(song.distributionReleaseId) { "Song.distributionReleaseId must not be null!" }
+        val collabs = collabRepository.getAll(
+            user.id!!,
+            CollaborationFilters(
+                inbound = null,
+                songIds = listOf(song.id!!),
+                olderThan = null,
+                newerThan = null,
+                ids = null,
+                statuses = null,
+            ),
+            0,
+            Integer.MAX_VALUE
+        )
+
+        val artistIds = listOf(user.distributionArtistId!!) +
+            collabs.filter { it.role == "Artist" && it.featured == false && it.email != user.email }
+                .map { it.distributionArtistId!! }.distinct()
+        val featuredArtistIds = collabs.filter { it.featured == true && it.email != user.email }
+            .map { it.distributionArtistId!! }.distinct().takeIf { it.isNotEmpty() }
+        val response = httpClient.put("$evearaApiBaseUrl/albums/${song.distributionReleaseId}") {
+            contentType(ContentType.Application.Json)
+            accept(ContentType.Application.Json)
+            bearerAuth(getEvearaApiToken())
+            setBody(
+                AddAlbumRequest(
+                    uuid = user.distributionUserId!!,
+                    name = song.title, // NOTE: for single, track title is used as album name
+                    artistIds = artistIds,
+                    subscriptionId = user.distributionSubscriptionId!!,
+                    eanUpc = song.barcodeNumber,
+                    productCodeType = if (song.barcodeNumber == null || song.barcodeType == SongBarcodeType.Ean) {
+                        "ean"
+                    } else if (song.barcodeType == SongBarcodeType.Upc) {
+                        "upc"
+                    } else {
+                        "jan"
+                    },
+                    labelId = user.distributionLabelId,
+                    productType = "single",
+                    codeAutoGenerate = song.barcodeNumber == null,
+                    productFormat = "stereo",
+                    coverImage = CoverImage(
+                        url = song.coverArtUrl.asValidUrl(),
+                        extension = song.coverArtUrl.asValidUrl().substringAfterLast(".").lowercase(),
+                    ),
+                    originalReleaseDate = song.releaseDate,
+                    tracks = listOf(
+                        Track(
+                            trackId = trackId,
+                            artistIds = artistIds,
+                            featuredArtists = featuredArtistIds,
+                            preview = Preview(startAt = 0, duration = 30), // TODO: Allow user to specify this later
+                            participants = listOf(
+                                Participant(
+                                    id = user.distributionNewmParticipantId!!,
+                                    roleId = listOf(
+                                        getRoles().roles.first {
+                                            it.name.equals(
+                                                "Publisher",
+                                                ignoreCase = true
+                                            )
+                                        }.roleId
+                                    ),
+                                    payoutSharePercentage = 100, // NEWM takes 100% so we can then pay out based on stream token holdings
+                                ),
+                                Participant(
+                                    id = user.distributionParticipantId!!,
+                                    roleId = listOf(
+                                        getRoles().roles.first {
+                                            it.name.equals(
+                                                "Artist",
+                                                ignoreCase = true
+                                            )
+                                        }.roleId
+                                    ),
+                                    payoutSharePercentage = 0,
+                                )
+                            )
+                        )
+                    ),
+                )
+            )
+        }
+        if (!response.status.isSuccess()) {
+            throw ServerResponseException(response, "Error updating album!: ${response.bodyAsText()}")
+        }
+        val updateAlbumResponse: EvearaSimpleResponse = response.body()
+        if (!updateAlbumResponse.success) {
+            throw ServerResponseException(response, "Error updating album! success==false")
+        }
+
+        return updateAlbumResponse
+    }
+
+    override suspend fun validateAlbum(user: User, releaseId: Long): ValidateAlbumResponse {
+        requireNotNull(user.distributionUserId) { "User.distributionUserId must not be null!" }
+        val response = httpClient.get("$evearaApiBaseUrl/albums/$releaseId/validate") {
+            contentType(ContentType.Application.Json)
+            accept(ContentType.Application.Json)
+            bearerAuth(getEvearaApiToken())
+            parameter("uuid", user.distributionUserId!!)
+        }
+        if (!response.status.isSuccess()) {
+            throw ServerResponseException(response, "Error validating album!: ${response.bodyAsText()}")
+        }
+        val validateAlbumResponse: ValidateAlbumResponse = response.body()
+        if (!validateAlbumResponse.success) {
+            throw ServerResponseException(response, "Error validating album! success==false")
+        }
+
+        return validateAlbumResponse
+    }
+
+    override suspend fun simulateDistributeRelease(user: User, releaseId: Long): EvearaSimpleResponse {
+        requireNotNull(user.distributionUserId) { "User.distributionUserId must not be null!" }
+        val response = httpClient.put("$evearaApiBaseUrl/simulate/distribute") {
+            contentType(ContentType.Application.Json)
+            accept(ContentType.Application.Json)
+            bearerAuth(getEvearaApiToken())
+            setBody(
+                DistributeReleaseRequest(
+                    uuid = user.distributionUserId!!,
+                    releaseId = releaseId,
+                ).logRequestJson(log)
+            )
+        }
+        if (!response.status.isSuccess()) {
+            throw ServerResponseException(response, "Error simulating distribute release!: ${response.bodyAsText()}")
+        }
+        val distributeReleaseResponse: EvearaSimpleResponse = response.body()
+        if (!distributeReleaseResponse.success) {
+            throw ServerResponseException(response, "Error simulating distribute release! success==false")
+        }
+
+        return distributeReleaseResponse
+    }
+
+    override suspend fun distributeReleaseToOutlets(user: User, releaseId: Long): DistributeReleaseResponse {
+        requireNotNull(user.distributionUserId) { "User.distributionUserId must not be null!" }
+        val response = httpClient.patch("$evearaApiBaseUrl/outlets/$releaseId/distribute") {
+            contentType(ContentType.Application.Json)
+            accept(ContentType.Application.Json)
+            bearerAuth(getEvearaApiToken())
+            setBody(
+                DistributeReleaseRequest(
+                    uuid = user.distributionUserId!!,
+                    outletsDetails = getOutlets(user).outlets.map { evearaOutlet ->
+                        OutletsDetail(
+                            storeId = evearaOutlet.storeId,
+                            releaseStartDate = LocalDate.now().plusDays(evearaOutlet.processDurationDates + 1)
+                        )
+                    }
+                ).logRequestJson(log)
+            )
+        }
+        if (!response.status.isSuccess()) {
+            throw ServerResponseException(response, "Error distributing release to outlets!: ${response.bodyAsText()}")
+        }
+        val distributeReleaseResponse: DistributeReleaseResponse = response.body()
+        if (!distributeReleaseResponse.success) {
+            throw ServerResponseException(response, "Error distributing release to outlets! success==false")
+        }
+
+        return distributeReleaseResponse
+    }
+
+    override suspend fun distributeReleaseToFutureOutlets(user: User, releaseId: Long): DistributeReleaseResponse {
+        requireNotNull(user.distributionUserId) { "User.distributionUserId must not be null!" }
+        val response = httpClient.patch("$evearaApiBaseUrl/outlets/$releaseId/future-outlets") {
+            contentType(ContentType.Application.Json)
+            accept(ContentType.Application.Json)
+            bearerAuth(getEvearaApiToken())
+            setBody(
+                DistributeFutureReleaseRequest(
+                    uuid = user.distributionUserId!!,
+                    enableDistributeToFutureOutlets = true,
+                )
+            )
+        }
+        if (!response.status.isSuccess()) {
+            throw ServerResponseException(
+                response,
+                "Error distributing release to future-outlets!: ${response.bodyAsText()}"
+            )
+        }
+        val distributeReleaseResponse: DistributeReleaseResponse = response.body()
+        if (!distributeReleaseResponse.success) {
+            throw ServerResponseException(response, "Error distributing release to future-outlets! success==false")
+        }
+
+        return distributeReleaseResponse
+    }
+
+    override suspend fun distributeSong(song: Song) {
+        requireNotNull(song.ownerId) { "Song.ownerId must not be null!" }
+        val user = userRepository.get(song.ownerId)
+        requireNotNull(user.id) { "User.id must not be null!" }
+
+        // Create the distribution user if they don't yet exist
+        val getUserResponse = getUser(user)
+        if (getUserResponse.totalRecords > 0) {
+            val existingUser = getUserResponse.users.first()
+            log.info { "Found existing distribution user ${user.email} with id ${existingUser.uuid}" }
+            if (user.distributionUserId == null) {
+                user.distributionUserId = existingUser.uuid
+                userRepository.updateUserData(user.id, user)
+            } else {
+                require(user.distributionUserId == existingUser.uuid) { "User.distributionUserId: ${user.distributionUserId} does not match existing distribution user! ${existingUser.uuid}" }
+            }
+            // validate that the user's information matches eveara
+            if (existingUser.email != user.email ||
+                existingUser.firstName != user.firstName?.ifBlank { "---" } ||
+                existingUser.lastName != user.lastName?.ifBlank { "---" }
+            ) {
+                val response = updateUser(user)
+                log.info { "Updated distribution user ${user.email} with id ${user.distributionUserId}: ${response.message}" }
+            }
+        } else {
+            require(user.distributionUserId == null) { "User.distributionUserId: ${user.distributionUserId} not found in Eveara!" }
+            val response = addUser(user)
+            log.info { "Created distribution user ${user.email} with id ${response.uuid}: ${response.message}" }
+            user.distributionUserId = response.uuid
+            userRepository.updateUserData(user.id, user)
+        }
+
+        val collabs = collabRepository.getAll(
+            user.id,
+            CollaborationFilters(
+                inbound = null,
+                songIds = listOf(song.id!!),
+                olderThan = null,
+                newerThan = null,
+                ids = null,
+                statuses = null,
+            ),
+            0,
+            Integer.MAX_VALUE
+        )
+        require(collabs.all { it.status == CollaborationStatus.Accepted }) { "All Collaborations must be accepted!" }
+
+        // Create the distribution artistId for each collaborator if they don't exist yet
+        val collabDistributionArtists = getArtists(user).artists.associate { it.name to it.artistId }.toMutableMap()
+        collabs.forEach { collab ->
+            if (collab.distributionArtistId == null) {
+                val collabUser = userRepository.findByEmail(collab.email!!)
+
+                collabDistributionArtists[collabUser.stageOrFullName]?.let { distributionArtistId ->
+                    log.info { "Found existing collab distribution artist ${collabUser.email} with id $distributionArtistId" }
+                    collabRepository.update(
+                        collab.copy(distributionArtistId = distributionArtistId),
+                        collab.id!!,
+                        user.id,
+                        skipStatusCheck = true
+                    )
+                } ?: run {
+                    // FIXME: don't hardcode artist's country
+                    val hardcodedCountry =
+                        getCountries().countries.first { it.countryCode.equals("us", ignoreCase = true) }.countryCode
+                    val response =
+                        addArtist(
+                            AddArtistRequest(
+                                user.distributionUserId!!,
+                                collabUser.stageOrFullName,
+                                hardcodedCountry
+                            ).logRequestJson(log)
+                        )
+                    log.info { "Created collab distribution artist ${collabUser.email} with id ${response.artistId}: ${response.message}" }
+                    collabRepository.update(
+                        collab.copy(distributionArtistId = response.artistId),
+                        collab.id!!,
+                        user.id,
+                        skipStatusCheck = true
+                    )
+                    collabDistributionArtists[collabUser.stageOrFullName] = response.artistId
+                }
+            }
+        }
+
+        // Create the distribution subscription if it doesn't yet exist
+        val getSubscriptionResponse = getUserSubscription(user)
+        if (getSubscriptionResponse.totalRecords > 0) {
+            val existingSubscription = getSubscriptionResponse.subscriptions.first()
+            log.info { "Found existing distribution subscription ${user.email} with id ${existingSubscription.mySubscriptionId}" }
+            if (user.distributionSubscriptionId == null) {
+                user.distributionSubscriptionId = existingSubscription.mySubscriptionId
+                userRepository.updateUserData(user.id, user)
+            } else {
+                require(user.distributionSubscriptionId == existingSubscription.mySubscriptionId) { "User.distributionSubscriptionId: ${user.distributionSubscriptionId} does not match existing distribution subscription! ${existingSubscription.mySubscriptionId}" }
+            }
+        } else {
+            require(user.distributionSubscriptionId == null) { "User.distributionSubscriptionId: ${user.distributionSubscriptionId} not found in Eveara!" }
+            val response = addUserSubscription(user)
+            log.info { "Created distribution subscription ${user.email} with id ${response.subscriptions[0].userSubscriptionId}: ${response.message}" }
+            user.distributionSubscriptionId = response.subscriptions[0].userSubscriptionId
+            userRepository.updateUserData(user.id, user)
+        }
+
+        // Add Distribution Artist if they don't yet exist
+        val existingDistributionArtist = collabDistributionArtists[user.stageOrFullName]
+        if (user.distributionArtistId == null) {
+            if (existingDistributionArtist != null) {
+                log.info { "Found existing distribution artist ${user.email} with id $existingDistributionArtist" }
+                user.distributionArtistId = existingDistributionArtist
+                userRepository.updateUserData(user.id, user)
+            } else {
+                // FIXME: don't hardcode artist's country
+                val hardcodedCountry =
+                    getCountries().countries.first { it.countryCode.equals("us", ignoreCase = true) }.countryCode
+                val response =
+                    addArtist(AddArtistRequest(user.distributionUserId!!, user.stageOrFullName, hardcodedCountry))
+                log.info { "Created distribution artist ${user.email} with id ${response.artistId}: ${response.message}" }
+                user.distributionArtistId = response.artistId
+                userRepository.updateUserData(user.id, user)
+            }
+        }
+
+        // Create the newm participant if they don't exist yet
+        val getParticipantsResponse = getParticipants(user)
+        if (getParticipantsResponse.totalRecords > 0) {
+            val existingNewmParticipant = getParticipantsResponse.participantData.first { it.name == "NEWM" }
+            log.info { "Found existing distribution participant NEWM with id ${existingNewmParticipant.participantId}" }
+            if (user.distributionNewmParticipantId == null) {
+                user.distributionNewmParticipantId = existingNewmParticipant.participantId
+                userRepository.updateUserData(user.id, user)
+            } else {
+                require(user.distributionNewmParticipantId == existingNewmParticipant.participantId) { "User.distributionNewmParticipantId: ${user.distributionNewmParticipantId} does not match existing distribution participant! ${existingNewmParticipant.participantId}" }
+            }
+        } else {
+            require(user.distributionNewmParticipantId == null) { "User.distributionNewmParticipantId: ${user.distributionNewmParticipantId} not found in Eveara!" }
+            val response = addParticipant(User(distributionUserId = user.distributionUserId!!, nickname = "NEWM"))
+            log.info { "Created NEWM participant with id ${response.participantId}: ${response.message}" }
+            user.distributionNewmParticipantId = response.participantId
+            userRepository.updateUserData(user.id, user)
+        }
+
+        // Create/Update the participant (will pay to newm any royalties)
+        if (getParticipantsResponse.totalRecords > 0) {
+            val existingParticipant = getParticipantsResponse.participantData.first { it.name == user.stageOrFullName }
+            log.info { "Found existing distribution participant ${user.email} with id ${existingParticipant.participantId}" }
+            if (user.distributionParticipantId == null) {
+                user.distributionParticipantId = existingParticipant.participantId
+                userRepository.updateUserData(user.id, user)
+            } else {
+                require(user.distributionParticipantId == existingParticipant.participantId) { "User.distributionParticipantId: ${user.distributionParticipantId} does not match existing distribution participant! ${existingParticipant.participantId}" }
+            }
+            if (existingParticipant.name != user.stageOrFullName || existingParticipant.ipn.ifBlank { null } != user.distributionIpn || existingParticipant.isni.ifBlank { null } != user.distributionIsni) {
+                log.info { "Updating distribution participant ${user.email} with id ${existingParticipant.participantId}, name ${existingParticipant.name} -> ${user.stageOrFullName}, ipn ${existingParticipant.ipn} -> ${user.distributionIpn}, isni ${existingParticipant.isni} -> ${user.distributionIsni}" }
+                val response = updateParticipant(user)
+                log.info { "Updated distribution participant ${user.email} with id ${user.distributionUserId}: ${response.message}" }
+            }
+        } else {
+            require(user.distributionParticipantId == null) { "User.distributionParticipantId: ${user.distributionParticipantId} not found in Eveara!" }
+            val response = addParticipant(user)
+            log.info { "Created distribution participant ${user.email} with id ${response.participantId}: ${response.message}" }
+            user.distributionParticipantId = response.participantId
+            userRepository.updateUserData(user.id, user)
+        }
+
+        // Add or Update Distribution Label
+        val getUserLabelsResponse = getUserLabel(user)
+        if (getUserLabelsResponse.totalRecords > 1) {
+            val existingLabel = getUserLabelsResponse.userLabelData.first { it.name != "NEWM" } // TODO: FIX hardcoding
+            log.info { "Found existing distribution label ${user.email} with id ${existingLabel.labelId}, name ${existingLabel.name}" }
+            if (user.distributionLabelId == null) {
+                user.distributionLabelId = existingLabel.labelId
+                userRepository.updateUserData(user.id, user)
+            } else {
+                require(user.distributionLabelId == existingLabel.labelId) { "User.distributionLabelId: ${user.distributionLabelId} does not match existing distribution label! ${existingLabel.labelId}" }
+            }
+            if (existingLabel.name != user.companyOrStageOrFullName) {
+                log.info { "Updating distribution label ${user.email} with id ${existingLabel.labelId}, name ${existingLabel.name} -> ${user.companyOrStageOrFullName}" }
+                val response = updateUserLabel(user)
+                log.info { "Updated distribution label ${user.email} with id ${response.labelData.labelId}: ${response.message}" }
+            }
+        } else {
+            require(user.distributionLabelId == null) { "User.distributionLabelId: ${user.distributionLabelId} not found in Eveara!" }
+            val response = addUserLabel(user)
+            log.info { "Created distribution label ${user.email} with id ${response.labelId}: ${response.message}" }
+            user.distributionLabelId = response.labelId
+            userRepository.updateUserData(user.id, user)
+        }
+
+        // Delete any track that already has this song isrc and is associated with this user
+        val getTracksResponse = getTracks(user)
+        val existingTrack = getTracksResponse.trackData?.firstOrNull { it.stereoIsrc == song.isrc }
+        if (existingTrack != null) {
+            log.info { "Found existing distribution track ${song.isrc} with id ${existingTrack.trackId}" }
+            val response = deleteTrack(user, existingTrack.trackId)
+            log.info { "Deleted distribution track ${song.isrc} with id ${existingTrack.trackId}: ${response.message}" }
+        }
+
+        // Upload and add metadata to the distribution track
+        val updatedSong = if (song.distributionTrackId == null) {
+            val s3Url = song.originalAudioUrl.asValidUrl()
+            val (bucket, key) = s3Url.toBucketAndKey()
+            val url = amazonS3.generatePresignedUrl(
+                bucket,
+                key,
+                Date.from(Instant.now().plus(30, ChronoUnit.MINUTES)),
+                HttpMethod.GET
+            ).toExternalForm()
+            log.info { "Generated presigned url for $s3Url: $url" }
+
+            val audioFileResponse = httpClient.get(url) {
+                accept(ContentType.Application.OctetStream)
+            }
+
+            if (!audioFileResponse.status.isSuccess()) {
+                throw audioFileResponse.status.toException("Error downloading url: $url")
+            }
+
+            val trackFile = File.createTempFile("newm_track_", url.getFileNameWithExtensionFromUrl())
+            val channel = audioFileResponse.bodyAsChannel()
+            while (!channel.isClosedForRead) {
+                val packet = channel.readRemaining(DEFAULT_BUFFER_SIZE.toLong())
+                while (packet.isNotEmpty) {
+                    val bytes = packet.readBytes()
+                    trackFile.appendBytes(bytes)
+                }
+            }
+            log.info { "Downloaded track ${song.title} to ${trackFile.absolutePath} having size ${trackFile.length()}" }
+            val response = addTrack(user, trackFile)
+            log.info { "Created distribution track ${song.title} with track_id ${response.trackId}: ${response.message}" }
+            val updatedSng = song.copy(distributionTrackId = response.trackId)
+            songRepository.update(song.id, updatedSng)
+            trackFile.delete()
+
+            // update track with collaborators and other metadata
+            val updateTrackResponse = updateTrack(user, response.trackId, updatedSng)
+            log.info { "Updated distribution track ${song.title} with track_id ${response.trackId}: ${updateTrackResponse.message}" }
+            updatedSng
+        } else {
+            song
+        }
+
+        // Wait for track to be processed
+        withTimeout(10.minutes.inWholeMilliseconds) {
+            while (true) {
+                if (isTrackStatusCompleted(user, updatedSong.distributionTrackId!!)) {
+                    break
+                }
+                delay(10000L)
+            }
+        }
+
+        // Add or Update Distribution Album
+        val getAlbumResponse = getAlbums(user)
+        if (getAlbumResponse.totalRecords > 0) {
+            val existingAlbum = getAlbumResponse.albumData.firstOrNull { it.name == updatedSong.title }
+            if (existingAlbum == null) {
+                val response = addAlbum(user, updatedSong.distributionTrackId!!, updatedSong)
+                log.info { "Created distribution album ${updatedSong.title} with id ${response.releaseId}: ${response.message}" }
+                songRepository.update(updatedSong.id!!, updatedSong.copy(distributionReleaseId = response.releaseId))
+            } else {
+                log.info { "Found existing distribution album ${updatedSong.title} with id ${existingAlbum.releaseId}, title ${existingAlbum.name}" }
+                if (updatedSong.distributionReleaseId == null) {
+                    songRepository.update(
+                        updatedSong.id!!,
+                        updatedSong.copy(distributionReleaseId = existingAlbum.releaseId)
+                    )
+                } else {
+                    require(updatedSong.distributionReleaseId == existingAlbum.releaseId) { "Song.distributionReleaseId: ${updatedSong.distributionReleaseId} does not match existing distribution album! ${existingAlbum.releaseId}" }
+                }
+            }
+        } else {
+            val response = addAlbum(user, updatedSong.distributionTrackId!!, updatedSong)
+            log.info { "Created distribution album ${updatedSong.title} with id ${response.releaseId}: ${response.message}" }
+            songRepository.update(updatedSong.id!!, updatedSong.copy(distributionReleaseId = response.releaseId))
+        }
+
+        val songToRelease = requireNotNull(songRepository.get(updatedSong.id!!)) { "Song not found" }
+
+        // Validate Distribution Album
+        val validateReleaseResponse = validateAlbum(user, songToRelease.distributionReleaseId!!)
+        require(validateReleaseResponse.validateData.errorFields.isNullOrEmpty()) { "Error validating release: $validateReleaseResponse" }
+        log.info { "Validated distribution album ${songToRelease.title} with id ${songToRelease.distributionReleaseId}: ${validateReleaseResponse.message}" }
+
+        // Simulate the release to outlets
+        val simulateReleaseResponse = simulateDistributeRelease(user, songToRelease.distributionReleaseId!!)
+        log.info { "Simulated release ${songToRelease.title} with id ${songToRelease.distributionReleaseId}: ${simulateReleaseResponse.message}" }
+
+        // Distribute the release to outlets
+        val distributeReleaseResponse = distributeReleaseToOutlets(user, songToRelease.distributionReleaseId)
+        require(distributeReleaseResponse.releaseData?.errorFields.isNullOrEmpty()) { "Error distributing release: $distributeReleaseResponse" }
+        log.info { "Distributed release ${songToRelease.title} with id ${songToRelease.distributionReleaseId} to outlets: ${distributeReleaseResponse.message}" }
+
+        // Distribute the release to future outlets
+        val distributeFutureReleaseResponse =
+            distributeReleaseToFutureOutlets(user, songToRelease.distributionReleaseId)
+        log.info { "Distributed release ${songToRelease.title} with id ${songToRelease.distributionReleaseId} to future outlets: ${distributeFutureReleaseResponse.message}" }
     }
 
     @Serializable

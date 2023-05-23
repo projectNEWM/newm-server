@@ -67,7 +67,6 @@ internal class UserRepositoryImpl(
                 this.companyName = user.companyName
                 this.companyLogoUrl = user.companyLogoUrl?.asValidUrl()
                 this.companyIpRights = user.companyIpRights
-                this.distributionUserId = distributionUserId
             }.id.value
         }
     }
@@ -80,6 +79,13 @@ internal class UserRepositoryImpl(
             entity.oauthType = null
             entity.oauthId = null
             entity.id.value to entity.admin
+        }
+    }
+
+    override suspend fun findByEmail(email: String): User {
+        logger.debug { "findByEmail: email = $email" }
+        return transaction {
+            getUserEntityByEmail(email).toModel()
         }
     }
 
@@ -170,6 +176,45 @@ internal class UserRepositoryImpl(
             user.companyName?.let { entity.companyName = it }
             user.companyLogoUrl?.let { entity.companyLogoUrl = it.asValidUrl() }
             user.companyIpRights?.let { entity.companyIpRights = it }
+            user.distributionUserId?.let { entity.distributionUserId = it }
+            user.distributionArtistId?.let { entity.distributionArtistId = it }
+            user.distributionParticipantId?.let { entity.distributionParticipantId = it }
+            user.distributionSubscriptionId?.let { entity.distributionSubscriptionId = it }
+            user.distributionLabelId?.let { entity.distributionLabelId = it }
+            user.distributionIsni?.let { entity.distributionIsni = it }
+            user.distributionIpn?.let { entity.distributionIpn = it }
+        }
+    }
+
+    /**
+     * Update data fields except for email, password, and oauth fields.
+     */
+    override fun updateUserData(userId: UUID, user: User) {
+        transaction {
+            val entity = UserEntity[userId]
+            user.firstName?.let { entity.firstName = it }
+            user.lastName?.let { entity.lastName = it }
+            user.nickname?.let { entity.nickname = it }
+            user.pictureUrl?.let { entity.pictureUrl = it.asValidUrl() }
+            user.bannerUrl?.let { entity.bannerUrl = it.asValidUrl() }
+            user.websiteUrl?.let { entity.websiteUrl = it.asValidUrl() }
+            user.twitterUrl?.let { entity.twitterUrl = it.asValidUrl() }
+            user.instagramUrl?.let { entity.instagramUrl = it.asValidUrl() }
+            user.location?.let { entity.location = it }
+            user.role?.let { entity.role = it }
+            user.genre?.let { entity.genre = it }
+            user.biography?.let { entity.biography = it }
+            user.walletAddress?.let { entity.walletAddress = it }
+            user.companyName?.let { entity.companyName = it }
+            user.companyLogoUrl?.let { entity.companyLogoUrl = it.asValidUrl() }
+            user.companyIpRights?.let { entity.companyIpRights = it }
+            user.distributionUserId?.let { entity.distributionUserId = it }
+            user.distributionArtistId?.let { entity.distributionArtistId = it }
+            user.distributionParticipantId?.let { entity.distributionParticipantId = it }
+            user.distributionSubscriptionId?.let { entity.distributionSubscriptionId = it }
+            user.distributionLabelId?.let { entity.distributionLabelId = it }
+            user.distributionIsni?.let { entity.distributionIsni = it }
+            user.distributionIpn?.let { entity.distributionIpn = it }
         }
     }
 

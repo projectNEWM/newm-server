@@ -58,4 +58,6 @@ data class Song(
     val arweaveClipUrl: String? = null,
     @Transient
     val distributionTrackId: Long? = null,
+    @Transient
+    val distributionReleaseId: Long? = null,
 )

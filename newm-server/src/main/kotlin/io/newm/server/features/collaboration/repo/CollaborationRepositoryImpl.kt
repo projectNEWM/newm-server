@@ -52,11 +52,12 @@ internal class CollaborationRepositoryImpl(
                 this.royaltyRate = collaboration.royaltyRate
                 collaboration.credited?.let { this.credited = it }
                 collaboration.featured?.let { this.featured = it }
+                collaboration.distributionArtistId?.let { this.distributionArtistId = it }
             }.id.value
         }
     }
 
-    override suspend fun update(collaboration: Collaboration, collaborationId: UUID, requesterId: UUID) {
+    override suspend fun update(collaboration: Collaboration, collaborationId: UUID, requesterId: UUID, skipStatusCheck: Boolean) {
         logger.debug { "update: collaboration = $collaboration, collaborationId = $collaborationId" }
 
         collaboration.checkFieldLengths()
@@ -64,7 +65,7 @@ internal class CollaborationRepositoryImpl(
         val entity = transaction {
             CollaborationEntity[collaborationId].apply {
                 checkSongState(requesterId)
-                if (!userMatches(requesterId, email)) {
+                if (!skipStatusCheck && !userMatches(requesterId, email)) {
                     checkStatus(CollaborationStatus.Editing, CollaborationStatus.Rejected)
                 }
                 collaboration.email?.let { email = it.asValidUniqueEmail(this) }
@@ -72,6 +73,7 @@ internal class CollaborationRepositoryImpl(
                 collaboration.royaltyRate?.let { royaltyRate = it }
                 collaboration.credited?.let { credited = it }
                 collaboration.featured?.let { featured = it }
+                collaboration.distributionArtistId?.let { distributionArtistId = it }
             }
         }
 

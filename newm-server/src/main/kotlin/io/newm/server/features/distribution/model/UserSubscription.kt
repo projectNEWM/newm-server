@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class UserSubscription(
     @SerialName("subscription_id")
-    val subscriptionId: String,
+    val subscriptionId: Long,
     @SerialName("my_subscription_id")
     val userSubscriptionId: Long
 )

@@ -17,6 +17,7 @@ import io.newm.kogmios.protocols.model.Block
 import io.newm.kogmios.protocols.model.QueryCurrentProtocolBabbageParametersResult
 import io.newm.objectpool.useInstance
 import io.newm.shared.koin.inject
+import io.newm.shared.ktx.warn
 import io.newm.txbuilder.TransactionBuilder
 import io.newm.txbuilder.ktx.cborHexToPlutusData
 import io.newm.txbuilder.ktx.toNativeAssetMap
@@ -47,6 +48,14 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
     override suspend fun queryLiveUtxos(request: QueryUtxosRequest): QueryUtxosResponse =
         ledgerRepository.queryLiveUtxos(request.address).toQueryUtxosResponse()
 
+    override suspend fun queryUtxosByOutputRef(request: QueryUtxosOutputRefRequest): QueryUtxosResponse {
+        return ledgerRepository.queryUtxosByOutputRef(request.hash, request.ix.toInt()).toQueryUtxosResponse()
+    }
+
+    override suspend fun queryUtxosByStakeAddress(request: QueryUtxosRequest): QueryUtxosResponse {
+        return ledgerRepository.queryUtxosByStakeAddress(request.address).toQueryUtxosResponse()
+    }
+
     private fun Set<io.newm.chain.model.Utxo>.toQueryUtxosResponse(): QueryUtxosResponse =
         queryUtxosResponse {
             utxos.addAll(
@@ -73,6 +82,14 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
             )
         }
 
+    override suspend fun queryDatumByHash(request: QueryDatumByHashRequest): QueryDatumByHashResponse {
+        return queryDatumByHashResponse {
+            ledgerRepository.queryDatumByHash(request.datumHash)?.cborHexToPlutusData()?.let {
+                datum = it
+            }
+        }
+    }
+
     override suspend fun queryCurrentEpoch(request: QueryCurrentEpochRequest): QueryCurrentEpochResponse {
         return queryCurrentEpochResponse {
             epoch = getCurrentEpoch()
@@ -88,29 +105,40 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
     }
 
     override suspend fun submitTransaction(request: SubmitTransactionRequest): SubmitTransactionResponse {
-        val cbor = request.cbor.toByteArray()
-        return txSubmitClientPool.useInstance { client ->
-            val response = client.submit(cbor.toHexString())
-            when (response.result) {
-                is SubmitSuccess -> {
-                    val transactionId = (response.result as SubmitSuccess).txId
-                    if (submittedTransactionCache.get(transactionId) == null) {
-                        submittedTransactionCache.put(transactionId, cbor)
+        return try {
+            val cbor = request.cbor.toByteArray()
+            txSubmitClientPool.useInstance { client ->
+                val response = client.submit(cbor.toHexString())
+                when (response.result) {
+                    is SubmitSuccess -> {
+                        val transactionId = (response.result as SubmitSuccess).txId
+                        if (submittedTransactionCache.get(transactionId) == null) {
+                            submittedTransactionCache.put(transactionId, cbor)
+                        }
+
+                        ledgerRepository.updateLiveLedgerState(transactionId, cbor)
+
+                        submitTransactionResponse {
+                            result = "MsgAcceptTx"
+                            txId = transactionId
+                        }.also {
+                            log.warn { "submitTransaction($request) SUCCESS. txId: ${it.txId}" }
+                        }
                     }
 
-                    ledgerRepository.updateLiveLedgerState(transactionId, cbor)
-
-                    submitTransactionResponse {
-                        result = "MsgAcceptTx"
-                        txId = transactionId
+                    is SubmitFail -> {
+                        submitTransactionResponse {
+                            result = response.result.toString()
+                        }.also {
+                            log.warn { "submitTransaction($request) FAILED. result: ${it.result}" }
+                        }
                     }
                 }
-
-                is SubmitFail -> {
-                    submitTransactionResponse {
-                        result = response.result.toString()
-                    }
-                }
+            }
+        } catch (e: Throwable) {
+            log.error("submitTransaction($request) failed.", e)
+            submitTransactionResponse {
+                result = "submitTransaction($request) failed. Exception: ${e.message}"
             }
         }
     }
@@ -212,20 +240,27 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                     (evaluateResponse.result as EvaluationResult)
                 }
 
-                if (request.signaturesCount == 0 && request.signingKeysCount == 0 && request.requiredSignersCount == 0) {
-                    // Calculate the number of different payment keys associated with all input utxos
-                    (request.sourceUtxosList + request.collateralUtxosList).mapNotNull { utxo ->
-                        ledgerRepository.queryPublicKeyHashByOutputRef(utxo.hash, utxo.ix.toInt())
-                    }.distinct().forEach {
-                        request.requiredSignersList.add(it.hexToByteArray().toByteString())
+                val updatedRequest =
+                    if (request.signaturesCount == 0 && request.signingKeysCount == 0 && request.requiredSignersCount == 0) {
+                        // Calculate the number of different payment keys associated with all input utxos
+                        val requiredSigners =
+                            (request.sourceUtxosList + request.collateralUtxosList).mapNotNull { utxo ->
+                                ledgerRepository.queryPublicKeyHashByOutputRef(utxo.hash, utxo.ix.toInt())
+                            }.distinct().map {
+                                it.hexToByteArray().toByteString()
+                            }
+                        request.toBuilder()
+                            .addAllRequiredSigners(requiredSigners)
+                            .build()
+                    } else {
+                        request
                     }
-                }
 
                 val (txId, cborBytes) = TransactionBuilder.transactionBuilder(
                     protocolParams,
                     calculateTxExecutionUnits
                 ) {
-                    loadFrom(request)
+                    loadFrom(updatedRequest)
                 }
                 transactionBuilderResponse {
                     transactionId = txId

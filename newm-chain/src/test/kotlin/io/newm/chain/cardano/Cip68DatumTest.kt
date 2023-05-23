@@ -28,7 +28,7 @@ class Cip68DatumTest {
                 nativeAssets = listOf(
                     NativeAsset(
                         policy = "169e3ad7038f23049f3ed7fff137b1b29bccaba4732035477c15b4c9",
-                        name = "28313030290211c612bdc6ab89e8797f796fb3d83232b70139a484b25e022ab2",
+                        name = "000643b00211c612bdc6ab89e8797f796fb3d83232b70139a484b25e022ab2",
                         amount = BigInteger.ONE
                     )
                 ),
@@ -66,6 +66,6 @@ class Cip68DatumTest {
     }
 
     companion object {
-        private val CIP68_REFERENCE_TOKEN_REGEX = Regex("^2831303029.*$") // (100)TokenName
+        private val CIP68_REFERENCE_TOKEN_REGEX = Regex("^000643b0.*$") // (100)TokenName
     }
 }

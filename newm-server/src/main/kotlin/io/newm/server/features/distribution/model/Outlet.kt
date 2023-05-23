@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class Outlet(
     @SerialName("outlet_name")
-    val outletName: String,
+    val outletName: String? = null,
     @SerialName("outlet_id")
-    val outletId: String
+    val outletId: String? = null,
 )
