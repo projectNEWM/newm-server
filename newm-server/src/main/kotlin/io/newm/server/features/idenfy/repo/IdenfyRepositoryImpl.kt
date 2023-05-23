@@ -18,6 +18,7 @@ import io.newm.shared.koin.inject
 import io.newm.shared.ktx.debug
 import io.newm.shared.ktx.getBoolean
 import io.newm.shared.ktx.getConfigChild
+import io.newm.shared.ktx.getInt
 import io.newm.shared.ktx.getString
 import io.newm.shared.ktx.propertiesFromResource
 import io.newm.shared.ktx.toUUID
@@ -111,7 +112,7 @@ class IdenfyRepositoryImpl(
 
         HtmlEmail().apply {
             hostName = config.getSecureString("smtpHost")
-            setSmtpPort(config.getSecureString("smtpPort").toInt())
+            setSmtpPort(config.getInt("smtpPort"))
             isSSLOnConnect = config.getBoolean("sslOnConnect")
             setAuthenticator(
                 DefaultAuthenticator(

@@ -41,7 +41,7 @@ internal class TwoFactorAuthRepositoryImpl(
 
         HtmlEmail().apply {
             hostName = config.getSecureString("smtpHost")
-            setSmtpPort(config.getSecureString("smtpPort").toInt())
+            setSmtpPort(config.getInt("smtpPort"))
             isSSLOnConnect = config.getBoolean("sslOnConnect")
             setAuthenticator(
                 DefaultAuthenticator(
