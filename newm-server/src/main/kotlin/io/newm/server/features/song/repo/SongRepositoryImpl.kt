@@ -225,7 +225,7 @@ internal class SongRepositoryImpl(
                     tokenAgreementUrl = s3.getUrl(bucketName, filePath).toString()
                 )
             )
-            collaborationRepository.invite(songId)
+            collaborationRepository.invite(get(songId))
         } else {
             update(songId, Song(mintingStatus = MintingStatus.Undistributed))
             s3.deleteObject(bucketName, filePath)

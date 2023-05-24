@@ -27,6 +27,8 @@ private val HEX_REGEX = Regex(
     option = RegexOption.IGNORE_CASE,
 )
 
+private val FORMAT_REGEX = Regex("""\{([^}]+)}""")
+
 // Allows validating URL format ignoring the protocol value (e.g., "s3:", "ar:")
 private object DummyURLHandler : URLStreamHandler() {
     override fun openConnection(url: URL): URLConnection = object : URLConnection(url) {
@@ -59,3 +61,10 @@ fun String.verify(hash: String): Boolean = BCrypt.verifyer().verify(toCharArray(
 fun String.splitAndTrim(): List<String> = split(',').map { it.trim() }
 
 fun String.toLocalDateTime(): LocalDateTime = LocalDateTime.parse(this)
+
+/**
+ * Formats a String with curly brace delimited arguments.
+ */
+fun String.format(args: Map<String, Any>): String = FORMAT_REGEX.replace(this) { result ->
+    args[result.groupValues[1]]?.toString() ?: result.value
+}
