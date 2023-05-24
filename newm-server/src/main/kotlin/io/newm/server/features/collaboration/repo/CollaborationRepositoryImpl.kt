@@ -1,5 +1,6 @@
 package io.newm.server.features.collaboration.repo
 
+import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.util.logging.Logger
 import io.newm.server.features.collaboration.database.CollaborationEntity
 import io.newm.server.features.collaboration.model.Collaboration
@@ -7,10 +8,13 @@ import io.newm.server.features.collaboration.model.CollaborationFilters
 import io.newm.server.features.collaboration.model.CollaborationStatus
 import io.newm.server.features.collaboration.model.Collaborator
 import io.newm.server.features.collaboration.model.CollaboratorFilters
+import io.newm.server.features.email.repo.EmailRepository
 import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.database.SongTable
 import io.newm.server.features.song.model.MintingStatus
+import io.newm.server.features.song.model.Song
 import io.newm.server.features.user.database.UserEntity
+import io.newm.server.features.user.repo.UserRepository
 import io.newm.server.ktx.asMandatoryField
 import io.newm.server.ktx.asValidEmail
 import io.newm.server.ktx.checkLength
@@ -19,12 +23,17 @@ import io.newm.shared.exception.HttpForbiddenException
 import io.newm.shared.exception.HttpUnprocessableEntityException
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.debug
+import io.newm.shared.ktx.getConfigString
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf
 import java.util.UUID
 
-internal class CollaborationRepositoryImpl : CollaborationRepository {
+internal class CollaborationRepositoryImpl(
+    private val environment: ApplicationEnvironment,
+    private val userRepository: UserRepository,
+    private val emailRepository: EmailRepository
+) : CollaborationRepository {
 
     private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
 
@@ -146,16 +155,26 @@ internal class CollaborationRepositoryImpl : CollaborationRepository {
         }
     }
 
-    override suspend fun invite(songId: UUID) {
-        logger.debug { "invite: songId = $songId" }
+    override suspend fun invite(song: Song) {
+        logger.debug { "invite: song = $song" }
         val emails = mutableListOf<String>()
         transaction {
-            CollaborationEntity.findBySongId(songId).forEach { collab ->
+            CollaborationEntity.findBySongId(song.id!!).forEach { collab ->
                 collab.status = CollaborationStatus.Waiting
                 emails += collab.email
             }
         }
-        // TODO: Send invitation email to all or only unregistered Collaborators?
+        val owner = userRepository.get(song.ownerId!!)
+        emailRepository.send(
+            to = emptyList(),
+            bcc = emails,
+            subject = environment.getConfigString("collaboration.email.subject"),
+            messageUrl = environment.getConfigString("collaboration.email.messageUrl"),
+            messageArgs = mapOf(
+                "song" to song.description!!,
+                "owner" to owner.stageOrFullName
+            )
+        )
     }
 
     private fun CollaborationEntity.checkSongState(requesterId: UUID, edit: Boolean = true) =

@@ -7,6 +7,7 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.server.application.ApplicationEnvironment
+import io.newm.server.features.email.repo.EmailRepository
 import io.newm.server.features.idenfy.model.IdenfyCreateSessionRequest
 import io.newm.server.features.idenfy.model.IdenfyCreateSessionResponse
 import io.newm.server.features.idenfy.model.IdenfySessionResult
@@ -16,15 +17,11 @@ import io.newm.server.ktx.checkedBody
 import io.newm.server.ktx.getSecureString
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.debug
-import io.newm.shared.ktx.getBoolean
 import io.newm.shared.ktx.getConfigChild
-import io.newm.shared.ktx.getInt
+import io.newm.shared.ktx.getConfigString
 import io.newm.shared.ktx.getString
 import io.newm.shared.ktx.propertiesFromResource
 import io.newm.shared.ktx.toUUID
-import io.newm.shared.ktx.toUrl
-import org.apache.commons.mail.DefaultAuthenticator
-import org.apache.commons.mail.HtmlEmail
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf
 import org.slf4j.Logger
@@ -33,7 +30,8 @@ import java.util.UUID
 
 class IdenfyRepositoryImpl(
     private val environment: ApplicationEnvironment,
-    private val httpClient: HttpClient
+    private val httpClient: HttpClient,
+    private val emailRepository: EmailRepository
 ) : IdenfyRepository {
 
     private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
@@ -73,57 +71,28 @@ class IdenfyRepositoryImpl(
             }
         }
 
-        val config = environment.getConfigChild("idenfy.email")
-        if (!config.getBoolean("enabled")) return
-
-        val message = when (status) {
-            UserVerificationStatus.Verified -> {
-                config.getString("verifiedMessageUrl")
-                    .toUrl()
-                    .readText()
+        val messageArgs = mutableMapOf<String, Any>()
+        if (status == UserVerificationStatus.Unverified) {
+            val codes = mutableListOf<String>()
+            with(result.status) {
+                autoDocument?.let { codes += it }
+                autoFace?.let { codes += it }
+                manualDocument?.let { codes += it }
+                manualFace?.let { codes += it }
+                mismatchTags?.let { codes += it }
+                suspicionReasons?.let { codes += it }
             }
-
-            UserVerificationStatus.Pending -> {
-                config.getString("pendingMessageUrl")
-                    .toUrl()
-                    .readText()
-            }
-
-            UserVerificationStatus.Unverified -> {
-                val codes = mutableListOf<String>()
-                with(result.status) {
-                    autoDocument?.let { codes += it }
-                    autoFace?.let { codes += it }
-                    manualDocument?.let { codes += it }
-                    manualFace?.let { codes += it }
-                    mismatchTags?.let { codes += it }
-                    suspicionReasons?.let { codes += it }
-                }
-                logger.debug { "processRequest: codes = $codes" }
-                val reasons = codes.joinToString(separator = "<br/><br/>") { code ->
-                    "&bull; ${messages.getProperty(code, code)}"
-                }
-                config.getString("unverifiedMessageUrl")
-                    .toUrl()
-                    .readText()
-                    .replaceFirst("{{reasons}}", reasons)
+            logger.debug { "processRequest: codes = $codes" }
+            messageArgs += "reasons" to codes.joinToString(separator = "<br/><br/>") { code ->
+                "&bull; ${messages.getProperty(code, code)}"
             }
         }
 
-        HtmlEmail().apply {
-            hostName = config.getSecureString("smtpHost")
-            setSmtpPort(config.getInt("smtpPort"))
-            isSSLOnConnect = config.getBoolean("sslOnConnect")
-            setAuthenticator(
-                DefaultAuthenticator(
-                    config.getSecureString("userName"),
-                    config.getSecureString("password")
-                )
-            )
-            setFrom(config.getSecureString("from"))
-            addTo(email)
-            subject = config.getString("subject")
-            setHtmlMsg(message)
-        }.send()
+        emailRepository.send(
+            to = email,
+            subject = environment.getConfigString("idenfy.email.subject"),
+            messageUrl = environment.getConfigString("idenfy.email.${status.name.lowercase()}MessageUrl"),
+            messageArgs = messageArgs
+        )
     }
 }
