@@ -3,6 +3,7 @@ package io.newm.server.features.song.database
 import io.newm.server.features.song.model.MarketplaceStatus
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Song
+import io.newm.server.features.song.model.SongBarcodeType
 import io.newm.server.features.song.model.SongFilters
 import io.newm.shared.exposed.overlaps
 import io.newm.shared.exposed.unnest
@@ -40,6 +41,8 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var language: String? by SongTable.language
     var copyright: String? by SongTable.copyright
     var parentalAdvisory: String? by SongTable.parentalAdvisory
+    var barcodeType: SongBarcodeType? by SongTable.barcodeType
+    var barcodeNumber: String? by SongTable.barcodeNumber
     var isrc: String? by SongTable.isrc
     var iswc: String? by SongTable.iswc
     var ipi: Array<String>? by SongTable.ipi
@@ -76,6 +79,8 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         language = language,
         copyright = copyright,
         parentalAdvisory = parentalAdvisory,
+        barcodeType = barcodeType,
+        barcodeNumber = barcodeNumber,
         isrc = isrc,
         ipi = ipi?.toList(),
         releaseDate = releaseDate,
