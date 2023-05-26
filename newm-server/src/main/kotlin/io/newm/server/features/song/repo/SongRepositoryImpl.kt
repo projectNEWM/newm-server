@@ -68,6 +68,8 @@ internal class SongRepositoryImpl(
                 language = song.language
                 copyright = song.copyright
                 parentalAdvisory = song.parentalAdvisory
+                barcodeType = song.barcodeType
+                barcodeNumber = song.barcodeNumber
                 isrc = song.isrc
                 ipi = song.ipi?.toTypedArray()
                 releaseDate = song.releaseDate
@@ -93,6 +95,8 @@ internal class SongRepositoryImpl(
                 language?.let { entity.language = it }
                 copyright?.let { entity.copyright = it }
                 parentalAdvisory?.let { entity.parentalAdvisory = it }
+                barcodeType?.let { entity.barcodeType = it }
+                barcodeNumber?.let { entity.barcodeNumber = it }
                 isrc?.let { entity.isrc = it }
                 iswc?.let { entity.iswc = it }
                 ipi?.let { entity.ipi = it.toTypedArray() }
@@ -285,6 +289,7 @@ internal class SongRepositoryImpl(
         language?.checkLength("language")
         copyright?.checkLength("copyright")
         parentalAdvisory?.checkLength("parentalAdvisory")
+        barcodeNumber?.checkLength("barcodeNumber")
         isrc?.checkLength("isrc")
         iswc?.checkLength("iswc")
         ipi?.forEachIndexed { index, ipi -> ipi.checkLength("ipi$index") }

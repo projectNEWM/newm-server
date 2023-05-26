@@ -3,6 +3,7 @@ package io.newm.server.features.song.database
 import io.newm.server.features.cardano.database.KeyTable
 import io.newm.server.features.song.model.MarketplaceStatus
 import io.newm.server.features.song.model.MintingStatus
+import io.newm.server.features.song.model.SongBarcodeType
 import io.newm.server.features.user.database.UserTable
 import io.newm.shared.exposed.textArray
 import org.jetbrains.exposed.dao.id.EntityID
@@ -29,6 +30,8 @@ object SongTable : UUIDTable(name = "songs") {
     val language: Column<String?> = text("language").nullable()
     val copyright: Column<String?> = text("copyright").nullable()
     val parentalAdvisory: Column<String?> = text("parental_advisory").nullable()
+    val barcodeType: Column<SongBarcodeType?> = enumeration("barcode_type", SongBarcodeType::class).nullable()
+    val barcodeNumber: Column<String?> = text("barcode_number").nullable()
     val isrc: Column<String?> = text("isrc").nullable()
     val iswc: Column<String?> = text("iswc").nullable()
     val ipi: Column<Array<String>?> = textArray("ipi").nullable()

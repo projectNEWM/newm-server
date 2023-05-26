@@ -77,6 +77,8 @@ class SongRoutesTests : BaseApplicationTests() {
         assertThat(song.language).isEqualTo(testSong1.language)
         assertThat(song.copyright).isEqualTo(testSong1.copyright)
         assertThat(song.parentalAdvisory).isEqualTo(testSong1.parentalAdvisory)
+        assertThat(song.barcodeType).isEqualTo(testSong1.barcodeType)
+        assertThat(song.barcodeNumber).isEqualTo(testSong1.barcodeNumber)
         assertThat(song.isrc).isEqualTo(testSong1.isrc)
         assertThat(song.ipi).isEqualTo(testSong1.ipi)
         assertThat(song.releaseDate).isEqualTo(testSong1.releaseDate)
@@ -405,6 +407,8 @@ class SongRoutesTests : BaseApplicationTests() {
         assertThat(song2.language).isEqualTo(testSong2.language)
         assertThat(song2.copyright).isEqualTo(testSong2.copyright)
         assertThat(song2.parentalAdvisory).isEqualTo(testSong2.parentalAdvisory)
+        assertThat(song2.barcodeType).isEqualTo(testSong2.barcodeType)
+        assertThat(song2.barcodeNumber).isEqualTo(testSong2.barcodeNumber)
         assertThat(song2.isrc).isEqualTo(testSong2.isrc)
         assertThat(song2.ipi).isEqualTo(testSong2.ipi)
         assertThat(song2.releaseDate).isEqualTo(testSong2.releaseDate)
@@ -801,6 +805,8 @@ fun addSongToDatabase(offset: Int = 0, ownerId: UUID? = null, phrase: String? = 
             language = "language$offset"
             copyright = "copyright$offset"
             parentalAdvisory = "parentalAdvisory$offset"
+            barcodeType = SongBarcodeType.values()[offset % SongBarcodeType.values().size]
+            barcodeNumber = "barcodeNumber$offset"
             isrc = "isrc$offset"
             ipi = arrayOf("ipi${offset}_0", "ipi${offset}_1")
             releaseDate = LocalDate.of(2023, 1, offset % 31 + 1)

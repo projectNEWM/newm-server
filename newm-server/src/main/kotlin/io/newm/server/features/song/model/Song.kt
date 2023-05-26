@@ -27,6 +27,8 @@ data class Song(
     val language: String? = null,
     val copyright: String? = null,
     val parentalAdvisory: String? = null,
+    val barcodeType: SongBarcodeType? = null,
+    val barcodeNumber: String? = null,
     val isrc: String? = null,
     val iswc: String? = null,
     val ipi: List<String>? = null,
