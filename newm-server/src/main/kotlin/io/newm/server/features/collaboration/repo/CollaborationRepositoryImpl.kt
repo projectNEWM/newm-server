@@ -157,14 +157,18 @@ internal class CollaborationRepositoryImpl(
 
     override suspend fun invite(song: Song) {
         logger.debug { "invite: song = $song" }
+        val owner = userRepository.get(song.ownerId!!)
         val emails = mutableListOf<String>()
         transaction {
             CollaborationEntity.findBySongId(song.id!!).forEach { collab ->
-                collab.status = CollaborationStatus.Waiting
-                emails += collab.email
+                collab.status = if (collab.email.equals(owner.email, ignoreCase = true)) {
+                    CollaborationStatus.Accepted
+                } else {
+                    emails += collab.email
+                    CollaborationStatus.Waiting
+                }
             }
         }
-        val owner = userRepository.get(song.ownerId!!)
         emailRepository.send(
             to = emptyList(),
             bcc = emails,
