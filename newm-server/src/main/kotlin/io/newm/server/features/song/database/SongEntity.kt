@@ -139,6 +139,9 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             moods?.let {
                 ops += SongTable.moods overlaps it.toTypedArray()
             }
+            mintingStatuses?.let {
+                ops += SongTable.mintingStatus inList it
+            }
             phrase?.let {
                 val pattern = "%${it.lowercase()}%"
                 ops += (
