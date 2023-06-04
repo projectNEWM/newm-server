@@ -20,6 +20,7 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.neq
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.count
 import org.jetbrains.exposed.sql.lowerCase
@@ -102,6 +103,9 @@ class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             val ops = mutableListOf<Op<Boolean>>()
             ops += SongTable.ownerId eq userId
             with(filters) {
+                if (excludeMe == true) {
+                    ops += CollaborationTable.email.lowerCase() neq UserEntity[userId].email.lowercase()
+                }
                 songIds?.let {
                     ops += CollaborationTable.songId inList it
                 }

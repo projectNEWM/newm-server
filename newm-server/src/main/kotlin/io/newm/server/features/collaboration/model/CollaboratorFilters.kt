@@ -6,9 +6,13 @@ import io.newm.server.ktx.songIds
 import java.util.UUID
 
 data class CollaboratorFilters(
+    val excludeMe: Boolean?,
     val songIds: List<UUID>?,
     val phrase: String?
 )
 
+val ApplicationCall.excludeMe: Boolean?
+    get() = parameters["excludeMe"]?.toBoolean()
+
 val ApplicationCall.collaboratorFilters: CollaboratorFilters
-    get() = CollaboratorFilters(songIds, phrase)
+    get() = CollaboratorFilters(excludeMe, songIds, phrase)
