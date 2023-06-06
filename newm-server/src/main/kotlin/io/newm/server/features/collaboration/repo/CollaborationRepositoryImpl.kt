@@ -169,16 +169,18 @@ internal class CollaborationRepositoryImpl(
                 }
             }
         }
-        emailRepository.send(
-            to = emptyList(),
-            bcc = emails,
-            subject = environment.getConfigString("collaboration.email.subject"),
-            messageUrl = environment.getConfigString("collaboration.email.messageUrl"),
-            messageArgs = mapOf(
-                "song" to song.description!!,
-                "owner" to owner.stageOrFullName
+        if (emails.isNotEmpty()) {
+            emailRepository.send(
+                to = emptyList(),
+                bcc = emails,
+                subject = environment.getConfigString("collaboration.email.subject"),
+                messageUrl = environment.getConfigString("collaboration.email.messageUrl"),
+                messageArgs = mapOf(
+                    "song" to song.description!!,
+                    "owner" to owner.stageOrFullName
+                )
             )
-        )
+        }
     }
 
     private fun CollaborationEntity.checkSongState(requesterId: UUID, edit: Boolean = true) =
