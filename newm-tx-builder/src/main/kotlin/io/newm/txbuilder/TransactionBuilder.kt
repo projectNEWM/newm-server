@@ -329,7 +329,7 @@ class TransactionBuilder(
 
             var dummyTxCbor = CborArray.create().apply {
                 add(txBody)
-                add(createTxWitnessSet())
+                add(createTxWitnessSet(true))
                 add(CborSimple.TRUE)
                 add(auxData ?: CborSimple.NULL)
             }.toCborByteArray()
@@ -382,7 +382,7 @@ class TransactionBuilder(
 
                 dummyTxCbor = CborArray.create().apply {
                     add(txBody)
-                    add(createTxWitnessSet())
+                    add(createTxWitnessSet(true))
                     add(CborSimple.TRUE)
                     add(auxData ?: CborSimple.NULL)
                 }.toCborByteArray()
@@ -481,10 +481,10 @@ class TransactionBuilder(
         )
     }
 
-    private fun createTxWitnessSet(): CborObject {
+    private fun createTxWitnessSet(isFeeCalculation: Boolean = false): CborObject {
         return CborMap.create(
             mapOf<CborObject, CborObject?>(
-                WITNESS_SET_KEY_VKEYWITNESS to createVKeyWitnesses(),
+                WITNESS_SET_KEY_VKEYWITNESS to createVKeyWitnesses(isFeeCalculation),
                 WITNESS_SET_KEY_NATIVE_SCRIPT to createNativeScriptWitnesses(),
                 WITNESS_SET_KEY_BOOTSTRAP_WITNESS to null, // TODO: implement
                 WITNESS_SET_KEY_PLUTUS_V1_SCRIPT to createPlutusV1ScriptWitnesses(),
@@ -495,7 +495,7 @@ class TransactionBuilder(
         )
     }
 
-    private fun createVKeyWitnesses(): CborObject? {
+    private fun createVKeyWitnesses(isFeeCalculation: Boolean): CborObject? {
         val rawSignatures = signatures?.map { signature ->
             CborArray.create(
                 listOf(
@@ -516,7 +516,22 @@ class TransactionBuilder(
             )
         }.orEmpty()
 
-        return (rawSignatures + keySignatures).takeUnless { it.isEmpty() }?.let {
+        val requiredSignerDummySignatures =
+            if (isFeeCalculation && rawSignatures.isEmpty() && keySignatures.isEmpty()) {
+                // We have no signatures. Use dummy signatures to calculate the fee.
+                requiredSigners?.map { _ ->
+                    CborArray.create(
+                        listOf(
+                            CborByteString.create(ByteArray(32) { 0 }),
+                            CborByteString.create(ByteArray(64) { 0 }),
+                        )
+                    )
+                }.orEmpty()
+            } else {
+                emptyList()
+            }
+
+        return (rawSignatures + keySignatures + requiredSignerDummySignatures).takeUnless { it.isEmpty() }?.let {
             CborArray.create(it)
         }
     }

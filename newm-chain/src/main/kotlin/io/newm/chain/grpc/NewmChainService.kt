@@ -6,6 +6,7 @@ import io.newm.chain.config.Config
 import io.newm.chain.database.repository.LedgerRepository
 import io.newm.chain.ledger.SubmittedTransactionCache
 import io.newm.chain.model.toNativeAssetMap
+import io.newm.chain.util.hexToByteArray
 import io.newm.chain.util.toCreatedUtxoMap
 import io.newm.chain.util.toHexString
 import io.newm.kogmios.StateQueryClient
@@ -209,6 +210,15 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                         throw IllegalStateException(evaluateResponse.result.toString())
                     }
                     (evaluateResponse.result as EvaluationResult)
+                }
+
+                if (request.signaturesCount == 0 && request.signingKeysCount == 0 && request.requiredSignersCount == 0) {
+                    // Calculate the number of different payment keys associated with all input utxos
+                    (request.sourceUtxosList + request.collateralUtxosList).mapNotNull { utxo ->
+                        ledgerRepository.queryPublicKeyHashByOutputRef(utxo.hash, utxo.ix.toInt())
+                    }.distinct().forEach {
+                        request.requiredSignersList.add(it.hexToByteArray().toByteString())
+                    }
                 }
 
                 val (txId, cborBytes) = TransactionBuilder.transactionBuilder(
