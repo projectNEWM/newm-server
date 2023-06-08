@@ -14,25 +14,38 @@ import io.newm.server.features.cardano.model.SignedTransaction
 import io.newm.server.features.cardano.model.SubmitTransactionResponse
 import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.shared.ktx.post
+import org.koin.core.parameter.parametersOf
 import org.koin.ktor.ext.inject
+import org.slf4j.Logger
 
 fun Routing.createCardanoRoutes() {
+    val log: Logger by inject { parametersOf("CardanoRoutes") }
     val cardanoRepository: CardanoRepository by inject()
 
     authenticate(AUTH_JWT_ADMIN) {
         post("/v1/cardano/key") {
-            val cliKeyPair: CliKeyPair = receive()
-            val key = Key.createFromCliKeys(cliKeyPair)
-            if (cardanoRepository.getKeyByName(cliKeyPair.name) != null) {
-                throw IllegalArgumentException("Key with name '${cliKeyPair.name}' already exists!")
+            try {
+                val cliKeyPair: CliKeyPair = receive()
+                val key = Key.createFromCliKeys(cliKeyPair)
+                if (cardanoRepository.getKeyByName(cliKeyPair.name) != null) {
+                    throw IllegalArgumentException("Key with name '${cliKeyPair.name}' already exists!")
+                }
+                cardanoRepository.saveKey(key, cliKeyPair.name)
+                respond(HttpStatusCode.Created)
+            } catch (e: Exception) {
+                log.error("Failed to save key!", e)
+                throw e
             }
-            cardanoRepository.saveKey(key, cliKeyPair.name)
-            respond(HttpStatusCode.Created)
         }
 
         post("/v1/cardano/encryption") {
-            cardanoRepository.saveEncryptionParams(receive())
-            respond(HttpStatusCode.Created)
+            try {
+                cardanoRepository.saveEncryptionParams(receive())
+                respond(HttpStatusCode.Created)
+            } catch (e: Exception) {
+                log.error("Failed to save encryption params!", e)
+                throw e
+            }
         }
 
         post("/v1/cardano/submitTransaction") {
@@ -41,7 +54,8 @@ fun Routing.createCardanoRoutes() {
                 val response = cardanoRepository.submitTransaction(signedTransaction)
                 respond(HttpStatusCode.Accepted, SubmitTransactionResponse(response.txId, response.result))
             } catch (e: Exception) {
-                throw IllegalArgumentException("Failed to submit transaction: ${e.message}")
+                log.error("Failed to submit transaction: ${e.message}")
+                throw e
             }
         }
     }
