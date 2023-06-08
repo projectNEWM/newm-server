@@ -49,8 +49,8 @@ fun Routing.createCardanoRoutes() {
         }
 
         post("/v1/cardano/submitTransaction") {
-            val signedTransaction = receive<SignedTransaction>().cborHex.hexToByteArray().toByteString()
             try {
+                val signedTransaction = receive<SignedTransaction>().cborHex.hexToByteArray().toByteString()
                 val response = cardanoRepository.submitTransaction(signedTransaction)
                 respond(HttpStatusCode.Accepted, SubmitTransactionResponse(response.txId, response.result))
             } catch (e: Exception) {
