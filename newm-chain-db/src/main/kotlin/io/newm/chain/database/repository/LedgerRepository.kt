@@ -58,4 +58,6 @@ interface LedgerRepository {
     fun queryLedgerAssetMetadataList(assetId: Long, parentId: Long? = null): List<LedgerAssetMetadata>
 
     fun queryTransactionConfirmationCounts(txIds: List<String>): Map<String, Long>
+
+    fun queryPublicKeyHashByOutputRef(hash: String, ix: Int): String?
 }

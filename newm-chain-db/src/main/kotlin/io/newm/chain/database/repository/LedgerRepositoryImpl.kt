@@ -111,6 +111,23 @@ class LedgerRepositoryImpl : LedgerRepository {
             }.toHashSet()
     }
 
+    override fun queryPublicKeyHashByOutputRef(hash: String, ix: Int): String? = transaction {
+        LedgerUtxosTable.innerJoin(LedgerTable, { ledgerId }, { LedgerTable.id })
+            .select {
+                (LedgerUtxosTable.txId eq hash) and
+                    (LedgerUtxosTable.txIx eq ix) and
+                    LedgerUtxosTable.blockSpent.isNull() and
+                    LedgerUtxosTable.slotSpent.isNull()
+            }.map { row ->
+                val address = row[LedgerTable.address]
+                if (address.startsWith("addr")) {
+                    Bech32.decode(address).bytes.drop(2).take(28).toByteArray().toHexString()
+                } else {
+                    null
+                }
+            }.firstOrNull()
+    }
+
     override suspend fun queryLiveUtxos(address: String): Set<Utxo> {
         val chainUtxos = queryUtxos(address)
         return chainUtxosToLiveUtxos(address, chainUtxos as MutableSet)
