@@ -8,6 +8,7 @@ import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Routing
 import io.newm.chain.util.hexToByteArray
+import io.newm.server.auth.jwt.AUTH_JWT
 import io.newm.server.auth.jwt.AUTH_JWT_ADMIN
 import io.newm.server.features.cardano.model.Key
 import io.newm.server.features.cardano.model.SignedTransaction
@@ -47,7 +48,9 @@ fun Routing.createCardanoRoutes() {
                 throw e
             }
         }
+    }
 
+    authenticate(AUTH_JWT) {
         post("/v1/cardano/submitTransaction") {
             try {
                 val signedTransaction = receive<SignedTransaction>().cborHex.hexToByteArray().toByteString()
