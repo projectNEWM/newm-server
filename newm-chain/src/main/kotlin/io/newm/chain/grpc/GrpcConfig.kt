@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.attribute.BasicFileAttributes
+import java.util.concurrent.TimeUnit
 import javax.net.ssl.X509ExtendedKeyManager
 import kotlin.io.path.absolutePathString
 import kotlin.io.path.exists
@@ -33,6 +34,17 @@ object GrpcConfig {
     val init: GRPCApplicationEngine.Configuration.(appConfig: ApplicationConfig) -> Unit = { appConfig ->
         this.serverConfigurer = {
             try {
+                // Enable keepAlive every 30 seconds
+                keepAliveTime(30L, TimeUnit.SECONDS)
+                // Allow sending a ping even if there are no calls
+                permitKeepAliveWithoutCalls(true)
+
+                // This is aggressive, but we should be fine since there will only be one or two instances of newm-server
+                // communicating with us. 10 seconds is the most aggressive ping client can have.
+                permitKeepAliveTime(10L, TimeUnit.SECONDS)
+                // 20 seconds to respond to a keepAlive ping
+                keepAliveTimeout(20L, TimeUnit.SECONDS)
+
                 // Enable JWT authorization
                 intercept(JwtAuthorizationServerInterceptor(appConfig.config("jwt")))
 

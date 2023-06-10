@@ -13,6 +13,7 @@ import io.newm.shared.ktx.getConfigInt
 import io.newm.shared.ktx.getConfigString
 import kotlinx.coroutines.runBlocking
 import org.koin.dsl.module
+import java.util.concurrent.TimeUnit
 
 val cardanoKoinModule = module {
     single<CardanoRepository> {
@@ -30,6 +31,9 @@ val cardanoKoinModule = module {
         val jwt = runBlocking { environment.getSecureConfigString("newmChain.jwt") }
         val secure = environment.getConfigBoolean("newmChain.secure")
         val channel = ManagedChannelBuilder.forAddress(host, port).apply {
+            keepAliveTime(30L, TimeUnit.SECONDS)
+            keepAliveTimeout(20L, TimeUnit.SECONDS)
+            keepAliveWithoutCalls(true)
             if (secure) {
                 useTransportSecurity()
             } else {
