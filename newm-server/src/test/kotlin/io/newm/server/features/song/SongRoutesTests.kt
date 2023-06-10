@@ -499,8 +499,9 @@ class SongRoutesTests : BaseApplicationTests() {
             assertThat(fields).containsKey("X-Amz-Signature")
         }
 
-        val originalAudioUrl = transaction { SongEntity[songId].originalAudioUrl }
-        assertThat(originalAudioUrl).isEqualTo(fileUrl)
+        val expectedAudioUrl = "s3://$bucketName/$key"
+        val actualAudioUrl = transaction { SongEntity[songId].originalAudioUrl }
+        assertThat(actualAudioUrl).isEqualTo(expectedAudioUrl)
     }
 
     @Disabled("Disabled because this test requires real AWS credentials")

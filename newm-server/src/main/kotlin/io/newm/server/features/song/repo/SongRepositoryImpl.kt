@@ -11,6 +11,7 @@ import io.newm.chain.util.toHexString
 import io.newm.server.aws.s3.createPresignedPost
 import io.newm.server.aws.s3.model.ContentLengthRangeCondition
 import io.newm.server.aws.s3.model.PresignedPost
+import io.newm.server.aws.s3.s3UrlStringOf
 import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_PRICE
 import io.newm.server.features.cardano.database.KeyTable
@@ -184,7 +185,7 @@ internal class SongRepositoryImpl(
         val config = environment.getConfigChild("aws.s3.audio")
         val bucket = config.getString("bucketName")
         val key = "$songId/$fileName"
-        val url = s3.getUrl(bucket, key).toString()
+        val url = s3UrlStringOf(bucket, key)
         transaction {
             val entity = SongEntity[songId]
             entity.checkRequester(requesterId)
@@ -212,23 +213,23 @@ internal class SongRepositoryImpl(
 
         val bucketName = environment.getConfigString("aws.s3.agreement.bucketName")
         val fileName = environment.getConfigString("aws.s3.agreement.fileName")
-        val filePath = "$songId/$fileName"
+        val key = "$songId/$fileName"
 
         if (accepted) {
-            if (!s3.doesObjectExist(bucketName, filePath)) {
-                throw HttpUnprocessableEntityException("missing: $filePath")
+            if (!s3.doesObjectExist(bucketName, key)) {
+                throw HttpUnprocessableEntityException("missing: $key")
             }
             update(
                 songId = songId,
                 song = Song(
                     mintingStatus = MintingStatus.StreamTokenAgreementApproved,
-                    tokenAgreementUrl = s3.getUrl(bucketName, filePath).toString()
+                    tokenAgreementUrl = s3UrlStringOf(bucketName, key)
                 )
             )
             collaborationRepository.invite(get(songId))
         } else {
             update(songId, Song(mintingStatus = MintingStatus.Undistributed))
-            s3.deleteObject(bucketName, filePath)
+            s3.deleteObject(bucketName, key)
         }
     }
 
