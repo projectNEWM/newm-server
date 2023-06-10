@@ -117,3 +117,5 @@ fun AmazonS3.createPresignedPost(block: PresignedPostOptionBuilder.() -> Unit): 
         fields = fields
     )
 }
+
+fun s3UrlStringOf(bucketName: String, key: String): String = "s3://$bucketName/$key"
