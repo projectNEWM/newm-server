@@ -121,7 +121,7 @@ class LedgerRepositoryImpl : LedgerRepository {
             }.map { row ->
                 val address = row[LedgerTable.address]
                 if (address.startsWith("addr")) {
-                    Bech32.decode(address).bytes.drop(2).take(28).toByteArray().toHexString()
+                    Bech32.decode(address).bytes.drop(1).take(28).toByteArray().toHexString()
                 } else {
                     null
                 }
