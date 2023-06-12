@@ -162,7 +162,7 @@ internal class UserRepositoryImpl(
                 entity.email = it
             }
             passwordHash?.let {
-                if (entity.oauthType == null || entity.passwordHash != null) {
+                if (entity.oauthType == null) {
                     user.currentPassword.checkAuth(entity.passwordHash)
                 }
                 entity.passwordHash = passwordHash
