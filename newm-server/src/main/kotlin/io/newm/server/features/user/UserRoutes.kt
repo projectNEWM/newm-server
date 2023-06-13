@@ -47,12 +47,17 @@ fun Routing.createUserRoutes() {
                 }
             }
         }
+        route(USERS_PATH) {
+            get {
+                respond(repository.getAll(userFilters, offset, limit))
+            }
+            get("count") {
+                respond(CountResponse(repository.getAllCount(userFilters)))
+            }
+        }
     }
 
     route(USERS_PATH) {
-        get {
-            respond(repository.getAll(userFilters, offset, limit))
-        }
         post {
             respond(UserIdBody(repository.add(receive())))
         }
@@ -60,9 +65,6 @@ fun Routing.createUserRoutes() {
         put {
             repository.add(receive())
             respond(HttpStatusCode.NoContent)
-        }
-        get("count") {
-            respond(CountResponse(repository.getAllCount(userFilters)))
         }
         put("password") {
             repository.recover(receive())
