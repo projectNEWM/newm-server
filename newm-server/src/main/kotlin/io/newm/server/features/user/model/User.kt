@@ -53,5 +53,13 @@ data class User(
     var distributionIsni: String? = null,
     var distributionIpn: String? = null,
 ) {
-    val stageOrFullName: String by lazy { nickname ?: "$firstName $lastName".trim() }
+    val stageOrFullName: String by lazy { stageOrFullNameOf(nickname, firstName, lastName) }
+
+    companion object {
+        fun stageOrFullNameOf(
+            nickname: String?,
+            firstName: String?,
+            lastName: String?
+        ): String = nickname ?: "${firstName.orEmpty()} ${lastName.orEmpty()}".trim()
+    }
 }

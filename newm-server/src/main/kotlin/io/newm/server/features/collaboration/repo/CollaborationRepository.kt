@@ -4,7 +4,6 @@ import io.newm.server.features.collaboration.model.Collaboration
 import io.newm.server.features.collaboration.model.CollaborationFilters
 import io.newm.server.features.collaboration.model.Collaborator
 import io.newm.server.features.collaboration.model.CollaboratorFilters
-import io.newm.server.features.song.model.Song
 import java.util.UUID
 
 interface CollaborationRepository {
@@ -17,5 +16,5 @@ interface CollaborationRepository {
     suspend fun getCollaborators(userId: UUID, filters: CollaboratorFilters, offset: Int, limit: Int): List<Collaborator>
     suspend fun getCollaboratorCount(userId: UUID, filters: CollaboratorFilters): Long
     suspend fun reply(collaborationId: UUID, requesterId: UUID, accepted: Boolean)
-    suspend fun invite(song: Song)
+    suspend fun invite(songId: UUID)
 }
