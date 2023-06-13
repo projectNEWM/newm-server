@@ -12,9 +12,7 @@ import io.newm.server.features.email.repo.EmailRepository
 import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.database.SongTable
 import io.newm.server.features.song.model.MintingStatus
-import io.newm.server.features.song.model.Song
 import io.newm.server.features.user.database.UserEntity
-import io.newm.server.features.user.repo.UserRepository
 import io.newm.server.ktx.asMandatoryField
 import io.newm.server.ktx.asValidEmail
 import io.newm.server.ktx.checkLength
@@ -25,13 +23,13 @@ import io.newm.shared.koin.inject
 import io.newm.shared.ktx.debug
 import io.newm.shared.ktx.getConfigString
 import org.jetbrains.exposed.dao.id.EntityID
+import org.jetbrains.exposed.sql.Transaction
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf
 import java.util.UUID
 
 internal class CollaborationRepositoryImpl(
     private val environment: ApplicationEnvironment,
-    private val userRepository: UserRepository,
     private val emailRepository: EmailRepository
 ) : CollaborationRepository {
 
@@ -63,15 +61,20 @@ internal class CollaborationRepositoryImpl(
 
         collaboration.checkFieldLengths()
 
-        transaction {
-            val entity = CollaborationEntity[collaborationId]
-            entity.checkSongState(requesterId)
-            entity.checkStatus()
-            collaboration.email?.let { entity.email = it.asValidUniqueEmail(entity) }
-            collaboration.role?.let { entity.role = it }
-            collaboration.royaltyRate?.let { entity.royaltyRate = it }
-            collaboration.credited?.let { entity.credited = it }
-            collaboration.featured?.let { entity.featured = it }
+        val entity = transaction {
+            CollaborationEntity[collaborationId].apply {
+                checkSongState(requesterId)
+                checkStatus(CollaborationStatus.Editing, CollaborationStatus.Rejected)
+                collaboration.email?.let { email = it.asValidUniqueEmail(this) }
+                collaboration.role?.let { role = it }
+                collaboration.royaltyRate?.let { royaltyRate = it }
+                collaboration.credited?.let { credited = it }
+                collaboration.featured?.let { featured = it }
+            }
+        }
+
+        if (entity.status == CollaborationStatus.Rejected) {
+            invite(entity.songId.value) { listOf(entity) }
         }
     }
 
@@ -155,12 +158,17 @@ internal class CollaborationRepositoryImpl(
         }
     }
 
-    override suspend fun invite(song: Song) {
-        logger.debug { "invite: song = $song" }
-        val owner = userRepository.get(song.ownerId!!)
+    override suspend fun invite(songId: UUID) {
+        logger.debug { "invite: songId = $songId" }
+        invite(songId) { CollaborationEntity.findBySongId(songId) }
+    }
+
+    private suspend fun invite(songId: UUID, getCollaborations: Transaction.() -> Iterable<CollaborationEntity>) {
         val emails = mutableListOf<String>()
-        transaction {
-            CollaborationEntity.findBySongId(song.id!!).forEach { collab ->
+        val (song, owner) = transaction {
+            val song = SongEntity[songId]
+            val owner = UserEntity[song.ownerId.value]
+            getCollaborations().forEach { collab ->
                 collab.status = if (collab.email.equals(owner.email, ignoreCase = true)) {
                     CollaborationStatus.Accepted
                 } else {
@@ -168,6 +176,7 @@ internal class CollaborationRepositoryImpl(
                     CollaborationStatus.Waiting
                 }
             }
+            song to owner
         }
         if (emails.isNotEmpty()) {
             emailRepository.send(
@@ -176,7 +185,7 @@ internal class CollaborationRepositoryImpl(
                 subject = environment.getConfigString("collaboration.email.subject"),
                 messageUrl = environment.getConfigString("collaboration.email.messageUrl"),
                 messageArgs = mapOf(
-                    "song" to song.description!!,
+                    "song" to song.title,
                     "owner" to owner.stageOrFullName
                 )
             )
@@ -195,8 +204,8 @@ internal class CollaborationRepositoryImpl(
                     throw HttpForbiddenException("Operation allowed only by owner or collaborator")
                 }
             }
-            if (edit && mintingStatus != MintingStatus.Undistributed) {
-                throw HttpUnprocessableEntityException("Operation only allowed when mintingStatus = Undistributed")
+            if (edit && (mintingStatus.ordinal > MintingStatus.AwaitingCollaboratorApproval.ordinal)) {
+                throw HttpUnprocessableEntityException("Operation not allowed when mintingStatus = $mintingStatus")
             }
         }
     }
@@ -205,9 +214,9 @@ internal class CollaborationRepositoryImpl(
         role?.checkLength("role")
     }
 
-    private fun CollaborationEntity.checkStatus(status: CollaborationStatus = CollaborationStatus.Editing) {
-        if (this.status != status) {
-            throw HttpUnprocessableEntityException("Operation only allowed when status = $status")
+    private fun CollaborationEntity.checkStatus(vararg statuses: CollaborationStatus = arrayOf(CollaborationStatus.Editing)) {
+        if (status !in statuses) {
+            throw HttpUnprocessableEntityException("Operation only allowed when status: ${statuses.joinToString()}")
         }
     }
 

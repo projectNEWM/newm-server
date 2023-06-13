@@ -82,6 +82,9 @@ class UserEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         distributionIpn = distributionIpn,
     )
 
+    val stageOrFullName: String
+        get() = User.stageOrFullNameOf(nickname, firstName, lastName)
+
     companion object : UUIDEntityClass<UserEntity>(UserTable) {
         fun all(filters: UserFilters): SizedIterable<UserEntity> {
             val ops = mutableListOf<Op<Boolean>>()
