@@ -184,6 +184,7 @@ object Dependencies {
 
     object Aws {
         private const val VERSION = "1.12.457"
+        private const val VERSION2 = "2.20.84"
         private const val JAXB_VERSION = "2.3.1"
 
         const val BOM = "com.amazonaws:aws-java-sdk-bom:$VERSION"
@@ -192,6 +193,9 @@ object Dependencies {
         const val KMS = "com.amazonaws:aws-java-sdk-kms"
         const val SECRETS_MANAGER = "com.amazonaws:aws-java-sdk-secretsmanager"
         const val JAXB = "javax.xml.bind:jaxb-api:$JAXB_VERSION"
+
+        const val BOM2 = "software.amazon.awssdk:bom:$VERSION2"
+        const val CLOUDFRONT = "software.amazon.awssdk:cloudfront"
     }
 
     object Arweave {
