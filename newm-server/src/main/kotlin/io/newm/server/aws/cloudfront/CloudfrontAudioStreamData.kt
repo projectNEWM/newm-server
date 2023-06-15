@@ -21,13 +21,7 @@ class CloudfrontAudioStreamData(private val args: CloudfrontAudioStreamArguments
 
     override val url: String
         get() = this.args.url
-    private val _cookies: Map<String, String>
-    override val cookies: Map<String, String>
-        get() = this._cookies
-
-    init {
-        this._cookies = createSignedCookies()
-    }
+    override val cookies: Map<String, String> by lazy { createSignedCookies() }
 
     private fun createSignedCookies(): Map<String, String> {
         val streamUrl = URLBuilder(this.url).build()
