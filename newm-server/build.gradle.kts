@@ -95,6 +95,9 @@ dependencies {
     implementation(Dependencies.Aws.SECRETS_MANAGER)
     implementation(Dependencies.Aws.JAXB)
 
+    implementation(platform(Dependencies.Aws.BOM2))
+    implementation(Dependencies.Aws.CLOUDFRONT)
+
     implementation(Dependencies.Arweave.ARWEAVE4S)
     implementation(Dependencies.Arweave.SCALA_JAVA8_COMPAT)
 
@@ -113,6 +116,7 @@ dependencies {
 
 tasks {
     shadowJar {
+        isZip64 = true
         // defaults to project.name
         // archiveBaseName.set("${project.name}-fat")
 

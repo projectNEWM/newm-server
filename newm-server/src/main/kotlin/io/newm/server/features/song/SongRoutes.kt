@@ -7,25 +7,26 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.Routing
 import io.ktor.server.routing.route
 import io.newm.server.auth.jwt.AUTH_JWT
-import io.newm.server.ktx.limit
-import io.newm.server.ktx.myUserId
-import io.newm.server.ktx.offset
-import io.newm.server.ktx.songId
 import io.newm.server.features.model.CountResponse
+import io.newm.server.features.song.model.AudioStreamResponse
+import io.newm.server.features.song.model.AudioUploadRequest
+import io.newm.server.features.song.model.AudioUploadResponse
 import io.newm.server.features.song.model.MintPaymentRequest
 import io.newm.server.features.song.model.MintPaymentResponse
 import io.newm.server.features.song.model.SongIdBody
 import io.newm.server.features.song.model.StreamTokenAgreementRequest
-import io.newm.server.features.song.model.AudioUploadRequest
-import io.newm.server.features.song.model.AudioUploadResponse
 import io.newm.server.features.song.model.songFilters
 import io.newm.server.features.song.repo.SongRepository
+import io.newm.server.ktx.limit
+import io.newm.server.ktx.myUserId
+import io.newm.server.ktx.offset
+import io.newm.server.ktx.songId
+import io.newm.shared.koin.inject
 import io.newm.shared.ktx.delete
 import io.newm.shared.ktx.get
 import io.newm.shared.ktx.patch
 import io.newm.shared.ktx.post
 import io.newm.shared.ktx.put
-import io.newm.shared.koin.inject
 
 private const val SONGS_PATH = "v1/songs"
 
@@ -71,6 +72,15 @@ fun Routing.createSongRoutes() {
                                 songId = songId,
                                 requesterId = myUserId,
                                 fileName = receive<AudioUploadRequest>().fileName
+                            )
+                        )
+                    )
+                }
+                get("stream") {
+                    respond(
+                        AudioStreamResponse(
+                            songRepository.generateAudioStreamData(
+                                songId = songId,
                             )
                         )
                     )

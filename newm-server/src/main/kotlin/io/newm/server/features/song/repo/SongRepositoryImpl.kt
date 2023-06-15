@@ -3,11 +3,15 @@ package io.newm.server.features.song.repo
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain
 import com.amazonaws.services.s3.AmazonS3
 import com.google.iot.cbor.CborInteger
+import io.ktor.http.URLBuilder
+import io.ktor.http.URLProtocol
+import io.ktor.http.encodedPath
 import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.util.logging.Logger
 import io.newm.chain.grpc.Utxo
 import io.newm.chain.grpc.outputUtxo
 import io.newm.chain.util.toHexString
+import io.newm.server.aws.cloudfront.cloudfrontAudioStreamData
 import io.newm.server.aws.s3.createPresignedPost
 import io.newm.server.aws.s3.model.ContentLengthRangeCondition
 import io.newm.server.aws.s3.model.PresignedPost
@@ -20,25 +24,28 @@ import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.collaboration.repo.CollaborationRepository
 import io.newm.server.features.distribution.DistributionRepository
 import io.newm.server.features.song.database.SongEntity
+import io.newm.server.features.song.model.AudioStreamData
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongFilters
 import io.newm.server.features.user.database.UserTable
 import io.newm.server.ktx.asValidUrl
 import io.newm.server.ktx.checkLength
+import io.newm.server.ktx.getSecureConfigString
 import io.newm.shared.exception.HttpForbiddenException
 import io.newm.shared.exception.HttpUnprocessableEntityException
 import io.newm.shared.koin.inject
-import io.newm.shared.ktx.megabytesToBytes
 import io.newm.shared.ktx.debug
 import io.newm.shared.ktx.getConfigChild
 import io.newm.shared.ktx.getConfigString
 import io.newm.shared.ktx.getLong
 import io.newm.shared.ktx.getString
+import io.newm.shared.ktx.megabytesToBytes
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf
-import java.util.UUID
+import java.net.URL
+import java.util.*
 
 internal class SongRepositoryImpl(
     private val environment: ApplicationEnvironment,
@@ -203,6 +210,31 @@ internal class SongRepositoryImpl(
                 )
             )
             expiresSeconds = config.getLong("timeToLive")
+        }
+    }
+
+    override suspend fun generateAudioStreamData(songId: UUID): AudioStreamData {
+        val song = get(songId)
+        if (song.streamUrl == null) {
+            throw HttpUnprocessableEntityException("streamUrl is null")
+        }
+
+        val songStreamUrl = URL(song.streamUrl)
+        val mediaHostUrl = URL(environment.getConfigString("aws.cloudFront.audioStream.hostUrl"))
+        val kpid = environment.getSecureConfigString("aws.cloudFront.audioStream.keyPairId")
+        val pk = environment.getSecureConfigString("aws.cloudFront.audioStream.privateKey")
+
+        // fix up the url so that the url does not point to old cloudfront distros
+        val streamUrl = URLBuilder().apply {
+            protocol = URLProtocol.createOrDefault(mediaHostUrl.protocol)
+            host = mediaHostUrl.host
+            encodedPath = songStreamUrl.path
+        }.build()
+
+        return cloudfrontAudioStreamData {
+            url = streamUrl.toString()
+            keyPairId = kpid
+            privateKey = pk
         }
     }
 
