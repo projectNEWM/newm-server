@@ -478,7 +478,6 @@ class SongRoutesTests : BaseApplicationTests() {
         val songId = addSongToDatabase(ownerId = testUserId).id!!
         val fileName = "test1.wav"
         val key = "$songId/$fileName"
-        val fileUrl = "$bucketUrl/$key"
 
         // Request upload
         val response = client.post("v1/songs/$songId/upload") {
@@ -778,6 +777,33 @@ class SongRoutesTests : BaseApplicationTests() {
         assertThat(actualCborHex).isEqualTo(expectedCborHex)
     }
 
+    @Test
+    fun testGetStreamMetatdata() = runBlocking {
+        // Add song directly into database
+        val streamId = UUID.randomUUID().toString()
+        val songId = addSongToDatabase(ownerId = testUserId, init = {
+            streamUrl = "https://newm.io/$streamId/$streamId.m3u8"
+        }).id!!
+
+        // Fetch stream metadata
+        val response = client.get("v1/songs/$songId/stream") {
+            bearerAuth(testUserToken)
+            contentType(ContentType.Application.Json)
+        }
+        assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+
+        val resp = response.body<AudioStreamResponse>()
+        // assert that URL was updated
+        val environment: ApplicationEnvironment by inject()
+        val updatedHost = environment.getConfigString("aws.cloudFront.audioStream.hostUrl")
+        assertThat(resp.url).startsWith(updatedHost)
+
+        // assert that cookies are created
+        assertThat(resp.cookies).containsKey("CloudFront-Signature")
+        assertThat(resp.cookies).containsKey("CloudFront-Key-Pair-Id")
+        assertThat(resp.cookies).containsKey("CloudFront-Policy")
+    }
+
     // TODO: complete implementation of testGenerateMintingPaymentTransaction() bellow
     /*
     @Test
@@ -809,7 +835,7 @@ class SongRoutesTests : BaseApplicationTests() {
      */
 }
 
-fun addSongToDatabase(offset: Int = 0, ownerId: UUID? = null, phrase: String? = null): Song {
+fun addSongToDatabase(offset: Int = 0, ownerId: UUID? = null, phrase: String? = null, init: (SongEntity.() -> Unit)? = null): Song {
     val ownerEntityId = ownerId?.let {
         EntityID(it, UserTable)
     } ?: transaction {
@@ -858,6 +884,9 @@ fun addSongToDatabase(offset: Int = 0, ownerId: UUID? = null, phrase: String? = 
             mintingStatus = MintingStatus.values()[offset % MintingStatus.values().size]
             marketplaceStatus = MarketplaceStatus.values()[offset % MarketplaceStatus.values().size]
             this.paymentKeyId = paymentKeyId
+            if (init != null) {
+                this.apply { init() }
+            }
         }
     }.toModel()
 }
