@@ -1,7 +1,5 @@
 package io.newm.server.aws.cloudfront
 
-import io.ktor.http.URLBuilder
-import io.ktor.http.fullPath
 import io.newm.server.features.song.model.AudioStreamData
 import io.newm.server.security.PrivateKeyReader
 import software.amazon.awssdk.services.cloudfront.CloudFrontUtilities
@@ -9,31 +7,26 @@ import software.amazon.awssdk.services.cloudfront.model.CustomSignerRequest
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
-class CloudfrontAudioStreamArguments(
+data class CloudfrontAudioStreamArguments(
     var url: String,
     var keyPairId: String,
     var privateKey: String,
     var expirationDate: Instant = Instant.now().plus(1, ChronoUnit.DAYS)
 )
 
-class CloudfrontAudioStreamData(private val args: CloudfrontAudioStreamArguments) :
-    AudioStreamData {
-
+class CloudfrontAudioStreamData(
+    private val args: CloudfrontAudioStreamArguments
+) : AudioStreamData {
     override val url: String
         get() = this.args.url
     override val cookies: Map<String, String> by lazy { createSignedCookies() }
 
     private fun createSignedCookies(): Map<String, String> {
-        val streamUrl = URLBuilder(this.url).build()
+        val streamUrl = this.url
 
         // resource is the "dirname" of the URL with the filename removed,
         // effectively granting access to the entire "directory"
-        val resourceUrl = "${streamUrl.protocol}://${streamUrl.host}${
-            streamUrl.fullPath.subSequence(
-                0,
-                streamUrl.fullPath.lastIndexOf("/")
-            )
-        }"
+        val resourceUrl = streamUrl.removeRange(streamUrl.lastIndexOf("/"), streamUrl.length)
 
         val customRequest = CustomSignerRequest.builder()
             .resourceUrl(resourceUrl)
