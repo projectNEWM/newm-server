@@ -77,12 +77,14 @@ fun Routing.createSongRoutes() {
                     )
                 }
                 get("stream") {
+                    val streamData = songRepository.generateAudioStreamData(
+                        songId = songId,
+                    )
+                    streamData.cookies.forEach { cookie ->
+                        response.cookies.append(name = cookie.key, value = cookie.value, domain = "newm.io")
+                    }
                     respond(
-                        AudioStreamResponse(
-                            songRepository.generateAudioStreamData(
-                                songId = songId,
-                            )
-                        )
+                        AudioStreamResponse(streamData)
                     )
                 }
                 route("mint/payment") {
