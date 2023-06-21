@@ -64,7 +64,9 @@ internal class CollaborationRepositoryImpl(
         val entity = transaction {
             CollaborationEntity[collaborationId].apply {
                 checkSongState(requesterId)
-                checkStatus(CollaborationStatus.Editing, CollaborationStatus.Rejected)
+                if (!userMatches(requesterId, email)) {
+                    checkStatus(CollaborationStatus.Editing, CollaborationStatus.Rejected)
+                }
                 collaboration.email?.let { email = it.asValidUniqueEmail(this) }
                 collaboration.role?.let { role = it }
                 collaboration.royaltyRate?.let { royaltyRate = it }
@@ -149,8 +151,7 @@ internal class CollaborationRepositoryImpl(
         logger.debug { "reply: collaborationId = $collaborationId, accepted = $accepted" }
         transaction {
             val collaboration = CollaborationEntity[collaborationId]
-            val user = UserEntity[requesterId]
-            if (!collaboration.email.equals(user.email, ignoreCase = true)) {
+            if (!userMatches(requesterId, collaboration.email)) {
                 throw HttpForbiddenException("Operation allowed only by collaborator")
             }
             collaboration.checkStatus(CollaborationStatus.Waiting)
@@ -167,7 +168,7 @@ internal class CollaborationRepositoryImpl(
         val emails = mutableListOf<String>()
         val (song, owner) = transaction {
             val song = SongEntity[songId]
-            val owner = UserEntity[song.ownerId.value]
+            val owner = UserEntity[song.ownerId]
             getCollaborations().forEach { collab ->
                 collab.status = if (collab.email.equals(owner.email, ignoreCase = true)) {
                     CollaborationStatus.Accepted
@@ -192,6 +193,9 @@ internal class CollaborationRepositoryImpl(
         }
     }
 
+    private fun userMatches(userId: UUID, email: String?): Boolean =
+        UserEntity[userId].email.equals(email, ignoreCase = true)
+
     private fun CollaborationEntity.checkSongState(requesterId: UUID, edit: Boolean = true) =
         checkSongState(songId.value, requesterId, email, edit)
 
@@ -200,7 +204,7 @@ internal class CollaborationRepositoryImpl(
             if (ownerId.value != requesterId) {
                 if (edit) {
                     throw HttpForbiddenException("Operation allowed only by owner")
-                } else if (!UserEntity[requesterId].email.equals(email, ignoreCase = true)) {
+                } else if (!userMatches(requesterId, email)) {
                     throw HttpForbiddenException("Operation allowed only by owner or collaborator")
                 }
             }
