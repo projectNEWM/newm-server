@@ -61,11 +61,6 @@ fun Routing.createUserRoutes() {
         post {
             respond(UserIdBody(repository.add(receive())))
         }
-        // TODO: Deprecated - remove next "PUT" route after client migration to previous "POST" (CU-85zt07yec)
-        put {
-            repository.add(receive())
-            respond(HttpStatusCode.NoContent)
-        }
         put("password") {
             repository.recover(receive())
             respond(HttpStatusCode.NoContent)
