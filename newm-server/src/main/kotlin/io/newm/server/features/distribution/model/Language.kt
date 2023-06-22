@@ -7,6 +7,6 @@ import kotlinx.serialization.Serializable
 data class Language(
     @SerialName("language_code")
     val languageCode: String,
-    @SerialName("name")
+    @SerialName("language_name")
     val name: String
 )
