@@ -5,8 +5,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class GetLanguagesResponse(
-    @SerialName("message")
-    val message: String,
     @SerialName("success")
     val success: Boolean,
     @SerialName("data")
