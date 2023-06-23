@@ -4,10 +4,9 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class AudioStreamResponse(
-    val url: String,
-    val cookies: Map<String, String>
+    val url: String
 ) {
-    constructor(data: AudioStreamData) : this(data.url, data.cookies)
+    constructor(data: AudioStreamData) : this(data.url)
 }
 
 interface AudioStreamData {

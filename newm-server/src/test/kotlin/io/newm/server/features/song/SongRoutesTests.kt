@@ -797,11 +797,6 @@ class SongRoutesTests : BaseApplicationTests() {
         val environment: ApplicationEnvironment by inject()
         val updatedHost = environment.getConfigString("aws.cloudFront.audioStream.hostUrl")
         assertThat(resp.url).startsWith(updatedHost)
-
-        // assert that cookies are created
-        assertThat(resp.cookies).containsKey("CloudFront-Signature")
-        assertThat(resp.cookies).containsKey("CloudFront-Key-Pair-Id")
-        assertThat(resp.cookies).containsKey("CloudFront-Policy")
     }
 
     // TODO: complete implementation of testGenerateMintingPaymentTransaction() bellow
