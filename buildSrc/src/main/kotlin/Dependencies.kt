@@ -86,6 +86,7 @@ object Dependencies {
         const val SERIALIZATION = "io.ktor:ktor-serialization:$VERSION"
         const val SERIALIZATION_JSON = "io.ktor:ktor-serialization-kotlinx-json:$VERSION"
         const val SERVER_TESTS = "io.ktor:ktor-server-tests:$VERSION"
+        const val SERVER_FORWARDED_HEADER = "io.ktor:ktor-server-forwarded-header:$VERSION"
     }
 
     object LogBack {
