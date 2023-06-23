@@ -57,6 +57,7 @@ dependencies {
     implementation(Dependencies.Ktor.SERIALIZATION_JSON)
     implementation(Dependencies.Ktor.SERVER_STATUS_PAGES)
     implementation(Dependencies.Ktor.SERVER_CORS)
+    implementation(Dependencies.Ktor.SERVER_FORWARDED_HEADER)
 
     implementation(Dependencies.Koin.KTOR)
 
