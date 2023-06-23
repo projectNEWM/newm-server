@@ -81,7 +81,14 @@ fun Routing.createSongRoutes() {
                         songId = songId,
                     )
                     streamData.cookies.forEach { cookie ->
-                        response.cookies.append(name = cookie.key, value = cookie.value, domain = "newm.io")
+                        response.cookies.append(
+                            name = cookie.key,
+                            value = cookie.value,
+                            domain = "newm.io",
+                            path = "/",
+                            secure = true,
+                            extensions = mapOf("SameSite" to "Strict")
+                        )
                     }
                     respond(
                         AudioStreamResponse(streamData)
