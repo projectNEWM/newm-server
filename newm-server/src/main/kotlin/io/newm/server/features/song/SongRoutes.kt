@@ -86,7 +86,6 @@ fun Routing.createSongRoutes() {
                             value = cookie.value,
                             domain = "newm.io",
                             path = "/",
-                            secure = true,
                             extensions = mapOf("SameSite" to "Strict")
                         )
                     }

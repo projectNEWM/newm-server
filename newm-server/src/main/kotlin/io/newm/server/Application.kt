@@ -16,7 +16,6 @@ import io.newm.server.features.idenfy.createIdenfyRoutes
 import io.newm.server.features.playlist.createPlaylistRoutes
 import io.newm.server.features.song.createSongRoutes
 import io.newm.server.features.user.createUserRoutes
-import io.newm.server.forwarder.installForwarder
 import io.newm.server.logging.initializeSentry
 import io.newm.server.logging.installCallLogging
 import io.newm.server.staticcontent.createStaticContentRoutes
@@ -36,7 +35,6 @@ fun Application.module() {
     installAuthentication()
     installStatusPages()
     installCORS()
-    installForwarder()
 
     routing {
         createStaticContentRoutes()
