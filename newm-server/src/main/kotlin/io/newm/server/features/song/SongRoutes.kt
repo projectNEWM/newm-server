@@ -80,15 +80,7 @@ fun Routing.createSongRoutes() {
                     val streamData = songRepository.generateAudioStreamData(
                         songId = songId,
                     )
-                    streamData.cookies.forEach { cookie ->
-                        response.cookies.append(
-                            name = cookie.key,
-                            value = cookie.value,
-                            domain = "newm.io",
-                            path = "/",
-                            extensions = mapOf("SameSite" to "Strict")
-                        )
-                    }
+                    streamData.cookies.forEach { response.cookies.append(it) }
                     respond(
                         AudioStreamResponse(streamData)
                     )

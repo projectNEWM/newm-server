@@ -1,5 +1,6 @@
 package io.newm.server.aws.cloudfront
 
+import io.ktor.http.Cookie
 import io.newm.server.features.song.model.AudioStreamData
 import io.newm.server.security.PrivateKeyReader
 import software.amazon.awssdk.services.cloudfront.CloudFrontUtilities
@@ -11,6 +12,7 @@ data class CloudfrontAudioStreamArguments(
     var url: String,
     var keyPairId: String,
     var privateKey: String,
+    var cookieDomain: String,
     var expirationDate: Instant = Instant.now().plus(1, ChronoUnit.DAYS)
 )
 
@@ -19,9 +21,9 @@ class CloudfrontAudioStreamData(
 ) : AudioStreamData {
     override val url: String
         get() = this.args.url
-    override val cookies: Map<String, String> by lazy { createSignedCookies() }
+    override val cookies: List<Cookie> by lazy { createSignedCookies() }
 
-    private fun createSignedCookies(): Map<String, String> {
+    private fun createSignedCookies(): List<Cookie> {
         val streamUrl = this.url
 
         // resource is the "dirname" of the URL with the filename removed,
@@ -44,13 +46,21 @@ class CloudfrontAudioStreamData(
         val (keyPairIdHeaderName, keyPairIdHeaderValue) = signedCookies.keyPairIdHeaderValue().split("=")
         val (policyHeaderName, policyHeaderValue) = signedCookies.policyHeaderValue().split("=")
 
-        return mapOf(
-            signatureHeaderName to signatureHeaderValue,
-            keyPairIdHeaderName to keyPairIdHeaderValue,
-            policyHeaderName to policyHeaderValue
+        return listOf(
+            cookie(name = signatureHeaderName, value = signatureHeaderValue),
+            cookie(name = keyPairIdHeaderName, value = keyPairIdHeaderValue),
+            cookie(name = policyHeaderName, value = policyHeaderValue),
         )
     }
+
+    private fun cookie(name: String, value: String): Cookie = Cookie(
+        name = name,
+        value = value,
+        path = "/",
+        domain = args.cookieDomain,
+        extensions = mapOf("SameSite" to "Strict")
+    )
 }
 
 fun cloudfrontAudioStreamData(init: CloudfrontAudioStreamArguments.() -> Unit): CloudfrontAudioStreamData =
-    CloudfrontAudioStreamData(CloudfrontAudioStreamArguments("", "", "").apply(init))
+    CloudfrontAudioStreamData(CloudfrontAudioStreamArguments("", "", "", "").apply(init))

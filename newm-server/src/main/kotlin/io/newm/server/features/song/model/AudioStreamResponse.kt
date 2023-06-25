@@ -1,5 +1,6 @@
 package io.newm.server.features.song.model
 
+import io.ktor.http.Cookie
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -11,5 +12,5 @@ data class AudioStreamResponse(
 
 interface AudioStreamData {
     val url: String
-    val cookies: Map<String, String>
+    val cookies: List<Cookie>
 }
