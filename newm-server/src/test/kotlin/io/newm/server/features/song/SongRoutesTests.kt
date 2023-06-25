@@ -37,7 +37,7 @@ import java.io.EOFException
 import java.io.File
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.util.UUID
+import java.util.*
 
 class SongRoutesTests : BaseApplicationTests() {
 
@@ -797,6 +797,13 @@ class SongRoutesTests : BaseApplicationTests() {
         val environment: ApplicationEnvironment by inject()
         val updatedHost = environment.getConfigString("aws.cloudFront.audioStream.hostUrl")
         assertThat(resp.url).startsWith(updatedHost)
+
+        // assert that cookies are created
+        val cookies = response.setCookie()
+        assertThat(cookies).isNotEmpty()
+        assertThat(cookies.filter { it.name == "CloudFront-Key-Pair-Id" }).isNotEmpty()
+        assertThat(cookies.filter { it.name == "CloudFront-Signature" }).isNotEmpty()
+        assertThat(cookies.filter { it.name == "CloudFront-Policy" }).isNotEmpty()
     }
 
     // TODO: complete implementation of testGenerateMintingPaymentTransaction() bellow
@@ -830,7 +837,12 @@ class SongRoutesTests : BaseApplicationTests() {
      */
 }
 
-fun addSongToDatabase(offset: Int = 0, ownerId: UUID? = null, phrase: String? = null, init: (SongEntity.() -> Unit)? = null): Song {
+fun addSongToDatabase(
+    offset: Int = 0,
+    ownerId: UUID? = null,
+    phrase: String? = null,
+    init: (SongEntity.() -> Unit)? = null
+): Song {
     val ownerEntityId = ownerId?.let {
         EntityID(it, UserTable)
     } ?: transaction {

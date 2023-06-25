@@ -223,6 +223,7 @@ internal class SongRepositoryImpl(
         val mediaHostUrl = URL(environment.getConfigString("aws.cloudFront.audioStream.hostUrl"))
         val kpid = environment.getSecureConfigString("aws.cloudFront.audioStream.keyPairId")
         val pk = environment.getSecureConfigString("aws.cloudFront.audioStream.privateKey")
+        val cookieDom = environment.getConfigString("ktor.deployment.cookieDomain")
 
         // fix up the url so that the url does not point to old cloudfront distros
         val streamUrl = URLBuilder().apply {
@@ -235,6 +236,7 @@ internal class SongRepositoryImpl(
             url = streamUrl.toString()
             keyPairId = kpid
             privateKey = pk
+            cookieDomain = cookieDom
         }
     }
 
