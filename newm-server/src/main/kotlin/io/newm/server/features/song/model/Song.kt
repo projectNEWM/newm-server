@@ -31,7 +31,7 @@ data class Song(
     val barcodeNumber: String? = null,
     val isrc: String? = null,
     val iswc: String? = null,
-    val ipi: List<String>? = null,
+    val ipis: List<String>? = null,
     @Serializable(with = LocalDateSerializer::class)
     val releaseDate: LocalDate? = null,
     @Serializable(with = LocalDateSerializer::class)

@@ -79,7 +79,8 @@ internal class SongRepositoryImpl(
                 barcodeType = song.barcodeType
                 barcodeNumber = song.barcodeNumber
                 isrc = song.isrc
-                ipi = song.ipi?.toTypedArray()
+                iswc = song.iswc
+                ipis = song.ipis?.toTypedArray()
                 releaseDate = song.releaseDate
                 lyricsUrl = song.lyricsUrl?.asValidUrl()
             }.id.value
@@ -107,7 +108,7 @@ internal class SongRepositoryImpl(
                 barcodeNumber?.let { entity.barcodeNumber = it }
                 isrc?.let { entity.isrc = it }
                 iswc?.let { entity.iswc = it }
-                ipi?.let { entity.ipi = it.toTypedArray() }
+                ipis?.let { entity.ipis = it.toTypedArray() }
                 releaseDate?.let { entity.releaseDate = it }
                 lyricsUrl?.let { entity.lyricsUrl = it.asValidUrl() }
                 if (requesterId == null) {
@@ -327,7 +328,7 @@ internal class SongRepositoryImpl(
         barcodeNumber?.checkLength("barcodeNumber")
         isrc?.checkLength("isrc")
         iswc?.checkLength("iswc")
-        ipi?.forEachIndexed { index, ipi -> ipi.checkLength("ipi$index") }
+        ipis?.forEachIndexed { index, ipi -> ipi.checkLength("ipi$index") }
         nftName?.checkLength("nftName")
     }
 }

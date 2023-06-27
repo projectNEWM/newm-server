@@ -45,7 +45,7 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var barcodeNumber: String? by SongTable.barcodeNumber
     var isrc: String? by SongTable.isrc
     var iswc: String? by SongTable.iswc
-    var ipi: Array<String>? by SongTable.ipi
+    var ipis: Array<String>? by SongTable.ipis
     var releaseDate: LocalDate? by SongTable.releaseDate
     var publicationDate: LocalDate? by SongTable.publicationDate
     var lyricsUrl: String? by SongTable.lyricsUrl
@@ -82,7 +82,8 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         barcodeType = barcodeType,
         barcodeNumber = barcodeNumber,
         isrc = isrc,
-        ipi = ipi?.toList(),
+        iswc = iswc,
+        ipis = ipis?.toList(),
         releaseDate = releaseDate,
         publicationDate = publicationDate,
         lyricsUrl = lyricsUrl,
