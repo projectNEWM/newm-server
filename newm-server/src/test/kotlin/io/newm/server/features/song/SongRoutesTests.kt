@@ -789,6 +789,9 @@ class SongRoutesTests : BaseApplicationTests() {
         val response = client.get("v1/songs/$songId/stream") {
             bearerAuth(testUserToken)
             contentType(ContentType.Application.Json)
+            url {
+                protocol = URLProtocol.HTTPS
+            }
         }
         assertThat(response.status).isEqualTo(HttpStatusCode.OK)
 

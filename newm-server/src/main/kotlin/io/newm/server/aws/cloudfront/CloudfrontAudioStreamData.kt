@@ -58,7 +58,8 @@ class CloudfrontAudioStreamData(
         value = value,
         path = "/",
         domain = args.cookieDomain,
-        extensions = mapOf("SameSite" to "Lax")
+        extensions = mapOf("SameSite" to "None"),
+        secure = true,
     )
 }
 
