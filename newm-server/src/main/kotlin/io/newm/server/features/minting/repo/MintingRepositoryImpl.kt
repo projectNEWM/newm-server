@@ -561,13 +561,13 @@ class MintingRepositoryImpl(
                             }
                         )
                     }
-                    if (!song.ipi.isNullOrEmpty()) {
+                    if (!song.ipis.isNullOrEmpty()) {
                         add(
                             plutusDataMapItem {
                                 mapItemKey = "ipi".toPlutusData()
                                 mapItemValue = plutusData {
                                     list = plutusDataList {
-                                        listItem.addAll(song.ipi.map { it.toPlutusData() })
+                                        listItem.addAll(song.ipis.map { it.toPlutusData() })
                                     }
                                 }
                             }

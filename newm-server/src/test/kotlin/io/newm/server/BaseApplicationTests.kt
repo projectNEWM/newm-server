@@ -169,7 +169,8 @@ open class BaseApplicationTests {
             copyright = song.copyright
             parentalAdvisory = song.parentalAdvisory
             isrc = song.isrc
-            ipi = song.ipi?.toTypedArray()
+            iswc = song.iswc
+            ipis = song.ipis?.toTypedArray()
             releaseDate = song.releaseDate
             lyricsUrl = song.lyricsUrl?.asValidUrl()
             arweaveClipUrl = song.arweaveClipUrl

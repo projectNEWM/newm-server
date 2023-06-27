@@ -80,7 +80,7 @@ class SongRoutesTests : BaseApplicationTests() {
         assertThat(song.barcodeType).isEqualTo(testSong1.barcodeType)
         assertThat(song.barcodeNumber).isEqualTo(testSong1.barcodeNumber)
         assertThat(song.isrc).isEqualTo(testSong1.isrc)
-        assertThat(song.ipi).isEqualTo(testSong1.ipi)
+        assertThat(song.ipis).isEqualTo(testSong1.ipis)
         assertThat(song.releaseDate).isEqualTo(testSong1.releaseDate)
         assertThat(song.lyricsUrl).isEqualTo(testSong1.lyricsUrl)
         assertThat(song.mintingStatus).isEqualTo(MintingStatus.Undistributed)
@@ -446,7 +446,7 @@ class SongRoutesTests : BaseApplicationTests() {
         assertThat(song2.barcodeType).isEqualTo(testSong2.barcodeType)
         assertThat(song2.barcodeNumber).isEqualTo(testSong2.barcodeNumber)
         assertThat(song2.isrc).isEqualTo(testSong2.isrc)
-        assertThat(song2.ipi).isEqualTo(testSong2.ipi)
+        assertThat(song2.ipis).isEqualTo(testSong2.ipis)
         assertThat(song2.releaseDate).isEqualTo(testSong2.releaseDate)
         assertThat(song2.lyricsUrl).isEqualTo(testSong2.lyricsUrl)
         assertThat(song2.mintingStatus).isEqualTo(MintingStatus.Undistributed)
@@ -878,7 +878,8 @@ fun addSongToDatabase(
             barcodeType = SongBarcodeType.values()[offset % SongBarcodeType.values().size]
             barcodeNumber = "barcodeNumber$offset"
             isrc = "isrc$offset"
-            ipi = arrayOf("ipi${offset}_0", "ipi${offset}_1")
+            iswc = "iswc$offset"
+            ipis = arrayOf("ipi${offset}_0", "ipi${offset}_1")
             releaseDate = LocalDate.of(2023, 1, offset % 31 + 1)
             publicationDate = LocalDate.of(2023, 1, offset % 31 + 1)
             lyricsUrl = "https://newm.io/lyrics$offset"

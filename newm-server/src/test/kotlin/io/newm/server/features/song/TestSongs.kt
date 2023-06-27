@@ -18,7 +18,8 @@ val testSong1 = Song(
     barcodeType = SongBarcodeType.Upc,
     barcodeNumber = "Barcode 1",
     isrc = "Song 1 isrc",
-    ipi = listOf("Song 1 ipi 0", "Song 1 ipi 1"),
+    iswc = "Song 1 iswc",
+    ipis = listOf("Song 1 ipi 0", "Song 1 ipi 1"),
     releaseDate = LocalDate.of(2023, 1, 1),
     lyricsUrl = "https://projectnewm.io/lirycs1.txt",
 )
@@ -37,7 +38,8 @@ val testSong2 = Song(
     barcodeType = SongBarcodeType.Ean,
     barcodeNumber = "Barcode 2",
     isrc = "Song 2 isrc",
-    ipi = listOf("Song 2 ipi 0", "Song 2 ipi 1"),
+    iswc = "Song 2 iswc",
+    ipis = listOf("Song 2 ipi 0", "Song 2 ipi 1"),
     releaseDate = LocalDate.of(2023, 2, 2),
     lyricsUrl = "https://projectnewm.io/lirycs2.txt",
 )
