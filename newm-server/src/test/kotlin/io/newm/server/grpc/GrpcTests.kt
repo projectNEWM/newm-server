@@ -5,21 +5,23 @@ import com.google.protobuf.ByteString
 import io.grpc.ManagedChannelBuilder
 import io.grpc.Metadata
 import io.grpc.stub.MetadataUtils
-import io.newm.chain.grpc.MonitorAddressRequest
 import io.newm.chain.grpc.NewmChainGrpcKt
+import io.newm.chain.grpc.OutputUtxo
 import io.newm.chain.grpc.QueryDatumByHashResponse
 import io.newm.chain.grpc.QueryTransactionConfirmationCountResponse
-import io.newm.chain.grpc.QueryUtxosRequest
 import io.newm.chain.grpc.QueryUtxosResponse
-import io.newm.chain.grpc.SubmitTransactionRequest
 import io.newm.chain.grpc.SubmitTransactionResponse
+import io.newm.chain.grpc.monitorAddressRequest
 import io.newm.chain.grpc.monitorNativeAssetsRequest
 import io.newm.chain.grpc.monitorPaymentAddressRequest
 import io.newm.chain.grpc.nativeAsset
+import io.newm.chain.grpc.outputUtxo
 import io.newm.chain.grpc.queryDatumByHashRequest
 import io.newm.chain.grpc.queryTransactionConfirmationCountRequest
 import io.newm.chain.grpc.queryUtxosOutputRefRequest
 import io.newm.chain.grpc.queryUtxosRequest
+import io.newm.chain.grpc.submitTransactionRequest
+import io.newm.chain.util.Constants
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
@@ -42,9 +44,10 @@ class GrpcTests {
                     }
                 )
             )
-        val request = QueryUtxosRequest.newBuilder()
-            .setAddress("addr_test1wzrkjfmne72vg4ppqk2xmt470tltjyqwldappq2c5tuhf8qflnumr")
-            .build()
+        val request = queryUtxosRequest {
+            address = "addr_test1wzrkjfmne72vg4ppqk2xmt470tltjyqwldappq2c5tuhf8qflnumr"
+        }
+
         val response = client.queryUtxos(request)
         assertThat(response).isInstanceOf(QueryUtxosResponse::class.java)
         assertThat(response.utxosList.size).isGreaterThan(4)
@@ -166,9 +169,10 @@ class GrpcTests {
                     }
                 )
             )
-        val request = SubmitTransactionRequest.newBuilder()
-            .setCbor(ByteString.fromHex("84a400858258205549f543da473f1053596d00091e6973ea949077ca639f155a143894bdd25a9a008258209927e5de056c92e771aeafbe50af39d9bd9e429e863662aa8a5f90be8520c19900825820c5b42d5f94b847d857626a5d8134607539b918f42d6b234b9e5a37f340fc14ce00825820cc53d6ed905708f5a6db78e20d37070b91ab558d77a4d91dc6d3865246a7bb2500825820d5c9ab6f807c69fc6713f19ef2c49cf7b1b7c80d028a7d56bb86a4f18b9d07e4010181a200581d60da0eb5ed7611482ec5089b69d870e0c56c1c45180256112398e0835b011b0000008c3a140b9c021a0002cd21031a013eecb7a100818258204499320a77997987955eadba91721d5be54ca36536c5448009e822ba3f882d69584031b7356b14c7d6510f07582bc17987cf09fbe47744f71a9ad8d3c04ce04956a315c45f162e5fb5824dac38f78093ac8993f92bce1e19abe77833a859a4b70104f5f6"))
-            .build()
+        val request = submitTransactionRequest {
+            cbor = ByteString.fromHex("84a400858258205549f543da473f1053596d00091e6973ea949077ca639f155a143894bdd25a9a008258209927e5de056c92e771aeafbe50af39d9bd9e429e863662aa8a5f90be8520c19900825820c5b42d5f94b847d857626a5d8134607539b918f42d6b234b9e5a37f340fc14ce00825820cc53d6ed905708f5a6db78e20d37070b91ab558d77a4d91dc6d3865246a7bb2500825820d5c9ab6f807c69fc6713f19ef2c49cf7b1b7c80d028a7d56bb86a4f18b9d07e4010181a200581d60da0eb5ed7611482ec5089b69d870e0c56c1c45180256112398e0835b011b0000008c3a140b9c021a0002cd21031a013eecb7a100818258204499320a77997987955eadba91721d5be54ca36536c5448009e822ba3f882d69584031b7356b14c7d6510f07582bc17987cf09fbe47744f71a9ad8d3c04ce04956a315c45f162e5fb5824dac38f78093ac8993f92bce1e19abe77833a859a4b70104f5f6")
+        }
+
         val response = client.submitTransaction(request)
         assertThat(response).isInstanceOf(SubmitTransactionResponse::class.java)
         assertThat(response.result).isEqualTo("MsgAcceptTx")
@@ -191,9 +195,10 @@ class GrpcTests {
                     }
                 )
             )
-        val queryUtxosRequest = QueryUtxosRequest.newBuilder()
-            .setAddress("addr_test1vrdqad0dwcg5stk9pzdknkrsurzkc8z9rqp9vyfrnrsgxkc4r8za2")
-            .build()
+        val queryUtxosRequest = queryUtxosRequest {
+            address = "addr_test1vrdqad0dwcg5stk9pzdknkrsurzkc8z9rqp9vyfrnrsgxkc4r8za2"
+        }
+
         var queryUtxosResponse = client.queryUtxos(queryUtxosRequest)
         assertThat(queryUtxosResponse).isInstanceOf(QueryUtxosResponse::class.java)
 
@@ -201,9 +206,10 @@ class GrpcTests {
         assertThat(queryLiveUtxosResponse).isEqualTo(queryUtxosResponse)
 
         // submit a tx to change the live utxos
-        val request = SubmitTransactionRequest.newBuilder()
-            .setCbor(ByteString.fromHex("84a400868258202a9ed5c889796567d9c0d6607634eb80fc5ba149ddc19481767d1820aa58665c008258207f8f8d0ccbe5abbeefb916561076608e8c3d50a3d41381792b0f005f9983eeff018258208c1169b97131b9fc5f9db8b6841a96bf6f116b3561900f2f306a053f3dd0011d008258208d4549456c34ead1d1c156bc2a5058d86470ae24d2c3868c99202fefc158b30800825820a2df6b85b0fa6b1cff992da297d6df58d4f0870630ee8ab7b014086e4ad5cc3600825820f9028bd3398e3f931790bca5c8a36237b00811c193ebe8a906fd9870d85a0c8f000182a200581d60da0eb5ed7611482ec5089b69d870e0c56c1c45180256112398e0835b011b0000009c4490304ca200581d60da0eb5ed7611482ec5089b69d870e0c56c1c45180256112398e0835b01821a00106026a1581c48664e8d76f2b15606677bd117a3eac9929c378ac547ed295518dfd5a14f74426967546f6b656e4e616d65303202021a0002f4a9031a014c1ce5a100818258204499320a77997987955eadba91721d5be54ca36536c5448009e822ba3f882d695840bb5489659b0e81ac1c9c13e0a4f7338dc86668b3a7962d5748faee6dbf32aee34e2dbc7ed830c2eb3ee6701130897cefe7578c8c2d891eb67f0b2473a547950df5f6"))
-            .build()
+        val request = submitTransactionRequest {
+            cbor = ByteString.fromHex("84a400868258202a9ed5c889796567d9c0d6607634eb80fc5ba149ddc19481767d1820aa58665c008258207f8f8d0ccbe5abbeefb916561076608e8c3d50a3d41381792b0f005f9983eeff018258208c1169b97131b9fc5f9db8b6841a96bf6f116b3561900f2f306a053f3dd0011d008258208d4549456c34ead1d1c156bc2a5058d86470ae24d2c3868c99202fefc158b30800825820a2df6b85b0fa6b1cff992da297d6df58d4f0870630ee8ab7b014086e4ad5cc3600825820f9028bd3398e3f931790bca5c8a36237b00811c193ebe8a906fd9870d85a0c8f000182a200581d60da0eb5ed7611482ec5089b69d870e0c56c1c45180256112398e0835b011b0000009c4490304ca200581d60da0eb5ed7611482ec5089b69d870e0c56c1c45180256112398e0835b01821a00106026a1581c48664e8d76f2b15606677bd117a3eac9929c378ac547ed295518dfd5a14f74426967546f6b656e4e616d65303202021a0002f4a9031a014c1ce5a100818258204499320a77997987955eadba91721d5be54ca36536c5448009e822ba3f882d695840bb5489659b0e81ac1c9c13e0a4f7338dc86668b3a7962d5748faee6dbf32aee34e2dbc7ed830c2eb3ee6701130897cefe7578c8c2d891eb67f0b2473a547950df5f6")
+        }
+
         val response = client.submitTransaction(request)
         assertThat(response).isInstanceOf(SubmitTransactionResponse::class.java)
         assertThat(response.result).isEqualTo("MsgAcceptTx")
@@ -274,9 +280,9 @@ class GrpcTests {
                     }
                 )
             )
-        val monitorAddressUtxosRequest = MonitorAddressRequest.newBuilder()
-            .setAddress(scriptAddress)
-            .build()
+        val monitorAddressUtxosRequest = monitorAddressRequest {
+            address = scriptAddress
+        }
 
         val flow = client.monitorAddress(monitorAddressUtxosRequest)
         flow.collect { monitorAddressUtxosResponse ->
@@ -348,5 +354,37 @@ class GrpcTests {
             println("monitorNativeAssetsResponse: $monitorNativeAssetsResponse")
             println()
         }
+    }
+
+    @Test
+    @Disabled
+    fun `test calculateMinUtxoForOutput`() = runBlocking {
+        // plainText for localhost testing only. use SSL later.
+        val channel = ManagedChannelBuilder.forAddress("localhost", 3737).usePlaintext().build()
+        val client =
+            NewmChainGrpcKt.NewmChainCoroutineStub(channel).withInterceptors(
+                MetadataUtils.newAttachHeadersInterceptor(
+                    Metadata().apply {
+                        put(
+                            Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER),
+                            "Bearer <JWT_TOKEN_HERE_DO_NOT_COMMIT>"
+                        )
+                    }
+                )
+            )
+        val request = outputUtxo {
+            address = Constants.DUMMY_STAKE_ADDRESS
+            // lovelace = "0" // auto-calculated
+            nativeAssets.add(
+                nativeAsset {
+                    policy = Constants.DUMMY_TOKEN_POLICY_ID
+                    name = Constants.DUMMY_MAX_TOKEN_NAME
+                    amount = "100000000"
+                }
+            )
+        }
+        val response = client.calculateMinUtxoForOutput(request)
+        assertThat(response).isInstanceOf(OutputUtxo::class.java)
+        assertThat(response.lovelace).isEqualTo("1288690")
     }
 }

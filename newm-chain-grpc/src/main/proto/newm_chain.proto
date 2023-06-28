@@ -19,6 +19,7 @@ service NewmChain {
   rpc MonitorPaymentAddress (MonitorPaymentAddressRequest) returns (MonitorPaymentAddressResponse) {}
   rpc TransactionBuilder (TransactionBuilderRequest) returns (TransactionBuilderResponse) {}
   rpc MonitorNativeAssets (MonitorNativeAssetsRequest) returns (stream MonitorNativeAssetsResponse) {}
+  rpc CalculateMinUtxoForOutput (OutputUtxo) returns (OutputUtxo) {}
 }
 
 message SubmitTransactionRequest {

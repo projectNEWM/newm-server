@@ -16,7 +16,7 @@ object Dependencies {
     }
 
     object KotlinPlugin {
-        const val VERSION = "1.8.21"
+        const val VERSION = "1.8.22"
         const val JVM_ID = "jvm"
         const val SERIALIZATION_ID = "plugin.serialization"
     }
@@ -42,7 +42,7 @@ object Dependencies {
     }
 
     object KotlinXSerialization {
-        private const val VERSION = "1.5.0"
+        private const val VERSION = "1.5.1"
 
         const val JSON = "org.jetbrains.kotlinx:kotlinx-serialization-json:$VERSION"
     }
@@ -54,7 +54,7 @@ object Dependencies {
     }
 
     object Coroutines {
-        private const val VERSION = "1.6.4"
+        private const val VERSION = "1.7.1"
 
         const val CORE = "org.jetbrains.kotlinx:kotlinx-coroutines-core:$VERSION"
         const val JDK8 = "org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:$VERSION"
@@ -66,7 +66,7 @@ object Dependencies {
     }
 
     object Ktor {
-        private const val VERSION = "2.3.0"
+        private const val VERSION = "2.3.1"
 
         const val SERVER_CORE = "io.ktor:ktor-server-core:$VERSION"
         const val SERVER_CIO = "io.ktor:ktor-server-cio:$VERSION"
@@ -90,15 +90,15 @@ object Dependencies {
     }
 
     object LogBack {
-        private const val VERSION = "1.4.7"
+        private const val VERSION = "1.4.8"
 
         const val CLASSIC = "ch.qos.logback:logback-classic:$VERSION"
     }
 
     object Koin {
-        private const val VERSION = "3.4.0"
-        private const val KTOR_VERSION = "3.4.0"
-        private const val TEST_JUNIT_VERSION = "3.4.0"
+        private const val VERSION = "3.4.1"
+        private const val KTOR_VERSION = "3.4.1"
+        private const val TEST_JUNIT_VERSION = "3.4.1"
 
         const val KTOR = "io.insert-koin:koin-ktor:$KTOR_VERSION"
         const val TEST = "io.insert-koin:koin-test:$VERSION"
@@ -133,7 +133,7 @@ object Dependencies {
     }
 
     object FlywayDB {
-        private const val VERSION = "9.17.0"
+        private const val VERSION = "9.20.0"
 
         const val ALL = "org.flywaydb:flyway-core:$VERSION"
     }
@@ -159,7 +159,7 @@ object Dependencies {
     }
 
     object ApacheCommonsCodec {
-        private const val VERSION = "1.15"
+        private const val VERSION = "1.16.0"
 
         const val ALL = "commons-codec:commons-codec:$VERSION"
     }
@@ -171,7 +171,7 @@ object Dependencies {
     }
 
     object SpringSecurity {
-        private const val VERSION = "6.0.3"
+        private const val VERSION = "6.1.1"
 
         const val CORE = "org.springframework.security:spring-security-core:$VERSION"
     }
@@ -184,8 +184,8 @@ object Dependencies {
     }
 
     object Aws {
-        private const val VERSION = "1.12.457"
-        private const val VERSION2 = "2.20.84"
+        private const val VERSION = "1.12.497"
+        private const val VERSION2 = "2.20.94"
         private const val JAXB_VERSION = "2.3.1"
 
         const val BOM = "com.amazonaws:aws-java-sdk-bom:$VERSION"
@@ -226,13 +226,13 @@ object Dependencies {
     }
 
     object GoogleTruth {
-        private const val VERSION = "1.1.3"
+        private const val VERSION = "1.1.5"
 
         const val TRUTH = "com.google.truth:truth:$VERSION"
     }
 
     object Sentry {
-        private const val VERSION = "6.18.0"
+        private const val VERSION = "6.24.0"
 
         const val CORE = "io.sentry:sentry:$VERSION"
         const val LOGBACK = "io.sentry:sentry-logback:$VERSION"
@@ -245,7 +245,7 @@ object Dependencies {
     }
 
     object Grpc {
-        private const val VERSION = "1.54.1"
+        private const val VERSION = "1.56.0"
 
         const val STUB = "io.grpc:grpc-stub:$VERSION"
         const val API = "io.grpc:grpc-api:$VERSION"
@@ -283,7 +283,7 @@ object Dependencies {
     }
 
     object TestContainers {
-        private const val VERSION = "1.18.0"
+        private const val VERSION = "1.18.3"
 
         const val CORE = "org.testcontainers:testcontainers:$VERSION"
         const val JUINT = "org.testcontainers:junit-jupiter:$VERSION"

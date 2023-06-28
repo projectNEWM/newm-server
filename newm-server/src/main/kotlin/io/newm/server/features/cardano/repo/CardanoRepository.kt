@@ -21,4 +21,5 @@ interface CardanoRepository {
     suspend fun awaitPayment(request: MonitorPaymentAddressRequest): MonitorPaymentAddressResponse
     suspend fun queryLiveUtxos(address: String): List<Utxo>
     suspend fun saveEncryptionParams(encryptionRequest: EncryptionRequest)
+    suspend fun queryStreamTokenMinUtxo(): Long
 }

@@ -21,6 +21,7 @@ import io.newm.shared.ktx.warn
 import io.newm.txbuilder.TransactionBuilder
 import io.newm.txbuilder.ktx.cborHexToPlutusData
 import io.newm.txbuilder.ktx.toNativeAssetMap
+import io.newm.txbuilder.ktx.withMinUtxo
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -310,5 +311,19 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
             log.warn("invokeOnCompletion: ${it?.message}")
         }
         return responseFlow
+    }
+
+    override suspend fun calculateMinUtxoForOutput(request: OutputUtxo): OutputUtxo {
+        try {
+            return txSubmitClientPool.useInstance { txSubmitClient ->
+                val stateQueryClient = txSubmitClient as StateQueryClient
+                val protocolParams =
+                    stateQueryClient.currentProtocolParameters().result as QueryCurrentProtocolBabbageParametersResult
+                request.withMinUtxo(protocolParams.coinsPerUtxoByte.toLong())
+            }
+        } catch (e: Throwable) {
+            log.error("calculateMinUtxoForOutput error!", e)
+            throw e
+        }
     }
 }
