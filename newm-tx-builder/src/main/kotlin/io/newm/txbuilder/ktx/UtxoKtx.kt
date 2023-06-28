@@ -32,7 +32,12 @@ fun List<Utxo>.toCborObject(): CborObject? {
     )
 }
 
-fun List<Utxo>.selectUtxos(requiredLovelace: BigInteger, requiredNativeAssets: List<NativeAsset> = emptyList()): List<Utxo> {
+fun List<Utxo>.selectUtxos(
+    @Suppress("UNUSED_PARAMETER")
+    requiredLovelace: BigInteger,
+    @Suppress("UNUSED_PARAMETER")
+    requiredNativeAssets: List<NativeAsset> = emptyList()
+): List<Utxo> {
     // FIXME: implement
     return emptyList()
 }

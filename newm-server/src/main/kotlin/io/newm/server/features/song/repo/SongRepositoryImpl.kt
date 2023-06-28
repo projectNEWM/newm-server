@@ -21,6 +21,7 @@ import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_PRI
 import io.newm.server.features.cardano.database.KeyTable
 import io.newm.server.features.cardano.model.Key
 import io.newm.server.features.cardano.repo.CardanoRepository
+import io.newm.server.features.collaboration.model.CollaboratorFilters
 import io.newm.server.features.collaboration.repo.CollaborationRepository
 import io.newm.server.features.distribution.DistributionRepository
 import io.newm.server.features.song.database.SongEntity
@@ -45,7 +46,7 @@ import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf
 import java.net.URL
-import java.util.*
+import java.util.UUID
 
 internal class SongRepositoryImpl(
     private val environment: ApplicationEnvironment,
@@ -272,8 +273,19 @@ internal class SongRepositoryImpl(
 
     override suspend fun getMintingPaymentAmount(songId: UUID, requesterId: UUID): String {
         logger.debug { "getMintingPaymentAmount: songId = $songId" }
-        // We might need to change this code in the future if we're charging NEWM tokens in addition to ada
-        return CborInteger.create(configRepository.getLong(CONFIG_KEY_MINT_PRICE)).toCborByteArray().toHexString()
+        // TODO: We might need to change this code in the future if we're charging NEWM tokens in addition to ada
+        val numberOfCollaborators = collaborationRepository.getCollaboratorCount(
+            userId = requesterId,
+            filters = CollaboratorFilters(
+                excludeMe = true,
+                songIds = listOf(songId),
+                phrase = null,
+            )
+        )
+        val mintPriceBase = configRepository.getLong(CONFIG_KEY_MINT_PRICE)
+        val minUtxo: Long = cardanoRepository.queryStreamTokenMinUtxo()
+        val mintPrice = mintPriceBase + (numberOfCollaborators * minUtxo)
+        return CborInteger.create(mintPrice).toCborByteArray().toHexString()
     }
 
     override suspend fun generateMintingPaymentTransaction(

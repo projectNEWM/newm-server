@@ -16,8 +16,11 @@ import io.newm.chain.grpc.SubmitTransactionResponse
 import io.newm.chain.grpc.TransactionBuilderRequestKt
 import io.newm.chain.grpc.TransactionBuilderResponse
 import io.newm.chain.grpc.Utxo
+import io.newm.chain.grpc.nativeAsset
+import io.newm.chain.grpc.outputUtxo
 import io.newm.chain.grpc.queryUtxosRequest
 import io.newm.chain.grpc.submitTransactionRequest
+import io.newm.chain.util.Constants
 import io.newm.chain.util.b64ToByteArray
 import io.newm.chain.util.toB64String
 import io.newm.chain.util.toHexString
@@ -145,6 +148,23 @@ internal class CardanoRepositoryImpl(
 
         configRepository.putString(CONFIG_KEY_ENCRYPTION_SALT, cipherSalt)
         configRepository.putString(CONFIG_KEY_ENCRYPTION_PASSWORD, cipherPassword)
+    }
+
+    override suspend fun queryStreamTokenMinUtxo(): Long {
+        val outputUtxo = client.calculateMinUtxoForOutput(
+            outputUtxo {
+                address = Constants.DUMMY_STAKE_ADDRESS
+                // lovelace = "0" // auto-calculated
+                nativeAssets.add(
+                    nativeAsset {
+                        policy = Constants.DUMMY_TOKEN_POLICY_ID
+                        name = Constants.DUMMY_MAX_TOKEN_NAME
+                        amount = "100000000"
+                    }
+                )
+            }
+        )
+        return outputUtxo.lovelace.toLong()
     }
 
     private suspend fun encryptKmsBytes(bytes: ByteArray): String {

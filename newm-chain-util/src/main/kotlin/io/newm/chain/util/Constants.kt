@@ -33,6 +33,8 @@ object Constants {
     const val DUMMY_SCRIPT_ENTERPRISE_ADDRESS = "addr1wyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqql9r5vw"
     const val DUMMY_STAKE_ADDRESS =
         "addr1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqv2t5am"
+    const val DUMMY_TOKEN_POLICY_ID = "00000000000000000000000000000000000000000000000000000000"
+    const val DUMMY_MAX_TOKEN_NAME = "0000000000000000000000000000000000000000000000000000000000000000"
 
     val receiveAddressRegex = Regex(RECEIVE_ADDRESS_PATTERN)
     val stakeAddressRegex = Regex(STAKE_ADDRESS_PATTERN)

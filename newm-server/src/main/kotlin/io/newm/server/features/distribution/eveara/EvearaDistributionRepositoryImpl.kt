@@ -1406,7 +1406,7 @@ class EvearaDistributionRepositoryImpl(
         log.info { "Validated distribution album ${songToRelease.title} with id ${songToRelease.distributionReleaseId}: ${validateReleaseResponse.message}" }
 
         // Simulate the release to outlets
-        val simulateReleaseResponse = simulateDistributeRelease(user, songToRelease.distributionReleaseId!!)
+        val simulateReleaseResponse = simulateDistributeRelease(user, songToRelease.distributionReleaseId)
         log.info { "Simulated release ${songToRelease.title} with id ${songToRelease.distributionReleaseId}: ${simulateReleaseResponse.message}" }
 
         // Distribute the release to outlets
