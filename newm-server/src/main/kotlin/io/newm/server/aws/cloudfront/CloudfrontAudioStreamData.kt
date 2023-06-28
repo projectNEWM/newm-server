@@ -28,7 +28,7 @@ class CloudfrontAudioStreamData(
 
         // resource is the "dirname" of the URL with the filename removed,
         // effectively granting access to the entire "directory"
-        val resourceUrl = streamUrl.removeRange(streamUrl.lastIndexOf("/"), streamUrl.length)
+        val resourceUrl = "${streamUrl.removeRange(streamUrl.lastIndexOf("/"), streamUrl.length)}/*"
 
         val customRequest = CustomSignerRequest.builder()
             .resourceUrl(resourceUrl)
