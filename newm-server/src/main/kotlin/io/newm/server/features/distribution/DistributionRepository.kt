@@ -10,6 +10,7 @@ import io.newm.server.features.distribution.model.AddUserResponse
 import io.newm.server.features.distribution.model.AddUserSubscriptionResponse
 import io.newm.server.features.distribution.model.DeleteUserLabelResponse
 import io.newm.server.features.distribution.model.DistributeReleaseResponse
+import io.newm.server.features.distribution.model.DistributionOutletReleaseStatusResponse
 import io.newm.server.features.distribution.model.EvearaSimpleResponse
 import io.newm.server.features.distribution.model.GetAlbumResponse
 import io.newm.server.features.distribution.model.GetArtistResponse
@@ -100,6 +101,8 @@ interface DistributionRepository {
     suspend fun distributeReleaseToOutlets(user: User, releaseId: Long): DistributeReleaseResponse
 
     suspend fun distributeReleaseToFutureOutlets(user: User, releaseId: Long): DistributeReleaseResponse
+
+    suspend fun distributionOutletReleaseStatus(user: User, releaseId: Long): DistributionOutletReleaseStatusResponse
 
     suspend fun distributeSong(song: Song)
 }

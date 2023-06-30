@@ -65,6 +65,7 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var arweaveClipUrl: String? by SongTable.arweaveClipUrl
     var distributionTrackId: Long? by SongTable.distributionTrackId
     var distributionReleaseId: Long? by SongTable.distributionReleaseId
+    var mintCostLovelace: Long? by SongTable.mintCostLovelace
 
     fun toModel(): Song = Song(
         id = id.value,
@@ -104,6 +105,7 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         arweaveClipUrl = arweaveClipUrl,
         distributionTrackId = distributionTrackId,
         distributionReleaseId = distributionReleaseId,
+        mintCostLovelace = mintCostLovelace
     )
 
     companion object : UUIDEntityClass<SongEntity>(SongTable) {

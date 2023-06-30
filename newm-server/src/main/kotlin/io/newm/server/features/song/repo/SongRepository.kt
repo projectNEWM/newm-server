@@ -3,6 +3,7 @@ package io.newm.server.features.song.repo
 import io.newm.chain.grpc.Utxo
 import io.newm.server.aws.s3.model.PresignedPost
 import io.newm.server.features.song.model.AudioStreamData
+import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongFilters
 import java.util.UUID
@@ -20,7 +21,7 @@ interface SongRepository {
     suspend fun generateAudioStreamData(songId: UUID): AudioStreamData
     suspend fun processStreamTokenAgreement(songId: UUID, requesterId: UUID, accepted: Boolean)
 
-    suspend fun getMintingPaymentAmount(songId: UUID, requesterId: UUID): String
+    suspend fun getMintingPaymentAmountCborHex(songId: UUID, requesterId: UUID): String
 
     suspend fun generateMintingPaymentTransaction(
         songId: UUID,
@@ -28,6 +29,10 @@ interface SongRepository {
         sourceUtxos: List<Utxo>,
         changeAddress: String
     ): String
+
+    suspend fun getUnapprovedCollaboratorCount(songId: UUID): Int
+
+    suspend fun updateSongMintingStatus(songId: UUID, mintingStatus: MintingStatus)
 
     suspend fun distribute(songId: UUID)
 }

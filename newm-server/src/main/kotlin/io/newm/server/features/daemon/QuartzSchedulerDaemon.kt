@@ -16,12 +16,15 @@ import kotlinx.coroutines.launch
 import org.koin.core.parameter.parametersOf
 import org.quartz.CronScheduleBuilder.cronSchedule
 import org.quartz.JobBuilder.newJob
+import org.quartz.JobDetail
 import org.quartz.JobKey
 import org.quartz.Scheduler
+import org.quartz.Trigger
 import org.quartz.TriggerBuilder.newTrigger
 import org.quartz.TriggerKey
 import org.quartz.impl.StdSchedulerFactory
 import org.slf4j.Logger
+import java.util.Date
 import java.util.concurrent.TimeUnit
 
 class QuartzSchedulerDaemon : Daemon {
@@ -111,6 +114,12 @@ class QuartzSchedulerDaemon : Daemon {
                 delay(TimeUnit.MINUTES.toMillis(1))
             }
         }
+    }
+
+    fun scheduleJob(jobDetail: JobDetail, trigger: Trigger): Date {
+        val date = scheduler.scheduleJob(jobDetail, trigger)
+        log.warn { "Scheduled job ${jobDetail.key} with trigger: $trigger" }
+        return date
     }
 
     companion object {

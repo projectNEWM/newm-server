@@ -6,5 +6,6 @@ import org.koin.dsl.module
 
 val daemonsKoinModule = module {
     single { AwsSqsDaemon() } bind Daemon::class
-    single { QuartzSchedulerDaemon() } bind Daemon::class
+    single<QuartzSchedulerDaemon> { QuartzSchedulerDaemon() }
+    single { get<QuartzSchedulerDaemon>() } bind Daemon::class
 }

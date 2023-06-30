@@ -58,6 +58,7 @@ import io.newm.server.features.distribution.model.DeleteUserLabelResponse
 import io.newm.server.features.distribution.model.DistributeFutureReleaseRequest
 import io.newm.server.features.distribution.model.DistributeReleaseRequest
 import io.newm.server.features.distribution.model.DistributeReleaseResponse
+import io.newm.server.features.distribution.model.DistributionOutletReleaseStatusResponse
 import io.newm.server.features.distribution.model.EvearaSimpleResponse
 import io.newm.server.features.distribution.model.GetAlbumResponse
 import io.newm.server.features.distribution.model.GetArtistResponse
@@ -727,7 +728,7 @@ class EvearaDistributionRepositoryImpl(
                 UpdateTrackRequest(
                     uuid = user.distributionUserId!!,
                     name = song.title!!,
-                    stereoIsrc = song.isrc,
+                    stereoIsrc = song.isrc?.replace("-", ""), // Eveara API expects ISRC without dashes
                     iswc = song.iswc,
                     genre = song.genres?.mapNotNull { songGenreName -> genres.firstOrNull { it.name == songGenreName }?.genreId },
                     language = languages.find { it.name == song.language }?.code,
@@ -1121,6 +1122,31 @@ class EvearaDistributionRepositoryImpl(
         return distributeReleaseResponse
     }
 
+    override suspend fun distributionOutletReleaseStatus(
+        user: User,
+        releaseId: Long
+    ): DistributionOutletReleaseStatusResponse {
+        requireNotNull(user.distributionUserId) { "User.distributionUserId must not be null!" }
+        val response = httpClient.get("$evearaApiBaseUrl/outlets/$releaseId") {
+            contentType(ContentType.Application.Json)
+            accept(ContentType.Application.Json)
+            bearerAuth(getEvearaApiToken())
+            parameter("uuid", user.distributionUserId!!)
+        }
+        if (!response.status.isSuccess()) {
+            throw ServerResponseException(
+                response,
+                "Error getting distribution outlet release status!: ${response.bodyAsText()}"
+            )
+        }
+        val distributionOutletReleaseStatusResponse: DistributionOutletReleaseStatusResponse = response.body()
+        if (!distributionOutletReleaseStatusResponse.success) {
+            throw ServerResponseException(response, "Error getting distribution outlet release status! success==false")
+        }
+
+        return distributionOutletReleaseStatusResponse
+    }
+
     override suspend fun distributeSong(song: Song) {
         requireNotNull(song.ownerId) { "Song.ownerId must not be null!" }
         val user = userRepository.get(song.ownerId)
@@ -1312,7 +1338,7 @@ class EvearaDistributionRepositoryImpl(
 
         // Delete any track that already has this song isrc and is associated with this user
         val getTracksResponse = getTracks(user)
-        val existingTrack = getTracksResponse.trackData?.firstOrNull { it.stereoIsrc == song.isrc }
+        val existingTrack = getTracksResponse.trackData?.firstOrNull { it.stereoIsrc == song.isrc?.replace("-", "") }
         if (existingTrack != null) {
             log.info { "Found existing distribution track ${song.isrc} with id ${existingTrack.trackId}" }
             val response = deleteTrack(user, existingTrack.trackId)
