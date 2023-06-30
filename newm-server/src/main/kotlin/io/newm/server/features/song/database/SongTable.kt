@@ -57,4 +57,5 @@ object SongTable : UUIDTable(name = "songs") {
     val arweaveClipUrl: Column<String?> = text("arweave_clip_url").nullable()
     val distributionTrackId: Column<Long?> = long("distribution_track_id").nullable()
     val distributionReleaseId: Column<Long?> = long("distribution_release_id").nullable()
+    val mintCostLovelace: Column<Long?> = long("mint_cost_lovelace").nullable()
 }

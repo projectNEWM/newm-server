@@ -8,7 +8,7 @@ data class SubscriptionX(
     @SerialName("expiration_date")
     val expirationDate: String,
     @SerialName("subscription_id")
-    val subscriptionId: Int,
+    val subscriptionId: Long,
     @SerialName("subscription_name")
     val subscriptionName: String
 )

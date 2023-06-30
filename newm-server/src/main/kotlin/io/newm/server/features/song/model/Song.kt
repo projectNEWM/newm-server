@@ -60,4 +60,6 @@ data class Song(
     val distributionTrackId: Long? = null,
     @Transient
     val distributionReleaseId: Long? = null,
+    @Transient
+    val mintCostLovelace: Long? = null,
 )

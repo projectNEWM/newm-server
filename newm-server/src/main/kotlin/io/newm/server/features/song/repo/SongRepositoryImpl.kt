@@ -2,6 +2,7 @@ package io.newm.server.features.song.repo
 
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain
 import com.amazonaws.services.s3.AmazonS3
+import com.amazonaws.services.sqs.model.SendMessageRequest
 import com.google.iot.cbor.CborInteger
 import io.ktor.http.URLBuilder
 import io.ktor.http.URLProtocol
@@ -21,9 +22,11 @@ import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_PRI
 import io.newm.server.features.cardano.database.KeyTable
 import io.newm.server.features.cardano.model.Key
 import io.newm.server.features.cardano.repo.CardanoRepository
-import io.newm.server.features.collaboration.model.CollaboratorFilters
+import io.newm.server.features.collaboration.model.CollaborationFilters
+import io.newm.server.features.collaboration.model.CollaborationStatus
 import io.newm.server.features.collaboration.repo.CollaborationRepository
 import io.newm.server.features.distribution.DistributionRepository
+import io.newm.server.features.minting.MintingStatusSqsMessage
 import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.model.AudioStreamData
 import io.newm.server.features.song.model.MintingStatus
@@ -31,6 +34,7 @@ import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongFilters
 import io.newm.server.features.user.database.UserTable
 import io.newm.server.ktx.asValidUrl
+import io.newm.server.ktx.await
 import io.newm.server.ktx.checkLength
 import io.newm.server.ktx.getSecureConfigString
 import io.newm.shared.exception.HttpForbiddenException
@@ -41,7 +45,10 @@ import io.newm.shared.ktx.getConfigChild
 import io.newm.shared.ktx.getConfigString
 import io.newm.shared.ktx.getLong
 import io.newm.shared.ktx.getString
+import io.newm.shared.ktx.info
 import io.newm.shared.ktx.megabytesToBytes
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf
@@ -58,6 +65,8 @@ internal class SongRepositoryImpl(
 ) : SongRepository {
 
     private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
+    private val json: Json by inject()
+    private val queueUrl by lazy { environment.getConfigString("aws.sqs.minting.queueUrl") }
 
     override suspend fun add(song: Song, ownerId: UUID): UUID {
         logger.debug { "add: song = $song" }
@@ -131,6 +140,7 @@ internal class SongRepositoryImpl(
                     arweaveTokenAgreementUrl?.let { entity.arweaveTokenAgreementUrl = it.asValidUrl() }
                     distributionTrackId?.let { entity.distributionTrackId = it }
                     distributionReleaseId?.let { entity.distributionReleaseId = it }
+                    mintCostLovelace?.let { entity.mintCostLovelace = it }
                 }
             }
         }
@@ -271,21 +281,47 @@ internal class SongRepositoryImpl(
         }
     }
 
-    override suspend fun getMintingPaymentAmount(songId: UUID, requesterId: UUID): String {
+    override suspend fun getUnapprovedCollaboratorCount(songId: UUID): Int {
+        val song = get(songId)
+        return collaborationRepository.getAll(
+            userId = song.ownerId!!,
+            filters = CollaborationFilters(
+                inbound = null,
+                songIds = listOf(songId),
+                olderThan = null,
+                newerThan = null,
+                ids = null,
+                statuses = null,
+            ),
+            offset = 0,
+            limit = Int.MAX_VALUE,
+        ).count { (it.royaltyRate ?: -1.0f) > 0.0f && it.status != CollaborationStatus.Accepted }
+    }
+
+    override suspend fun getMintingPaymentAmountCborHex(songId: UUID, requesterId: UUID): String {
         logger.debug { "getMintingPaymentAmount: songId = $songId" }
         // TODO: We might need to change this code in the future if we're charging NEWM tokens in addition to ada
-        val numberOfCollaborators = collaborationRepository.getCollaboratorCount(
+        val numberOfCollaborators = collaborationRepository.getAll(
             userId = requesterId,
-            filters = CollaboratorFilters(
-                excludeMe = true,
+            filters = CollaborationFilters(
+                inbound = null,
                 songIds = listOf(songId),
-                phrase = null,
-            )
-        )
-        val mintPriceBase = configRepository.getLong(CONFIG_KEY_MINT_PRICE)
+                olderThan = null,
+                newerThan = null,
+                ids = null,
+                statuses = null,
+            ),
+            offset = 0,
+            limit = Int.MAX_VALUE,
+        ).count { (it.royaltyRate ?: -1.0f) > 0.0f }
+        val mintCostBase = configRepository.getLong(CONFIG_KEY_MINT_PRICE)
         val minUtxo: Long = cardanoRepository.queryStreamTokenMinUtxo()
-        val mintPrice = mintPriceBase + (numberOfCollaborators * minUtxo)
-        return CborInteger.create(mintPrice).toCborByteArray().toHexString()
+        val mintCostTotal = mintCostBase + (numberOfCollaborators * minUtxo)
+
+        // Save the mint cost to the database
+        update(songId, Song(mintCostLovelace = mintCostTotal))
+
+        return CborInteger.create(mintCostTotal).toCborByteArray().toHexString()
     }
 
     override suspend fun generateMintingPaymentTransaction(
@@ -298,15 +334,15 @@ internal class SongRepositoryImpl(
 
         checkRequester(songId, requesterId)
 
+        val song = get(songId)
         val key = Key.generateNew()
         val keyId = cardanoRepository.saveKey(key)
-        val amount = configRepository.getLong(CONFIG_KEY_MINT_PRICE)
         val transaction = cardanoRepository.buildTransaction {
             this.sourceUtxos.addAll(sourceUtxos)
             this.outputUtxos.add(
                 outputUtxo {
                     address = key.address
-                    lovelace = amount.toString()
+                    lovelace = song.mintCostLovelace.toString()
                 }
             )
             this.changeAddress = changeAddress
@@ -314,6 +350,25 @@ internal class SongRepositoryImpl(
 
         update(songId, Song(mintingStatus = MintingStatus.MintingPaymentRequested, paymentKeyId = keyId))
         return transaction.transactionCbor.toByteArray().toHexString()
+    }
+
+    override suspend fun updateSongMintingStatus(songId: UUID, mintingStatus: MintingStatus) {
+        // Update DB
+        update(
+            songId,
+            Song(mintingStatus = mintingStatus)
+        )
+
+        // Update SQS
+        val messageToSend = MintingStatusSqsMessage(
+            songId = songId,
+            mintingStatus = mintingStatus
+        )
+        SendMessageRequest()
+            .withQueueUrl(queueUrl)
+            .withMessageBody(json.encodeToString(messageToSend))
+            .await()
+        logger.info { "sent: $messageToSend" }
     }
 
     override suspend fun distribute(songId: UUID) {

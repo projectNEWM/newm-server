@@ -19,7 +19,6 @@ import io.newm.chain.util.hexToByteArray
 import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_CIP68_POLICY
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_CIP68_SCRIPT_ADDRESS
-import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_PRICE
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_SCRIPT_UTXO_REFERENCE
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_STARTER_TOKEN_UTXO_REFERENCE
 import io.newm.server.features.cardano.model.Key
@@ -69,7 +68,7 @@ class MintingRepositoryImpl(
         )
         val cip68Metadata = buildStreamTokenMetadata(song, user, collabs)
         val paymentKey = cardanoRepository.getKey(song.paymentKeyId!!)
-        val mintPriceLovelace = configRepository.getString(CONFIG_KEY_MINT_PRICE)
+        val mintPriceLovelace = song.mintCostLovelace.toString()
         val cip68ScriptAddress = configRepository.getString(CONFIG_KEY_MINT_CIP68_SCRIPT_ADDRESS)
         val cip68Policy = configRepository.getString(CONFIG_KEY_MINT_CIP68_POLICY)
         val paymentUtxo = cardanoRepository.queryLiveUtxos(paymentKey.address)
@@ -355,12 +354,14 @@ class MintingRepositoryImpl(
                             mapItemValue = song.releaseDate!!.toString().toPlutusData()
                         }
                     )
-                    add(
-                        plutusDataMapItem {
-                            mapItemKey = "publication_date".toPlutusData()
-                            mapItemValue = song.publicationDate!!.toString().toPlutusData()
-                        }
-                    )
+                    song.publicationDate?.let {
+                        add(
+                            plutusDataMapItem {
+                                mapItemKey = "publication_date".toPlutusData()
+                                mapItemValue = it.toString().toPlutusData()
+                            }
+                        )
+                    }
                     add(
                         plutusDataMapItem {
                             mapItemKey = "distributor".toPlutusData()

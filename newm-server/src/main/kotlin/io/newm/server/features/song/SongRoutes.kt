@@ -89,7 +89,7 @@ fun Routing.createSongRoutes() {
                     get {
                         respond(
                             MintPaymentResponse(
-                                cborHex = songRepository.getMintingPaymentAmount(
+                                cborHex = songRepository.getMintingPaymentAmountCborHex(
                                     songId = songId,
                                     requesterId = myUserId
                                 )
