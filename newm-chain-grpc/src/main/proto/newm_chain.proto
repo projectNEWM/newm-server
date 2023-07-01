@@ -20,6 +20,7 @@ service NewmChain {
   rpc TransactionBuilder (TransactionBuilderRequest) returns (TransactionBuilderResponse) {}
   rpc MonitorNativeAssets (MonitorNativeAssetsRequest) returns (stream MonitorNativeAssetsResponse) {}
   rpc CalculateMinUtxoForOutput (OutputUtxo) returns (OutputUtxo) {}
+  rpc SnapshotNativeAssets (SnapshotNativeAssetsRequest) returns (SnapshotNativeAssetsResponse) {}
 }
 
 message SubmitTransactionRequest {
@@ -274,4 +275,21 @@ message MonitorNativeAssetsResponse {
     NativeAsset native_asset_supply_change = 2;
     string native_asset_metadata_json = 3;
   }
+}
+
+message SnapshotNativeAssetsRequest {
+  // hex name of the native asset. if %, all native assets under this policy are returned
+  // if it starts with ~, performs a regex match on the hex name
+  string name = 1;
+  // hex policy of the native asset.
+  string policy = 2;
+}
+
+message SnapshotNativeAssetsResponse {
+  repeated SnapshotEntry snapshot_entries = 1;
+}
+
+message SnapshotEntry {
+  string stake_address = 1;
+  uint64 amount = 2;
 }

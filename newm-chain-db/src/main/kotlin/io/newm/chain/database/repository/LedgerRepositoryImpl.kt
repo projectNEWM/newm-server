@@ -41,6 +41,7 @@ import io.newm.chain.util.toHexString
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import org.jetbrains.exposed.sql.LongColumnType
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.greaterEq
@@ -49,6 +50,7 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.isNull
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.batchInsert
+import org.jetbrains.exposed.sql.castTo
 import org.jetbrains.exposed.sql.count
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.innerJoin
@@ -57,6 +59,7 @@ import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.max
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.sum
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 import org.slf4j.LoggerFactory
@@ -861,6 +864,104 @@ class LedgerRepositoryImpl : LedgerRepository {
             LedgerUtxosTable.select { LedgerUtxosTable.datumHash eq datumHashHex }.firstOrNull()?.let { row ->
                 row[LedgerUtxosTable.datum]
             }
+        }
+    }
+
+    override fun snapshotNativeAssets(policy: String, name: String): Map<String, Long> {
+        return transaction {
+            var totalSupply = 0L
+            val stakeAddressToAssetCountMap = mutableMapOf<String, Long>()
+            val countExpression = LedgerTable.stakeAddress.count()
+            val sumExpression = LedgerUtxoAssetsTable.amount.castTo<Long>(LongColumnType()).sum()
+            val isEmpty = name.isBlank()
+            val isRegex = name.startsWith('~')
+            val isLike = name.contains('%')
+            val isNFT = isEmpty || isRegex || isLike
+            if (isNFT) {
+                // Snapshot NFTs
+                LedgerTable
+                    .innerJoin(
+                        otherTable = LedgerUtxosTable,
+                        onColumn = { LedgerTable.id },
+                        otherColumn = { ledgerId }
+                    )
+                    .innerJoin(
+                        otherTable = LedgerUtxoAssetsTable,
+                        onColumn = { LedgerUtxosTable.id },
+                        otherColumn = { ledgerUtxoId }
+                    )
+                    .innerJoin(
+                        otherTable = LedgerAssetsTable,
+                        onColumn = { LedgerUtxoAssetsTable.ledgerAssetId },
+                        otherColumn = { LedgerAssetsTable.id }
+                    )
+                    .slice(LedgerTable.stakeAddress, countExpression)
+                    .select {
+                        if (isEmpty) {
+                            (LedgerAssetsTable.policy eq policy) and
+                                (LedgerAssetsTable.name eq "") and
+                                LedgerTable.stakeAddress.isNotNull() and
+                                LedgerUtxosTable.blockSpent.isNull()
+                        } else if (isRegex) {
+                            (LedgerAssetsTable.policy eq policy) and
+                                LedgerAssetsTable.name.regexp(name.substring(1)) and
+                                LedgerTable.stakeAddress.isNotNull() and
+                                LedgerUtxosTable.blockSpent.isNull()
+                        } else {
+                            (LedgerAssetsTable.policy eq policy) and
+                                (LedgerAssetsTable.name like name) and
+                                LedgerTable.stakeAddress.isNotNull() and
+                                LedgerUtxosTable.blockSpent.isNull()
+                        }
+                    }
+                    .groupBy(LedgerTable.stakeAddress)
+                    .forEach { row ->
+                        row[LedgerTable.stakeAddress]?.let { stakeAddress ->
+                            val currentCount = stakeAddressToAssetCountMap[stakeAddress] ?: 0L
+                            stakeAddressToAssetCountMap[stakeAddress] = currentCount + row[countExpression]
+                        }
+                        totalSupply += row[countExpression]
+                    }
+            } else {
+                // Snapshot FTs
+                LedgerTable
+                    .innerJoin(
+                        otherTable = LedgerUtxosTable,
+                        onColumn = { LedgerTable.id },
+                        otherColumn = { ledgerId }
+                    )
+                    .innerJoin(
+                        otherTable = LedgerUtxoAssetsTable,
+                        onColumn = { LedgerUtxosTable.id },
+                        otherColumn = { ledgerUtxoId }
+                    )
+                    .innerJoin(
+                        otherTable = LedgerAssetsTable,
+                        onColumn = { LedgerUtxoAssetsTable.ledgerAssetId },
+                        otherColumn = { LedgerAssetsTable.id }
+                    )
+                    .slice(LedgerTable.stakeAddress, sumExpression)
+                    .select {
+                        (LedgerAssetsTable.policy eq policy) and
+                            (LedgerAssetsTable.name eq name) and
+                            LedgerTable.stakeAddress.isNotNull() and
+                            LedgerUtxosTable.blockSpent.isNull()
+                    }
+                    .groupBy(LedgerTable.stakeAddress)
+                    .forEach { row ->
+                        row[LedgerTable.stakeAddress]?.let { stakeAddress ->
+                            val currentCount = stakeAddressToAssetCountMap[stakeAddress] ?: 0L
+                            stakeAddressToAssetCountMap[stakeAddress] = currentCount + row[sumExpression]!!
+                        }
+                        totalSupply += row[sumExpression]!!
+                    }
+            }
+            if (totalSupply > 0L) {
+                // insert total_supply record for this asset_tracking record
+                stakeAddressToAssetCountMap["total_supply"] = totalSupply
+            }
+
+            stakeAddressToAssetCountMap
         }
     }
 

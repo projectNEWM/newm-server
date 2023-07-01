@@ -66,4 +66,6 @@ interface LedgerRepository {
     fun queryUtxosByOutputRef(hash: String, ix: Int): Set<Utxo>
 
     fun queryUtxosByStakeAddress(address: String): Set<Utxo>
+
+    fun snapshotNativeAssets(policy: String, name: String): Map<String, Long>
 }

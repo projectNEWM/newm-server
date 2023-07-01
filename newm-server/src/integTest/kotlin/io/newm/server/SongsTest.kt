@@ -86,7 +86,7 @@ class SongsTest {
         }
         assertThat(getSongResponse.status).isEqualTo(HttpStatusCode.OK)
         val resp = getSongResponse.body<CountResponse>()
-        assertThat(resp.count).isAtLeast(0)
+        assertThat(resp.count).isAtLeast(0L)
     }
 
     @Test
