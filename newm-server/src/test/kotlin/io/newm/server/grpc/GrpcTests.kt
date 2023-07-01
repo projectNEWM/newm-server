@@ -10,6 +10,7 @@ import io.newm.chain.grpc.OutputUtxo
 import io.newm.chain.grpc.QueryDatumByHashResponse
 import io.newm.chain.grpc.QueryTransactionConfirmationCountResponse
 import io.newm.chain.grpc.QueryUtxosResponse
+import io.newm.chain.grpc.SnapshotNativeAssetsResponse
 import io.newm.chain.grpc.SubmitTransactionResponse
 import io.newm.chain.grpc.monitorAddressRequest
 import io.newm.chain.grpc.monitorNativeAssetsRequest
@@ -20,6 +21,7 @@ import io.newm.chain.grpc.queryDatumByHashRequest
 import io.newm.chain.grpc.queryTransactionConfirmationCountRequest
 import io.newm.chain.grpc.queryUtxosOutputRefRequest
 import io.newm.chain.grpc.queryUtxosRequest
+import io.newm.chain.grpc.snapshotNativeAssetsRequest
 import io.newm.chain.grpc.submitTransactionRequest
 import io.newm.chain.util.Constants
 import kotlinx.coroutines.runBlocking
@@ -386,5 +388,33 @@ class GrpcTests {
         val response = client.calculateMinUtxoForOutput(request)
         assertThat(response).isInstanceOf(OutputUtxo::class.java)
         assertThat(response.lovelace).isEqualTo("1288690")
+    }
+
+    @Test
+    @Disabled
+    fun `test snapshot`() = runBlocking {
+        // plainText for localhost testing only. use SSL later.
+        val channel = ManagedChannelBuilder.forAddress("localhost", 3737).usePlaintext().build()
+        val client =
+            NewmChainGrpcKt.NewmChainCoroutineStub(channel).withInterceptors(
+                MetadataUtils.newAttachHeadersInterceptor(
+                    Metadata().apply {
+                        put(
+                            Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER),
+                            "Bearer <JWT_TOKEN_HERE_DO_NOT_COMMIT>"
+                        )
+                    }
+                )
+            )
+        val request = snapshotNativeAssetsRequest {
+            policy = "769c4c6e9bc3ba5406b9b89fb7beb6819e638ff2e2de63f008d5bcff"
+            name = "744e45574d" // tNEWM
+        }
+        val response = client.snapshotNativeAssets(request)
+        assertThat(response).isInstanceOf(SnapshotNativeAssetsResponse::class.java)
+        val stakeAddressToAmountMap = response.snapshotEntriesList.associate { it.stakeAddress to it.amount }
+        println("stakeAddressToAmountMap: $stakeAddressToAmountMap")
+        assertThat(stakeAddressToAmountMap.size).isEqualTo(4)
+        assertThat(stakeAddressToAmountMap["total_supply"]).isEqualTo(69L)
     }
 }

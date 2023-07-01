@@ -326,4 +326,22 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
             throw e
         }
     }
+
+    override suspend fun snapshotNativeAssets(request: SnapshotNativeAssetsRequest): SnapshotNativeAssetsResponse {
+        try {
+            val snapshotEntries: List<SnapshotEntry> =
+                ledgerRepository.snapshotNativeAssets(request.policy, request.name).map { (stakeAddress, amount) ->
+                    snapshotEntry {
+                        this.stakeAddress = stakeAddress
+                        this.amount = amount
+                    }
+                }
+            return snapshotNativeAssetsResponse {
+                this.snapshotEntries.addAll(snapshotEntries)
+            }
+        } catch (e: Throwable) {
+            log.error("snapshotNativeAssets error!", e)
+            throw e
+        }
+    }
 }
