@@ -303,7 +303,8 @@ class EvearaDistributionRepositoryTest : BaseApplicationTests() {
         setupDatabase()
 
         val configRepository: ConfigRepository = ConfigRepositoryImpl()
-        val songRepository: SongRepository = SongRepositoryImpl(mockk(), mockk(), mockk(), mockk(), mockk(), mockk())
+        val songRepository: SongRepository =
+            SongRepositoryImpl(mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk())
         val applicationEnvironment: ApplicationEnvironment by inject()
         val collabRepository: CollaborationRepository =
             CollaborationRepositoryImpl(applicationEnvironment, mockk())

@@ -5,5 +5,5 @@ import io.newm.server.features.song.repo.SongRepositoryImpl
 import org.koin.dsl.module
 
 val songKoinModule = module {
-    single<SongRepository> { SongRepositoryImpl(get(), get(), get(), get(), get(), get()) }
+    single<SongRepository> { SongRepositoryImpl(get(), get(), get(), get(), get(), get(), get()) }
 }
