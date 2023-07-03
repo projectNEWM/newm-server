@@ -756,9 +756,9 @@ class EvearaDistributionRepositoryImpl(
         return updateTrackResponse
     }
 
-    override suspend fun getTracks(user: User): GetTracksResponse {
+    override suspend fun getTracks(user: User, trackId: Long?): GetTracksResponse {
         requireNotNull(user.distributionUserId) { "User.distributionUserId must not be null!" }
-        val response = httpClient.get("$evearaApiBaseUrl/tracks") {
+        val response = httpClient.get("$evearaApiBaseUrl/tracks${trackId?.let { "/$trackId" } ?: ""}") {
             accept(ContentType.Application.Json)
             bearerAuth(getEvearaApiToken())
             parameter("uuid", user.distributionUserId)
@@ -1346,7 +1346,7 @@ class EvearaDistributionRepositoryImpl(
         }
 
         // Upload and add metadata to the distribution track
-        val updatedSong = if (song.distributionTrackId == null) {
+        var updatedSong = if (song.distributionTrackId == null) {
             val s3Url = song.originalAudioUrl.asValidUrl()
             val (bucket, key) = s3Url.toBucketAndKey()
             val url = amazonS3.generatePresignedUrl(
@@ -1355,7 +1355,7 @@ class EvearaDistributionRepositoryImpl(
                 Date.from(Instant.now().plus(30, ChronoUnit.MINUTES)),
                 HttpMethod.GET
             ).toExternalForm()
-            log.info { "Generated presigned url for $s3Url: $url" }
+            log.info { "Generated pre-signed url for $s3Url: $url" }
 
             val audioFileResponse = httpClient.get(url) {
                 accept(ContentType.Application.OctetStream)
@@ -1387,6 +1387,24 @@ class EvearaDistributionRepositoryImpl(
             updatedSng
         } else {
             song
+        }
+
+        val getTrackResponse = getTracks(user, updatedSong.distributionTrackId!!)
+        val stereoIsrc = getTrackResponse.trackData!!.first().stereoIsrc
+        require(stereoIsrc.length == 12) { "Invalid stereo isrc: $stereoIsrc" }
+        updatedSong = if (updatedSong.isrc != stereoIsrc) {
+            // Save the isrc to the song
+            val isrcCountry = stereoIsrc.substring(0, 2)
+            val isrcRegistrant = stereoIsrc.substring(2, 5)
+            val isrcYear = stereoIsrc.substring(5, 7)
+            val isrcDesignation = stereoIsrc.substring(7, 12)
+            val isrc = "$isrcCountry-$isrcRegistrant-$isrcYear-$isrcDesignation"
+            log.info { "Updating song isrc from ${updatedSong.isrc} to $isrc" }
+            val updatedSng = updatedSong.copy(isrc = isrc)
+            songRepository.update(song.id, updatedSng)
+            updatedSng
+        } else {
+            updatedSong
         }
 
         // Wait for track to be processed

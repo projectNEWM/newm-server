@@ -82,7 +82,7 @@ interface DistributionRepository {
 
     suspend fun updateTrack(user: User, trackId: Long, song: Song): EvearaSimpleResponse
 
-    suspend fun getTracks(user: User): GetTracksResponse
+    suspend fun getTracks(user: User, trackId: Long? = null): GetTracksResponse
 
     suspend fun deleteTrack(user: User, trackId: Long): EvearaSimpleResponse
 
