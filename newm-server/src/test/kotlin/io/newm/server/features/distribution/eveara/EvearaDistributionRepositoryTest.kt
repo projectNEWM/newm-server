@@ -143,7 +143,7 @@ class EvearaDistributionRepositoryTest : BaseApplicationTests() {
                 genres = listOf("Pop", "House", "Tribal"),
                 releaseDate = LocalDate.parse("2023-02-03"),
                 publicationDate = LocalDate.parse("2023-02-03"),
-                isrc = "QZ-NW7-23-57511",
+                // isrc = "QZ-NW7-23-57511",
                 moods = listOf("spiritual"),
                 coverArtUrl = "https://res.cloudinary.com/newm/image/upload/c_fit,w_4000,h_4000/v1683539164/ufshvmlfxbis0ba4bshw.jpg",
                 arweaveCoverArtUrl = "ar://GlMlqHIPjwUtlPUfQxDdX1jWSjlKK1BCTBIekXgA66A",
