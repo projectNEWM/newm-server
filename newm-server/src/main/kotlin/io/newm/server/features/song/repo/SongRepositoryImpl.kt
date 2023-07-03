@@ -26,12 +26,14 @@ import io.newm.server.features.collaboration.model.CollaborationFilters
 import io.newm.server.features.collaboration.model.CollaborationStatus
 import io.newm.server.features.collaboration.repo.CollaborationRepository
 import io.newm.server.features.distribution.DistributionRepository
+import io.newm.server.features.email.repo.EmailRepository
 import io.newm.server.features.minting.MintingStatusSqsMessage
 import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.model.AudioStreamData
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongFilters
+import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
 import io.newm.server.ktx.asValidUrl
 import io.newm.server.ktx.await
@@ -62,6 +64,7 @@ internal class SongRepositoryImpl(
     private val cardanoRepository: CardanoRepository,
     private val distributionRepository: DistributionRepository,
     private val collaborationRepository: CollaborationRepository,
+    private val emailRepository: EmailRepository,
 ) : SongRepository {
 
     private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
@@ -274,7 +277,6 @@ internal class SongRepositoryImpl(
                     tokenAgreementUrl = s3UrlStringOf(bucketName, key)
                 )
             )
-            collaborationRepository.invite(songId)
         } else {
             update(songId, Song(mintingStatus = MintingStatus.Undistributed))
             s3.deleteObject(bucketName, key)
@@ -369,6 +371,35 @@ internal class SongRepositoryImpl(
             .withMessageBody(json.encodeToString(messageToSend))
             .await()
         logger.info { "sent: $messageToSend" }
+
+        when (mintingStatus) {
+            MintingStatus.MintingPaymentReceived -> {
+                collaborationRepository.invite(songId)
+                sendMintingNotification("started", songId)
+            }
+
+            MintingStatus.Minted -> sendMintingNotification("succeeded", songId)
+
+            MintingStatus.Declined -> sendMintingNotification("failed", songId)
+
+            else -> Unit
+        }
+    }
+
+    private suspend fun sendMintingNotification(path: String, songId: UUID) {
+        val (song, owner) = transaction {
+            val song = SongEntity[songId]
+            song to UserEntity[song.ownerId]
+        }
+        emailRepository.send(
+            to = owner.email,
+            subject = environment.getConfigString("mintingNotifications.$path.subject"),
+            messageUrl = environment.getConfigString("mintingNotifications.$path.messageUrl"),
+            messageArgs = mapOf(
+                "song" to song.title,
+                "owner" to owner.stageOrFullName
+            )
+        )
     }
 
     override suspend fun distribute(songId: UUID) {
