@@ -127,6 +127,8 @@ tasks {
 
         // ensure gRPC stuff gets merged in
         mergeServiceFiles()
+        dependsOn("distZip")
+        dependsOn("distTar")
     }
 }
 
