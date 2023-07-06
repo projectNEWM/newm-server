@@ -49,6 +49,7 @@ fun String.toAudioContentType(): String {
 }
 
 fun String.toReferenceUtxo(): Utxo {
+    require(this.contains('#')) { "Invalid utxo reference: $this" }
     val parts = this.split('#')
     return utxo {
         hash = parts[0]
