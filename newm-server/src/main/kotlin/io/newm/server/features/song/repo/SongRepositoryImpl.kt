@@ -350,7 +350,8 @@ internal class SongRepositoryImpl(
             this.changeAddress = changeAddress
         }
 
-        update(songId, Song(mintingStatus = MintingStatus.MintingPaymentRequested, paymentKeyId = keyId))
+        update(songId, Song(paymentKeyId = keyId))
+        updateSongMintingStatus(songId, MintingStatus.MintingPaymentRequested)
         return transaction.transactionCbor.toByteArray().toHexString()
     }
 
