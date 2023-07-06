@@ -64,9 +64,11 @@ internal class CollaborationRepositoryImpl(
 
         val entity = transaction {
             CollaborationEntity[collaborationId].apply {
-                checkSongState(requesterId)
-                if (!skipStatusCheck && !userMatches(requesterId, email)) {
-                    checkStatus(CollaborationStatus.Editing, CollaborationStatus.Rejected)
+                if (!skipStatusCheck) {
+                    checkSongState(requesterId)
+                    if (!userMatches(requesterId, email)) {
+                        checkStatus(CollaborationStatus.Editing, CollaborationStatus.Rejected)
+                    }
                 }
                 collaboration.email?.let { email = it.asValidUniqueEmail(this) }
                 collaboration.role?.let { role = it }
