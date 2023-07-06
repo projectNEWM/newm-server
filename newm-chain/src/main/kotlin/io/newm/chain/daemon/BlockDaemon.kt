@@ -23,7 +23,6 @@ import io.newm.chain.grpc.RedeemerTag
 import io.newm.chain.grpc.SubmitTransactionRequest
 import io.newm.chain.grpc.Utxo
 import io.newm.chain.grpc.monitorNativeAssetsResponse
-import io.newm.chain.grpc.nativeAsset
 import io.newm.chain.ledger.SubmittedTransactionCache
 import io.newm.chain.logging.captureToSentry
 import io.newm.chain.model.CreatedUtxo
@@ -687,11 +686,9 @@ class BlockDaemon(
                                 ledgerAssets.mapNotNull { ledgerAsset ->
                                     val bos = ByteArrayOutputStream()
                                     monitorNativeAssetsResponse {
-                                        nativeAssetSupplyChange = nativeAsset {
-                                            policy = ledgerAsset.policy
-                                            name = ledgerAsset.name
-                                            amount = ledgerAsset.supply.toString()
-                                        }
+                                        policy = ledgerAsset.policy
+                                        name = ledgerAsset.name
+                                        nativeAssetSupplyChange = ledgerAsset.supply.toString()
                                     }.writeTo(bos)
                                     bos.toByteArray()
                                 }
@@ -714,6 +711,8 @@ class BlockDaemon(
                                         ledgerRepository.queryLedgerAssetMetadataList(metadataLedgerAsset.id!!)
                                     val bos = ByteArrayOutputStream()
                                     monitorNativeAssetsResponse {
+                                        policy = ledgerAsset.policy
+                                        name = ledgerAsset.name
                                         nativeAssetMetadataJson = ledgerAssetMetadataList.to721Json(
                                             ledgerAsset.policy,
                                             ledgerAsset.name,
@@ -741,6 +740,8 @@ class BlockDaemon(
                                             ledgerRepository.queryLedgerAssetMetadataList(nativeAsset.id!!)
                                         val bos = ByteArrayOutputStream()
                                         monitorNativeAssetsResponse {
+                                            policy = updatedNativeAsset.policy
+                                            name = updatedNativeAsset.name
                                             nativeAssetMetadataJson = ledgerAssetMetadataList.to721Json(
                                                 updatedNativeAsset.policy,
                                                 updatedNativeAsset.name
@@ -757,6 +758,8 @@ class BlockDaemon(
                                                 ?.let { nativeAsset ->
                                                     val bos1 = ByteArrayOutputStream()
                                                     monitorNativeAssetsResponse {
+                                                        this.policy = nativeAsset.policy
+                                                        this.name = nativeAsset.name
                                                         nativeAssetMetadataJson = ledgerAssetMetadataList.to721Json(
                                                             nativeAsset.policy,
                                                             nativeAsset.name

@@ -271,9 +271,12 @@ message MonitorNativeAssetsRequest {
 
 message MonitorNativeAssetsResponse {
   uint64 id = 1;
+  string name = 2;
+  string policy = 3;
+
   oneof monitor_native_assets_response_wrapper {
-    NativeAsset native_asset_supply_change = 2;
-    string native_asset_metadata_json = 3;
+    string native_asset_supply_change = 4;
+    string native_asset_metadata_json = 5;
   }
 }
 
