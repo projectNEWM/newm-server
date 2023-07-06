@@ -45,6 +45,7 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.io.Source
 import java.io.IOException
+import java.math.BigDecimal
 import java.time.Duration
 import java.util.concurrent.Executors
 import co.upvest.arweave4s.adt.`Signable$`.`MODULE$` as signableApi
@@ -100,6 +101,16 @@ class ArweaveRepositoryImpl(
             future.futureJsonHandlerEncodedStringHandler(executionContext)
         ) as Future<Option<Transaction.Id>>
         return toJava(lastTxFuture).await()
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    override suspend fun getWalletARBalance(): BigDecimal {
+        val balanceFuture = addressApi.balance(
+            arweaveWallet().address(),
+            arweaveConfig,
+            future.futureJsonHandlerEncodedStringHandler(executionContext)
+        ) as Future<Winston>
+        return toJava(balanceFuture).await().amount().toString().toBigDecimal().movePointLeft(12)
     }
 
     private fun buildTags(tagMap: Map<String, String>): Option<Seq<Tag.Custom>> {
@@ -165,6 +176,7 @@ class ArweaveRepositoryImpl(
     }
 
     override suspend fun uploadSongAssets(song: Song) {
+        // TODO: CU-863h3zukj - Check the wallet balance and send admin warning email if below 0.5 AR
         val songUpdateMutex = Mutex()
         listOfNotNull(
             song.arweaveCoverArtUrl?.let { null } ?: (

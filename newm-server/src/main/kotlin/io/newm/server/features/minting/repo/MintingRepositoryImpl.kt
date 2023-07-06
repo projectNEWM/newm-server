@@ -201,7 +201,7 @@ class MintingRepositoryImpl(
             )
 
             // fraction SFT output to the artist's wallet
-            // TODO: split among collaborators
+            // TODO: CU-863h5ec15 - split among collaborators
             add(
                 outputUtxo {
                     address = artistWalletAddress
@@ -217,7 +217,7 @@ class MintingRepositoryImpl(
             )
         }
 
-        // TODO: if our cash register goes over CONFIG_KEY_MINT_CASH_REGISTER_COLLECTION_AMOUNT + CONFIG_KEY_MINT_CASH_REGISTER_MIN_AMOUNT
+        // TODO: CU-863gn8yfp - if our cash register goes over CONFIG_KEY_MINT_CASH_REGISTER_COLLECTION_AMOUNT + CONFIG_KEY_MINT_CASH_REGISTER_MIN_AMOUNT
         // Then return change into the moneybox bucket after adding an output for MIN_AMOUNT to the cash register
         this.changeAddress = changeAddress
 
