@@ -33,6 +33,8 @@ class Cip68DatumTest {
                     )
                 ),
                 cbor = null,
+                paymentCred = null,
+                stakeCred = null,
             )
         )
 

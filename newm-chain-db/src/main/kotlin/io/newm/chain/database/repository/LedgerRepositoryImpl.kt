@@ -9,6 +9,7 @@ import com.google.iot.cbor.CborReader
 import io.newm.chain.config.Config
 import io.newm.chain.database.entity.LedgerAsset
 import io.newm.chain.database.entity.LedgerAssetMetadata
+import io.newm.chain.database.entity.LedgerUtxoHistory
 import io.newm.chain.database.entity.RawTransaction
 import io.newm.chain.database.entity.StakeDelegation
 import io.newm.chain.database.entity.StakeRegistration
@@ -17,6 +18,7 @@ import io.newm.chain.database.table.LedgerAssetMetadataTable
 import io.newm.chain.database.table.LedgerAssetsTable
 import io.newm.chain.database.table.LedgerTable
 import io.newm.chain.database.table.LedgerUtxoAssetsTable
+import io.newm.chain.database.table.LedgerUtxosHistoryTable
 import io.newm.chain.database.table.LedgerUtxosTable
 import io.newm.chain.database.table.NativeAssetMonitorLogTable
 import io.newm.chain.database.table.RawTransactionsTable
@@ -36,6 +38,7 @@ import io.newm.chain.util.Constants.UTXO_DATUM_INDEX
 import io.newm.chain.util.Constants.UTXO_SCRIPT_REF_INDEX
 import io.newm.chain.util.elementToByteArray
 import io.newm.chain.util.elementToInt
+import io.newm.chain.util.extractCredentials
 import io.newm.chain.util.hexToByteArray
 import io.newm.chain.util.toHexString
 import kotlinx.coroutines.runBlocking
@@ -612,6 +615,8 @@ class LedgerRepositoryImpl : LedgerRepository {
                 row[slotSpent] = null
                 row[transactionSpent] = null
                 row[cbor] = createdUtxo.cbor
+                row[paymentCred] = createdUtxo.paymentCred
+                row[stakeCred] = createdUtxo.stakeCred
             }.value
 
             createdUtxo.nativeAssets.forEach { nativeAsset ->
@@ -809,6 +814,36 @@ class LedgerRepositoryImpl : LedgerRepository {
                 this[RawTransactionsTable.protocolVersionMajor] = it.protocolVersionMajor
                 this[RawTransactionsTable.protocolVersionMinor] = it.protocolVersionMinor
             }
+        }
+    }
+
+    override fun createLedgerUtxoHistory(createdUtxos: Set<CreatedUtxo>, blockNumber: Long) {
+        val ledgerUtxoHistorySet = createdUtxos.mapNotNull { createdUtxo ->
+            // Save off credential to txid mapping
+            val credentials = if (createdUtxo.address.startsWith("addr")) {
+                try {
+                    createdUtxo.address.extractCredentials()
+                } catch (e: Throwable) {
+                    log.warn("Unable to extractCredential from: ${createdUtxo.address}")
+                    null
+                }
+            } else {
+                null
+            }
+            credentials?.let { creds ->
+                LedgerUtxoHistory(creds.first, creds.second, createdUtxo.hash, blockNumber)
+            }
+        }
+
+        LedgerUtxosHistoryTable.batchInsert(
+            data = ledgerUtxoHistorySet,
+            ignore = true,
+            shouldReturnGeneratedValues = false
+        ) {
+            this[LedgerUtxosHistoryTable.paymentCred] = it.paymentCred
+            this[LedgerUtxosHistoryTable.stakeCred] = it.stakeCred
+            this[LedgerUtxosHistoryTable.txId] = it.txId
+            this[LedgerUtxosHistoryTable.block] = it.block
         }
     }
 

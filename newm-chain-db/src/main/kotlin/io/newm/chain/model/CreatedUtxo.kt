@@ -17,6 +17,8 @@ data class CreatedUtxo(
     val scriptRef: String?,
     val nativeAssets: List<NativeAsset>,
     val cbor: ByteArray?,
+    val paymentCred: String?,
+    val stakeCred: String?,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -36,8 +38,8 @@ data class CreatedUtxo(
             if (other.cbor == null) return false
             if (!cbor.contentEquals(other.cbor)) return false
         } else if (other.cbor != null) return false
-
-        return true
+        if (paymentCred != other.paymentCred) return false
+        return stakeCred == other.stakeCred
     }
 
     override fun hashCode(): Int {
@@ -52,6 +54,8 @@ data class CreatedUtxo(
         result = 31 * result + (scriptRef?.hashCode() ?: 0)
         result = 31 * result + nativeAssets.hashCode()
         result = 31 * result + (cbor?.contentHashCode() ?: 0)
+        result = 31 * result + (paymentCred?.hashCode() ?: 0)
+        result = 31 * result + (stakeCred?.hashCode() ?: 0)
         return result
     }
 }

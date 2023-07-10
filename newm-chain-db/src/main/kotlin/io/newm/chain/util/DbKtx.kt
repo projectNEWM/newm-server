@@ -198,6 +198,17 @@ fun Block.toCreatedUtxoSet(): Set<CreatedUtxo> = when (this) {
 }
 
 fun List<UtxoOutput>.toCreatedUtxoList(txId: String) = this.mapIndexed { index, utxoOutput ->
+    // Save off credential to txid mapping
+    val credentials = if (utxoOutput.address.startsWith("addr")) {
+        try {
+            utxoOutput.address.extractCredentials()
+        } catch (e: Throwable) {
+            null
+        }
+    } else {
+        null
+    }
+
     CreatedUtxo(
         address = utxoOutput.address,
         addressType = utxoOutput.address.addressType(),
@@ -216,6 +227,8 @@ fun List<UtxoOutput>.toCreatedUtxoList(txId: String) = this.mapIndexed { index, 
             )
         }.orEmpty(),
         cbor = null, // TODO: fix if we ever need it
+        paymentCred = credentials?.first,
+        stakeCred = credentials?.second,
     )
 }
 
