@@ -7,6 +7,8 @@ import io.newm.chain.util.Constants.STAKE_ADDRESS_KEY_PREFIX_TESTNET
 import org.slf4j.LoggerFactory
 import java.math.BigDecimal
 import java.math.BigInteger
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.util.Base64
 import java.util.HexFormat
 
@@ -69,6 +71,19 @@ fun Int.toHexString(): String = Integer.toHexString(this)
 fun Long.toHexString(): String = java.lang.Long.toHexString(this)
 
 fun BigInteger.toAda(): BigDecimal = this.toBigDecimal(6)
+
+private val MAX_ULONG = BigInteger("ffffffffffffffff", 16)
+fun BigInteger.toULong(): ULong = (this and MAX_ULONG).toString(16).toULong(16)
+
+fun ULong.toBigInteger(): BigInteger = BigInteger(this.toString(16), 16)
+
+fun ULong.toLittleEndianBytes(): ByteArray {
+    val buffer = ByteBuffer.allocate(8)
+    buffer.order(ByteOrder.LITTLE_ENDIAN)
+    buffer.putLong(this.toLong())
+    return buffer.array()
+}
+
 fun Long.lovelaceToAdaString(): String = "₳${this.toBigDecimal().movePointLeft(6)}"
 
 fun String.toHexPoolId(): String {
@@ -100,6 +115,28 @@ fun String.extractStakeAddress(isMainnet: Boolean): String {
                 set(0, STAKE_ADDRESS_KEY_PREFIX_TESTNET)
             }
         )
+    }
+}
+
+fun String.extractCredentials(): Pair<String, String?> {
+    try {
+        val decodedReceiveAddress = Bech32.decode(this)
+        val buffer = ByteBuffer.wrap(decodedReceiveAddress.bytes)
+        val paymentBuf = ByteArray(28)
+        // skip address type byte
+        buffer.position(1)
+        buffer.get(paymentBuf)
+        val stakeBuf = if (buffer.remaining() == 28) {
+            val stakeBuf = ByteArray(28)
+            buffer.get(stakeBuf)
+            stakeBuf
+        } else {
+            null
+        }
+        return Pair(paymentBuf.toHexString(), stakeBuf?.toHexString())
+    } catch (e: Throwable) {
+        log.error("Failed to extract credentials: $this", e)
+        throw e
     }
 }
 

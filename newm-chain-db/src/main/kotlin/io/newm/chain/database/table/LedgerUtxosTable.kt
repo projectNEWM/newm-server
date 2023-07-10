@@ -34,4 +34,6 @@ object LedgerUtxosTable : LongIdTable(name = "ledger_utxos") {
 
     // the raw cbor of this utxo entry
     val cbor: Column<ByteArray?> = binary("cbor").nullable()
+    val paymentCred: Column<String?> = text("payment_cred").nullable()
+    val stakeCred: Column<String?> = text("stake_cred").nullable()
 }

@@ -333,6 +333,7 @@ class BlockDaemon(
                         if (syncRawTxns) {
                             val rawTransactions = block.toRawTransactionList()
                             ledgerRepository.createRawTransactions(rawTransactions)
+                            ledgerRepository.createLedgerUtxoHistory(createdUtxos, blockNumber)
                         }
                     }
 
