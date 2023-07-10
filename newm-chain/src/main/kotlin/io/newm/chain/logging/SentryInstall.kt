@@ -1,6 +1,6 @@
 package io.newm.chain.logging
 
-import io.ktor.server.application.*
+import io.ktor.server.application.Application
 import io.sentry.Sentry
 
 // FIXME: Extract this into a shared module
@@ -10,6 +10,7 @@ fun Application.initializeSentry() {
 //        options.tracesSampleRate = if (environment.developmentMode) 1.0 else 0.5
         options.tracesSampleRate = 1.0
         options.isDebug = environment.developmentMode
+        options.environment = environment.config.property("sentry.environment").getString()
     }
 }
 
