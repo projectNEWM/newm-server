@@ -21,6 +21,7 @@ val testSong1 = Song(
     iswc = "Song 1 iswc",
     ipis = listOf("Song 1 ipi 0", "Song 1 ipi 1"),
     releaseDate = LocalDate.of(2023, 1, 1),
+    publicationDate = LocalDate.of(2023, 1, 2),
     lyricsUrl = "https://projectnewm.io/lirycs1.txt",
 )
 
@@ -41,5 +42,6 @@ val testSong2 = Song(
     iswc = "Song 2 iswc",
     ipis = listOf("Song 2 ipi 0", "Song 2 ipi 1"),
     releaseDate = LocalDate.of(2023, 2, 2),
+    publicationDate = LocalDate.of(2023, 2, 3),
     lyricsUrl = "https://projectnewm.io/lirycs2.txt",
 )
