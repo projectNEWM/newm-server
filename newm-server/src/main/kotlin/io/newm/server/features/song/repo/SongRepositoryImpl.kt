@@ -95,6 +95,7 @@ internal class SongRepositoryImpl(
                 iswc = song.iswc
                 ipis = song.ipis?.toTypedArray()
                 releaseDate = song.releaseDate
+                publicationDate = song.publicationDate
                 lyricsUrl = song.lyricsUrl?.asValidUrl()
             }.id.value
         }
@@ -123,10 +124,10 @@ internal class SongRepositoryImpl(
                 iswc?.let { entity.iswc = it }
                 ipis?.let { entity.ipis = it.toTypedArray() }
                 releaseDate?.let { entity.releaseDate = it }
+                publicationDate?.let { entity.publicationDate = it }
                 lyricsUrl?.let { entity.lyricsUrl = it.asValidUrl() }
                 if (requesterId == null) {
                     // don't allow updating these fields when invoked from REST API
-                    publicationDate?.let { entity.publicationDate = it }
                     tokenAgreementUrl?.let { entity.tokenAgreementUrl = it }
                     originalAudioUrl?.let { entity.originalAudioUrl = it.asValidUrl() }
                     clipUrl?.let { entity.clipUrl = it.asValidUrl() }
