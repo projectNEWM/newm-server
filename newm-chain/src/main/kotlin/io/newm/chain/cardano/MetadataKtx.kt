@@ -88,7 +88,9 @@ fun List<LedgerAssetMetadata>.to721Json(policy: String, name: String): String {
     }
     this.forEach { ledgerAssetMetadata ->
         sb.append(ledgerAssetMetadata.to721Json())
+        sb.append(",")
     }
+    sb.setLength(sb.length - 1) // remove last comma
     sb.append("}") // name
     sb.append("}") // policy
     sb.append("}") // 721
@@ -106,7 +108,8 @@ fun LedgerAssetMetadata.to721Json(isArrayItem: Boolean = false): String {
             sb.append("[")
             if (children.isNotEmpty()) {
                 children.forEach {
-                    sb.append("${it.to721Json(true)},")
+                    sb.append(it.to721Json(true))
+                    sb.append(",")
                 }
                 sb.setLength(sb.length - 1) // remove last comma
             }
@@ -116,7 +119,10 @@ fun LedgerAssetMetadata.to721Json(isArrayItem: Boolean = false): String {
         "map" -> {
             sb.append("{")
             if (children.isNotEmpty()) {
-                children.forEach { sb.append("${it.to721Json()},") }
+                children.forEach {
+                    sb.append(it.to721Json())
+                    sb.append(",")
+                }
                 sb.setLength(sb.length - 1) // remove last comma
             }
             sb.append("}")
