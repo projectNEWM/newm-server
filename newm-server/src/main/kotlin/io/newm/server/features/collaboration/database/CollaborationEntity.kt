@@ -15,6 +15,7 @@ import org.jetbrains.exposed.sql.AndOp
 import org.jetbrains.exposed.sql.JoinType
 import org.jetbrains.exposed.sql.Op
 import org.jetbrains.exposed.sql.SizedIterable
+import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
@@ -85,7 +86,7 @@ class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                 }
             }
             val andOp = AndOp(ops)
-            return if (inbound) {
+            val res = if (inbound) {
                 find(andOp)
             } else {
                 CollaborationEntity.wrapRows(
@@ -96,6 +97,7 @@ class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                     ).slice(CollaborationTable.columns).select(andOp)
                 )
             }
+            return res.orderBy(CollaborationTable.createdAt to (filters.sortOrder ?: SortOrder.ASC))
         }
 
         fun findBySongId(songId: UUID): SizedIterable<CollaborationEntity> =
@@ -130,6 +132,7 @@ class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                 ).slice(CollaborationTable.email.lowerCase(), SongTable.id.count())
                     .select(AndOp(ops))
                     .groupBy(CollaborationTable.email.lowerCase())
+                    .orderBy(CollaborationTable.email.lowerCase(), filters.sortOrder ?: SortOrder.ASC)
                     .mapLazy { it[CollaborationTable.email.lowerCase()] to it[SongTable.id.count()] }
             }
         }

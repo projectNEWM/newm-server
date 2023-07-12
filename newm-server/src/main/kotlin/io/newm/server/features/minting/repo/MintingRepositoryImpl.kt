@@ -54,17 +54,10 @@ class MintingRepositoryImpl(
     override suspend fun mint(song: Song): String {
         val user = userRepository.get(song.ownerId!!)
         val collabs = collabRepository.getAll(
-            user.id!!,
-            CollaborationFilters(
-                inbound = null,
-                songIds = listOf(song.id!!),
-                olderThan = null,
-                newerThan = null,
-                ids = null,
-                statuses = null
-            ),
-            0,
-            Integer.MAX_VALUE
+            userId = user.id!!,
+            filters = CollaborationFilters(songIds = listOf(song.id!!)),
+            offset = 0,
+            limit = Integer.MAX_VALUE
         )
         val cip68Metadata = buildStreamTokenMetadata(song, user, collabs)
         val paymentKey = cardanoRepository.getKey(song.paymentKeyId!!)

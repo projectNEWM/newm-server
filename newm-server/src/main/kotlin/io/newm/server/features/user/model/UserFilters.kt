@@ -6,10 +6,13 @@ import io.newm.server.ktx.ids
 import io.newm.server.ktx.newerThan
 import io.newm.server.ktx.olderThan
 import io.newm.server.ktx.roles
+import io.newm.server.ktx.sortOrder
+import org.jetbrains.exposed.sql.SortOrder
 import java.time.LocalDateTime
 import java.util.UUID
 
 data class UserFilters(
+    val sortOrder: SortOrder?,
     val olderThan: LocalDateTime?,
     val newerThan: LocalDateTime?,
     val ids: List<UUID>?,
@@ -18,4 +21,4 @@ data class UserFilters(
 )
 
 val ApplicationCall.userFilters: UserFilters
-    get() = UserFilters(olderThan, newerThan, ids, roles, genres)
+    get() = UserFilters(sortOrder, olderThan, newerThan, ids, roles, genres)

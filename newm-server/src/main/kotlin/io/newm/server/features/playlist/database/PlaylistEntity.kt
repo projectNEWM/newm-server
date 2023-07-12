@@ -6,11 +6,17 @@ import io.newm.server.features.song.database.SongEntity
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.AndOp
+import org.jetbrains.exposed.sql.Op
+import org.jetbrains.exposed.sql.SizedIterable
+import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.deleteWhere
+import org.jetbrains.exposed.sql.insert
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -57,7 +63,8 @@ class PlaylistEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                     ops += PlaylistTable.ownerId inList it
                 }
             }
-            return if (ops.isEmpty()) all() else find(AndOp(ops))
+            return (if (ops.isEmpty()) all() else find(AndOp(ops)))
+                .orderBy(PlaylistTable.createdAt to (filters.sortOrder ?: SortOrder.ASC))
         }
     }
 }

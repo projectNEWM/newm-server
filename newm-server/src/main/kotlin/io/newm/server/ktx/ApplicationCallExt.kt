@@ -14,6 +14,7 @@ import io.newm.shared.ktx.splitAndTrim
 import io.newm.shared.ktx.toHexString
 import io.newm.shared.ktx.toLocalDateTime
 import io.newm.shared.ktx.toUUID
+import org.jetbrains.exposed.sql.SortOrder
 import java.nio.ByteBuffer
 import java.security.Key
 import java.time.LocalDateTime
@@ -50,6 +51,9 @@ val ApplicationCall.offset: Int
 
 val ApplicationCall.limit: Int
     get() = parameters["limit"]?.toInt() ?: 25
+
+val ApplicationCall.sortOrder: SortOrder?
+    get() = parameters["sortOrder"]?.let { SortOrder.valueOf(it.uppercase()) }
 
 val ApplicationCall.ids: List<UUID>?
     get() = parameters["ids"]?.splitAndTrim()?.map(String::toUUID)

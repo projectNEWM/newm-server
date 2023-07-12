@@ -288,14 +288,7 @@ internal class SongRepositoryImpl(
         val song = get(songId)
         return collaborationRepository.getAll(
             userId = song.ownerId!!,
-            filters = CollaborationFilters(
-                inbound = null,
-                songIds = listOf(songId),
-                olderThan = null,
-                newerThan = null,
-                ids = null,
-                statuses = null,
-            ),
+            CollaborationFilters(songIds = listOf(song.id!!)),
             offset = 0,
             limit = Int.MAX_VALUE,
         ).count { (it.royaltyRate ?: -1.0f) > 0.0f && it.status != CollaborationStatus.Accepted }
@@ -306,14 +299,7 @@ internal class SongRepositoryImpl(
         // TODO: We might need to change this code in the future if we're charging NEWM tokens in addition to ada
         val numberOfCollaborators = collaborationRepository.getAll(
             userId = requesterId,
-            filters = CollaborationFilters(
-                inbound = null,
-                songIds = listOf(songId),
-                olderThan = null,
-                newerThan = null,
-                ids = null,
-                statuses = null,
-            ),
+            filters = CollaborationFilters(songIds = listOf(songId)),
             offset = 0,
             limit = Int.MAX_VALUE,
         ).count { (it.royaltyRate ?: -1.0f) > 0.0f }

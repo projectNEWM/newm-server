@@ -133,6 +133,38 @@ class SongRoutesTests : BaseApplicationTests() {
     }
 
     @Test
+    fun testGetAllSongsInDescendingOrder() = runBlocking {
+        // Add Songs directly into database
+        val allSongs = mutableListOf<Song>()
+        for (offset in 0..30) {
+            allSongs += addSongToDatabase(offset)
+        }
+        val expectedSongs = allSongs.sortedByDescending { it.createdAt }
+
+        // Get all songs forcing pagination
+        var offset = 0
+        val limit = 5
+        val actualSongs = mutableListOf<Song>()
+        while (true) {
+            val response = client.get("v1/songs") {
+                bearerAuth(testUserToken)
+                accept(ContentType.Application.Json)
+                parameter("offset", offset)
+                parameter("limit", limit)
+                parameter("sortOrder", "desc")
+            }
+            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+            val songs = response.body<List<Song>>()
+            if (songs.isEmpty()) break
+            actualSongs += songs
+            offset += limit
+        }
+
+        // verify all
+        assertThat(actualSongs).isEqualTo(expectedSongs)
+    }
+
+    @Test
     fun testGetSongsByIds() = runBlocking {
         // Add Songs directly into database
         val allSongs = mutableListOf<Song>()

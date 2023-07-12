@@ -11,6 +11,7 @@ import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.AndOp
 import org.jetbrains.exposed.sql.Op
 import org.jetbrains.exposed.sql.SizedIterable
+import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
@@ -107,7 +108,8 @@ class UserEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                     ops += UserTable.genre inList it
                 }
             }
-            return if (ops.isEmpty()) all() else find(AndOp(ops))
+            return (if (ops.isEmpty()) all() else find(AndOp(ops)))
+                .orderBy(UserTable.createdAt to (filters.sortOrder ?: SortOrder.ASC))
         }
 
         fun getByEmail(email: String): UserEntity? = find {
