@@ -111,7 +111,8 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     companion object : UUIDEntityClass<SongEntity>(SongTable) {
         fun all(filters: SongFilters): SizedIterable<SongEntity> {
             val ops = filters.toOps()
-            return if (ops.isEmpty()) all() else find(AndOp(ops))
+            return (if (ops.isEmpty()) all() else find(AndOp(ops)))
+                .orderBy(SongTable.createdAt to (filters.sortOrder ?: SortOrder.ASC))
         }
 
         fun genres(filters: SongFilters): SizedIterable<String> {
@@ -120,7 +121,7 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             val fields = SongTable.slice(SongTable.id.count(), genre)
             val query = if (ops.isEmpty()) fields.selectAll() else fields.select(AndOp(ops))
             return query.groupBy(genre)
-                .orderBy(SongTable.id.count(), SortOrder.DESC)
+                .orderBy(SongTable.id.count(), filters.sortOrder ?: SortOrder.DESC)
                 .mapLazy { it[genre] }
         }
 

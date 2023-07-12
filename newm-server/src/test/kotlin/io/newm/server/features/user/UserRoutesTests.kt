@@ -273,6 +273,58 @@ class UserRoutesTests : BaseApplicationTests() {
     }
 
     @Test
+    fun testGetAllUsersInDescendingOrder() = runBlocking {
+        // Put Users directly into database
+        val allUsers = mutableListOf<User>()
+        for (offset in 0..30) {
+            allUsers += addUserToDatabase(offset)
+        }
+        val expectedUsers = allUsers.sortedByDescending { it.createdAt }
+
+        // read back all Users forcing pagination
+        var offset = 0
+        val limit = 5
+        val actualUsers = mutableListOf<User>()
+        val token = expectedUsers.first().id.toString()
+        while (true) {
+            val response = client.get("v1/users") {
+                bearerAuth(token)
+                accept(ContentType.Application.Json)
+                parameter("offset", offset)
+                parameter("limit", limit)
+                parameter("sortOrder", "desc")
+            }
+            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+            val users = response.body<List<User>>()
+            if (users.isEmpty()) break
+            actualUsers += users
+            offset += limit
+        }
+
+        // verify all
+        assertThat(actualUsers.size).isEqualTo(expectedUsers.size)
+        expectedUsers.forEachIndexed { i, expectedUser ->
+            val actualUser = actualUsers[i]
+            assertThat(actualUser.id).isEqualTo(expectedUser.id)
+            assertThat(actualUser.firstName).isEqualTo(expectedUser.firstName)
+            assertThat(actualUser.lastName).isEqualTo(expectedUser.lastName)
+            assertThat(actualUser.nickname).isEqualTo(expectedUser.nickname)
+            assertThat(actualUser.pictureUrl).isEqualTo(expectedUser.pictureUrl)
+            assertThat(actualUser.bannerUrl).isEqualTo(expectedUser.bannerUrl)
+            assertThat(actualUser.websiteUrl).isEqualTo(expectedUser.websiteUrl)
+            assertThat(actualUser.twitterUrl).isEqualTo(expectedUser.twitterUrl)
+            assertThat(actualUser.instagramUrl).isEqualTo(expectedUser.instagramUrl)
+            assertThat(actualUser.location).isEqualTo(expectedUser.location)
+            assertThat(actualUser.role).isEqualTo(expectedUser.role)
+            assertThat(actualUser.genre).isEqualTo(expectedUser.genre)
+            assertThat(actualUser.biography).isEqualTo(expectedUser.biography)
+            assertThat(actualUser.companyName).isEqualTo(expectedUser.companyName)
+            assertThat(actualUser.companyLogoUrl).isEqualTo(expectedUser.companyLogoUrl)
+            assertThat(actualUser.companyIpRights).isEqualTo(expectedUser.companyIpRights)
+        }
+    }
+
+    @Test
     fun testGetUsersByIds() = runBlocking {
         // Put Users directly into database
         val allUsers = mutableListOf<User>()

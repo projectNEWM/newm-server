@@ -119,6 +119,38 @@ class PlaylistRoutesTests : BaseApplicationTests() {
     }
 
     @Test
+    fun testGetAllPlaylistsInDescendingOrder() = runBlocking {
+        // Add Playlists directly into database
+        val allPlaylists = mutableListOf<Playlist>()
+        for (offset in 0..30) {
+            allPlaylists += addPLaylistToDatabase(offset)
+        }
+        val expectedPlaylists = allPlaylists.sortedByDescending { it.createdAt }
+
+        // Get all playlists forcing pagination
+        var offset = 0
+        val limit = 5
+        val actualPlaylists = mutableListOf<Playlist>()
+        while (true) {
+            val response = client.get("v1/playlists") {
+                bearerAuth(testUserToken)
+                accept(ContentType.Application.Json)
+                parameter("offset", offset)
+                parameter("limit", limit)
+                parameter("sortOrder", "desc")
+            }
+            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+            val songs = response.body<List<Playlist>>()
+            if (songs.isEmpty()) break
+            actualPlaylists += songs
+            offset += limit
+        }
+
+        // verify all
+        assertThat(actualPlaylists).isEqualTo(expectedPlaylists)
+    }
+
+    @Test
     fun testGetPlaylistsByIds() = runBlocking {
         // Add Playlists directly into database
         val allPlaylists = mutableListOf<Playlist>()

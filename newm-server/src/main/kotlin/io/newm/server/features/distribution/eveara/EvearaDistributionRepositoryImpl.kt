@@ -701,17 +701,10 @@ class EvearaDistributionRepositoryImpl(
         val genres = getGenres().genres
         val languages = getLanguages().languages
         val collabs = collabRepository.getAll(
-            user.id!!,
-            CollaborationFilters(
-                inbound = null,
-                songIds = listOf(song.id!!),
-                olderThan = null,
-                newerThan = null,
-                ids = null,
-                statuses = null,
-            ),
-            0,
-            Integer.MAX_VALUE
+            userId = user.id!!,
+            filters = CollaborationFilters(songIds = listOf(song.id!!)),
+            offset = 0,
+            limit = Integer.MAX_VALUE
         )
 
         val artistIds = listOf(user.distributionArtistId!!) +
@@ -814,17 +807,10 @@ class EvearaDistributionRepositoryImpl(
     override suspend fun addAlbum(user: User, trackId: Long, song: Song): AddAlbumResponse {
         requireNotNull(user.distributionUserId) { "User.distributionUserId must not be null!" }
         val collabs = collabRepository.getAll(
-            user.id!!,
-            CollaborationFilters(
-                inbound = null,
-                songIds = listOf(song.id!!),
-                olderThan = null,
-                newerThan = null,
-                ids = null,
-                statuses = null,
-            ),
-            0,
-            Integer.MAX_VALUE
+            userId = user.id!!,
+            filters = CollaborationFilters(songIds = listOf(song.id!!)),
+            offset = 0,
+            limit = Integer.MAX_VALUE
         )
         val artistIds = listOf(user.distributionArtistId!!) +
             collabs.filter { it.role == "Artist" && it.featured == false && it.email != user.email }
@@ -930,17 +916,10 @@ class EvearaDistributionRepositoryImpl(
         requireNotNull(user.distributionUserId) { "User.distributionUserId must not be null!" }
         requireNotNull(song.distributionReleaseId) { "Song.distributionReleaseId must not be null!" }
         val collabs = collabRepository.getAll(
-            user.id!!,
-            CollaborationFilters(
-                inbound = null,
-                songIds = listOf(song.id!!),
-                olderThan = null,
-                newerThan = null,
-                ids = null,
-                statuses = null,
-            ),
-            0,
-            Integer.MAX_VALUE
+            userId = user.id!!,
+            filters = CollaborationFilters(songIds = listOf(song.id!!)),
+            offset = 0,
+            limit = Integer.MAX_VALUE
         )
 
         val artistIds = listOf(user.distributionArtistId!!) +
@@ -1180,17 +1159,10 @@ class EvearaDistributionRepositoryImpl(
         }
 
         val collabs = collabRepository.getAll(
-            user.id,
-            CollaborationFilters(
-                inbound = null,
-                songIds = listOf(song.id!!),
-                olderThan = null,
-                newerThan = null,
-                ids = null,
-                statuses = null,
-            ),
-            0,
-            Integer.MAX_VALUE
+            userId = user.id,
+            filters = CollaborationFilters(songIds = listOf(song.id!!)),
+            offset = 0,
+            limit = Integer.MAX_VALUE
         )
         require(collabs.all { it.status == CollaborationStatus.Accepted }) { "All Collaborations must be accepted!" }
 
