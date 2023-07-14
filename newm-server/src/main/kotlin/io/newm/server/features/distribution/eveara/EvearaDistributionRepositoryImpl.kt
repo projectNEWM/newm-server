@@ -1132,33 +1132,7 @@ class EvearaDistributionRepositoryImpl(
         requireNotNull(song.ownerId) { "Song.ownerId must not be null!" }
         val user = userRepository.get(song.ownerId)
         requireNotNull(user.id) { "User.id must not be null!" }
-
-        // Create the distribution user if they don't yet exist
-        val getUserResponse = getUser(user)
-        if (getUserResponse.totalRecords > 0) {
-            val existingUser = getUserResponse.users.first()
-            log.info { "Found existing distribution user ${user.email} with id ${existingUser.uuid}" }
-            if (user.distributionUserId == null) {
-                user.distributionUserId = existingUser.uuid
-                userRepository.updateUserData(user.id, user)
-            } else {
-                require(user.distributionUserId == existingUser.uuid) { "User.distributionUserId: ${user.distributionUserId} does not match existing distribution user! ${existingUser.uuid}" }
-            }
-            // validate that the user's information matches eveara
-            if (existingUser.email != user.email ||
-                existingUser.firstName != user.firstName?.ifBlank { "---" } ||
-                existingUser.lastName != user.lastName?.ifBlank { "---" }
-            ) {
-                val response = updateUser(user)
-                log.info { "Updated distribution user ${user.email} with id ${user.distributionUserId}: ${response.message}" }
-            }
-        } else {
-            require(user.distributionUserId == null) { "User.distributionUserId: ${user.distributionUserId} not found in Eveara!" }
-            val response = addUser(user)
-            log.info { "Created distribution user ${user.email} with id ${response.uuid}: ${response.message}" }
-            user.distributionUserId = response.uuid
-            userRepository.updateUserData(user.id, user)
-        }
+        createDistributionUserIfNeeded(user)
 
         val collabs = collabRepository.getAll(
             userId = user.id,
@@ -1439,9 +1413,40 @@ class EvearaDistributionRepositoryImpl(
     }
 
     override suspend fun getEarliestReleaseDate(userId: UUID): LocalDate {
-        val maxDays = getOutlets(userRepository.get(userId)).outlets.maxOfOrNull { it.processDurationDates }
+        val user = userRepository.get(userId)
+        createDistributionUserIfNeeded(user)
+        val maxDays = getOutlets(user).outlets.maxOfOrNull { it.processDurationDates }
             ?: throw HttpServiceUnavailableException("No Distribution Outlets available - retry later")
         return maxDays.toReleaseDate()
+    }
+
+    private suspend fun createDistributionUserIfNeeded(user: User) {
+        // Create the distribution user if they don't yet exist
+        val getUserResponse = getUser(user)
+        if (getUserResponse.totalRecords > 0) {
+            val existingUser = getUserResponse.users.first()
+            log.info { "Found existing distribution user ${user.email} with id ${existingUser.uuid}" }
+            if (user.distributionUserId == null) {
+                user.distributionUserId = existingUser.uuid
+                userRepository.updateUserData(user.id!!, user)
+            } else {
+                require(user.distributionUserId == existingUser.uuid) { "User.distributionUserId: ${user.distributionUserId} does not match existing distribution user! ${existingUser.uuid}" }
+            }
+            // validate that the user's information matches eveara
+            if (existingUser.email != user.email ||
+                existingUser.firstName != user.firstName?.ifBlank { "---" } ||
+                existingUser.lastName != user.lastName?.ifBlank { "---" }
+            ) {
+                val response = updateUser(user)
+                log.info { "Updated distribution user ${user.email} with id ${user.distributionUserId}: ${response.message}" }
+            }
+        } else {
+            require(user.distributionUserId == null) { "User.distributionUserId: ${user.distributionUserId} not found in Eveara!" }
+            val response = addUser(user)
+            log.info { "Created distribution user ${user.email} with id ${response.uuid}: ${response.message}" }
+            user.distributionUserId = response.uuid
+            userRepository.updateUserData(user.id!!, user)
+        }
     }
 
     private fun Long.toReleaseDate() = LocalDate.now().plusDays(this + 1)
