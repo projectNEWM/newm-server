@@ -20,7 +20,7 @@ class BIP32PublicKey(val bech32XPub: String) {
         chaincode = xpubBytes.sliceArray(32..63)
     }
 
-    fun derive(index: Int): BIP32PublicKey {
+    fun derive(index: UInt): BIP32PublicKey {
         val chainCodeKeySpec = SecretKeySpec(chaincode, MAC_ALGORITHM)
         val zMac = zMacThreadLocal.getOrSet { Mac.getInstance(MAC_ALGORITHM) }
         zMac.init(chainCodeKeySpec)
@@ -66,7 +66,7 @@ class BIP32PublicKey(val bech32XPub: String) {
         cc.copyInto(out, 32, 0, CHAIN_CODE_SIZE)
     }
 
-    private fun le32(i: Int): ByteArray {
+    private fun le32(i: UInt): ByteArray {
         return byteArrayOf(
             i.toByte(),
             (i shr 8).toByte(),

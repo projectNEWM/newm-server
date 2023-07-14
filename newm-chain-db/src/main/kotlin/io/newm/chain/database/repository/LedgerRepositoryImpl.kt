@@ -1000,6 +1000,16 @@ class LedgerRepositoryImpl : LedgerRepository {
         }
     }
 
+    override fun queryUsedAddresses(addresses: List<String>): Set<String> {
+        return transaction {
+            LedgerTable
+                .slice(LedgerTable.address)
+                .select { LedgerTable.address inList addresses }
+                .mapNotNull { row -> row[LedgerTable.address] }
+                .toHashSet()
+        }
+    }
+
     companion object {
         private const val ADA_HANDLES_POLICY = "f0ff48bbb7bbe9d59a40f1ce90e9e9d0ff5002ec48f232b49ca0fb9a"
     }

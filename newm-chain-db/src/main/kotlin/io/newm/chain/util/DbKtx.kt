@@ -458,6 +458,7 @@ fun Block.toLedgerAssets(): List<LedgerAsset> =
                     policy = asset.policyId,
                     name = asset.name,
                     supply = asset.quantity,
+                    txId = txMary.id,
                 )
             }
         }
@@ -468,6 +469,7 @@ fun Block.toLedgerAssets(): List<LedgerAsset> =
                     policy = asset.policyId,
                     name = asset.name,
                     supply = asset.quantity,
+                    txId = txAlonzo.id,
                 )
             }
         }
@@ -478,6 +480,7 @@ fun Block.toLedgerAssets(): List<LedgerAsset> =
                     policy = asset.policyId,
                     name = asset.name,
                     supply = asset.quantity,
+                    txId = txBabbage.id,
                 )
             }
         }

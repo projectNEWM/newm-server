@@ -1,11 +1,17 @@
 package io.newm.chain.grpc
 
 import com.google.protobuf.kotlin.toByteString
+import io.newm.chain.cardano.address.Address
+import io.newm.chain.cardano.address.AddressCredential
+import io.newm.chain.cardano.address.BIP32PublicKey
 import io.newm.chain.cardano.getCurrentEpoch
 import io.newm.chain.config.Config
 import io.newm.chain.database.repository.LedgerRepository
 import io.newm.chain.ledger.SubmittedTransactionCache
 import io.newm.chain.model.toNativeAssetMap
+import io.newm.chain.util.Constants.ROLE_CHANGE
+import io.newm.chain.util.Constants.ROLE_PAYMENT
+import io.newm.chain.util.Constants.ROLE_STAKING
 import io.newm.chain.util.hexToByteArray
 import io.newm.chain.util.toCreatedUtxoMap
 import io.newm.chain.util.toHexString
@@ -343,5 +349,73 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
             log.error("snapshotNativeAssets error!", e)
             throw e
         }
+    }
+
+    override suspend fun deriveWalletAddresses(request: DeriveWalletAddressesRequest): DeriveWalletAddressesResponse {
+        try {
+            // m / purpose' / coin_type' / account' / role / index
+            // Example: m / 1852' / 1815' / 0' / 0 / 0
+            // The user has sent us the account public key, so we can derive all roles/index values below that
+
+            val rootAccountPk = BIP32PublicKey(bech32XPub = request.walletAccountXpubKey)
+            val stakePk = rootAccountPk.derive(ROLE_STAKING).derive(0u)
+            val stakeCredential = AddressCredential.fromKey(stakePk)
+            val stakeAddress = Address.fromStakeAddressCredential(stakeCredential, Config.isMainnet).address
+
+            val paymentRootPk = rootAccountPk.derive(ROLE_PAYMENT)
+            val enterpriseAddresses = deriveAddresses(ROLE_PAYMENT, paymentRootPk)
+            val paymentStakeAddresses = deriveAddresses(ROLE_PAYMENT, paymentRootPk, stakeCredential)
+            val changeRootPk = rootAccountPk.derive(ROLE_CHANGE)
+            val enterpriseChangeAddresses = deriveAddresses(ROLE_CHANGE, changeRootPk)
+            val paymentStakeChangeAddresses = deriveAddresses(ROLE_CHANGE, changeRootPk, stakeCredential)
+
+            return deriveWalletAddressesResponse {
+                this.stakeAddress = address {
+                    this.address = stakeAddress
+                    this.role = ROLE_STAKING.toInt()
+                    this.index = 0
+                    this.used = true
+                }
+                this.enterpriseAddress.addAll(enterpriseAddresses)
+                this.paymentStakeAddress.addAll(paymentStakeAddresses)
+                this.enterpriseChangeAddress.addAll(enterpriseChangeAddresses)
+                this.paymentStakeChangeAddress.addAll(paymentStakeChangeAddresses)
+            }
+        } catch (e: Throwable) {
+            log.error("deriveWalletAddresses error!", e)
+            throw e
+        }
+    }
+
+    private fun deriveAddresses(
+        role: UInt,
+        rolePk: BIP32PublicKey,
+        stakeCredential: AddressCredential? = null
+    ): List<io.newm.chain.grpc.Address> {
+        val addresses = mutableListOf<io.newm.chain.grpc.Address>()
+        var indexStart = 0u
+        do {
+            val paymentAddresses = (indexStart..indexStart + 39u).map { index ->
+                val paymentPk = rolePk.derive(index)
+                val paymentCredential = AddressCredential.fromKey(paymentPk)
+                stakeCredential?.let {
+                    Address.fromPaymentStakeAddressCredentialsKeyKey(paymentCredential, it, Config.isMainnet).address
+                } ?: Address.fromPaymentAddressCredential(paymentCredential, Config.isMainnet).address
+            }
+            val usedAddresses = ledgerRepository.queryUsedAddresses(paymentAddresses)
+            addresses.addAll(
+                paymentAddresses.mapIndexed { index, address ->
+                    address {
+                        this.address = address
+                        this.role = role.toInt()
+                        this.index = (indexStart + index.toUInt()).toInt()
+                        this.used = address in usedAddresses
+                    }
+                }
+            )
+
+            indexStart += 40u
+        } while (usedAddresses.isNotEmpty())
+        return addresses
     }
 }

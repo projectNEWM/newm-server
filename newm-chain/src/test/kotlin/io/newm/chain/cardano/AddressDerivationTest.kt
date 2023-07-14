@@ -22,11 +22,11 @@ class AddressDerivationTest {
 
         val xpubKey = BIP32PublicKey(xpub)
 
-        val pk0 = xpubKey.derive(0).derive(0)
+        val pk0 = xpubKey.derive(0u).derive(0u)
         assertThat(pk0.bech32XPub).isEqualTo("xpub1nnml7qn2un86kgrvqyvs7lmrhz303aprekuaugu9s82elttfnjxu2ltrhxzjvhn6wlt6xn90j2sx6a2ludjpz03xhzsmp7mq476v5usa4meq2")
         val pkCredential = AddressCredential.fromKey(pk0)
         assertThat(pkCredential.hash.toHexString()).isEqualTo("8e942b2524de8eea1d63fda7e0db33fb3583e5d6d3cb8102c6290771")
-        val sk0 = xpubKey.derive(2).derive(0)
+        val sk0 = xpubKey.derive(2u).derive(0u)
         assertThat(sk0.bech32XPub).isEqualTo("xpub1hlfscunaww6xd80zyg7cxyqkkf643ywfpnvm9tvpz62900kh2zgglvwup02l0ltxm4xy58tkck8k8quq95wqnnrwnk57n83t8jwmgaqwtlfg8")
         val skCredential = AddressCredential.fromKey(sk0)
         assertThat(skCredential.hash.toHexString()).isEqualTo("0e54800ff11331412c84a6660d5789e249321a506a5c7fd6521b2487")
