@@ -70,4 +70,6 @@ interface LedgerRepository {
     fun snapshotNativeAssets(policy: String, name: String): Map<String, Long>
 
     fun createLedgerUtxoHistory(createdUtxos: Set<CreatedUtxo>, blockNumber: Long)
+
+    fun queryUsedAddresses(addresses: List<String>): Set<String>
 }

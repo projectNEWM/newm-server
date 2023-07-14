@@ -680,6 +680,7 @@ class BlockDaemon(
                         transaction {
                             val ledgerAssets = confirmedBlock.toLedgerAssets().map { ledgerAsset ->
                                 ledgerRepository.queryLedgerAsset(ledgerAsset.policy, ledgerAsset.name)!!
+                                    .copy(txId = ledgerAsset.txId)
                             }
                             // handle supply changes
                             val batch = mutableListOf<ByteArray>()
@@ -690,6 +691,9 @@ class BlockDaemon(
                                         policy = ledgerAsset.policy
                                         name = ledgerAsset.name
                                         nativeAssetSupplyChange = ledgerAsset.supply.toString()
+                                        slot = confirmedBlock.header.slot
+                                        block = confirmedBlock.header.blockHeight
+                                        txHash = ledgerAsset.txId
                                     }.writeTo(bos)
                                     bos.toByteArray()
                                 }
@@ -700,7 +704,8 @@ class BlockDaemon(
                                 ledgerAssets.filter { it.supply > BigInteger.ZERO }.map { ledgerAsset ->
                                     val metadataLedgerAsset = if (ledgerAsset.name.matches(CIP68_USER_TOKEN_REGEX)) {
                                         val name = "$CIP68_REFERENCE_TOKEN_PREFIX${ledgerAsset.name.substring(8)}"
-                                        ledgerRepository.queryLedgerAsset(ledgerAsset.policy, name) ?: run {
+                                        ledgerRepository.queryLedgerAsset(ledgerAsset.policy, name)
+                                            ?.copy(txId = ledgerAsset.txId) ?: run {
                                             log.warn("No LedgerAsset found for: '${ledgerAsset.policy}.$name' !")
                                             ledgerAsset
                                         }
@@ -718,6 +723,9 @@ class BlockDaemon(
                                             ledgerAsset.policy,
                                             ledgerAsset.name,
                                         )
+                                        slot = confirmedBlock.header.slot
+                                        block = confirmedBlock.header.blockHeight
+                                        txHash = ledgerAsset.txId
                                     }.writeTo(bos)
                                     bos.toByteArray()
                                 }
@@ -747,6 +755,11 @@ class BlockDaemon(
                                                 updatedNativeAsset.policy,
                                                 updatedNativeAsset.name
                                             )
+                                            slot = confirmedBlock.header.slot
+                                            block = confirmedBlock.header.blockHeight
+                                            txHash = ledgerAssets.firstOrNull {
+                                                it.name == updatedNativeAsset.name && it.policy == updatedNativeAsset.policy
+                                            }?.txId ?: ""
                                         }.writeTo(bos)
                                         metadataBatch.add(bos.toByteArray())
 
@@ -765,6 +778,11 @@ class BlockDaemon(
                                                             nativeAsset.policy,
                                                             nativeAsset.name
                                                         )
+                                                        slot = confirmedBlock.header.slot
+                                                        block = confirmedBlock.header.blockHeight
+                                                        txHash = ledgerAssets.firstOrNull {
+                                                            it.name == nativeAsset.name && it.policy == nativeAsset.policy
+                                                        }?.txId ?: ""
                                                     }.writeTo(bos1)
                                                     metadataBatch.add(bos1.toByteArray())
                                                 }

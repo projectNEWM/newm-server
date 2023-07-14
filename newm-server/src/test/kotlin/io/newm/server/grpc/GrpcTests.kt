@@ -12,6 +12,7 @@ import io.newm.chain.grpc.QueryTransactionConfirmationCountResponse
 import io.newm.chain.grpc.QueryUtxosResponse
 import io.newm.chain.grpc.SnapshotNativeAssetsResponse
 import io.newm.chain.grpc.SubmitTransactionResponse
+import io.newm.chain.grpc.deriveWalletAddressesRequest
 import io.newm.chain.grpc.monitorAddressRequest
 import io.newm.chain.grpc.monitorNativeAssetsRequest
 import io.newm.chain.grpc.monitorPaymentAddressRequest
@@ -416,5 +417,28 @@ class GrpcTests {
         println("stakeAddressToAmountMap: $stakeAddressToAmountMap")
         assertThat(stakeAddressToAmountMap.size).isEqualTo(4)
         assertThat(stakeAddressToAmountMap["total_supply"]).isEqualTo(69L)
+    }
+
+    @Test
+    @Disabled
+    fun `test deriveWalletAddresses`() = runBlocking {
+        // plainText for localhost testing only. use SSL later.
+        val channel = ManagedChannelBuilder.forAddress("localhost", 3737).usePlaintext().build()
+        val client =
+            NewmChainGrpcKt.NewmChainCoroutineStub(channel).withInterceptors(
+                MetadataUtils.newAttachHeadersInterceptor(
+                    Metadata().apply {
+                        put(
+                            Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER),
+                            "Bearer <JWT_TOKEN_HERE_DO_NOT_COMMIT>"
+                        )
+                    }
+                )
+            )
+        val request = deriveWalletAddressesRequest {
+            walletAccountXpubKey = "xpub10yq2v72lq0h7lnhkw308uy23fjq384zufvyesh6mlklnpmv048xs8arze4nws0xfp8h87d7jdxwgm5dsr7l0qruedrtcdudjlnxls3sm0qlln"
+        }
+        val response = client.deriveWalletAddresses(request)
+        println("response: $response")
     }
 }

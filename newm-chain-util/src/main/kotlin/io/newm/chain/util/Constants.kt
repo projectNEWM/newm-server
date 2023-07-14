@@ -75,5 +75,9 @@ object Constants {
     const val NETWORK_MAGIC_PREVIEW = 2L
     const val NETWORK_MAGIC_PREPROD = 1L
 
+    const val ROLE_PAYMENT = 0u
+    const val ROLE_CHANGE = 1u
+    const val ROLE_STAKING = 2u
+
     // FIXME: Remove unused stuff
 }
