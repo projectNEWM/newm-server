@@ -31,6 +31,8 @@ import io.newm.server.features.distribution.model.ValidateAlbumResponse
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.user.model.User
 import java.io.File
+import java.time.LocalDate
+import java.util.UUID
 
 /**
  * Higher level api for working with a music distribution service
@@ -105,4 +107,6 @@ interface DistributionRepository {
     suspend fun distributionOutletReleaseStatus(user: User, releaseId: Long): DistributionOutletReleaseStatusResponse
 
     suspend fun distributeSong(song: Song)
+
+    suspend fun getEarliestReleaseDate(userId: UUID): LocalDate
 }

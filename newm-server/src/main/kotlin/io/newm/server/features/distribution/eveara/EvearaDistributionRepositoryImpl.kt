@@ -96,6 +96,7 @@ import io.newm.server.ktx.getSecureConfigString
 import io.newm.server.ktx.toAudioContentType
 import io.newm.server.ktx.toBucketAndKey
 import io.newm.server.logging.logRequestJson
+import io.newm.shared.exception.HttpServiceUnavailableException
 import io.newm.shared.exception.HttpStatusException.Companion.toException
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.getConfigString
@@ -114,6 +115,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 import java.util.Date
+import java.util.UUID
 import kotlin.time.Duration.Companion.minutes
 
 class EvearaDistributionRepositoryImpl(
@@ -1057,7 +1059,7 @@ class EvearaDistributionRepositoryImpl(
                     outletsDetails = getOutlets(user).outlets.map { evearaOutlet ->
                         OutletsDetail(
                             storeId = evearaOutlet.storeId,
-                            releaseStartDate = LocalDate.now().plusDays(evearaOutlet.processDurationDates + 1)
+                            releaseStartDate = evearaOutlet.processDurationDates.toReleaseDate()
                         )
                     }
                 ).logRequestJson(log)
@@ -1435,6 +1437,14 @@ class EvearaDistributionRepositoryImpl(
             distributeReleaseToFutureOutlets(user, songToRelease.distributionReleaseId)
         log.info { "Distributed release ${songToRelease.title} with id ${songToRelease.distributionReleaseId} to future outlets: ${distributeFutureReleaseResponse.message}" }
     }
+
+    override suspend fun getEarliestReleaseDate(userId: UUID): LocalDate {
+        val maxDays = getOutlets(userRepository.get(userId)).outlets.maxOfOrNull { it.processDurationDates }
+            ?: throw HttpServiceUnavailableException("No Distribution Outlets available - retry later")
+        return maxDays.toReleaseDate()
+    }
+
+    private fun Long.toReleaseDate() = LocalDate.now().plusDays(this + 1)
 
     @Serializable
     private data class EvearaApiGetTokenRequest(

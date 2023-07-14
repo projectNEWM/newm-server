@@ -31,5 +31,7 @@ class HttpUnprocessableEntityException(message: String) :
 
 class HttpConflictException(message: String) : HttpStatusException(HttpStatusCode.Conflict, message)
 
+class HttpServiceUnavailableException(message: String) : HttpStatusException(HttpStatusCode.ServiceUnavailable, message)
+
 class HttpUnknownException(httpStatusCode: HttpStatusCode, message: String) :
     HttpStatusException(httpStatusCode, message)
