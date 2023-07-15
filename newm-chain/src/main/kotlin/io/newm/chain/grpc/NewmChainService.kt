@@ -351,13 +351,13 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
         }
     }
 
-    override suspend fun deriveWalletAddresses(request: DeriveWalletAddressesRequest): DeriveWalletAddressesResponse {
+    override suspend fun deriveWalletAddresses(request: WalletRequest): DeriveWalletAddressesResponse {
         try {
             // m / purpose' / coin_type' / account' / role / index
             // Example: m / 1852' / 1815' / 0' / 0 / 0
             // The user has sent us the account public key, so we can derive all roles/index values below that
 
-            val rootAccountPk = BIP32PublicKey(bech32XPub = request.walletAccountXpubKey)
+            val rootAccountPk = BIP32PublicKey(bech32XPub = request.accountXpubKey)
             val stakePk = rootAccountPk.derive(ROLE_STAKING).derive(0u)
             val stakeCredential = AddressCredential.fromKey(stakePk)
             val stakeAddress = Address.fromStakeAddressCredential(stakeCredential, Config.isMainnet).address
@@ -417,5 +417,43 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
             indexStart += 40u
         } while (usedAddresses.isNotEmpty())
         return addresses
+    }
+
+    override suspend fun queryWalletControlledLiveUtxos(request: WalletRequest): QueryWalletControlledUtxosResponse {
+        try {
+            val rootAccountPk = BIP32PublicKey(bech32XPub = request.accountXpubKey)
+            val stakePk = rootAccountPk.derive(ROLE_STAKING).derive(0u)
+            val stakeCredential = AddressCredential.fromKey(stakePk)
+
+            val paymentRootPk = rootAccountPk.derive(ROLE_PAYMENT)
+            val enterpriseAddresses = deriveAddresses(ROLE_PAYMENT, paymentRootPk).filter { it.used }
+            val paymentStakeAddresses = deriveAddresses(ROLE_PAYMENT, paymentRootPk, stakeCredential).filter { it.used }
+            val changeRootPk = rootAccountPk.derive(ROLE_CHANGE)
+            val enterpriseChangeAddresses = deriveAddresses(ROLE_CHANGE, changeRootPk).filter { it.used }
+            val paymentStakeChangeAddresses =
+                deriveAddresses(ROLE_CHANGE, changeRootPk, stakeCredential).filter { it.used }
+
+            val allUsedAddresses =
+                enterpriseAddresses + paymentStakeAddresses + enterpriseChangeAddresses + paymentStakeChangeAddresses
+
+            val addressUtxosList = allUsedAddresses.mapNotNull { address ->
+                val utxos = ledgerRepository.queryLiveUtxos(address.address)
+                if (utxos.isEmpty()) {
+                    null
+                } else {
+                    addressUtxos {
+                        this.address = address
+                        this.utxos.addAll(utxos.toQueryUtxosResponse().utxosList)
+                    }
+                }
+            }
+
+            return queryWalletControlledUtxosResponse {
+                this.addressUtxos.addAll(addressUtxosList)
+            }
+        } catch (e: Throwable) {
+            log.error("queryWalletControlledUtxos error!", e)
+            throw e
+        }
     }
 }

@@ -21,7 +21,8 @@ service NewmChain {
   rpc MonitorNativeAssets (MonitorNativeAssetsRequest) returns (stream MonitorNativeAssetsResponse) {}
   rpc CalculateMinUtxoForOutput (OutputUtxo) returns (OutputUtxo) {}
   rpc SnapshotNativeAssets (SnapshotNativeAssetsRequest) returns (SnapshotNativeAssetsResponse) {}
-  rpc DeriveWalletAddresses (DeriveWalletAddressesRequest) returns (DeriveWalletAddressesResponse) {}
+  rpc DeriveWalletAddresses (WalletRequest) returns (DeriveWalletAddressesResponse) {}
+  rpc QueryWalletControlledLiveUtxos (WalletRequest) returns (QueryWalletControlledUtxosResponse) {}
 }
 
 message SubmitTransactionRequest {
@@ -302,8 +303,8 @@ message SnapshotEntry {
   uint64 amount = 2;
 }
 
-message DeriveWalletAddressesRequest {
-  string wallet_account_xpub_key = 1;
+message WalletRequest {
+  string account_xpub_key = 1;
 }
 
 message DeriveWalletAddressesResponse {
@@ -319,4 +320,13 @@ message Address {
   uint32 role = 2;
   uint32 index = 3;
   bool used = 4;
+}
+
+message QueryWalletControlledUtxosResponse {
+  repeated AddressUtxos address_utxos = 1;
+}
+
+message AddressUtxos {
+  Address address = 1;
+  repeated Utxo utxos = 2;
 }

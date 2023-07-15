@@ -12,7 +12,6 @@ import io.newm.chain.grpc.QueryTransactionConfirmationCountResponse
 import io.newm.chain.grpc.QueryUtxosResponse
 import io.newm.chain.grpc.SnapshotNativeAssetsResponse
 import io.newm.chain.grpc.SubmitTransactionResponse
-import io.newm.chain.grpc.deriveWalletAddressesRequest
 import io.newm.chain.grpc.monitorAddressRequest
 import io.newm.chain.grpc.monitorNativeAssetsRequest
 import io.newm.chain.grpc.monitorPaymentAddressRequest
@@ -24,6 +23,7 @@ import io.newm.chain.grpc.queryUtxosOutputRefRequest
 import io.newm.chain.grpc.queryUtxosRequest
 import io.newm.chain.grpc.snapshotNativeAssetsRequest
 import io.newm.chain.grpc.submitTransactionRequest
+import io.newm.chain.grpc.walletRequest
 import io.newm.chain.util.Constants
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Disabled
@@ -435,10 +435,33 @@ class GrpcTests {
                     }
                 )
             )
-        val request = deriveWalletAddressesRequest {
-            walletAccountXpubKey = "xpub10yq2v72lq0h7lnhkw308uy23fjq384zufvyesh6mlklnpmv048xs8arze4nws0xfp8h87d7jdxwgm5dsr7l0qruedrtcdudjlnxls3sm0qlln"
+        val request = walletRequest {
+            accountXpubKey = "xpub10yq2v72lq0h7lnhkw308uy23fjq384zufvyesh6mlklnpmv048xs8arze4nws0xfp8h87d7jdxwgm5dsr7l0qruedrtcdudjlnxls3sm0qlln"
         }
         val response = client.deriveWalletAddresses(request)
+        println("response: $response")
+    }
+
+    @Test
+    @Disabled
+    fun `test queryWalletControlledLiveUtxos`() = runBlocking {
+        // plainText for localhost testing only. use SSL later.
+        val channel = ManagedChannelBuilder.forAddress("localhost", 3737).usePlaintext().build()
+        val client =
+            NewmChainGrpcKt.NewmChainCoroutineStub(channel).withInterceptors(
+                MetadataUtils.newAttachHeadersInterceptor(
+                    Metadata().apply {
+                        put(
+                            Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER),
+                            "Bearer <JWT_TOKEN_HERE_DO_NOT_COMMIT>"
+                        )
+                    }
+                )
+            )
+        val request = walletRequest {
+            accountXpubKey = "xpub10yq2v72lq0h7lnhkw308uy23fjq384zufvyesh6mlklnpmv048xs8arze4nws0xfp8h87d7jdxwgm5dsr7l0qruedrtcdudjlnxls3sm0qlln"
+        }
+        val response = client.queryWalletControlledLiveUtxos(request)
         println("response: $response")
     }
 }
