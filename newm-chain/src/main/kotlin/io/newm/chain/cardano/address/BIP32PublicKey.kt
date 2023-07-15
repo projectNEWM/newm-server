@@ -1,5 +1,6 @@
 package io.newm.chain.cardano.address
 
+import com.github.benmanes.caffeine.cache.Caffeine
 import io.newm.chain.cardano.address.curve25519.Ge
 import io.newm.chain.cardano.address.curve25519.Scalar64
 import io.newm.chain.util.Bech32
@@ -21,6 +22,11 @@ class BIP32PublicKey(val bech32XPub: String) {
     }
 
     fun derive(index: UInt): BIP32PublicKey {
+        // key derivation is expensive. Grab it from cache if we can.
+        publicKeyDerivationCache.getIfPresent("$bech32XPub/$index")?.let {
+            return it
+        }
+
         val chainCodeKeySpec = SecretKeySpec(chaincode, MAC_ALGORITHM)
         val zMac = zMacThreadLocal.getOrSet { Mac.getInstance(MAC_ALGORITHM) }
         zMac.init(chainCodeKeySpec)
@@ -54,7 +60,9 @@ class BIP32PublicKey(val bech32XPub: String) {
         zMac.reset()
         iMac.reset()
 
-        return BIP32PublicKey(Bech32.encode("xpub", out))
+        return BIP32PublicKey(Bech32.encode("xpub", out)).also {
+            publicKeyDerivationCache.put("$bech32XPub/$index", it)
+        }
     }
 
     private fun mkXPub(out: ByteArray, pk: ByteArray, cc: ByteArray) {
@@ -116,5 +124,9 @@ class BIP32PublicKey(val bech32XPub: String) {
         private val BYTEARRAY_ZERO = ByteArray(32)
         private val zMacThreadLocal = ThreadLocal<Mac>()
         private val iMacThreadLocal = ThreadLocal<Mac>()
+
+        private val publicKeyDerivationCache = Caffeine.newBuilder()
+            .maximumSize(1073741824L) // 1GB - 2^30
+            .build<String, BIP32PublicKey>()
     }
 }

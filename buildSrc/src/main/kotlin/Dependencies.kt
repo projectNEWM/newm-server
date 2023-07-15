@@ -54,7 +54,7 @@ object Dependencies {
     }
 
     object Coroutines {
-        private const val VERSION = "1.7.1"
+        private const val VERSION = "1.7.2"
 
         const val CORE = "org.jetbrains.kotlinx:kotlinx-coroutines-core:$VERSION"
         const val JDK8 = "org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:$VERSION"
