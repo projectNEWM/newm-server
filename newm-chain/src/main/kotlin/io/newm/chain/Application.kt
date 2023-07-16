@@ -2,13 +2,15 @@ package io.newm.chain
 
 import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.Logger
-import io.ktor.server.application.*
-import io.newm.shared.daemon.initializeDaemons
+import io.ktor.server.application.Application
 import io.newm.chain.database.initializeDatabase
 import io.newm.chain.di.installDependencyInjection
 import io.newm.chain.grpc.GrpcConfig
 import io.newm.chain.grpc.JwtAuthorizationServerInterceptor
 import io.newm.chain.logging.initializeSentry
+import io.newm.shared.daemon.initializeDaemons
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.jetbrains.exposed.sql.exposedLogger
 import org.slf4j.LoggerFactory
 import kotlin.system.exitProcess
@@ -54,8 +56,12 @@ fun Application.module() {
         JwtAuthorizationServerInterceptor(
             environment.config.config("jwt")
         ).createJwtUser(createJwtUser)
-        exitProcess(0)
+        // shutdown the ktor server
+        launch {
+            delay(1000)
+            exitProcess(0)
+        }
+    } else {
+        initializeDaemons()
     }
-
-    initializeDaemons()
 }
