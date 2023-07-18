@@ -453,6 +453,9 @@ class MintingRepositoryTest : BaseApplicationTests() {
             },
             cashRegisterUtxos = cashRegisterUtxos,
             changeAddress = "addr_test1vr620zal7m270eyjj9vcd27yj5uzy3a0vkgps3g6yh8vjtq702l28",
+            moneyBoxUtxos = null,
+            moneyBoxAddress = null,
+            cashRegisterCollectionAmount = 10000000L,
             collateralUtxo = utxo {
                 hash = "1964b50dc9ad31b339d5a82d9f579cd9e7d91053b97e2ca27b4aa8a5b88edb40"
                 ix = 2L
@@ -466,8 +469,8 @@ class MintingRepositoryTest : BaseApplicationTests() {
             fracTokenName = fracTokenName,
             artistWalletAddress = "addr_test1vz0pdhl9yagp6mk4ncqvgxx796sl4hxarfazy88s63xtdscuqxqf5",
             requiredSigners = signingKeys,
-            starterTokenUtxoReference,
-            mintScriptUtxoReference,
+            starterTokenUtxoReference = starterTokenUtxoReference,
+            mintScriptUtxoReference = mintScriptUtxoReference,
             signatures = mintingRepository.signTransactionDummy(signingKeys.size)
         )
 
@@ -482,6 +485,9 @@ class MintingRepositoryTest : BaseApplicationTests() {
             },
             cashRegisterUtxos = cashRegisterUtxos,
             changeAddress = "addr_test1vr620zal7m270eyjj9vcd27yj5uzy3a0vkgps3g6yh8vjtq702l28",
+            moneyBoxUtxos = null,
+            moneyBoxAddress = null,
+            cashRegisterCollectionAmount = 10000000L,
             collateralUtxo = utxo {
                 hash = "1964b50dc9ad31b339d5a82d9f579cd9e7d91053b97e2ca27b4aa8a5b88edb40"
                 ix = 2L
@@ -495,8 +501,8 @@ class MintingRepositoryTest : BaseApplicationTests() {
             fracTokenName = fracTokenName,
             artistWalletAddress = "addr_test1vz0pdhl9yagp6mk4ncqvgxx796sl4hxarfazy88s63xtdscuqxqf5",
             requiredSigners = signingKeys,
-            starterTokenUtxoReference,
-            mintScriptUtxoReference,
+            starterTokenUtxoReference = starterTokenUtxoReference,
+            mintScriptUtxoReference = mintScriptUtxoReference,
             signatures = mintingRepository.signTransaction(transactionIdBytes, signingKeys),
         )
 
