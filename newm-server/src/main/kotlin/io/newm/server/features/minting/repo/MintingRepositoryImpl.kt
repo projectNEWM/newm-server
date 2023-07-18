@@ -17,6 +17,8 @@ import io.newm.chain.grpc.signature
 import io.newm.chain.util.Sha3
 import io.newm.chain.util.hexToByteArray
 import io.newm.server.config.repo.ConfigRepository
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_CASH_REGISTER_COLLECTION_AMOUNT
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_CASH_REGISTER_MIN_AMOUNT
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_CIP68_POLICY
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_CIP68_SCRIPT_ADDRESS
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_SCRIPT_UTXO_REFERENCE
@@ -64,6 +66,8 @@ class MintingRepositoryImpl(
         val mintPriceLovelace = song.mintCostLovelace.toString()
         val cip68ScriptAddress = configRepository.getString(CONFIG_KEY_MINT_CIP68_SCRIPT_ADDRESS)
         val cip68Policy = configRepository.getString(CONFIG_KEY_MINT_CIP68_POLICY)
+        val cashRegisterCollectionAmount = configRepository.getLong(CONFIG_KEY_MINT_CASH_REGISTER_COLLECTION_AMOUNT)
+        val cashRegisterMinAmount = configRepository.getLong(CONFIG_KEY_MINT_CASH_REGISTER_MIN_AMOUNT)
         val paymentUtxo = cardanoRepository.queryLiveUtxos(paymentKey.address)
             .first { it.lovelace == mintPriceLovelace && it.nativeAssetsCount == 0 }
         val cashRegisterKey =
@@ -72,7 +76,21 @@ class MintingRepositoryImpl(
             .filter { it.nativeAssetsCount == 0 }
             .sortedByDescending { it.lovelace.toLong() }
             .take(5)
+        val cashRegisterAmount = cashRegisterUtxos.sumOf { it.lovelace.toLong() }
         require(cashRegisterUtxos.isNotEmpty()) { "cashRegister has no utxos!" }
+        val moneyBoxKey = if (cashRegisterAmount >= cashRegisterCollectionAmount + cashRegisterMinAmount) {
+            // we should collect to the moneybox
+            cardanoRepository.getKeyByName("moneyBox")
+        } else {
+            null
+        }
+        val moneyBoxUtxos = moneyBoxKey?.let {
+            cardanoRepository.queryLiveUtxos(moneyBoxKey.address)
+                .filter { it.nativeAssetsCount == 0 }
+                .sortedByDescending { it.lovelace.toLong() }
+                .take(5)
+        }
+
         val (refTokenName, fracTokenName) = calculateTokenNames(cashRegisterUtxos.first())
         val collateralKey =
             requireNotNull(cardanoRepository.getKeyByName("collateral")) { "collateral key not defined!" }
@@ -85,24 +103,27 @@ class MintingRepositoryImpl(
             configRepository.getString(CONFIG_KEY_MINT_STARTER_TOKEN_UTXO_REFERENCE).toReferenceUtxo()
         val scriptUtxoReference = configRepository.getString(CONFIG_KEY_MINT_SCRIPT_UTXO_REFERENCE).toReferenceUtxo()
 
-        val signingKeys = listOf(cashRegisterKey, paymentKey, collateralKey)
+        val signingKeys = listOfNotNull(cashRegisterKey, moneyBoxKey, paymentKey, collateralKey)
 
         var transactionBuilderResponse =
             buildMintingTransaction(
-                paymentUtxo,
-                cashRegisterUtxos,
-                cashRegisterKey.address,
-                collateralUtxo,
-                collateralKey.address,
-                cip68ScriptAddress,
-                cip68Metadata,
-                cip68Policy,
-                refTokenName,
-                fracTokenName,
-                user.walletAddress!!,
+                paymentUtxo = paymentUtxo,
+                cashRegisterUtxos = cashRegisterUtxos,
+                changeAddress = cashRegisterKey.address,
+                moneyBoxUtxos = moneyBoxUtxos,
+                moneyBoxAddress = moneyBoxKey?.address,
+                cashRegisterCollectionAmount = cashRegisterCollectionAmount,
+                collateralUtxo = collateralUtxo,
+                collateralReturnAddress = collateralKey.address,
+                cip68ScriptAddress = cip68ScriptAddress,
+                cip68Metadata = cip68Metadata,
+                cip68Policy = cip68Policy,
+                refTokenName = refTokenName,
+                fracTokenName = fracTokenName,
+                artistWalletAddress = user.walletAddress!!,
                 requiredSigners = signingKeys,
-                starterTokenUtxoReference,
-                scriptUtxoReference,
+                starterTokenUtxoReference = starterTokenUtxoReference,
+                mintScriptUtxoReference = scriptUtxoReference,
                 signatures = signTransactionDummy(signingKeys.size)
             )
 
@@ -111,20 +132,23 @@ class MintingRepositoryImpl(
         // get signatures for this transaction
         transactionBuilderResponse =
             buildMintingTransaction(
-                paymentUtxo,
-                cashRegisterUtxos,
-                cashRegisterKey.address,
-                collateralUtxo,
-                collateralKey.address,
-                cip68ScriptAddress,
-                cip68Metadata,
-                cip68Policy,
-                refTokenName,
-                fracTokenName,
-                user.walletAddress,
+                paymentUtxo = paymentUtxo,
+                cashRegisterUtxos = cashRegisterUtxos,
+                changeAddress = cashRegisterKey.address,
+                moneyBoxUtxos = moneyBoxUtxos,
+                moneyBoxAddress = moneyBoxKey?.address,
+                cashRegisterCollectionAmount = cashRegisterCollectionAmount,
+                collateralUtxo = collateralUtxo,
+                collateralReturnAddress = collateralKey.address,
+                cip68ScriptAddress = cip68ScriptAddress,
+                cip68Metadata = cip68Metadata,
+                cip68Policy = cip68Policy,
+                refTokenName = refTokenName,
+                fracTokenName = fracTokenName,
+                artistWalletAddress = user.walletAddress,
                 requiredSigners = signingKeys,
-                starterTokenUtxoReference,
-                scriptUtxoReference,
+                starterTokenUtxoReference = starterTokenUtxoReference,
+                mintScriptUtxoReference = scriptUtxoReference,
                 signatures = signTransaction(transactionIdBytes, signingKeys),
             )
         val submitTransactionResponse = cardanoRepository.submitTransaction(transactionBuilderResponse.transactionCbor)
@@ -159,6 +183,9 @@ class MintingRepositoryImpl(
         paymentUtxo: Utxo,
         cashRegisterUtxos: List<Utxo>,
         changeAddress: String,
+        moneyBoxUtxos: List<Utxo>?,
+        moneyBoxAddress: String?,
+        cashRegisterCollectionAmount: Long,
         collateralUtxo: Utxo,
         collateralReturnAddress: String,
         cip68ScriptAddress: String,
@@ -173,6 +200,7 @@ class MintingRepositoryImpl(
         signatures: List<Signature> = emptyList()
     ) = cardanoRepository.buildTransaction {
         with(sourceUtxos) {
+            moneyBoxUtxos?.let { addAll(it) }
             addAll(cashRegisterUtxos)
             add(paymentUtxo)
         }
@@ -208,10 +236,23 @@ class MintingRepositoryImpl(
                     )
                 }
             )
+
+            // collect some into the moneyBox
+            moneyBoxAddress?.let {
+                add(
+                    outputUtxo {
+                        address = it
+                        lovelace = (
+                            cashRegisterCollectionAmount + (
+                                moneyBoxUtxos?.sumOf { it.lovelace.toLong() }
+                                    ?: 0L
+                                )
+                            ).toString()
+                    }
+                )
+            }
         }
 
-        // TODO: CU-863gn8yfp - if our cash register goes over CONFIG_KEY_MINT_CASH_REGISTER_COLLECTION_AMOUNT + CONFIG_KEY_MINT_CASH_REGISTER_MIN_AMOUNT
-        // Then return change into the moneybox bucket after adding an output for MIN_AMOUNT to the cash register
         this.changeAddress = changeAddress
 
         with(mintTokens) {
