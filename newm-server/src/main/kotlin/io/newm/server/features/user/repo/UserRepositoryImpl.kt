@@ -101,6 +101,9 @@ internal class UserRepositoryImpl(
         logger.debug { "findOrAdd: oauthUser = $user" }
 
         val email = user.email.asValidEmail()
+        if (user.isEmailVerified != true) {
+            throw HttpUnauthorizedException("Unverified email: $email")
+        }
         return transaction {
             val entity = UserEntity.getByEmail(email) ?: UserEntity.new {
                 this.firstName = user.firstName

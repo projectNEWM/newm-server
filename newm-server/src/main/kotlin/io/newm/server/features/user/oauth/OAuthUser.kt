@@ -6,4 +6,5 @@ interface OAuthUser {
     val lastName: String?
     val pictureUrl: String?
     val email: String?
+    val isEmailVerified: Boolean?
 }

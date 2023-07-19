@@ -31,7 +31,10 @@ private data class FacebookUser(
     override val email: String? = null,
 
     override var pictureUrl: String? = null
-) : OAuthUser
+) : OAuthUser {
+    override val isEmailVerified: Boolean
+        get() = !email.isNullOrBlank() // Facebook API returns email only if verified
+}
 
 @Serializable
 private data class Picture(

@@ -28,7 +28,9 @@ private data class GoogleUser(
     @SerialName("picture")
     override val pictureUrl: String? = null,
     @SerialName("email")
-    override val email: String? = null
+    override val email: String? = null,
+    @SerialName("email_verified")
+    override val isEmailVerified: Boolean? = null
 ) : OAuthUser
 
 internal class GoogleUserProvider(
