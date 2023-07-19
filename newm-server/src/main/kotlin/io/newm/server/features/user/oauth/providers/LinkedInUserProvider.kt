@@ -100,19 +100,19 @@ private data class EmailHandle(
         @SerialName("handle~")
         val handle: Handle?,
         @SerialName("primary")
-        val primary: Boolean?
+        val primary: Boolean?,
+        @SerialName("type")
+        val type: String?
     ) {
         @Serializable
         data class Handle(
             @SerialName("emailAddress")
             val emailAddress: String?,
-            @SerialName("type")
-            val type: String?
         )
     }
 
-    val bestHandle: Element.Handle?
-        get() = elements?.firstOrNull { it.primary == true }?.handle ?: elements?.firstOrNull()?.handle
+    val bestElement: Element?
+        get() = elements?.firstOrNull { it.primary == true } ?: elements?.firstOrNull()
 }
 
 internal class LinkedInUserProvider(
@@ -150,10 +150,10 @@ internal class LinkedInUserProvider(
                 }
             }.checkedBody<LinkedInUser>()
         }
-        val emailHandle = emailJob.await().bestHandle
+        val emailElement = emailJob.await().bestElement
         userJob.await().apply {
-            email = emailHandle?.emailAddress
-            isEmailVerified = emailHandle?.type == "EMAIL" // "OTHER" if unverified
+            email = emailElement?.handle?.emailAddress
+            isEmailVerified = emailElement?.type == "EMAIL" // "OTHER" if unverified
         }
     }
 }
