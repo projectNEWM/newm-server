@@ -67,7 +67,7 @@ class CollaborationRoutesTests : BaseApplicationTests() {
             songId = songId,
             email = "collaborator@email.com",
             role = "Role",
-            royaltyRate = 0.5f,
+            royaltyRate = 0.5f.toBigDecimal(),
             credited = true,
             featured = true
         )
@@ -101,7 +101,7 @@ class CollaborationRoutesTests : BaseApplicationTests() {
         val collaboration2 = Collaboration(
             email = "collaborator2@email.com",
             role = "Role2",
-            royaltyRate = 2 * collaboration1.royaltyRate!!,
+            royaltyRate = 2.toBigDecimal() * collaboration1.royaltyRate!!,
             credited = !collaboration1.credited!!,
             featured = !collaboration1.featured!!,
         )

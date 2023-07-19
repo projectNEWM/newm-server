@@ -32,6 +32,9 @@ import io.newm.server.features.user.oauth.providers.GoogleUserProvider
 import io.newm.server.features.user.oauth.providers.LinkedInUserProvider
 import io.newm.server.ktx.asValidUrl
 import io.newm.shared.auth.Password
+import io.newm.shared.serialization.BigDecimalSerializer
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.modules.SerializersModule
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
@@ -44,6 +47,7 @@ import org.koin.dsl.module
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
+import java.math.BigDecimal
 import java.util.UUID
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -61,7 +65,15 @@ open class BaseApplicationTests {
     protected val client: HttpClient by lazy {
         application.createClient {
             install(ContentNegotiation) {
-                json()
+                json(
+                    json = Json {
+                        ignoreUnknownKeys = true
+                        explicitNulls = false
+                        serializersModule = SerializersModule {
+                            contextual(BigDecimal::class, BigDecimalSerializer)
+                        }
+                    }
+                )
             }
             install(HttpTimeout) {
                 requestTimeoutMillis = 2.minutes.inWholeMilliseconds
@@ -159,7 +171,7 @@ open class BaseApplicationTests {
             songId = EntityID(collab.songId!!, SongTable)
             role = collab.role
             credited = collab.credited!!
-            royaltyRate = collab.royaltyRate
+            royaltyRate = collab.royaltyRate?.toFloat()
             status = CollaborationStatus.Accepted
         }.id.value
     }

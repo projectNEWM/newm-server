@@ -48,7 +48,7 @@ class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         songId = songId.value,
         email = email,
         role = role,
-        royaltyRate = royaltyRate,
+        royaltyRate = royaltyRate?.toBigDecimal(),
         credited = credited,
         featured = featured,
         status = status,
