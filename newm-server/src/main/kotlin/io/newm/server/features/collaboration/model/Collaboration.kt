@@ -2,7 +2,9 @@ package io.newm.server.features.collaboration.model
 
 import io.newm.shared.serialization.LocalDateTimeSerializer
 import io.newm.shared.serialization.UUIDSerializer
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
+import java.math.BigDecimal
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -16,7 +18,8 @@ data class Collaboration(
     val songId: UUID? = null,
     val email: String? = null,
     var role: String? = null,
-    val royaltyRate: Float? = null,
+    @Contextual
+    val royaltyRate: BigDecimal? = null,
     val credited: Boolean? = null,
     val featured: Boolean? = null,
     val status: CollaborationStatus? = null,

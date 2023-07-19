@@ -41,6 +41,7 @@ import io.newm.txbuilder.ktx.toPlutusData
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf
 import org.slf4j.Logger
+import java.math.BigDecimal
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
@@ -62,6 +63,22 @@ class MintingRepositoryImpl(
             limit = Integer.MAX_VALUE
         )
         val cip68Metadata = buildStreamTokenMetadata(song, user, collabs)
+        val streamTokensTotal = 100_000_000L.toBigDecimal()
+        var streamTokensRemaining = 100_000_000L
+        val splitCollabs = collabs.filter { it.royaltyRate!! > BigDecimal.ZERO }.sortedByDescending { it.royaltyRate }
+        require(splitCollabs.sumOf { it.royaltyRate!! } == 100.toBigDecimal()) { "Collaboration royalty rates must sum to 100" }
+        val streamTokenSplits = splitCollabs.mapIndexed { index, collaboration ->
+            val collabUser = userRepository.findByEmail(collaboration.email!!)
+            val splitMultiplier = collaboration.royaltyRate!! / 100.toBigDecimal()
+            val amount = if (index < splitCollabs.lastIndex) {
+                // round down to nearest whole token
+                (streamTokensTotal * splitMultiplier).toLong()
+            } else {
+                streamTokensRemaining
+            }
+            streamTokensRemaining -= amount
+            Pair(collabUser.walletAddress!!, amount)
+        }
         val paymentKey = cardanoRepository.getKey(song.paymentKeyId!!)
         val mintPriceLovelace = song.mintCostLovelace.toString()
         val cip68ScriptAddress = configRepository.getString(CONFIG_KEY_MINT_CIP68_SCRIPT_ADDRESS)
@@ -101,7 +118,8 @@ class MintingRepositoryImpl(
         ) { "collateral utxo not found!" }
         val starterTokenUtxoReference =
             configRepository.getString(CONFIG_KEY_MINT_STARTER_TOKEN_UTXO_REFERENCE).toReferenceUtxo()
-        val scriptUtxoReference = configRepository.getString(CONFIG_KEY_MINT_SCRIPT_UTXO_REFERENCE).toReferenceUtxo()
+        val scriptUtxoReference =
+            configRepository.getString(CONFIG_KEY_MINT_SCRIPT_UTXO_REFERENCE).toReferenceUtxo()
 
         val signingKeys = listOfNotNull(cashRegisterKey, moneyBoxKey, paymentKey, collateralKey)
 
@@ -120,7 +138,7 @@ class MintingRepositoryImpl(
                 cip68Policy = cip68Policy,
                 refTokenName = refTokenName,
                 fracTokenName = fracTokenName,
-                artistWalletAddress = user.walletAddress!!,
+                streamTokenSplits = streamTokenSplits,
                 requiredSigners = signingKeys,
                 starterTokenUtxoReference = starterTokenUtxoReference,
                 mintScriptUtxoReference = scriptUtxoReference,
@@ -145,7 +163,7 @@ class MintingRepositoryImpl(
                 cip68Policy = cip68Policy,
                 refTokenName = refTokenName,
                 fracTokenName = fracTokenName,
-                artistWalletAddress = user.walletAddress,
+                streamTokenSplits = streamTokenSplits,
                 requiredSigners = signingKeys,
                 starterTokenUtxoReference = starterTokenUtxoReference,
                 mintScriptUtxoReference = scriptUtxoReference,
@@ -193,7 +211,7 @@ class MintingRepositoryImpl(
         cip68Policy: String,
         refTokenName: String,
         fracTokenName: String,
-        artistWalletAddress: String,
+        streamTokenSplits: List<Pair<String, Long>>,
         requiredSigners: List<Key>,
         starterTokenUtxoReference: Utxo,
         mintScriptUtxoReference: Utxo,
@@ -221,21 +239,22 @@ class MintingRepositoryImpl(
                 }
             )
 
-            // fraction SFT output to the artist's wallet
-            // TODO: CU-863h5ec15 - split among collaborators
-            add(
-                outputUtxo {
-                    address = artistWalletAddress
-                    // lovelace = "0" auto-calculated minutxo
-                    nativeAssets.add(
-                        nativeAsset {
-                            policy = cip68Policy
-                            name = fracTokenName
-                            amount = "100000000"
-                        }
-                    )
-                }
-            )
+            // fraction SFT output to each artist's wallet
+            streamTokenSplits.forEach { (artistWalletAddress, streamTokenAmount) ->
+                add(
+                    outputUtxo {
+                        address = artistWalletAddress
+                        // lovelace = "0" auto-calculated minutxo
+                        nativeAssets.add(
+                            nativeAsset {
+                                policy = cip68Policy
+                                name = fracTokenName
+                                amount = streamTokenAmount.toString()
+                            }
+                        )
+                    }
+                )
+            }
 
             // collect some into the moneyBox
             moneyBoxAddress?.let {

@@ -54,6 +54,7 @@ import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf
+import java.math.BigDecimal
 import java.net.URL
 import java.util.UUID
 
@@ -291,7 +292,7 @@ internal class SongRepositoryImpl(
             CollaborationFilters(songIds = listOf(song.id!!)),
             offset = 0,
             limit = Int.MAX_VALUE,
-        ).count { (it.royaltyRate ?: -1.0f) > 0.0f && it.status != CollaborationStatus.Accepted }
+        ).count { (it.royaltyRate ?: BigDecimal.ZERO) > BigDecimal.ZERO && it.status != CollaborationStatus.Accepted }
     }
 
     override suspend fun getMintingPaymentAmountCborHex(songId: UUID, requesterId: UUID): String {
@@ -302,7 +303,7 @@ internal class SongRepositoryImpl(
             filters = CollaborationFilters(songIds = listOf(songId)),
             offset = 0,
             limit = Int.MAX_VALUE,
-        ).count { (it.royaltyRate ?: -1.0f) > 0.0f }
+        ).count { (it.royaltyRate ?: BigDecimal.ZERO) > BigDecimal.ZERO }
         val mintCostBase = configRepository.getLong(CONFIG_KEY_MINT_PRICE)
         val minUtxo: Long = cardanoRepository.queryStreamTokenMinUtxo()
         val mintCostTotal = mintCostBase + (numberOfCollaborators * minUtxo)

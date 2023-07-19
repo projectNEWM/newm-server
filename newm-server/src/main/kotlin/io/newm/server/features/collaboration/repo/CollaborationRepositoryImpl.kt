@@ -49,7 +49,7 @@ internal class CollaborationRepositoryImpl(
                 this.songId = EntityID(songId, SongTable)
                 this.email = email
                 this.role = collaboration.role
-                this.royaltyRate = collaboration.royaltyRate
+                this.royaltyRate = collaboration.royaltyRate?.toFloat()
                 collaboration.credited?.let { this.credited = it }
                 collaboration.featured?.let { this.featured = it }
                 collaboration.distributionArtistId?.let { this.distributionArtistId = it }
@@ -72,7 +72,7 @@ internal class CollaborationRepositoryImpl(
                 }
                 collaboration.email?.let { email = it.asValidUniqueEmail(this) }
                 collaboration.role?.let { role = it }
-                collaboration.royaltyRate?.let { royaltyRate = it }
+                collaboration.royaltyRate?.let { royaltyRate = it.toFloat() }
                 collaboration.credited?.let { credited = it }
                 collaboration.featured?.let { featured = it }
                 collaboration.distributionArtistId?.let { distributionArtistId = it }

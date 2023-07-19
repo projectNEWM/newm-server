@@ -2,7 +2,6 @@ package io.newm.server.features.collaboration.database
 
 import io.newm.server.features.collaboration.model.CollaborationStatus
 import io.newm.server.features.song.database.SongTable
-import io.newm.server.features.song.database.SongTable.defaultExpression
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.Column
