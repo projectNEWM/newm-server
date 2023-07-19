@@ -30,6 +30,8 @@ private data class AppleUser(
     override val pictureUrl: String? = null
     override val email: String?
         get() = jwt.getClaim("email").asString()
+    override val isEmailVerified: Boolean?
+        get() = jwt.getClaim("email_verified").asBoolean()
 }
 
 internal class AppleUserProvider(

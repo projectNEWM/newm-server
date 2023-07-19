@@ -38,6 +38,8 @@ private data class LinkedInUser(
 
     override var email: String? = null
 
+    override var isEmailVerified: Boolean? = null
+
     @Serializable
     data class Picture(
         @SerialName("displayImage~")
@@ -103,15 +105,14 @@ private data class EmailHandle(
         @Serializable
         data class Handle(
             @SerialName("emailAddress")
-            val emailAddress: String?
+            val emailAddress: String?,
+            @SerialName("type")
+            val type: String?
         )
-
-        val email: String?
-            get() = handle?.emailAddress
     }
 
-    val bestEmail: String?
-        get() = elements?.firstOrNull { it.primary == true }?.email ?: elements?.firstOrNull()?.email
+    val bestHandle: Element.Handle?
+        get() = elements?.firstOrNull { it.primary == true }?.handle ?: elements?.firstOrNull()?.handle
 }
 
 internal class LinkedInUserProvider(
@@ -149,8 +150,10 @@ internal class LinkedInUserProvider(
                 }
             }.checkedBody<LinkedInUser>()
         }
+        val emailHandle = emailJob.await().bestHandle
         userJob.await().apply {
-            email = emailJob.await().bestEmail
+            email = emailHandle?.emailAddress
+            isEmailVerified = emailHandle?.type == "EMAIL" // "OTHER" if unverified
         }
     }
 }
