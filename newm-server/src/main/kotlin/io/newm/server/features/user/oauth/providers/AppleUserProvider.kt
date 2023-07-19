@@ -31,7 +31,7 @@ private data class AppleUser(
     override val email: String?
         get() = jwt.getClaim("email").asString()
     override val isEmailVerified: Boolean?
-        get() = jwt.getClaim("email_verified").asBoolean()
+        get() = jwt.getClaim("email_verified")?.let { it.asBoolean() ?: it.asString()?.toBoolean() }
 }
 
 internal class AppleUserProvider(

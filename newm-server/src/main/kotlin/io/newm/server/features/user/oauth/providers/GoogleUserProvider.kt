@@ -29,7 +29,7 @@ private data class GoogleUser(
     override val pictureUrl: String? = null,
     @SerialName("email")
     override val email: String? = null,
-    @SerialName("email_verified")
+    @SerialName("verified_email")
     override val isEmailVerified: Boolean? = null
 ) : OAuthUser
 
@@ -45,7 +45,7 @@ internal class GoogleUserProvider(
         return httpClient.get(userInfoUrl) {
             parameter(
                 key = "fields",
-                value = "id,given_name,family_name,picture,email"
+                value = "id,given_name,family_name,picture,email,verified_email"
             )
             headers {
                 accept(ContentType.Application.Json)
