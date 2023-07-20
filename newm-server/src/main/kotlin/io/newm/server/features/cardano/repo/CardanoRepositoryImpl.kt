@@ -18,6 +18,7 @@ import io.newm.chain.grpc.TransactionBuilderResponse
 import io.newm.chain.grpc.Utxo
 import io.newm.chain.grpc.nativeAsset
 import io.newm.chain.grpc.outputUtxo
+import io.newm.chain.grpc.queryUtxosOutputRefRequest
 import io.newm.chain.grpc.queryUtxosRequest
 import io.newm.chain.grpc.submitTransactionRequest
 import io.newm.chain.util.Constants
@@ -148,6 +149,17 @@ internal class CardanoRepositoryImpl(
 
         configRepository.putString(CONFIG_KEY_ENCRYPTION_SALT, cipherSalt)
         configRepository.putString(CONFIG_KEY_ENCRYPTION_PASSWORD, cipherPassword)
+    }
+
+    override suspend fun queryPublicKeyHashByOutputRef(hash: String, ix: Long): String {
+        val response = client.queryPublicKeyHashByOutputRef(
+            queryUtxosOutputRefRequest {
+                this.hash = hash
+                this.ix = ix
+            }
+        )
+        require(response.hasPublicKeyHash()) { "Response does not contain a public key hash!" }
+        return response.publicKeyHash
     }
 
     override suspend fun queryStreamTokenMinUtxo(): Long {

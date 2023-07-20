@@ -59,6 +59,14 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
         return ledgerRepository.queryUtxosByOutputRef(request.hash, request.ix.toInt()).toQueryUtxosResponse()
     }
 
+    override suspend fun queryPublicKeyHashByOutputRef(request: QueryUtxosOutputRefRequest): QueryPublicKeyHashResponse {
+        return ledgerRepository.queryPublicKeyHashByOutputRef(request.hash, request.ix.toInt())?.let {
+            queryPublicKeyHashResponse {
+                publicKeyHash = it
+            }
+        } ?: queryPublicKeyHashResponse { }
+    }
+
     override suspend fun queryUtxosByStakeAddress(request: QueryUtxosRequest): QueryUtxosResponse {
         return ledgerRepository.queryUtxosByStakeAddress(request.address).toQueryUtxosResponse()
     }
@@ -129,7 +137,7 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                             result = "MsgAcceptTx"
                             txId = transactionId
                         }.also {
-                            log.warn { "submitTransaction($request) SUCCESS. txId: ${it.txId}" }
+                            log.warn { "submitTransaction(cbor: ${request.cbor.toByteArray().toHexString()}) SUCCESS. txId: ${it.txId}" }
                         }
                     }
 
@@ -137,7 +145,7 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                         submitTransactionResponse {
                             result = response.result.toString()
                         }.also {
-                            log.warn { "submitTransaction($request) FAILED. result: ${it.result}" }
+                            log.warn { "submitTransaction(cbor: ${request.cbor.toByteArray().toHexString()}) FAILED. result: ${it.result}" }
                         }
                     }
                 }
@@ -234,6 +242,7 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
     }
 
     override suspend fun transactionBuilder(request: TransactionBuilderRequest): TransactionBuilderResponse {
+        log.warn("transactionBuilder request: $request")
         try {
             return txSubmitClientPool.useInstance { txSubmitClient ->
                 val stateQueryClient = txSubmitClient as StateQueryClient
@@ -256,10 +265,12 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                             }.distinct().map {
                                 it.hexToByteArray().toByteString()
                             }
+                        log.warn("transactionBuilder: adding requiredSigners: $requiredSigners")
                         request.toBuilder()
                             .addAllRequiredSigners(requiredSigners)
                             .build()
                     } else {
+                        log.warn("transactionBuilder: not adding requiredSigners")
                         request
                     }
 
