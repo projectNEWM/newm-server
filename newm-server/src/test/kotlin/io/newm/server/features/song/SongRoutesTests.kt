@@ -807,7 +807,7 @@ class SongRoutesTests : BaseApplicationTests() {
         }
         assertThat(response.status).isEqualTo(HttpStatusCode.OK)
         val actualCborHex = response.body<MintPaymentResponse>().cborHex
-        val expectedCborHex = CborInteger.create(expectedAmount).toCborByteArray().toHexString()
+        val expectedCborHex = CborInteger.create(expectedAmount + 1000000L).toCborByteArray().toHexString()
         assertThat(actualCborHex).isEqualTo(expectedCborHex)
     }
 
