@@ -305,13 +305,14 @@ internal class SongRepositoryImpl(
             limit = Int.MAX_VALUE,
         ).count { (it.royaltyRate ?: BigDecimal.ZERO) > BigDecimal.ZERO }
         val mintCostBase = configRepository.getLong(CONFIG_KEY_MINT_PRICE)
+        val changeAmount = 1000000L // 1 ada
         val minUtxo: Long = cardanoRepository.queryStreamTokenMinUtxo()
         val mintCostTotal = mintCostBase + (numberOfCollaborators * minUtxo)
 
         // Save the mint cost to the database
         update(songId, Song(mintCostLovelace = mintCostTotal))
 
-        return CborInteger.create(mintCostTotal).toCborByteArray().toHexString()
+        return CborInteger.create(mintCostTotal + changeAmount).toCborByteArray().toHexString()
     }
 
     override suspend fun generateMintingPaymentTransaction(
