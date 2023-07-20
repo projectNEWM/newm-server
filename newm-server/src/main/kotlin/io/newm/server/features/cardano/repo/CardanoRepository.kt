@@ -20,6 +20,7 @@ interface CardanoRepository {
     suspend fun submitTransaction(cborBytes: ByteString): SubmitTransactionResponse
     suspend fun awaitPayment(request: MonitorPaymentAddressRequest): MonitorPaymentAddressResponse
     suspend fun queryLiveUtxos(address: String): List<Utxo>
+    suspend fun queryPublicKeyHashByOutputRef(hash: String, ix: Long): String
     suspend fun saveEncryptionParams(encryptionRequest: EncryptionRequest)
     suspend fun queryStreamTokenMinUtxo(): Long
 }

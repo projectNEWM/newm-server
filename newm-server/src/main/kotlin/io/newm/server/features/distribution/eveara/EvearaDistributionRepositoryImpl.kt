@@ -728,7 +728,7 @@ class EvearaDistributionRepositoryImpl(
                     genre = song.genres?.mapNotNull { songGenreName -> genres.firstOrNull { it.name == songGenreName }?.genreId },
                     language = languages.find { it.name == song.language }?.code,
                     explicit = if (song.parentalAdvisory.equals("Non-Explicit", ignoreCase = true)) {
-                        0 // Clean
+                        null // Clean
                     } else {
                         1 // Explicit
                     },

@@ -23,6 +23,7 @@ service NewmChain {
   rpc SnapshotNativeAssets (SnapshotNativeAssetsRequest) returns (SnapshotNativeAssetsResponse) {}
   rpc DeriveWalletAddresses (WalletRequest) returns (DeriveWalletAddressesResponse) {}
   rpc QueryWalletControlledLiveUtxos (WalletRequest) returns (QueryWalletControlledUtxosResponse) {}
+  rpc QueryPublicKeyHashByOutputRef (QueryUtxosOutputRefRequest) returns (QueryPublicKeyHashResponse) {}
 }
 
 message SubmitTransactionRequest {
@@ -329,4 +330,8 @@ message QueryWalletControlledUtxosResponse {
 message AddressUtxos {
   Address address = 1;
   repeated Utxo utxos = 2;
+}
+
+message QueryPublicKeyHashResponse {
+  optional string public_key_hash = 1;
 }
