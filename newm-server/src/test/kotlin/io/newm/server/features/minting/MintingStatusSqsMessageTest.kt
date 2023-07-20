@@ -15,6 +15,7 @@ class MintingStatusSqsMessageTest {
         val json = Json {
             ignoreUnknownKeys = true
             explicitNulls = false
+            isLenient = true
         }
         val songId = UUID.randomUUID()
         val message = MintingStatusSqsMessage(

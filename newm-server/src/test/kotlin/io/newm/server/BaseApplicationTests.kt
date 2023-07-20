@@ -69,6 +69,7 @@ open class BaseApplicationTests {
                     json = Json {
                         ignoreUnknownKeys = true
                         explicitNulls = false
+                        isLenient = true
                         serializersModule = SerializersModule {
                             contextual(BigDecimal::class, BigDecimalSerializer)
                         }
