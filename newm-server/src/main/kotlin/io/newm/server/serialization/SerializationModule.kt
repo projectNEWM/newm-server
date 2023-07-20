@@ -21,6 +21,7 @@ val serializationModule = module {
         Json {
             ignoreUnknownKeys = true
             explicitNulls = false
+            isLenient = true
             serializersModule = contextualSerializersModule
         }
     }
