@@ -29,5 +29,6 @@ interface ConfigRepository {
         const val CONFIG_KEY_EVEARA_CLIENT_SECRET = "eveara.clientSecret"
         const val CONFIG_KEY_EVEARA_PARTNER_SUBSCRIPTION_ID = "eveara.partnerSubscriptionId"
         const val CONFIG_KEY_EVEARA_NEWM_EMAIL = "eveara.newmEmail"
+        const val CONFIG_KEY_EVEARA_STATUS_CHECK_MINUTES = "eveara.statusCheckMinutes"
     }
 }
