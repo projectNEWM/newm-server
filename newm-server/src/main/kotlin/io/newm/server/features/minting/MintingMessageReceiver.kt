@@ -4,6 +4,7 @@ import com.amazonaws.services.sqs.model.Message
 import io.newm.chain.grpc.monitorPaymentAddressRequest
 import io.newm.server.aws.SqsMessageReceiver
 import io.newm.server.config.repo.ConfigRepository
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_EVEARA_STATUS_CHECK_MINUTES
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_MONITOR_PAYMENT_ADDRESS_TIMEOUT_MIN
 import io.newm.server.features.arweave.repo.ArweaveRepository
 import io.newm.server.features.cardano.repo.CardanoRepository
@@ -111,8 +112,7 @@ class MintingMessageReceiver : SqsMessageReceiver {
                     .forJob(jobDetail)
                     .withSchedule(
                         simpleSchedule()
-                            // .withIntervalInHours(24)
-                            .withIntervalInMinutes(5) // Testing mode
+                            .withIntervalInMinutes(configRepository.getInt(CONFIG_KEY_EVEARA_STATUS_CHECK_MINUTES))
                             .repeatForever()
                     )
                     .build()
