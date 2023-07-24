@@ -45,11 +45,26 @@ fun Array<ByteArray>.toHexString(): String {
 }
 
 fun String.hexToByteArray(): ByteArray {
-    return HexFormat.of().parseHex(this)
+    try {
+        return HexFormat.of().parseHex(this)
+    } catch (e: Throwable) {
+        log.error("Failed to decode hex string: $this", e)
+        throw e
+    }
 }
 
 fun String.b64ToByteArray(): ByteArray {
-    return Base64.getDecoder().decode(this)
+    try {
+        // Check if this is a url-safe base64 string
+        return if (this.contains('-') || this.contains('_')) {
+            Base64.getUrlDecoder().decode(this)
+        } else {
+            Base64.getDecoder().decode(this)
+        }
+    } catch (e: Throwable) {
+        log.error("Failed to decode base64 string: $this", e)
+        throw e
+    }
 }
 
 fun ByteArray.toB64String(): String {

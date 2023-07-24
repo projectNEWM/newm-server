@@ -145,7 +145,7 @@ class ArweaveTest {
 
         val txSigned = Tx.SignedTransaction(signedTransaction)
 
-        val txId = txSigned.id()
+        val txId = txSigned.id().toString()
         println("txId: $txId")
 
         val function: Function1<Future<Any>, Future<Any>> = object : Function1<Future<Any>, Future<Any>> {
@@ -174,7 +174,8 @@ class ArweaveTest {
 
     @Test
     fun `test tx status`() = runBlocking {
-        val txIdString = "dA1iVwBn9BgmcGnxAYAHrEaLp4ibaDJoFmAQecnrctA"
+        val txIdString = "yAEwjFJsevMGhq_L9NFYXlEryqNarG6hZbOsTNXyjtM"
+
         val txIdBytes = txIdString.b64ToByteArray()
         val txId = Transaction.Id(txIdBytes)
         println("txId: $txId")

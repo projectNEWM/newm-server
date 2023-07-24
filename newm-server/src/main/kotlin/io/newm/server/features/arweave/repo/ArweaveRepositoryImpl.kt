@@ -215,6 +215,7 @@ class ArweaveRepositoryImpl(
                     if (!submitTransaction(signedTransaction)) {
                         throw IOException("Failure submitting transaction: $transactionId")
                     }
+                    log.info("Arweave Transaction submitted: $transactionId")
 
                     awaitTransactionSettlement(transactionId)
 
@@ -224,7 +225,7 @@ class ArweaveRepositoryImpl(
                             "application/pdf" -> Song(arweaveTokenAgreementUrl = "ar://$transactionId")
                             "audio/mpeg" -> Song(arweaveClipUrl = "ar://$transactionId")
                             "text/plain" -> Song(arweaveLyricsUrl = "ar://$transactionId")
-                            else -> throw IllegalStateException()
+                            else -> throw IllegalStateException("Unknown mime type: $mimeType")
                         }
 
                         // We're on chain now. Update the song record
