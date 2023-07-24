@@ -87,6 +87,7 @@ import io.newm.server.features.distribution.model.UpdateUserRequest
 import io.newm.server.features.distribution.model.ValidateAlbumResponse
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongBarcodeType
+import io.newm.server.features.song.model.toSongBarcodeType
 import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.features.user.model.User
 import io.newm.server.features.user.repo.UserRepository
@@ -1372,7 +1373,17 @@ class EvearaDistributionRepositoryImpl(
             if (existingAlbum == null) {
                 val response = addAlbum(user, updatedSong.distributionTrackId!!, updatedSong)
                 log.info { "Created distribution album ${updatedSong.title} with id ${response.releaseId}: ${response.message}" }
-                songRepository.update(updatedSong.id!!, updatedSong.copy(distributionReleaseId = response.releaseId))
+                val albumData = getAlbums(user).albumData.first { it.releaseId == response.releaseId }
+                val barcodeType = albumData.productCodeType.toSongBarcodeType()
+                val barcode = albumData.eanUpc
+                songRepository.update(
+                    updatedSong.id!!,
+                    updatedSong.copy(
+                        distributionReleaseId = response.releaseId,
+                        barcodeNumber = barcode,
+                        barcodeType = barcodeType
+                    )
+                )
             } else {
                 log.info { "Found existing distribution album ${updatedSong.title} with id ${existingAlbum.releaseId}, title ${existingAlbum.name}" }
                 if (updatedSong.distributionReleaseId == null) {
@@ -1387,7 +1398,18 @@ class EvearaDistributionRepositoryImpl(
         } else {
             val response = addAlbum(user, updatedSong.distributionTrackId!!, updatedSong)
             log.info { "Created distribution album ${updatedSong.title} with id ${response.releaseId}: ${response.message}" }
-            songRepository.update(updatedSong.id!!, updatedSong.copy(distributionReleaseId = response.releaseId))
+            // Get the album barcode
+            val albumData = getAlbums(user).albumData.first { it.releaseId == response.releaseId }
+            val barcodeType = albumData.productCodeType.toSongBarcodeType()
+            val barcode = albumData.eanUpc
+            songRepository.update(
+                updatedSong.id!!,
+                updatedSong.copy(
+                    distributionReleaseId = response.releaseId,
+                    barcodeNumber = barcode,
+                    barcodeType = barcodeType
+                )
+            )
         }
 
         val songToRelease = requireNotNull(songRepository.get(updatedSong.id!!)) { "Song not found" }
