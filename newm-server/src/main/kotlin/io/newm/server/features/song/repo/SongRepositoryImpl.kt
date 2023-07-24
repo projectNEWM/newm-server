@@ -146,6 +146,7 @@ internal class SongRepositoryImpl(
                     distributionTrackId?.let { entity.distributionTrackId = it }
                     distributionReleaseId?.let { entity.distributionReleaseId = it }
                     mintCostLovelace?.let { entity.mintCostLovelace = it }
+                    forceDistributed?.let { entity.forceDistributed = it }
                 }
             }
         }
