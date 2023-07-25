@@ -3,6 +3,7 @@ package io.newm.server.json
 import com.google.common.truth.Truth.assertThat
 import io.newm.server.features.collaboration.model.Collaboration
 import io.newm.server.features.distribution.model.DistributionOutletReleaseStatusResponse
+import io.newm.server.features.minting.MintingStatusSqsMessage
 import io.newm.shared.serialization.BigDecimalSerializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
@@ -35,5 +36,14 @@ class TestJsonDecoding {
         val result: DistributionOutletReleaseStatusResponse = json.decodeFromString(jsonString)
         assertThat(result.outletReleaseStatuses?.size).isEqualTo(38)
         // println(result.toString())
+    }
+
+    @Test
+    fun `test SQS message receive`() {
+        val jsonString = """
+            {"songId":"ad2b5937-d9bf-407f-ba9a-74e007cfa718","mintingStatus":"Pending"}
+        """.trimIndent()
+        val mintingStatusSqsMessage: MintingStatusSqsMessage = json.decodeFromString(jsonString)
+        println(mintingStatusSqsMessage.toString())
     }
 }
