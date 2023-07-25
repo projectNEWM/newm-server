@@ -8,6 +8,8 @@ import co.upvest.arweave4s.adt.Tag
 import co.upvest.arweave4s.adt.Transaction
 import co.upvest.arweave4s.adt.Wallet
 import co.upvest.arweave4s.adt.Winston
+import com.amazonaws.HttpMethod
+import com.amazonaws.services.s3.AmazonS3
 import com.softwaremill.sttp.Response
 import com.softwaremill.sttp.SttpBackendOptions
 import com.softwaremill.sttp.Uri
@@ -24,6 +26,7 @@ import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.ktx.asValidUrl
 import io.newm.server.ktx.getSecureConfigString
+import io.newm.server.ktx.toBucketAndKey
 import io.newm.shared.coroutine.SupervisorScope
 import io.newm.shared.exception.HttpStatusException.Companion.toException
 import io.newm.shared.koin.inject
@@ -47,6 +50,9 @@ import scala.io.Source
 import java.io.IOException
 import java.math.BigDecimal
 import java.time.Duration
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+import java.util.Date
 import java.util.concurrent.Executors
 import co.upvest.arweave4s.adt.`Signable$`.`MODULE$` as signableApi
 import co.upvest.arweave4s.adt.Tag.`Custom$`.`MODULE$` as tagApi
@@ -62,6 +68,7 @@ class ArweaveRepositoryImpl(
     private val environment: ApplicationEnvironment,
 ) : ArweaveRepository, SupervisorScope {
     override val log: Logger by inject { parametersOf(javaClass.simpleName) }
+    private val amazonS3: AmazonS3 by inject()
     private val songRepository: SongRepository by inject()
     private val httpClient: HttpClient by inject()
     private val arweaveUri by lazy {
@@ -185,15 +192,31 @@ class ArweaveRepositoryImpl(
             song.arweaveTokenAgreementUrl?.let { null } ?: (song.tokenAgreementUrl.asValidUrl() to "application/pdf"),
             song.arweaveClipUrl?.let { null } ?: (song.clipUrl.asValidUrl() to "audio/mpeg"),
             song.arweaveLyricsUrl?.let { null } ?: (song.lyricsUrl?.let { it.asValidUrl() to "text/plain" }),
-        ).map { (url, mimeType) ->
+        ).map { (inputUrl, mimeType) ->
             async {
                 try {
-                    val response = httpClient.get(url) {
-                        accept(ContentType.parse(mimeType))
+                    val downloadUrl = if (inputUrl.startsWith("s3://")) {
+                        val (bucket, key) = inputUrl.toBucketAndKey()
+                        amazonS3.generatePresignedUrl(
+                            bucket,
+                            key,
+                            Date.from(Instant.now().plus(30, ChronoUnit.MINUTES)),
+                            HttpMethod.GET
+                        ).toExternalForm()
+                    } else {
+                        inputUrl
+                    }
+                    val response = try {
+                        httpClient.get(downloadUrl) {
+                            accept(ContentType.parse(mimeType))
+                        }
+                    } catch (e: Throwable) {
+                        log.error("Error downloading url: $downloadUrl with mimeType: $mimeType", e)
+                        throw e
                     }
 
                     if (!response.status.isSuccess()) {
-                        throw response.status.toException("Error downloading url: $url")
+                        throw response.status.toException("Error downloading url: $downloadUrl")
                     }
 
                     val bodyBytes: ByteArray = response.body()
