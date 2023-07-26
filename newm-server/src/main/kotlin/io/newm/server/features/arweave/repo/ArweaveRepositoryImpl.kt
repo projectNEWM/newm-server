@@ -31,6 +31,8 @@ import io.newm.shared.coroutine.SupervisorScope
 import io.newm.shared.exception.HttpStatusException.Companion.toException
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.getConfigString
+import io.newm.shared.ktx.info
+import io.newm.shared.ktx.warn
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.future.await
@@ -142,7 +144,7 @@ class ArweaveRepositoryImpl(
                 // no-op
             }
 
-            208 -> log.warn("Transaction already processed: $signedTransaction")
+            208 -> log.warn { "Transaction already processed: $signedTransaction" }
             429 -> log.error("Too many requests!")
             400, 503 -> log.error("Transaction verification failed!: $signedTransaction")
             else -> log.error("Unknown problem submitting transaction: $submitResponse")
@@ -159,11 +161,11 @@ class ArweaveRepositoryImpl(
                 val txResponse = toJava(txFuture).await()
                 when (txResponse.code()) {
                     200 -> {
-                        log.info("Success, transaction is on chain!: $transactionId")
+                        log.info { "Success, transaction is on chain!: $transactionId" }
                         break // success, stop checking status
                     }
 
-                    202 -> log.warn("Pending, transaction is not yet on chain!: $transactionId")
+                    202 -> log.warn { "Pending, transaction is not yet on chain!: $transactionId" }
                     404 -> {
                         throw IOException("Not Found, transaction could not be found!: $transactionId")
                     }
@@ -187,25 +189,25 @@ class ArweaveRepositoryImpl(
         val songUpdateMutex = Mutex()
         listOfNotNull(
             if (song.arweaveCoverArtUrl != null) {
-                log.info("Song ${song.id} already has arweave cover art url: ${song.arweaveCoverArtUrl}")
+                log.info { "Song ${song.id} already has arweave cover art url: ${song.arweaveCoverArtUrl}" }
                 null
             } else {
                 song.coverArtUrl.asValidUrl().replace(IMAGE_WEBP_REPLACE_REGEX, ".webp") to "image/webp"
             },
             if (song.arweaveTokenAgreementUrl != null) {
-                log.info("Song ${song.id} already has arweave token agreement url: ${song.arweaveTokenAgreementUrl}")
+                log.info { "Song ${song.id} already has arweave token agreement url: ${song.arweaveTokenAgreementUrl}" }
                 null
             } else {
                 song.tokenAgreementUrl.asValidUrl() to "application/pdf"
             },
             if (song.arweaveClipUrl != null) {
-                log.info("Song ${song.id} already has arweave clip url: ${song.arweaveClipUrl}")
+                log.info { "Song ${song.id} already has arweave clip url: ${song.arweaveClipUrl}" }
                 null
             } else {
                 song.clipUrl.asValidUrl() to "audio/mpeg"
             },
             if (song.arweaveLyricsUrl != null) {
-                log.info("Song ${song.id} already has arweave lyrics url: ${song.arweaveLyricsUrl}")
+                log.info { "Song ${song.id} already has arweave lyrics url: ${song.arweaveLyricsUrl}" }
                 null
             } else {
                 song.lyricsUrl?.let { it.asValidUrl() to "text/plain" }
@@ -224,13 +226,11 @@ class ArweaveRepositoryImpl(
                     } else {
                         inputUrl
                     }
-                    val response = try {
-                        httpClient.get(downloadUrl) {
-                            accept(ContentType.parse(mimeType))
-                        }
-                    } catch (e: Throwable) {
-                        log.error("Error downloading url: $downloadUrl with mimeType: $mimeType", e)
-                        throw e
+                    if (downloadUrl != inputUrl) {
+                        log.info { "Downloaded url: $downloadUrl" }
+                    }
+                    val response = httpClient.get(downloadUrl) {
+                        accept(ContentType.parse(mimeType))
                     }
 
                     if (!response.status.isSuccess()) {
@@ -256,7 +256,7 @@ class ArweaveRepositoryImpl(
                     if (!submitTransaction(signedTransaction)) {
                         throw IOException("Failure submitting transaction: $transactionId")
                     }
-                    log.info("Arweave Transaction submitted: $transactionId")
+                    log.info { "Arweave Transaction submitted: $transactionId" }
 
                     awaitTransactionSettlement(transactionId)
 
@@ -271,6 +271,7 @@ class ArweaveRepositoryImpl(
 
                         // We're on chain now. Update the song record
                         songRepository.update(song.id!!, songToUpdate)
+                        log.info { "Song ${song.id} updated: $songToUpdate" }
                     }
                 } catch (e: Throwable) {
                     // delay a bit so others can potentially succeed and they don't need to be re-uploaded later.
