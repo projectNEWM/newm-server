@@ -186,12 +186,30 @@ class ArweaveRepositoryImpl(
         // TODO: CU-863h3zukj - Check the wallet balance and send admin warning email if below 0.5 AR
         val songUpdateMutex = Mutex()
         listOfNotNull(
-            song.arweaveCoverArtUrl?.let { null } ?: (
+            if (song.arweaveCoverArtUrl != null) {
+                log.info("Song ${song.id} already has arweave cover art url: ${song.arweaveCoverArtUrl}")
+                null
+            } else {
                 song.coverArtUrl.asValidUrl().replace(IMAGE_WEBP_REPLACE_REGEX, ".webp") to "image/webp"
-                ),
-            song.arweaveTokenAgreementUrl?.let { null } ?: (song.tokenAgreementUrl.asValidUrl() to "application/pdf"),
-            song.arweaveClipUrl?.let { null } ?: (song.clipUrl.asValidUrl() to "audio/mpeg"),
-            song.arweaveLyricsUrl?.let { null } ?: (song.lyricsUrl?.let { it.asValidUrl() to "text/plain" }),
+            },
+            if (song.arweaveTokenAgreementUrl != null) {
+                log.info("Song ${song.id} already has arweave token agreement url: ${song.arweaveTokenAgreementUrl}")
+                null
+            } else {
+                song.tokenAgreementUrl.asValidUrl() to "application/pdf"
+            },
+            if (song.arweaveClipUrl != null) {
+                log.info("Song ${song.id} already has arweave clip url: ${song.arweaveClipUrl}")
+                null
+            } else {
+                song.clipUrl.asValidUrl() to "audio/mpeg"
+            },
+            if (song.arweaveLyricsUrl != null) {
+                log.info("Song ${song.id} already has arweave lyrics url: ${song.arweaveLyricsUrl}")
+                null
+            } else {
+                song.lyricsUrl?.let { it.asValidUrl() to "text/plain" }
+            },
         ).map { (inputUrl, mimeType) ->
             async {
                 try {
@@ -255,8 +273,10 @@ class ArweaveRepositoryImpl(
                         songRepository.update(song.id!!, songToUpdate)
                     }
                 } catch (e: Throwable) {
-                    // just log and swallow all exceptions so others can potentially succeed
+                    // delay a bit so others can potentially succeed and they don't need to be re-uploaded later.
                     log.error("Arweave Process Error", e)
+                    delay(Duration.ofMinutes(10L))
+                    throw e
                 }
             }
         }.awaitAll()
