@@ -1,6 +1,7 @@
 package io.newm.shared.ktx
 
 import io.ktor.server.config.ApplicationConfig
+import java.math.BigDecimal
 import java.util.Collections.synchronizedMap
 import java.util.WeakHashMap
 
@@ -27,5 +28,9 @@ fun ApplicationConfig.getSplitStrings(path: String, delimiter: String = ","): Li
 fun ApplicationConfig.getInt(path: String): Int = getString(path).toInt()
 
 fun ApplicationConfig.getLong(path: String): Long = getString(path).toLong()
+
+fun ApplicationConfig.getDouble(path: String): Double = getString(path).toDouble()
+
+fun ApplicationConfig.getBigDecimal(path: String): BigDecimal = getString(path).toBigDecimal()
 
 fun ApplicationConfig.getBoolean(path: String): Boolean = getString(path).toBoolean()
