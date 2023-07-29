@@ -22,6 +22,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.isSuccess
 import io.ktor.server.application.ApplicationEnvironment
 import io.newm.chain.util.b64ToByteArray
+import io.newm.server.features.email.repo.EmailRepository
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.ktx.asValidUrl
@@ -30,7 +31,10 @@ import io.newm.server.ktx.toBucketAndKey
 import io.newm.shared.coroutine.SupervisorScope
 import io.newm.shared.exception.HttpStatusException.Companion.toException
 import io.newm.shared.koin.inject
+import io.newm.shared.ktx.getConfigBigDecimal
+import io.newm.shared.ktx.getConfigChild
 import io.newm.shared.ktx.getConfigString
+import io.newm.shared.ktx.getString
 import io.newm.shared.ktx.info
 import io.newm.shared.ktx.warn
 import kotlinx.coroutines.async
@@ -68,6 +72,7 @@ import co.upvest.arweave4s.api.`tx$`.`MODULE$` as txApi
 
 class ArweaveRepositoryImpl(
     private val environment: ApplicationEnvironment,
+    private val emailRepository: EmailRepository,
 ) : ArweaveRepository, SupervisorScope {
     override val log: Logger by inject { parametersOf(javaClass.simpleName) }
     private val amazonS3: AmazonS3 by inject()
@@ -85,6 +90,9 @@ class ArweaveRepositoryImpl(
         )
     }
     private val arweaveConfig by lazy { configApi.apply(arweaveUri, arweaveBackend) }
+    private val minWalletBalance: BigDecimal by lazy {
+        environment.getConfigBigDecimal("arweave.minWalletBalance")
+    }
 
     private suspend fun arweaveWallet(): Wallet {
         val walletJson = environment.getSecureConfigString("arweave.walletJson")
@@ -185,7 +193,19 @@ class ArweaveRepositoryImpl(
     }
 
     override suspend fun uploadSongAssets(song: Song) {
-        // TODO: CU-863h3zukj - Check the wallet balance and send admin warning email if below 0.5 AR
+        val balance = getWalletARBalance()
+        if (balance < minWalletBalance) {
+            log.warn { "Low Wallet Balance: $balance AR" }
+            with(environment.getConfigChild("arweave.warningEmail")) {
+                emailRepository.send(
+                    to = getString("to"),
+                    subject = getString("subject"),
+                    messageUrl = getString("messageUrl"),
+                    messageArgs = mapOf("balance" to balance)
+                )
+            }
+        }
+
         val songUpdateMutex = Mutex()
         listOfNotNull(
             if (song.arweaveCoverArtUrl != null) {
