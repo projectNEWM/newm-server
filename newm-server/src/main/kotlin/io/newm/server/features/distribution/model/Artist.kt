@@ -10,5 +10,6 @@ data class Artist(
     @JsonNames("id", "artist_id")
     val id: Long,
     @SerialName("name")
+    @JsonNames("name", "artist_name")
     val name: String
 )
