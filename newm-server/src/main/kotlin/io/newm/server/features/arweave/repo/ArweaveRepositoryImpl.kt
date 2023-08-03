@@ -218,19 +218,19 @@ class ArweaveRepositoryImpl(
                 log.info { "Song ${song.id} already has arweave token agreement url: ${song.arweaveTokenAgreementUrl}" }
                 null
             } else {
-                song.tokenAgreementUrl.asValidUrl() to "application/pdf"
+                song.tokenAgreementUrl!! to "application/pdf"
             },
             if (song.arweaveClipUrl != null) {
                 log.info { "Song ${song.id} already has arweave clip url: ${song.arweaveClipUrl}" }
                 null
             } else {
-                song.clipUrl.asValidUrl() to "audio/mpeg"
+                song.clipUrl!! to "audio/mpeg"
             },
             if (song.arweaveLyricsUrl != null) {
                 log.info { "Song ${song.id} already has arweave lyrics url: ${song.arweaveLyricsUrl}" }
                 null
             } else {
-                song.lyricsUrl?.let { it.asValidUrl() to "text/plain" }
+                song.lyricsUrl?.let { it to "text/plain" }
             },
         ).map { (inputUrl, mimeType) ->
             async {
