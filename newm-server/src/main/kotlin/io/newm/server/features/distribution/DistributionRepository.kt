@@ -98,9 +98,11 @@ interface DistributionRepository {
 
     suspend fun validateAlbum(user: User, releaseId: Long): ValidateAlbumResponse
 
+    suspend fun deleteAlbum(user: User, releaseId: Long): EvearaSimpleResponse
+
     suspend fun simulateDistributeRelease(user: User, releaseId: Long): EvearaSimpleResponse
 
-    suspend fun distributeReleaseToOutlets(user: User, releaseId: Long): DistributeReleaseResponse
+    suspend fun distributeReleaseToOutlets(user: User, releaseStartDate: LocalDate, releaseId: Long): DistributeReleaseResponse
 
     suspend fun distributeReleaseToFutureOutlets(user: User, releaseId: Long): DistributeReleaseResponse
 

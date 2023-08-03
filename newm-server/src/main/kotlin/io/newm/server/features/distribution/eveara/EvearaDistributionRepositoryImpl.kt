@@ -1024,6 +1024,25 @@ class EvearaDistributionRepositoryImpl(
         return validateAlbumResponse
     }
 
+    override suspend fun deleteAlbum(user: User, releaseId: Long): EvearaSimpleResponse {
+        requireNotNull(user.distributionUserId) { "User.distributionUserId must not be null!" }
+        val response = httpClient.delete("$evearaApiBaseUrl/albums/$releaseId") {
+            contentType(ContentType.Application.Json)
+            accept(ContentType.Application.Json)
+            bearerAuth(getEvearaApiToken())
+            parameter("uuid", user.distributionUserId!!)
+        }
+        if (!response.status.isSuccess()) {
+            throw ServerResponseException(response, "Error deleting album!: ${response.bodyAsText()}")
+        }
+        val deleteAlbumResponse: EvearaSimpleResponse = response.body()
+        if (!deleteAlbumResponse.success) {
+            throw ServerResponseException(response, "Error deleting album! success==false")
+        }
+
+        return deleteAlbumResponse
+    }
+
     override suspend fun simulateDistributeRelease(user: User, releaseId: Long): EvearaSimpleResponse {
         requireNotNull(user.distributionUserId) { "User.distributionUserId must not be null!" }
         val response = httpClient.put("$evearaApiBaseUrl/simulate/distribute") {
@@ -1048,7 +1067,11 @@ class EvearaDistributionRepositoryImpl(
         return distributeReleaseResponse
     }
 
-    override suspend fun distributeReleaseToOutlets(user: User, releaseId: Long): DistributeReleaseResponse {
+    override suspend fun distributeReleaseToOutlets(
+        user: User,
+        releaseStartDate: LocalDate,
+        releaseId: Long
+    ): DistributeReleaseResponse {
         requireNotNull(user.distributionUserId) { "User.distributionUserId must not be null!" }
         val response = httpClient.patch("$evearaApiBaseUrl/outlets/$releaseId/distribute") {
             contentType(ContentType.Application.Json)
@@ -1060,7 +1083,7 @@ class EvearaDistributionRepositoryImpl(
                     outletsDetails = getOutlets(user).outlets.map { evearaOutlet ->
                         OutletsDetail(
                             storeId = evearaOutlet.storeId,
-                            releaseStartDate = evearaOutlet.processDurationDates.toReleaseDate()
+                            releaseStartDate = releaseStartDate,
                         )
                     }
                 ).logRequestJson(log)
@@ -1130,14 +1153,15 @@ class EvearaDistributionRepositoryImpl(
     }
 
     override suspend fun distributeSong(song: Song) {
-        requireNotNull(song.ownerId) { "Song.ownerId must not be null!" }
-        val user = userRepository.get(song.ownerId)
+        var mutableSong = song
+        requireNotNull(mutableSong.ownerId) { "Song.ownerId must not be null!" }
+        val user = userRepository.get(mutableSong.ownerId!!)
         requireNotNull(user.id) { "User.id must not be null!" }
         createDistributionUserIfNeeded(user)
 
         val collabs = collabRepository.getAll(
             userId = user.id,
-            filters = CollaborationFilters(songIds = listOf(song.id!!)),
+            filters = CollaborationFilters(songIds = listOf(mutableSong.id!!)),
             offset = 0,
             limit = Integer.MAX_VALUE
         )
@@ -1287,16 +1311,31 @@ class EvearaDistributionRepositoryImpl(
 
         // Delete any track that already has this song isrc and is associated with this user
         val getTracksResponse = getTracks(user)
-        val existingTrack = getTracksResponse.trackData?.firstOrNull { it.stereoIsrc == song.isrc?.replace("-", "") }
+        val existingTrack =
+            getTracksResponse.trackData?.firstOrNull { it.stereoIsrc == mutableSong.isrc?.replace("-", "") }
         if (existingTrack != null) {
-            log.info { "Found existing distribution track ${song.isrc} with id ${existingTrack.trackId}" }
+            val getAlbumResponse = getAlbums(user)
+            if (getAlbumResponse.totalRecords > 0) {
+                val existingAlbum = getAlbumResponse.albumData.firstOrNull { it.name == mutableSong.title }
+                if (existingAlbum != null) {
+                    // Delete the album since the track is attached to it. It will be re-created later
+                    log.info { "Found existing distribution album ${mutableSong.title} with id ${existingAlbum.releaseId}" }
+                    val response = deleteAlbum(user, existingAlbum.releaseId)
+                    log.info { "Deleted distribution album ${mutableSong.title} with id ${existingAlbum.releaseId}: ${response.message}" }
+                    mutableSong = mutableSong.copy(distributionReleaseId = null)
+                    songRepository.update(mutableSong.id!!, mutableSong)
+                }
+            }
+            log.info { "Found existing distribution track ${mutableSong.isrc} with id ${existingTrack.trackId}" }
             val response = deleteTrack(user, existingTrack.trackId)
-            log.info { "Deleted distribution track ${song.isrc} with id ${existingTrack.trackId}: ${response.message}" }
+            log.info { "Deleted distribution track ${mutableSong.isrc} with id ${existingTrack.trackId}: ${response.message}" }
+            mutableSong = mutableSong.copy(distributionTrackId = null)
+            songRepository.update(mutableSong.id!!, mutableSong)
         }
 
         // Upload and add metadata to the distribution track
-        var updatedSong = if (song.distributionTrackId == null) {
-            val s3Url = song.originalAudioUrl!!
+        if (mutableSong.distributionTrackId == null) {
+            val s3Url = mutableSong.originalAudioUrl!!
             val (bucket, key) = s3Url.toBucketAndKey()
             val url = amazonS3.generatePresignedUrl(
                 bucket,
@@ -1323,43 +1362,37 @@ class EvearaDistributionRepositoryImpl(
                     trackFile.appendBytes(bytes)
                 }
             }
-            log.info { "Downloaded track ${song.title} to ${trackFile.absolutePath} having size ${trackFile.length()}" }
+            log.info { "Downloaded track ${mutableSong.title} to ${trackFile.absolutePath} having size ${trackFile.length()}" }
             val response = addTrack(user, trackFile)
-            log.info { "Created distribution track ${song.title} with track_id ${response.trackId}: ${response.message}" }
-            val updatedSng = song.copy(distributionTrackId = response.trackId)
-            songRepository.update(song.id, updatedSng)
+            log.info { "Created distribution track ${mutableSong.title} with track_id ${response.trackId}: ${response.message}" }
+            mutableSong = mutableSong.copy(distributionTrackId = response.trackId)
+            songRepository.update(mutableSong.id!!, mutableSong)
             trackFile.delete()
 
             // update track with collaborators and other metadata
-            val updateTrackResponse = updateTrack(user, response.trackId, updatedSng)
+            val updateTrackResponse = updateTrack(user, response.trackId, mutableSong)
             log.info { "Updated distribution track ${song.title} with track_id ${response.trackId}: ${updateTrackResponse.message}" }
-            updatedSng
-        } else {
-            song
         }
 
-        val getTrackResponse = getTracks(user, updatedSong.distributionTrackId!!)
+        val getTrackResponse = getTracks(user, mutableSong.distributionTrackId!!)
         val stereoIsrc = getTrackResponse.trackData!!.first().stereoIsrc
         require(stereoIsrc.length == 12) { "Invalid stereo isrc: $stereoIsrc" }
-        updatedSong = if (updatedSong.isrc != stereoIsrc) {
+        if (mutableSong.isrc != stereoIsrc) {
             // Save the isrc to the song
             val isrcCountry = stereoIsrc.substring(0, 2)
             val isrcRegistrant = stereoIsrc.substring(2, 5)
             val isrcYear = stereoIsrc.substring(5, 7)
             val isrcDesignation = stereoIsrc.substring(7, 12)
             val isrc = "$isrcCountry-$isrcRegistrant-$isrcYear-$isrcDesignation"
-            log.info { "Updating song isrc from ${updatedSong.isrc} to $isrc" }
-            val updatedSng = updatedSong.copy(isrc = isrc)
-            songRepository.update(song.id, updatedSng)
-            updatedSng
-        } else {
-            updatedSong
+            log.info { "Updating song isrc from ${mutableSong.isrc} to $isrc" }
+            mutableSong = mutableSong.copy(isrc = isrc)
+            songRepository.update(mutableSong.id!!, mutableSong)
         }
 
         // Wait for track to be processed
         withTimeout(10.minutes.inWholeMilliseconds) {
             while (true) {
-                if (isTrackStatusCompleted(user, updatedSong.distributionTrackId!!)) {
+                if (isTrackStatusCompleted(user, mutableSong.distributionTrackId!!)) {
                     break
                 }
                 delay(10000L)
@@ -1369,69 +1402,62 @@ class EvearaDistributionRepositoryImpl(
         // Add or Update Distribution Album
         val getAlbumResponse = getAlbums(user)
         if (getAlbumResponse.totalRecords > 0) {
-            val existingAlbum = getAlbumResponse.albumData.firstOrNull { it.name == updatedSong.title }
+            val existingAlbum = getAlbumResponse.albumData.firstOrNull { it.name == mutableSong.title }
             if (existingAlbum == null) {
-                val response = addAlbum(user, updatedSong.distributionTrackId!!, updatedSong)
-                log.info { "Created distribution album ${updatedSong.title} with id ${response.releaseId}: ${response.message}" }
+                val response = addAlbum(user, mutableSong.distributionTrackId!!, mutableSong)
+                log.info { "Created distribution album ${mutableSong.title} with id ${response.releaseId}: ${response.message}" }
                 val albumData = getAlbums(user).albumData.first { it.releaseId == response.releaseId }
                 val barcodeType = albumData.productCodeType.toSongBarcodeType()
                 val barcode = albumData.eanUpc
-                songRepository.update(
-                    updatedSong.id!!,
-                    updatedSong.copy(
-                        distributionReleaseId = response.releaseId,
-                        barcodeNumber = barcode,
-                        barcodeType = barcodeType
-                    )
-                )
-            } else {
-                log.info { "Found existing distribution album ${updatedSong.title} with id ${existingAlbum.releaseId}, title ${existingAlbum.name}" }
-                if (updatedSong.distributionReleaseId == null) {
-                    songRepository.update(
-                        updatedSong.id!!,
-                        updatedSong.copy(distributionReleaseId = existingAlbum.releaseId)
-                    )
-                } else {
-                    require(updatedSong.distributionReleaseId == existingAlbum.releaseId) { "Song.distributionReleaseId: ${updatedSong.distributionReleaseId} does not match existing distribution album! ${existingAlbum.releaseId}" }
-                }
-            }
-        } else {
-            val response = addAlbum(user, updatedSong.distributionTrackId!!, updatedSong)
-            log.info { "Created distribution album ${updatedSong.title} with id ${response.releaseId}: ${response.message}" }
-            // Get the album barcode
-            val albumData = getAlbums(user).albumData.first { it.releaseId == response.releaseId }
-            val barcodeType = albumData.productCodeType.toSongBarcodeType()
-            val barcode = albumData.eanUpc
-            songRepository.update(
-                updatedSong.id!!,
-                updatedSong.copy(
+                mutableSong = mutableSong.copy(
                     distributionReleaseId = response.releaseId,
                     barcodeNumber = barcode,
                     barcodeType = barcodeType
                 )
+                songRepository.update(mutableSong.id!!, mutableSong)
+            } else {
+                log.info { "Found existing distribution album ${mutableSong.title} with id ${existingAlbum.releaseId}, title ${existingAlbum.name}" }
+                if (mutableSong.distributionReleaseId == null) {
+                    mutableSong = mutableSong.copy(distributionReleaseId = existingAlbum.releaseId)
+                    songRepository.update(mutableSong.id!!, mutableSong)
+                } else {
+                    require(mutableSong.distributionReleaseId == existingAlbum.releaseId) { "Song.distributionReleaseId: ${mutableSong.distributionReleaseId} does not match existing distribution album! ${existingAlbum.releaseId}" }
+                }
+            }
+        } else {
+            val response = addAlbum(user, mutableSong.distributionTrackId!!, mutableSong)
+            log.info { "Created distribution album ${mutableSong.title} with id ${response.releaseId}: ${response.message}" }
+            // Get the album barcode
+            val albumData = getAlbums(user).albumData.first { it.releaseId == response.releaseId }
+            val barcodeType = albumData.productCodeType.toSongBarcodeType()
+            val barcode = albumData.eanUpc
+            mutableSong = mutableSong.copy(
+                distributionReleaseId = response.releaseId,
+                barcodeNumber = barcode,
+                barcodeType = barcodeType
             )
+            songRepository.update(mutableSong.id!!, mutableSong)
         }
 
-        val songToRelease = requireNotNull(songRepository.get(updatedSong.id!!)) { "Song not found" }
-
         // Validate Distribution Album
-        val validateReleaseResponse = validateAlbum(user, songToRelease.distributionReleaseId!!)
+        val validateReleaseResponse = validateAlbum(user, mutableSong.distributionReleaseId!!)
         require(validateReleaseResponse.validateData.errorFields.isNullOrEmpty()) { "Error validating release: $validateReleaseResponse" }
-        log.info { "Validated distribution album ${songToRelease.title} with id ${songToRelease.distributionReleaseId}: ${validateReleaseResponse.message}" }
+        log.info { "Validated distribution album ${mutableSong.title} with id ${mutableSong.distributionReleaseId}: ${validateReleaseResponse.message}" }
 
         // Simulate the release to outlets
-        val simulateReleaseResponse = simulateDistributeRelease(user, songToRelease.distributionReleaseId)
-        log.info { "Simulated release ${songToRelease.title} with id ${songToRelease.distributionReleaseId}: ${simulateReleaseResponse.message}" }
+        val simulateReleaseResponse = simulateDistributeRelease(user, mutableSong.distributionReleaseId!!)
+        log.info { "Simulated release ${mutableSong.title} with id ${mutableSong.distributionReleaseId}: ${simulateReleaseResponse.message}" }
 
         // Distribute the release to outlets
-        val distributeReleaseResponse = distributeReleaseToOutlets(user, songToRelease.distributionReleaseId)
+        val distributeReleaseResponse =
+            distributeReleaseToOutlets(user, mutableSong.releaseDate!!, mutableSong.distributionReleaseId!!)
         require(distributeReleaseResponse.releaseData?.errorFields.isNullOrEmpty()) { "Error distributing release: $distributeReleaseResponse" }
-        log.info { "Distributed release ${songToRelease.title} with id ${songToRelease.distributionReleaseId} to outlets: ${distributeReleaseResponse.message}" }
+        log.info { "Distributed release ${mutableSong.title} with id ${mutableSong.distributionReleaseId} to outlets: ${distributeReleaseResponse.message}" }
 
         // Distribute the release to future outlets
         val distributeFutureReleaseResponse =
-            distributeReleaseToFutureOutlets(user, songToRelease.distributionReleaseId)
-        log.info { "Distributed release ${songToRelease.title} with id ${songToRelease.distributionReleaseId} to future outlets: ${distributeFutureReleaseResponse.message}" }
+            distributeReleaseToFutureOutlets(user, mutableSong.distributionReleaseId!!)
+        log.info { "Distributed release ${mutableSong.title} with id ${mutableSong.distributionReleaseId} to future outlets: ${distributeFutureReleaseResponse.message}" }
     }
 
     override suspend fun getEarliestReleaseDate(userId: UUID): LocalDate {
@@ -1471,7 +1497,7 @@ class EvearaDistributionRepositoryImpl(
         }
     }
 
-    private fun Long.toReleaseDate() = LocalDate.now().plusDays(this + 1)
+    private fun Long.toReleaseDate() = LocalDate.now().plusDays(this + 2)
 
     @Serializable
     private data class EvearaApiGetTokenRequest(
