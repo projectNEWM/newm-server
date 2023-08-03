@@ -16,7 +16,7 @@ object Dependencies {
     }
 
     object KotlinPlugin {
-        const val VERSION = "1.8.22"
+        const val VERSION = "1.9.0"
         const val JVM_ID = "jvm"
         const val SERIALIZATION_ID = "plugin.serialization"
     }
@@ -54,7 +54,7 @@ object Dependencies {
     }
 
     object Coroutines {
-        private const val VERSION = "1.7.2"
+        private const val VERSION = "1.7.3"
 
         const val CORE = "org.jetbrains.kotlinx:kotlinx-coroutines-core:$VERSION"
         const val JDK8 = "org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:$VERSION"
@@ -66,7 +66,7 @@ object Dependencies {
     }
 
     object Ktor {
-        private const val VERSION = "2.3.1"
+        private const val VERSION = "2.3.3"
 
         const val SERVER_CORE = "io.ktor:ktor-server-core:$VERSION"
         const val SERVER_CIO = "io.ktor:ktor-server-cio:$VERSION"
@@ -97,9 +97,9 @@ object Dependencies {
     }
 
     object Koin {
-        private const val VERSION = "3.4.1"
-        private const val KTOR_VERSION = "3.4.1"
-        private const val TEST_JUNIT_VERSION = "3.4.1"
+        private const val VERSION = "3.4.3"
+        private const val KTOR_VERSION = "3.4.3"
+        private const val TEST_JUNIT_VERSION = "3.4.3"
 
         const val KTOR = "io.insert-koin:koin-ktor:$KTOR_VERSION"
         const val TEST = "io.insert-koin:koin-test:$VERSION"
@@ -107,7 +107,7 @@ object Dependencies {
     }
 
     object Exposed {
-        private const val VERSION = "0.41.1"
+        private const val VERSION = "0.42.0"
 
         const val CORE = "org.jetbrains.exposed:exposed-core:$VERSION"
         const val DAO = "org.jetbrains.exposed:exposed-dao:$VERSION"
@@ -134,13 +134,13 @@ object Dependencies {
     }
 
     object FlywayDB {
-        private const val VERSION = "9.20.0"
+        private const val VERSION = "9.21.1"
 
         const val ALL = "org.flywaydb:flyway-core:$VERSION"
     }
 
     object Caffeine {
-        private const val VERSION = "3.1.6"
+        private const val VERSION = "3.1.7"
 
         const val ALL = "com.github.ben-manes.caffeine:caffeine:$VERSION"
     }
@@ -172,7 +172,7 @@ object Dependencies {
     }
 
     object SpringSecurity {
-        private const val VERSION = "6.1.1"
+        private const val VERSION = "6.1.2"
 
         const val CORE = "org.springframework.security:spring-security-core:$VERSION"
     }
@@ -185,8 +185,8 @@ object Dependencies {
     }
 
     object Aws {
-        private const val VERSION = "1.12.497"
-        private const val VERSION2 = "2.20.94"
+        private const val VERSION = "1.12.521"
+        private const val VERSION2 = "2.20.118"
         private const val JAXB_VERSION = "2.3.1"
 
         const val BOM = "com.amazonaws:aws-java-sdk-bom:$VERSION"
@@ -209,13 +209,13 @@ object Dependencies {
     }
 
     object JUnit {
-        private const val VERSION = "5.9.3"
+        private const val VERSION = "5.10.0"
 
         const val JUPITER = "org.junit.jupiter:junit-jupiter:$VERSION"
     }
 
     object Cbor {
-        private const val VERSION = "0.01.04-NEWM"
+        private const val VERSION = "0.01.05-NEWM"
 
         const val CBOR = "io.newm:com.google.iot.cbor:$VERSION"
     }
@@ -233,7 +233,7 @@ object Dependencies {
     }
 
     object Sentry {
-        private const val VERSION = "6.24.0"
+        private const val VERSION = "6.27.0"
 
         const val CORE = "io.sentry:sentry:$VERSION"
         const val LOGBACK = "io.sentry:sentry-logback:$VERSION"

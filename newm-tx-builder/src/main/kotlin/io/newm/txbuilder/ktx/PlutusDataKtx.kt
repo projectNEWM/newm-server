@@ -15,7 +15,6 @@ import io.newm.chain.grpc.PlutusDataList
 import io.newm.chain.grpc.PlutusDataMap
 import io.newm.chain.grpc.PlutusDataMapItem
 import io.newm.chain.grpc.plutusData
-import io.newm.chain.grpc.plutusDataList
 import io.newm.chain.util.hexToByteArray
 import io.newm.chain.util.toHexString
 
@@ -112,31 +111,28 @@ fun PlutusData.toCborObject(): CborObject {
         }
 
         PlutusData.PlutusDataWrapperCase.INT -> CborInteger.create(int, cborTag)
-        PlutusData.PlutusDataWrapperCase.BYTES -> CborByteString.create(
-            bytes.toByteArray(),
-            0,
-            bytes.size(),
-            cborTag
-        )
+        PlutusData.PlutusDataWrapperCase.BYTES -> {
+            if (bytes.size() > 64) {
+                val chunks = bytes.toByteArray().asList().chunked(64).map { chunk ->
+                    chunk.toByteArray()
+                }.toTypedArray()
+                CborByteString.wrap(chunks, cborTag, true)
+            } else {
+                CborByteString.create(
+                    bytes.toByteArray(),
+                    0,
+                    bytes.size(),
+                    cborTag
+                )
+            }
+        }
 
         else -> throw IllegalArgumentException("PlutusData must contain one of map, list, int, or bytes!")
     }
 }
 
 fun String.toPlutusData(): PlutusData {
-    return if (length > 64) {
-        plutusData {
-            list = plutusDataList {
-                listItem.addAll(
-                    this@toPlutusData.chunked(64) { chunk ->
-                        plutusData { bytes = chunk.toString().toByteStringUtf8() }
-                    }
-                )
-            }
-        }
-    } else {
-        plutusData { bytes = this@toPlutusData.toByteStringUtf8() }
-    }
+    return plutusData { bytes = this@toPlutusData.toByteStringUtf8() }
 }
 
 fun Number.toPlutusData(): PlutusData {
