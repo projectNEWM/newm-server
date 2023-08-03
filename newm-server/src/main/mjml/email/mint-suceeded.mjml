@@ -1,0 +1,69 @@
+<mjml>
+  <mj-head>
+    <mj-attributes>
+      <mj-section padding="0 0" />
+      <mj-column padding="0 0" />
+      <mj-text padding="0 0" />
+      <mj-class name="separator" height="2px " container-background-color="var(--gradients-gradient-magazine, linear-gradient(45deg, #F53C69 0%, #FF6E32 100%))" />
+    </mj-attributes>
+  </mj-head>
+  <mj-body background-color="#000" width="720px">
+    <mj-section>
+      <mj-column>
+        <mj-image padding="60px 0" width="360px" src="https://res.cloudinary.com/newm/image/upload/f_auto,q_auto/v1/newmserver-emails/evyqe3bowwczeifsbi14" />
+        <mj-spacer mj-class="separator" />
+      </mj-column>
+    </mj-section>
+    <mj-section>
+      <mj-column>
+        <mj-text padding="40px 0" color="#FFF" align="left" font-family="Inter" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
+          Congrats {owner}!<br><br>
+          Minting for the following song submission is complete!<br><br>
+          {song}
+        </mj-text>
+        <mj-spacer mj-class="separator" />
+      </mj-column>
+    </mj-section>
+    <mj-section>
+      <mj-column>
+        <mj-text padding-top="40px" color="#FFF" align="left" font-family="Inter" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
+          Here's a recap on what this means: Your song's streaming rights have been successfully fractionalized and minted on the blockchain. Once the NEWM Streaming Marketplace goes live, you'll be able to sell a percentage of these rights in the form of Stream Tokens to your fans - pretty cool, right?<br><br>
+          You can also keep track of any royalties that your song accrues through the built-in wallet in your Artist profile (you'll be able to claim them after the launch of the Streaming Marketplace).<br><br>
+          For full details, please login to your profile at <a href="https://artist.garage.newm.io" style="color: #DC3CAA">artist.garage.newm.io</a>.<br><br>
+          Cheers, The NEWM Team<br><br>
+          <span style="color: #8E8E93">P.S. Got a question about the minting process? Please send your question to <a href="emailto:support@newm.io" style="color: #8E8E93">support@newm.io</a> for assistance.</span>
+        </mj-text>
+        <mj-text padding="60px 0" color="#636366" align="center" font-family="Inter" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
+          PLEASE DO NOT REPLY TO THIS MESSAGE
+        </mj-text>
+        <mj-spacer mj-class="separator" />
+      </mj-column>
+    </mj-section>
+    <mj-section>
+      <mj-column width="104px">
+        <mj-image width="24px" padding="40px 0" src="https://res.cloudinary.com/newm/image/upload/f_auto,q_auto/v1/newmserver-emails/avsoheuviz6ia6bnzwkm" href="https://www.facebook.com/projectNEWM" />
+      </mj-column>
+      <mj-column width="104px">
+        <mj-image width="24px" padding="40px 0" src="https://res.cloudinary.com/newm/image/upload/f_auto,q_auto/v1/newmserver-emails/az85bfjowfbjlxkzdtdp" href="https://twitter.com/projectNEWM" />
+      </mj-column>
+      <mj-column width="104px">
+        <mj-image width="24px" padding="40px 0" src="https://res.cloudinary.com/newm/image/upload/f_auto,q_auto/v1/newmserver-emails/xhgyabijvyaljvovjzlu" href="https://newm.io" />
+      </mj-column>
+    </mj-section>
+    <mj-section>
+      <mj-column>
+        <mj-text padding-top="20px" padding-bottom="40px" color="#FFF" align="center" font-family="Inter" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
+          Join our community on <a href="https://discord.com/invite/z4sYqxqgvQ" style="color: #DC3CAA;font-family: Inter;font-size: 14px;font-style: normal;font-weight: 700;line-height: 18px;">Discord!</a>
+        </mj-text>
+        <mj-spacer mj-class="separator" />
+      </mj-column>
+    </mj-section>
+    <mj-section>
+      <mj-column>
+        <mj-text padding-top="40px" padding-bottom="66px" color="#FFF" align="center" font-family="Inter" font-size="12px" font-style="italic" font-weight="500" line-height="18px">
+          Copyright © 2023 NEWM, All rights reserved
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>
