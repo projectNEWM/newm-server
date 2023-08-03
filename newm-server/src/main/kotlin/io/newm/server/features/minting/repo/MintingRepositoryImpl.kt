@@ -1,6 +1,11 @@
 package io.newm.server.features.minting.repo
 
 import com.google.common.annotations.VisibleForTesting
+import com.google.iot.cbor.CborArray
+import com.google.iot.cbor.CborInteger
+import com.google.iot.cbor.CborMap
+import com.google.iot.cbor.CborTextString
+import com.google.protobuf.ByteString
 import com.google.protobuf.kotlin.toByteString
 import io.newm.chain.grpc.PlutusData
 import io.newm.chain.grpc.RedeemerTag
@@ -319,6 +324,21 @@ class MintingRepositoryImpl(
                 //    steps = 793695629L
                 // }
             }
+        )
+
+        // Add a simple transaction metadata note for NEWM Mint - See: CIP-20
+        transactionMetadataCbor = ByteString.copyFrom(
+            CborMap.create(
+                mapOf(
+                    CborInteger.create(674) to CborMap.create(
+                        mapOf(
+                            CborTextString.create("msg") to CborArray.create().apply {
+                                add(CborTextString.create("NEWM Mint"))
+                            }
+                        )
+                    )
+                )
+            ).toCborByteArray()
         )
     }
 
