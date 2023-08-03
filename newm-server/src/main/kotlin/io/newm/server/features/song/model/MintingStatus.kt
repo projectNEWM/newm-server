@@ -3,6 +3,9 @@ package io.newm.server.features.song.model
 enum class MintingStatus {
     Undistributed, // Song has been uploaded/created. User may still be editing metadata for it.
     StreamTokenAgreementApproved, // Artist has approved the Agreement /w placeholder for ISRC number
+
+    // TODO: Add statuses to ensure the song successfully encodes for streaming.
+
     MintingPaymentRequested, // We've created a payment address and presented that to the Artist's wallet for payment.
     MintingPaymentReceived, // Payment has been received in the payment address and 3 blocks have occurred since.
     AwaitingCollaboratorApproval, // We're waiting for collaborators to approve their percentages
