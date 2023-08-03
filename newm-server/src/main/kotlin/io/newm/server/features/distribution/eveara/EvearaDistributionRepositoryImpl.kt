@@ -1296,7 +1296,7 @@ class EvearaDistributionRepositoryImpl(
 
         // Upload and add metadata to the distribution track
         var updatedSong = if (song.distributionTrackId == null) {
-            val s3Url = song.originalAudioUrl.asValidUrl()
+            val s3Url = song.originalAudioUrl!!
             val (bucket, key) = s3Url.toBucketAndKey()
             val url = amazonS3.generatePresignedUrl(
                 bucket,

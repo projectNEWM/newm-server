@@ -130,8 +130,8 @@ internal class SongRepositoryImpl(
                 if (requesterId == null) {
                     // don't allow updating these fields when invoked from REST API
                     tokenAgreementUrl?.let { entity.tokenAgreementUrl = it }
-                    originalAudioUrl?.let { entity.originalAudioUrl = it.asValidUrl() }
-                    clipUrl?.let { entity.clipUrl = it.asValidUrl() }
+                    originalAudioUrl?.let { entity.originalAudioUrl = it }
+                    clipUrl?.let { entity.clipUrl = it }
                     streamUrl?.let { entity.streamUrl = it.asValidUrl() }
                     duration?.let { entity.duration = it }
                     nftPolicyId?.let { entity.nftPolicyId = it }
