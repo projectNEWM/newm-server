@@ -21,6 +21,7 @@ import io.newm.shared.exception.HttpForbiddenException
 import io.newm.shared.exception.HttpUnprocessableEntityException
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.debug
+import io.newm.shared.ktx.format
 import io.newm.shared.ktx.getConfigString
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.Transaction
@@ -57,7 +58,12 @@ internal class CollaborationRepositoryImpl(
         }
     }
 
-    override suspend fun update(collaboration: Collaboration, collaborationId: UUID, requesterId: UUID, skipStatusCheck: Boolean) {
+    override suspend fun update(
+        collaboration: Collaboration,
+        collaborationId: UUID,
+        requesterId: UUID,
+        skipStatusCheck: Boolean
+    ) {
         logger.debug { "update: collaboration = $collaboration, collaborationId = $collaborationId" }
 
         collaboration.checkFieldLengths()
@@ -184,15 +190,16 @@ internal class CollaborationRepositoryImpl(
             song to owner
         }
         if (emails.isNotEmpty()) {
+            val args = mapOf(
+                "song" to song.title,
+                "owner" to owner.stageOrFullName
+            )
             emailRepository.send(
                 to = emptyList(),
                 bcc = emails,
-                subject = environment.getConfigString("collaboration.email.subject"),
+                subject = environment.getConfigString("collaboration.email.subject").format(args),
                 messageUrl = environment.getConfigString("collaboration.email.messageUrl"),
-                messageArgs = mapOf(
-                    "song" to song.title,
-                    "owner" to owner.stageOrFullName
-                )
+                messageArgs = args
             )
         }
     }

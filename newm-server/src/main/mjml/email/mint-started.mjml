@@ -1,5 +1,6 @@
 <mjml>
   <mj-head>
+    <mj-preview>Here's what you need to know...</mj-preview>
     <mj-attributes>
       <mj-section padding="0 0" />
       <mj-column padding="0 0" />
@@ -40,14 +41,23 @@
       </mj-column>
     </mj-section>
     <mj-section>
-      <mj-column width="104px">
-        <mj-image width="24px" padding="40px 0" src="https://res.cloudinary.com/newm/image/upload/f_auto,q_auto/v1/newmserver-emails/avsoheuviz6ia6bnzwkm" href="https://www.facebook.com/projectNEWM" />
+      <mj-column width="64px">
+        <mj-image width="24px" padding="40px 0" src="https://res.cloudinary.com/newm/image/upload/f_auto,q_auto/v1/newmserver-emails/uguj3in5g8hg4ofrzdwq" href="https://t.me/NEWMofficial" />
       </mj-column>
-      <mj-column width="104px">
-        <mj-image width="24px" padding="40px 0" src="https://res.cloudinary.com/newm/image/upload/f_auto,q_auto/v1/newmserver-emails/az85bfjowfbjlxkzdtdp" href="https://twitter.com/projectNEWM" />
+      <mj-column width="64px">
+        <mj-image width="24px" padding="40px 0" src="https://res.cloudinary.com/newm/image/upload/f_auto,q_auto/v1/newmserver-emails/aqvu7wjkpymijdbjovhf" href="https://twitter.com/projectNEWM" />
       </mj-column>
-      <mj-column width="104px">
-        <mj-image width="24px" padding="40px 0" src="https://res.cloudinary.com/newm/image/upload/f_auto,q_auto/v1/newmserver-emails/xhgyabijvyaljvovjzlu" href="https://newm.io" />
+      <mj-column width="64px">
+        <mj-image width="24px" padding="40px 0" src="https://res.cloudinary.com/newm/image/upload/f_auto,q_auto/v1/newmserver-emails/f8u1zdg6osweqmioeesl" href="https://discord.com/invite/z4sYqxqgvQ" />
+      </mj-column>
+      <mj-column width="64px">
+        <mj-image width="24px" padding="40px 0" src="https://res.cloudinary.com/newm/image/upload/f_auto,q_auto/v1/newmserver-emails/at5dxsfeqpy30snybkw1" href="https://instagram.com/projectnewm.io" />
+      </mj-column>
+      <mj-column width="64px">
+        <mj-image width="24px" padding="40px 0" src="https://res.cloudinary.com/newm/image/upload/f_auto,q_auto/v1/newmserver-emails/l5w03sjsdw0bt0qpst8f" href="https://github.com/projectNEWM" />
+      </mj-column>
+      <mj-column width="64px">
+        <mj-image width="24px" padding="40px 0" src="https://res.cloudinary.com/newm/image/upload/f_auto,q_auto/v1/newmserver-emails/vmvrwooaithktecqjd6p" href="https://www.youtube.com/channel/UCcsBNWGjIf8YarD9uaZEEvw" />
       </mj-column>
     </mj-section>
     <mj-section>
