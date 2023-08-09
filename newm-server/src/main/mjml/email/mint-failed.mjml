@@ -29,7 +29,7 @@
       <mj-column>
         <mj-text padding-top="40px" color="#FFF" align="left" font-family="Inter" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
           If you would like to resubmit the song for minting, please visit <a href="https://artist.garage.newm.io" style="color: #FFF">artist.garage.newm.io</a> and verify that all song details have been entered correctly, and that all contributors/featured artists have approved the minting request.<br><br>
-          <span style="color: #8E8E93">If you would like further information, please send your questions to <a href="emailto:support@newm.io" style="color: #8E8E93">support@newm.io</a> for assistance.</span>
+          <span style="color: #8E8E93">If you would like further information, please send your questions to <a href="mailto:support@newm.io" style="color: #8E8E93">support@newm.io</a> for assistance.</span>
         </mj-text>
         <mj-text padding="60px 0" color="#636366" align="center" font-family="Inter" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
           PLEASE DO NOT REPLY TO THIS MESSAGE

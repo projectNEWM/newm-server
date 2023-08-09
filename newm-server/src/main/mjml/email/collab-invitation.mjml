@@ -22,7 +22,7 @@
           You have a pending mint approval request as a collaborator and/or featured artist for the following song:<br><br>
           "{song}" by {owner}<br><br>
           Please visit <a href="https://artist.garage.newm.io" style="color: #FFF">artist.garage.newm.io</a> to accept or decline this request. If you do not already have an account, you will need to create one in order to respond to the mint request.<br><br>
-          If you would like further information, please send your inquiry to <a href="emailto:support@newm.io" style="color: #FFF">support@newm.io</a> for assistance.
+          If you would like further information, please send your inquiry to <a href="mailto:support@newm.io" style="color: #FFF">support@newm.io</a> for assistance.
         </mj-text>
         <mj-text padding="60px 0" color="#636366" align="center" font-family="Inter" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
           PLEASE DO NOT REPLY TO THIS MESSAGE
