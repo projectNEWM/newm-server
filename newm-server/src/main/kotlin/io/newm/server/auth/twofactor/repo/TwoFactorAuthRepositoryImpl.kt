@@ -4,6 +4,7 @@ import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.util.logging.Logger
 import io.newm.server.auth.twofactor.database.TwoFactorAuthEntity
 import io.newm.server.features.email.repo.EmailRepository
+import io.newm.server.features.user.database.UserEntity
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.debug
 import io.newm.shared.ktx.getConfigChild
@@ -28,12 +29,13 @@ internal class TwoFactorAuthRepositoryImpl(
 
     override suspend fun sendCode(email: String) {
         logger.debug { "sendCode: $email" }
+        val emailType = if (transaction { UserEntity.existsByEmail(email) }) "resetEmail" else "joinEmail"
         with(environment.getConfigChild("twoFactorAuth")) {
             val code = random.nextDigitCode(getInt("codeSize"))
             emailRepository.send(
                 to = email,
-                subject = getString("email.subject"),
-                messageUrl = getString("email.messageUrl"),
+                subject = getString("$emailType.subject"),
+                messageUrl = getString("$emailType.messageUrl"),
                 messageArgs = mapOf("code" to code)
             )
 

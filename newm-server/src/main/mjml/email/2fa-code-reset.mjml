@@ -1,6 +1,6 @@
 <mjml>
   <mj-head>
-    <mj-preview>Head to your NEWM Artist Portal for more details</mj-preview>
+    <mj-preview>Follow the steps to reset your password</mj-preview>
     <mj-attributes>
       <mj-section padding="0 0" />
       <mj-column padding="0 0" />
@@ -17,24 +17,16 @@
     </mj-section>
     <mj-section>
       <mj-column>
-        <mj-text padding="40px 0" color="#FFF" align="left" font-family="Inter" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
-          Congrats {owner}!<br><br>
-          Minting for the following song submission is complete!<br><br>
-          {song}
-        </mj-text>
-        <mj-spacer mj-class="separator" />
-      </mj-column>
-    </mj-section>
-    <mj-section>
-      <mj-column>
         <mj-text padding-top="40px" color="#FFF" align="left" font-family="Inter" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
-          Here's a recap on what this means: Your song's streaming rights have been successfully fractionalized and minted on the blockchain. Once the NEWM Streaming Marketplace goes live, you'll be able to sell a percentage of these rights in the form of Stream Tokens to your fans - pretty cool, right?<br><br>
-          You can also keep track of any royalties that your song accrues through the built-in wallet in your Artist profile (you'll be able to claim them after the launch of the Streaming Marketplace).<br><br>
-          For full details, please login to your profile at <a href="https://artist.garage.newm.io" style="color: #DC3CAA">artist.garage.newm.io</a>.<br><br>
-          Cheers, The NEWM Team<br><br>
-          <span style="color: #8E8E93">P.S. Got a question about the minting process? Please send your question to <a href="emailto:support@newm.io" style="color: #8E8E93">support@newm.io</a> for assistance.</span>
+          Hey there,<br><br>
+          The verification code is:<br><br>
+          <span style="font-size: 40px; font-weight: 700">{code}</span><br><br>
+          Enter this code in our website to reset your passport.
         </mj-text>
-        <mj-text padding="60px 0" color="#636366" align="center" font-family="Inter" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
+        <mj-text padding-top="40px" color="#636366" align="left" font-family="Inter" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
+          If you did not request to reset your password, or believe you have received it by mistake, ignore this email. For any questions or further assistance please reach out to <a href="emailto:support@newm.io" style="color: #636366">support@newm.io</a>.
+        </mj-text>
+        <mj-text padding-top="24px" padding-bottom="60px" color="#636366" align="center" font-family="Inter" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
           PLEASE DO NOT REPLY TO THIS MESSAGE
         </mj-text>
         <mj-spacer mj-class="separator" />
@@ -70,7 +62,7 @@
     </mj-section>
     <mj-section>
       <mj-column>
-        <mj-text padding-top="40px" padding-bottom="66px" color="#FFF" align="center" font-family="Inter" font-size="12px" font-style="italic" font-weight="500" line-height="18px">
+        <mj-text padding-top="40px" padding-bottom="78px" color="#FFF" align="center" font-family="Inter" font-size="12px" font-style="italic" font-weight="500" line-height="18px">
           Copyright © 2023 NEWM, All rights reserved
         </mj-text>
       </mj-column>
