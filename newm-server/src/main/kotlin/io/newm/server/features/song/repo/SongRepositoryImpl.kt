@@ -9,6 +9,7 @@ import io.ktor.http.URLProtocol
 import io.ktor.http.encodedPath
 import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.util.logging.Logger
+import io.ktor.utils.io.ByteReadChannel
 import io.newm.chain.grpc.Utxo
 import io.newm.chain.grpc.outputUtxo
 import io.newm.chain.util.toHexString
@@ -28,6 +29,7 @@ import io.newm.server.features.collaboration.repo.CollaborationRepository
 import io.newm.server.features.distribution.DistributionRepository
 import io.newm.server.features.email.repo.EmailRepository
 import io.newm.server.features.minting.MintingStatusSqsMessage
+import io.newm.server.features.model.AudioUploadReport
 import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.model.AudioStreamData
 import io.newm.server.features.song.model.MintingStatus
@@ -45,17 +47,23 @@ import io.newm.shared.koin.inject
 import io.newm.shared.ktx.debug
 import io.newm.shared.ktx.getConfigChild
 import io.newm.shared.ktx.getConfigString
+import io.newm.shared.ktx.getInt
 import io.newm.shared.ktx.getLong
 import io.newm.shared.ktx.getString
 import io.newm.shared.ktx.info
 import io.newm.shared.ktx.megabytesToBytes
+import io.newm.shared.ktx.propertiesFromResource
+import io.newm.shared.ktx.toTempFile
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import org.apache.tika.Tika
+import org.jaudiotagger.audio.AudioFileIO
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf
 import java.math.BigDecimal
 import java.net.URL
+import java.util.Properties
 import java.util.UUID
 
 internal class SongRepositoryImpl(
@@ -71,6 +79,9 @@ internal class SongRepositoryImpl(
     private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
     private val json: Json by inject()
     private val queueUrl by lazy { environment.getConfigString("aws.sqs.minting.queueUrl") }
+    private val mimeTypes: Properties by lazy {
+        propertiesFromResource("audio-mime-types.properties")
+    }
 
     override suspend fun add(song: Song, ownerId: UUID): UUID {
         logger.debug { "add: song = $song" }
@@ -200,6 +211,7 @@ internal class SongRepositoryImpl(
         }
     }
 
+    // TODO: CU-86a0e050w - remove next generateAudioUpload function
     override suspend fun generateAudioUpload(
         songId: UUID,
         requesterId: UUID,
@@ -225,11 +237,59 @@ internal class SongRepositoryImpl(
             credentials = DefaultAWSCredentialsProviderChain.getInstance().credentials
             conditions = listOf(
                 ContentLengthRangeCondition(
-                    min = config.getLong("minUploadSizeMB").megabytesToBytes(),
-                    max = config.getLong("maxUploadSizeMB").megabytesToBytes()
+                    min = config.getLong("minFileSizeMB").megabytesToBytes(),
+                    max = config.getLong("maxFileSizeMB").megabytesToBytes()
                 )
             )
             expiresSeconds = config.getLong("timeToLive")
+        }
+    }
+
+    override suspend fun uploadAudio(
+        songId: UUID,
+        requesterId: UUID,
+        data: ByteReadChannel
+    ): AudioUploadReport {
+        logger.debug { "uploadAudio: songId = $songId" }
+
+        checkRequester(songId, requesterId)
+        val config = environment.getConfigChild("aws.s3.audio")
+        val file = data.toTempFile()
+        try {
+            // enforce file size
+            val size = file.length()
+            val minSize = config.getLong("minFileSizeMB").megabytesToBytes()
+            if (size < minSize) throw HttpUnprocessableEntityException("File is too small: $size bytes")
+            val maxSize = config.getLong("maxFileSizeMB").megabytesToBytes()
+            if (size > maxSize) throw HttpUnprocessableEntityException("File is too large: $size bytes")
+
+            // enforce supported format
+            val type = Tika().detect(file)
+            val ext = mimeTypes.getProperty(type)
+                ?: throw HttpUnprocessableEntityException("Unsupported media type: $type")
+
+            // enforce duration
+            val header = AudioFileIO.readAs(file, ext).audioHeader
+            val duration = header.trackLength
+            val minDuration = config.getInt("minDuration")
+            if (duration < minDuration) throw HttpUnprocessableEntityException("Duration is too short: $duration secs")
+
+            // enforce sampling rate
+            val sampleRate = header.sampleRateAsNumber
+            val minSampleRate = config.getInt("minSampleRate")
+            if (sampleRate < minSampleRate) throw HttpUnprocessableEntityException("Sample rate is too low: $sampleRate Hz")
+
+            val bucket = config.getString("bucketName")
+            val key = "$songId/audio.$ext"
+            s3.putObject(bucket, key, file)
+
+            val url = s3UrlStringOf(bucket, key)
+            transaction {
+                SongEntity[songId].originalAudioUrl = url
+            }
+            return AudioUploadReport(url, type, size, duration, sampleRate)
+        } finally {
+            file.delete()
         }
     }
 

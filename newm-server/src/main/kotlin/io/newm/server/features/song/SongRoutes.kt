@@ -65,6 +65,7 @@ fun Routing.createSongRoutes() {
                     songRepository.delete(songId, myUserId)
                     respond(HttpStatusCode.NoContent)
                 }
+                // TODO: CU-86a0e050w - remove next POST after frontend migrates to new API
                 post("upload") {
                     respond(
                         AudioUploadResponse(
@@ -73,6 +74,15 @@ fun Routing.createSongRoutes() {
                                 requesterId = myUserId,
                                 fileName = receive<AudioUploadRequest>().fileName
                             )
+                        )
+                    )
+                }
+                post("audio") {
+                    respond(
+                        songRepository.uploadAudio(
+                            songId = songId,
+                            requesterId = myUserId,
+                            data = request.receiveChannel()
                         )
                     )
                 }

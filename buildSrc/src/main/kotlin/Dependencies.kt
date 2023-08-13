@@ -165,6 +165,18 @@ object Dependencies {
         const val ALL = "commons-codec:commons-codec:$VERSION"
     }
 
+    object ApacheTika {
+        private const val VERSION = "2.8.0"
+
+        const val CORE = "org.apache.tika:tika-core:$VERSION"
+    }
+
+    object JAudioTagger {
+        private const val VERSION = "3.0.1"
+
+        const val ALL = "net.jthink:jaudiotagger:$VERSION"
+    }
+
     object BouncyCastle {
         private const val VERSION = "1.70"
 
