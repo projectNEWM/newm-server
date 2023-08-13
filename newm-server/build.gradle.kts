@@ -102,6 +102,9 @@ dependencies {
     implementation(Dependencies.Arweave.ARWEAVE4S)
     implementation(Dependencies.Arweave.SCALA_JAVA8_COMPAT)
 
+    implementation(Dependencies.ApacheTika.CORE)
+    implementation(Dependencies.JAudioTagger.ALL)
+
     testImplementation(Dependencies.Ktor.CLIENT_LOGGING)
     testImplementation(Dependencies.JUnit.JUPITER)
     testImplementation(Dependencies.Mockk.MOCKK)
