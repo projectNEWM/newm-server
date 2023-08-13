@@ -1,5 +1,6 @@
 package io.newm.server
 
+import com.amazonaws.services.s3.AmazonS3
 import com.zaxxer.hikari.HikariDataSource
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpTimeout
@@ -134,6 +135,7 @@ open class BaseApplicationTests {
                 single { mockk<FacebookUserProvider>(relaxed = true) }
                 single { mockk<LinkedInUserProvider>(relaxed = true) }
                 single { mockk<AppleUserProvider>(relaxed = true) }
+                single { mockk<AmazonS3>(relaxed = true) }
             }
         )
     }

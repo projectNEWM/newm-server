@@ -29,9 +29,9 @@ import io.newm.server.features.collaboration.repo.CollaborationRepository
 import io.newm.server.features.distribution.DistributionRepository
 import io.newm.server.features.email.repo.EmailRepository
 import io.newm.server.features.minting.MintingStatusSqsMessage
-import io.newm.server.features.model.AudioUploadReport
 import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.model.AudioStreamData
+import io.newm.server.features.song.model.AudioUploadReport
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongFilters

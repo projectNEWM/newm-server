@@ -2,13 +2,21 @@ package io.newm.server.features.song
 
 import com.google.common.truth.Truth.assertThat
 import com.google.iot.cbor.CborInteger
-import io.ktor.client.*
 import io.ktor.client.call.body
-import io.ktor.client.request.*
-import io.ktor.client.request.forms.*
-import io.ktor.http.*
-import io.ktor.server.application.*
-import io.ktor.utils.io.core.*
+import io.ktor.client.request.accept
+import io.ktor.client.request.bearerAuth
+import io.ktor.client.request.delete
+import io.ktor.client.request.get
+import io.ktor.client.request.parameter
+import io.ktor.client.request.patch
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.URLProtocol
+import io.ktor.http.contentType
+import io.ktor.http.setCookie
+import io.ktor.server.application.ApplicationEnvironment
 import io.newm.chain.util.toHexString
 import io.newm.server.BaseApplicationTests
 import io.newm.server.features.cardano.database.KeyEntity
@@ -16,14 +24,20 @@ import io.newm.server.features.cardano.database.KeyTable
 import io.newm.server.features.model.CountResponse
 import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.database.SongTable
-import io.newm.server.features.song.model.*
+import io.newm.server.features.song.model.AudioStreamResponse
+import io.newm.server.features.song.model.AudioUploadReport
+import io.newm.server.features.song.model.MarketplaceStatus
+import io.newm.server.features.song.model.MintPaymentResponse
+import io.newm.server.features.song.model.MintingStatus
+import io.newm.server.features.song.model.Song
+import io.newm.server.features.song.model.SongBarcodeType
+import io.newm.server.features.song.model.SongIdBody
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
+import io.newm.server.utils.ResourceOutgoingContent
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.existsHavingId
-import io.newm.shared.ktx.getConfigChild
 import io.newm.shared.ktx.getConfigString
-import io.newm.shared.ktx.getString
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.neq
@@ -31,13 +45,10 @@ import org.jetbrains.exposed.sql.deleteAll
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
-import java.io.EOFException
-import java.io.File
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
 
 class SongRoutesTests : BaseApplicationTests() {
 
@@ -504,134 +515,29 @@ class SongRoutesTests : BaseApplicationTests() {
     }
 
     @Test
-    fun testRequestAudioUpload() = runBlocking {
+    fun testUploadSongAudio() = runBlocking {
         val environment: ApplicationEnvironment by inject()
-        val region = environment.getConfigString("aws.region")
         val bucketName = environment.getConfigString("aws.s3.audio.bucketName")
-        val bucketUrl = "https://$bucketName.s3.$region.amazonaws.com"
         val songId = addSongToDatabase(ownerId = testUserId).id!!
-        val fileName = "test1.wav"
-        val key = "$songId/$fileName"
 
         // Request upload
-        val response = client.post("v1/songs/$songId/upload") {
+        val response = client.post("v1/songs/$songId/audio") {
             bearerAuth(testUserToken)
-            contentType(ContentType.Application.Json)
-            setBody(AudioUploadRequest(fileName))
+            contentType(ContentType.Application.OctetStream) // intentionally not set to "audio/x-flac" to make sure we detect
+            setBody(ResourceOutgoingContent("sample1.flac"))
         }
         assertThat(response.status).isEqualTo(HttpStatusCode.OK)
-        with(response.body<AudioUploadResponse>()) {
-            assertThat(url).isEqualTo(bucketUrl)
-            assertThat(fields.size).isEqualTo(7)
-            assertThat(fields["bucket"]).isEqualTo(bucketName)
-            assertThat(fields["key"]).isEqualTo(key)
-            assertThat(fields["X-Amz-Algorithm"]).isEqualTo("AWS4-HMAC-SHA256")
-            assertThat(fields).containsKey("X-Amz-Credential")
-            assertThat(fields).containsKey("X-Amz-Date")
-            assertThat(fields).containsKey("policy")
-            assertThat(fields).containsKey("X-Amz-Signature")
+        val expectedAudioUrl = "s3://$bucketName/$songId/audio.flac"
+        with(response.body<AudioUploadReport>()) {
+            assertThat(url).isEqualTo(expectedAudioUrl)
+            assertThat(mimeType).isEqualTo("audio/x-flac")
+            assertThat(fileSize).isEqualTo(12358748)
+            assertThat(duration).isEqualTo(122)
+            assertThat(sampleRate).isEqualTo(44100)
         }
 
-        val expectedAudioUrl = "s3://$bucketName/$key"
         val actualAudioUrl = transaction { SongEntity[songId].originalAudioUrl }
         assertThat(actualAudioUrl).isEqualTo(expectedAudioUrl)
-    }
-
-    @Disabled("Disabled because this test requires real AWS credentials")
-    @Test
-    fun testRequestAudioPostUpload() = runBlocking {
-        // Add song directly into database
-        val songId = addSongToDatabase(ownerId = testUserId).id!!
-
-        // Request upload
-        val response = client.post("v1/songs/$songId/upload") {
-            bearerAuth(testUserToken)
-            contentType(ContentType.Application.Json)
-            setBody(AudioUploadRequest("test1.mp3"))
-        }
-        assertThat(response.status).isEqualTo(HttpStatusCode.OK)
-        val resp = response.body<AudioUploadResponse>()
-
-        // create a new HttpClient to work around loop back network in test environment
-        val localClient = HttpClient()
-
-        val environment: ApplicationEnvironment by inject()
-        val config = environment.getConfigChild("aws.s3.audio")
-        val file = File(config.getString("smallSongFile"))
-        val form = formData {
-            resp.fields.forEach {
-                append(it.key, it.value)
-            }
-            appendInput(
-                key = "file",
-                headers = Headers.build {
-                    append(HttpHeaders.ContentType, "application/octet-stream")
-                    append(HttpHeaders.ContentDisposition, "filename=${file.name}")
-                },
-                size = file.length()
-            ) {
-                buildPacket { writeFully(file.readBytes()) }
-            }
-        }
-
-        val formResp = localClient.submitFormWithBinaryData(form) {
-            url(resp.url)
-            headers {
-                append("Accept", ContentType.Application.Json)
-            }
-        }
-
-        assertThat(formResp.status.value).isIn(200..204)
-    }
-
-    @Disabled("Disabled because this test requires real AWS credentials")
-    @Test
-    fun testRequestAudioPostUploadTooLarge() = runBlocking {
-        // Add song directly into database
-        val songId = addSongToDatabase(ownerId = testUserId).id!!
-
-        // Request upload
-        val response = client.post("v1/songs/$songId/upload") {
-            bearerAuth(testUserToken)
-            contentType(ContentType.Application.Json)
-            setBody(AudioUploadRequest("test1.mp3"))
-        }
-        assertThat(response.status).isEqualTo(HttpStatusCode.OK)
-        val resp = response.body<AudioUploadResponse>()
-
-        // create a new HttpClient to work around loop back network in test environment
-        val localClient = HttpClient()
-
-        val environment: ApplicationEnvironment by inject()
-        val config = environment.getConfigChild("aws.s3.audio")
-        val file = File(config.getString("bigSongFile"))
-        val form = formData {
-            resp.fields.forEach {
-                append(it.key, it.value)
-            }
-            appendInput(
-                key = "file",
-                headers = Headers.build {
-                    append(HttpHeaders.ContentType, "application/octet-stream")
-                    append(HttpHeaders.ContentDisposition, "filename=${file.name}")
-                },
-                size = file.length()
-            ) {
-                buildPacket { writeFully(file.readBytes()) }
-            }
-        }
-
-        val result = runCatching {
-            localClient.submitFormWithBinaryData(form) {
-                url(resp.url)
-                headers {
-                    append("Accept", ContentType.Application.Json)
-                }
-            }
-        }.onFailure {
-            assertThat(it).isInstanceOf(EOFException::class.java)
-        }
-        assertThat(result.isFailure).isTrue()
     }
 
     @Test
