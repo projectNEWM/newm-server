@@ -1,0 +1,63 @@
+version: "3.9"
+services:
+  newm-chain:
+    depends_on:
+      - postgres
+      - ogmios
+    image: newm-chain:latest
+    ports:
+      - "3737:3737"
+    environment:
+      - DATABASE_SERVER=postgres
+      - DATABASE_PORT=${DATABASE_PORT}
+      - DATABASE_NAME=${DATABASE_NAME}
+      - DATABASE_USERNAME=${DATABASE_USERNAME}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+      - DATABASE_SALT=${DATABASE_SALT}
+      - DATABASE_SPENDING_PASSWORD=${DATABASE_SPENDING_PASSWORD}
+      - DATABASE_SHELLEY_GENESIS_HASH=${DATABASE_SHELLEY_GENESIS_HASH}
+      - OGMIOS_SERVER=ogmios
+      - OGMIOS_PORT=1337
+      - OGMIOS_SECURE=false
+      - OGMIOS_START_SLOT=${OGMIOS_START_SLOT}
+      - OGMIOS_START_HASH=${OGMIOS_START_HASH}
+      - JWT_SECRET=${JWT_SECRET}
+      - NEWM_CHAIN_SYNC_RAW_TXNS=${NEWM_CHAIN_SYNC_RAW_TXNS}
+      - NEWM_CHAIN_MONITOR_ADDRESSES=${NEWM_CHAIN_MONITOR_ADDRESSES}
+      - SENTRY_DSN=${SENTRY_DSN}
+      - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT}
+    #      - SSL_CERT_CHAIN_PATH=${SSL_CERT_CHAIN_PATH}
+    #      - SSL_PRIVATE_KEY_PATH=${SSL_PRIVATE_KEY_PATH}
+    restart: on-failure
+  postgres:
+    image: postgres:latest
+    restart: always
+    environment:
+      - POSTGRES_PASSWORD=password
+      - DATABASE_NAME=${DATABASE_NAME}
+      - DATABASE_USERNAME=${DATABASE_USERNAME}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - "./initdb.d/init-user-db.sh:/docker-entrypoint-initdb.d/init-user-db.sh"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 1s
+
+  ogmios:
+    depends_on:
+      - postgres
+    image: cardanosolutions/cardano-node-ogmios:latest
+    platform: linux/amd64
+    volumes:
+      - cardano-node-ogmios-mainnet-db:/db
+    ports:
+      - "1337:1337"
+    restart: on-failure
+
+volumes:
+  cardano-node-ogmios-mainnet-db:
+  node-ipc:
+  postgres-data:
