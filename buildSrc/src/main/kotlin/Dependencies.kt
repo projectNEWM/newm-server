@@ -91,7 +91,7 @@ object Dependencies {
     }
 
     object LogBack {
-        private const val VERSION = "1.4.8"
+        private const val VERSION = "1.4.11"
 
         const val CLASSIC = "ch.qos.logback:logback-classic:$VERSION"
     }
@@ -140,7 +140,7 @@ object Dependencies {
     }
 
     object Caffeine {
-        private const val VERSION = "3.1.7"
+        private const val VERSION = "3.1.8"
 
         const val ALL = "com.github.ben-manes.caffeine:caffeine:$VERSION"
     }
@@ -191,14 +191,14 @@ object Dependencies {
 
     // https://github.com/cloudinary/cloudinary_java
     object Cloudinary {
-        private const val VERSION = "1.33.0"
+        private const val VERSION = "1.34.0"
 
         const val ALL = "com.cloudinary:cloudinary-http44:$VERSION"
     }
 
     object Aws {
-        private const val VERSION = "1.12.521"
-        private const val VERSION2 = "2.20.118"
+        private const val VERSION = "1.12.530"
+        private const val VERSION2 = "2.20.127"
         private const val JAXB_VERSION = "2.3.1"
 
         const val BOM = "com.amazonaws:aws-java-sdk-bom:$VERSION"
@@ -233,7 +233,7 @@ object Dependencies {
     }
 
     object Mockk {
-        private const val VERSION = "1.13.5"
+        private const val VERSION = "1.13.7"
 
         const val MOCKK = "io.mockk:mockk:$VERSION"
     }
@@ -245,7 +245,7 @@ object Dependencies {
     }
 
     object Sentry {
-        private const val VERSION = "6.27.0"
+        private const val VERSION = "6.28.0"
 
         const val CORE = "io.sentry:sentry:$VERSION"
         const val LOGBACK = "io.sentry:sentry-logback:$VERSION"
