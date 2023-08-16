@@ -41,12 +41,6 @@ message QueryCurrentEpochResponse {
   uint64 epoch = 1;
 }
 
-message QueryProtocolParametersRequest {}
-
-message QueryProtocolParametersResult {
-
-}
-
 message QueryUtxosRequest {
   string address = 1;
 }

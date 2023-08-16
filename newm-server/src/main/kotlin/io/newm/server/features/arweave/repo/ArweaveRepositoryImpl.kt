@@ -161,21 +161,48 @@ class ArweaveRepositoryImpl(
     }
 
     @Suppress("UNCHECKED_CAST")
-    private suspend fun awaitTransactionSettlement(transactionId: String) {
-        val txId = Transaction.Id(transactionId.b64ToByteArray())
+    private suspend fun submitAndAwaitTransactionSettlement(bodyBytes: ByteArray, mimeType: String): String {
+        var signedTransactionPair = createSignedArweaveTransaction(bodyBytes, mimeType)
+        var signedTransaction = signedTransactionPair.first
+        var transactionId = signedTransactionPair.second
+        if (!submitTransaction(signedTransaction)) {
+            throw IOException("Failure submitting transaction: $transactionId, $mimeType")
+        }
+        log.info { "Arweave Transaction submitted: $transactionId, $mimeType" }
+        delay(Duration.ofSeconds(10L))
+
+        var txId = Transaction.Id(transactionId.b64ToByteArray())
+        var queryCount = 0
+        var retryCount = 0
         withTimeout(Duration.ofHours(3L)) {
             while (true) {
                 val txFuture = txApi.get(txId, evidenceMonad, arweaveConfig, getTxFunction) as Future<Response<*>>
                 val txResponse = toJava(txFuture).await()
                 when (txResponse.code()) {
                     200 -> {
-                        log.info { "Success, transaction is on chain!: $transactionId" }
+                        log.info { "Success, transaction is on chain!: $transactionId, $mimeType" }
                         break // success, stop checking status
                     }
 
-                    202 -> log.warn { "Pending, transaction is not yet on chain!: $transactionId" }
+                    202 -> log.warn { "Pending, transaction is not yet on chain!: $transactionId, $mimeType" }
                     404 -> {
-                        throw IOException("Not Found, transaction could not be found!: $transactionId")
+                        if (queryCount < 3) {
+                            queryCount++
+                        } else if (retryCount < 3) {
+                            queryCount = 0
+                            retryCount++
+                            // Rebuild and resubmit the tx. Maybe there was a gateway error or something
+                            signedTransactionPair = createSignedArweaveTransaction(bodyBytes, mimeType)
+                            signedTransaction = signedTransactionPair.first
+                            transactionId = signedTransactionPair.second
+                            if (!submitTransaction(signedTransaction)) {
+                                throw IOException("Failure submitting transaction (retry $retryCount): $transactionId, $mimeType")
+                            }
+                            log.info { "Arweave Transaction submitted (retry $retryCount): $transactionId, $mimeType" }
+                            txId = Transaction.Id(transactionId.b64ToByteArray())
+                        } else {
+                            throw IOException("Not Found, transaction could not be found!: $transactionId, $mimeType")
+                        }
                     }
 
                     else -> {
@@ -186,6 +213,7 @@ class ArweaveRepositoryImpl(
                 delay(Duration.ofMinutes(1L))
             }
         }
+        return transactionId
     }
 
     override suspend fun getWalletAddress(): String {
@@ -246,9 +274,6 @@ class ArweaveRepositoryImpl(
                     } else {
                         inputUrl
                     }
-                    if (downloadUrl != inputUrl) {
-                        log.info { "Downloaded url: $downloadUrl" }
-                    }
                     val response = httpClient.get(downloadUrl) {
                         accept(ContentType.parse(mimeType))
                     }
@@ -258,27 +283,7 @@ class ArweaveRepositoryImpl(
                     }
 
                     val bodyBytes: ByteArray = response.body()
-                    val arweaveData = Data(bodyBytes)
-                    val reward = calculatePrice(arweaveData)
-                    val lastTx = getLastWalletTransaction()
-                    val tags = buildTags(mapOf("Content-Type" to mimeType))
-                    val transaction = Transaction.apply(
-                        lastTx,
-                        arweaveWallet().owner(),
-                        reward,
-                        Option.apply(arweaveData),
-                        tags,
-                        Option.empty(),
-                        Winston.Zero(),
-                    )
-                    val signedTransaction = signTransaction(transaction)
-                    val transactionId = Tx.SignedTransaction(signedTransaction).id().toString()
-                    if (!submitTransaction(signedTransaction)) {
-                        throw IOException("Failure submitting transaction: $transactionId")
-                    }
-                    log.info { "Arweave Transaction submitted: $transactionId" }
-
-                    awaitTransactionSettlement(transactionId)
+                    val transactionId = submitAndAwaitTransactionSettlement(bodyBytes, mimeType)
 
                     songUpdateMutex.withLock {
                         val songToUpdate = when (mimeType) {
@@ -301,6 +306,28 @@ class ArweaveRepositoryImpl(
                 }
             }
         }.awaitAll()
+    }
+
+    private suspend fun ArweaveRepositoryImpl.createSignedArweaveTransaction(
+        bodyBytes: ByteArray,
+        mimeType: String
+    ): Pair<Signed<Transaction>, String> {
+        val arweaveData = Data(bodyBytes)
+        val reward = calculatePrice(arweaveData)
+        val lastTx = getLastWalletTransaction()
+        val tags = buildTags(mapOf("Content-Type" to mimeType))
+        val transaction = Transaction.apply(
+            lastTx,
+            arweaveWallet().owner(),
+            reward,
+            Option.apply(arweaveData),
+            tags,
+            Option.empty(),
+            Winston.Zero(),
+        )
+        val signedTransaction = signTransaction(transaction)
+        val transactionId = Tx.SignedTransaction(signedTransaction).id().toString()
+        return Pair(signedTransaction, transactionId)
     }
 
     companion object {
