@@ -71,7 +71,8 @@ class MintingRepositoryImpl(
         val streamTokensTotal = 100_000_000L.toBigDecimal()
         var streamTokensRemaining = 100_000_000L
         val splitCollabs = collabs.filter { it.royaltyRate!! > BigDecimal.ZERO }.sortedByDescending { it.royaltyRate }
-        require(splitCollabs.sumOf { it.royaltyRate!! } == 100.toBigDecimal()) { "Collaboration royalty rates must sum to 100" }
+        val royaltySum = splitCollabs.sumOf { it.royaltyRate!! }
+        require(royaltySum == 100.toBigDecimal()) { "Collaboration royalty rates must sum to 100 but was $royaltySum" }
         val streamTokenSplits = splitCollabs.mapIndexed { index, collaboration ->
             val collabUser = userRepository.findByEmail(collaboration.email!!)
             val splitMultiplier = collaboration.royaltyRate!! / 100.toBigDecimal()
