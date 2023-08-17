@@ -114,7 +114,7 @@ class MintingRepositoryImpl(
                 .take(5)
         }
 
-        val (refTokenName, fracTokenName) = calculateTokenNames(cashRegisterUtxos.first())
+        val (refTokenName, fracTokenName) = calculateTokenNames(paymentUtxo)
         val collateralKey =
             requireNotNull(cardanoRepository.getKeyByName("collateral")) { "collateral key not defined!" }
         val collateralUtxo = requireNotNull(
@@ -224,9 +224,9 @@ class MintingRepositoryImpl(
         signatures: List<Signature> = emptyList()
     ) = cardanoRepository.buildTransaction {
         with(sourceUtxos) {
+            add(paymentUtxo)
             moneyBoxUtxos?.let { addAll(it) }
             addAll(cashRegisterUtxos)
-            add(paymentUtxo)
         }
         with(outputUtxos) {
             // reference NFT output to cip68 script address
