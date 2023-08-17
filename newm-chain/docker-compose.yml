@@ -49,7 +49,7 @@ services:
   ogmios:
     depends_on:
       - postgres
-    image: cardanosolutions/cardano-node-ogmios:latest
+    image: cardanosolutions/cardano-node-ogmios:v5.6.0_1.35.7
     platform: linux/amd64
     volumes:
       - cardano-node-ogmios-mainnet-db:/db
