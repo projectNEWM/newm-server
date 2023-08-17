@@ -72,7 +72,7 @@ class MintingRepositoryImpl(
         var streamTokensRemaining = 100_000_000L
         val splitCollabs = collabs.filter { it.royaltyRate!! > BigDecimal.ZERO }.sortedByDescending { it.royaltyRate }
         val royaltySum = splitCollabs.sumOf { it.royaltyRate!! }
-        require(royaltySum == 100.toBigDecimal()) { "Collaboration royalty rates must sum to 100 but was $royaltySum" }
+        require(royaltySum.compareTo(100.toBigDecimal()) == 0) { "Collaboration royalty rates must sum to 100 but was $royaltySum" }
         val streamTokenSplits = splitCollabs.mapIndexed { index, collaboration ->
             val collabUser = userRepository.findByEmail(collaboration.email!!)
             val splitMultiplier = collaboration.royaltyRate!! / 100.toBigDecimal()
@@ -419,7 +419,10 @@ class MintingRepositoryImpl(
                     add(
                         plutusDataMapItem {
                             mapItemKey = "release_title".toPlutusData()
-                            mapItemValue = (song.album ?: song.title)!!.toPlutusData() // NOTE: for single, track title is used as album name
+                            mapItemValue = (
+                                song.album
+                                    ?: song.title
+                                )!!.toPlutusData() // NOTE: for single, track title is used as album name
                         }
                     )
                     add(
