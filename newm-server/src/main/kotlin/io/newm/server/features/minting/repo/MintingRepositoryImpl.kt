@@ -418,7 +418,7 @@ class MintingRepositoryImpl(
                     add(
                         plutusDataMapItem {
                             mapItemKey = "release_title".toPlutusData()
-                            mapItemValue = song.album!!.toPlutusData()
+                            mapItemValue = (song.album ?: song.title)!!.toPlutusData() // NOTE: for single, track title is used as album name
                         }
                     )
                     add(

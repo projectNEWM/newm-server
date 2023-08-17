@@ -37,11 +37,7 @@ import io.newm.shared.ktx.getConfigString
 import io.newm.shared.ktx.getString
 import io.newm.shared.ktx.info
 import io.newm.shared.ktx.warn
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.future.await
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.time.delay
 import kotlinx.coroutines.time.withTimeout
 import org.koin.core.parameter.parametersOf
@@ -186,6 +182,7 @@ class ArweaveRepositoryImpl(
 
                     202 -> log.warn { "Pending, transaction is not yet on chain!: $transactionId, $mimeType" }
                     404 -> {
+                        log.warn { "Not Found, transaction could not be found!: $transactionId, $mimeType" }
                         if (queryCount < 3) {
                             queryCount++
                         } else if (retryCount < 3) {
@@ -234,7 +231,7 @@ class ArweaveRepositoryImpl(
             }
         }
 
-        val songUpdateMutex = Mutex()
+        var arweaveException: Throwable? = null
         listOfNotNull(
             if (song.arweaveCoverArtUrl != null) {
                 log.info { "Song ${song.id} already has arweave cover art url: ${song.arweaveCoverArtUrl}" }
@@ -260,52 +257,48 @@ class ArweaveRepositoryImpl(
             } else {
                 song.lyricsUrl?.let { it to "text/plain" }
             },
-        ).map { (inputUrl, mimeType) ->
-            async {
-                try {
-                    val downloadUrl = if (inputUrl.startsWith("s3://")) {
-                        val (bucket, key) = inputUrl.toBucketAndKey()
-                        amazonS3.generatePresignedUrl(
-                            bucket,
-                            key,
-                            Date.from(Instant.now().plus(30, ChronoUnit.MINUTES)),
-                            HttpMethod.GET
-                        ).toExternalForm()
-                    } else {
-                        inputUrl
-                    }
-                    val response = httpClient.get(downloadUrl) {
-                        accept(ContentType.parse(mimeType))
-                    }
-
-                    if (!response.status.isSuccess()) {
-                        throw response.status.toException("Error downloading url: $downloadUrl")
-                    }
-
-                    val bodyBytes: ByteArray = response.body()
-                    val transactionId = submitAndAwaitTransactionSettlement(bodyBytes, mimeType)
-
-                    songUpdateMutex.withLock {
-                        val songToUpdate = when (mimeType) {
-                            "image/webp" -> Song(arweaveCoverArtUrl = "ar://$transactionId")
-                            "application/pdf" -> Song(arweaveTokenAgreementUrl = "ar://$transactionId")
-                            "audio/mpeg" -> Song(arweaveClipUrl = "ar://$transactionId")
-                            "text/plain" -> Song(arweaveLyricsUrl = "ar://$transactionId")
-                            else -> throw IllegalStateException("Unknown mime type: $mimeType")
-                        }
-
-                        // We're on chain now. Update the song record
-                        songRepository.update(song.id!!, songToUpdate)
-                        log.info { "Song ${song.id} updated: $songToUpdate" }
-                    }
-                } catch (e: Throwable) {
-                    // delay a bit so others can potentially succeed and they don't need to be re-uploaded later.
-                    log.error("Arweave Process Error", e)
-                    delay(Duration.ofMinutes(10L))
-                    throw e
+        ).forEach { (inputUrl, mimeType) ->
+            // Do Arweave uploads one at a time
+            try {
+                val downloadUrl = if (inputUrl.startsWith("s3://")) {
+                    val (bucket, key) = inputUrl.toBucketAndKey()
+                    amazonS3.generatePresignedUrl(
+                        bucket,
+                        key,
+                        Date.from(Instant.now().plus(30, ChronoUnit.MINUTES)),
+                        HttpMethod.GET
+                    ).toExternalForm()
+                } else {
+                    inputUrl
                 }
+                val response = httpClient.get(downloadUrl) {
+                    accept(ContentType.parse(mimeType))
+                }
+
+                if (!response.status.isSuccess()) {
+                    throw response.status.toException("Error downloading url: $downloadUrl")
+                }
+
+                val bodyBytes: ByteArray = response.body()
+                val transactionId = submitAndAwaitTransactionSettlement(bodyBytes, mimeType)
+
+                val songToUpdate = when (mimeType) {
+                    "image/webp" -> Song(arweaveCoverArtUrl = "ar://$transactionId")
+                    "application/pdf" -> Song(arweaveTokenAgreementUrl = "ar://$transactionId")
+                    "audio/mpeg" -> Song(arweaveClipUrl = "ar://$transactionId")
+                    "text/plain" -> Song(arweaveLyricsUrl = "ar://$transactionId")
+                    else -> throw IllegalStateException("Unknown mime type: $mimeType")
+                }
+
+                // We're on chain now. Update the song record
+                songRepository.update(song.id!!, songToUpdate)
+                log.info { "Song ${song.id} updated: $songToUpdate" }
+            } catch (e: Throwable) {
+                log.error("Arweave Process Error", e)
+                arweaveException = e
             }
-        }.awaitAll()
+        }
+        arweaveException?.let { throw it }
     }
 
     private suspend fun ArweaveRepositoryImpl.createSignedArweaveTransaction(

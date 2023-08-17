@@ -937,7 +937,7 @@ class EvearaDistributionRepositoryImpl(
             setBody(
                 AddAlbumRequest(
                     uuid = user.distributionUserId!!,
-                    name = song.title, // NOTE: for single, track title is used as album name
+                    name = song.album ?: song.title, // NOTE: for single, track title is used as album name
                     artistIds = artistIds,
                     subscriptionId = user.distributionSubscriptionId!!,
                     eanUpc = song.barcodeNumber,
