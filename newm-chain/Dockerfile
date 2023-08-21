@@ -34,6 +34,6 @@ LABEL org.opencontainers.image.description="A gRPC interface for communicating w
 LABEL org.opencontainers.image.url="https://newm.io"
 LABEL org.opencontainers.image.source="https://github.com/projectNEWM/newm-server"
 LABEL org.opencontainers.image.documentation="https://github.com/projectNEWM/newm-server"
-LABEL org.opencontainers.image.authors="Project NEWM<connect@projectnewm.io>"
-LABEL org.opencontainers.image.vendor="Project NEWM<connect@projectnewm.io>"
+LABEL org.opencontainers.image.authors="Project NEWM<connect@newm.io>"
+LABEL org.opencontainers.image.vendor="Project NEWM<connect@newm.io>"
 
