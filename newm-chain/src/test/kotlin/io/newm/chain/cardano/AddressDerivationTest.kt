@@ -45,6 +45,18 @@ class AddressDerivationTest {
     }
 
     @Test
+    fun `test address derivation2`() {
+        val xpub =
+            "xpub1zhm4ktg2qkp9mwuyrat9525wtzyaqszreq9ecjc7zpmshyus9xqhjr5kng46dj8g5p0k4gdk0cn2hx3ldgauf86dyrk9ljqrpljf8mgthp6hs"
+
+        val xpubKey = BIP32PublicKey(xpub)
+        val pk0 = xpubKey.derive(0u).derive(0u)
+        assertThat(pk0.bech32XPub).isEqualTo("xpub17ls9ple4gcrvn9q9qkfc0gg7c6ukmdd9pd6x7z7l3h69e0etacl8atp5vd3vl6kh7vzkma6nneps24dyk8pxls0jsjuah9n729luztqzkf62d")
+        val pkCredential = AddressCredential.fromKey(pk0)
+        assertThat(pkCredential.hash.toHexString()).isEqualTo("f68602c64043ecb9b0fc32077fdb934c0cf51ce82d57be83146cb60a")
+    }
+
+    @Test
     fun `test BigInteger shr`() {
         val bi = BigInteger("93411271048366834790890848459125")
         val c = (bi shr 51).toULong()

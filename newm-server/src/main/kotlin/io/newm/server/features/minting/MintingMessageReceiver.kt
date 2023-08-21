@@ -12,6 +12,7 @@ import io.newm.server.features.daemon.QuartzSchedulerDaemon
 import io.newm.server.features.minting.repo.MintingRepository
 import io.newm.server.features.scheduler.EvearaReleaseStatusJob
 import io.newm.server.features.song.model.MintingStatus
+import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.repo.SongRepository
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.info
@@ -118,6 +119,11 @@ class MintingMessageReceiver : SqsMessageReceiver {
                     .build()
 
                 quartzSchedulerDaemon.scheduleJob(jobDetail, trigger)
+
+                if (!cardanoRepository.isMainnet()) {
+                    // If we are on testnet, pretend that the song is already successfully distributed
+                    songRepository.update(song.id!!, Song(forceDistributed = true))
+                }
             }
 
             MintingStatus.Distributed -> {
