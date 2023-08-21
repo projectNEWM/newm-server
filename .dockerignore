@@ -1,0 +1,12 @@
+# Ignore git and project files
+.git
+.github
+.githooks
+.cache
+.idea
+.vscode
+
+# Ignore compiled files since they are generated in container
+**/build/
+**/*.class
+
