@@ -18,7 +18,6 @@ import io.newm.server.ktx.getSecureString
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.debug
 import io.newm.shared.ktx.getConfigChild
-import io.newm.shared.ktx.getConfigString
 import io.newm.shared.ktx.getString
 import io.newm.shared.ktx.propertiesFromResource
 import io.newm.shared.ktx.toUUID
@@ -83,16 +82,18 @@ class IdenfyRepositoryImpl(
                 suspicionReasons?.let { codes += it }
             }
             logger.debug { "processRequest: codes = $codes" }
-            messageArgs += "reasons" to codes.joinToString(separator = "<br/><br/>") { code ->
-                "&bull; ${messages.getProperty(code, code)}"
+            messageArgs += "reasons" to codes.joinToString(separator = "<br>") { code ->
+                "<li>${messages.getProperty(code, code)}</li>"
             }
         }
 
-        emailRepository.send(
-            to = email,
-            subject = environment.getConfigString("idenfy.email.subject"),
-            messageUrl = environment.getConfigString("idenfy.email.${status.name.lowercase()}MessageUrl"),
-            messageArgs = messageArgs
-        )
+        with(environment.getConfigChild("idenfy.${status.name.lowercase()}Email")) {
+            emailRepository.send(
+                to = email,
+                subject = getString("subject"),
+                messageUrl = getString("messageUrl"),
+                messageArgs = messageArgs
+            )
+        }
     }
 }
