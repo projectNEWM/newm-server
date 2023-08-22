@@ -1,6 +1,6 @@
 <mjml>
   <mj-head>
-    <mj-preview>Follow the steps to reset your password</mj-preview>
+    <mj-preview>You're ready to mint!</mj-preview>
     <mj-attributes>
       <mj-section padding="0 0" />
       <mj-column padding="0 0" />
@@ -19,14 +19,10 @@
       <mj-column>
         <mj-text padding-top="40px" color="#FFF" align="left" font-family="Inter" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
           Hey there,<br><br>
-          The verification code is:<br><br>
-          <span style="font-size: 40px; font-weight: 700">{code}</span><br><br>
-          Enter this code in our <a href="https://artist.garage.newm.io" style="color: #FFF">website</a> to reset your passport.
+          Your identity verification request was successful! This means you're all set to upload and mint songs on the Artist Portal, congrats!<br><br>
+          For any questions or further assistance please reach out to <a href="mailto:support@newm.io" style="color: #FFF">support@newm.io</a>.
         </mj-text>
-        <mj-text padding-top="40px" color="#636366" align="left" font-family="Inter" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
-          If you did not request to reset your password, or believe you have received it by mistake, ignore this email. For any questions or further assistance please reach out to <a href="mailto:support@newm.io" style="color: #636366">support@newm.io</a>.
-        </mj-text>
-        <mj-text padding-top="24px" padding-bottom="60px" color="#636366" align="center" font-family="Inter" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
+        <mj-text padding="60px 0" color="#636366" align="center" font-family="Inter" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
           PLEASE DO NOT REPLY TO THIS MESSAGE
         </mj-text>
         <mj-spacer mj-class="separator" />
@@ -62,7 +58,7 @@
     </mj-section>
     <mj-section>
       <mj-column>
-        <mj-text padding-top="40px" padding-bottom="78px" color="#FFF" align="center" font-family="Inter" font-size="12px" font-style="italic" font-weight="500" line-height="18px">
+        <mj-text padding-top="40px" padding-bottom="66px" color="#FFF" align="center" font-family="Inter" font-size="12px" font-style="italic" font-weight="500" line-height="18px">
           Copyright © 2023 NEWM, All rights reserved
         </mj-text>
       </mj-column>
