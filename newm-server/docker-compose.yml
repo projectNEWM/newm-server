@@ -1,0 +1,49 @@
+version: "3.9"
+services:
+  newm-server:
+    depends_on:
+      - postgres
+    image: newm-server:latest
+    ports:
+      - "3939:3939"
+    environment:
+      - ARWEAVE_WALLET_JSON=${ARWEAVE_WALLET_JSON}
+      - AWS_AGREEMENT_BUCKET=${AWS_AGREEMENT_BUCKET}
+      - AWS_AUDIO_BUCKET=${AWS_AUDIO_BUCKET}
+      - AWS_AUDIO_CLOUDFRONT_HOST_URL=${AWS_AUDIO_CLOUDFRONT_HOST_URL}
+      - AWS_AUDIO_SQS_QUEUE_URL=${AWS_AUDIO_SQS_QUEUE_URL}
+      - AWS_MINTING_SQS_QUEUE_URL=${AWS_MINTING_SQS_QUEUE_URL}
+      - AWS_PROFILE=${AWS_PROFILE}
+      - AWS_REGION=${AWS_REGION}
+      - REGION=${AWS_REGION}
+      - AWS_SECRET_ARN=${AWS_SECRET_ARN}
+      - CLOUDINARY_URL=${CLOUDINARY_URL}
+      - CORS_HOSTS=${CORS_HOSTS}
+      - EMAIL_SMTP_PORT=465
+      - EVEARA_SERVER=${EVEARA_SERVER}
+      - NEWM_CHAIN_HOST=${NEWM_CHAIN_HOST}
+      - NEWM_CHAIN_PORT=${NEWM_CHAIN_PORT}
+      - PUBLIC_URL=${PUBLIC_URL}
+      - SENTRY_DSN=${SENTRY_DSN}
+      - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT}
+    volumes:
+      - ~/.aws/:/home/newm-server/.aws:ro
+    restart: on-failure
+  postgres:
+    image: postgres:latest
+    restart: always
+    environment:
+      - POSTGRES_PASSWORD=password
+      - DATABASE_NAME=${DATABASE_NAME}
+      - DATABASE_USERNAME=${DATABASE_USERNAME}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - "./initdb.d/init-user-db.sh:/docker-entrypoint-initdb.d/init-user-db.sh"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 1s
+volumes:
+  postgres-data:
