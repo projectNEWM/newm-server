@@ -19,7 +19,8 @@
       <mj-column>
         <mj-text padding-top="40px" color="#FFF" align="left" font-family="Inter" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
           Hey there,<br><br>
-          Your identity verification request was successful! This means you're all set to upload and mint songs on the Artist Portal, congrats!<br><br>
+          Your identity verification request was successful, congrats!<br><br>
+          If you haven't already, the next step will be connecting your wallet. Once that's done, you'll be all set to upload and mint songs on the Artist Portal!<br><br>
           For any questions or further assistance please reach out to <a href="mailto:support@newm.io" style="color: #FFF">support@newm.io</a>.
         </mj-text>
         <mj-text padding="60px 0" color="#636366" align="center" font-family="Inter" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
