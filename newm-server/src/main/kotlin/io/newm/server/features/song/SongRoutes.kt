@@ -9,8 +9,6 @@ import io.ktor.server.routing.route
 import io.newm.server.auth.jwt.AUTH_JWT
 import io.newm.server.features.model.CountResponse
 import io.newm.server.features.song.model.AudioStreamResponse
-import io.newm.server.features.song.model.AudioUploadRequest
-import io.newm.server.features.song.model.AudioUploadResponse
 import io.newm.server.features.song.model.MintPaymentRequest
 import io.newm.server.features.song.model.MintPaymentResponse
 import io.newm.server.features.song.model.SongIdBody
@@ -64,18 +62,6 @@ fun Routing.createSongRoutes() {
                 delete {
                     songRepository.delete(songId, myUserId)
                     respond(HttpStatusCode.NoContent)
-                }
-                // TODO: CU-86a0e050w - remove next POST after frontend migrates to new API
-                post("upload") {
-                    respond(
-                        AudioUploadResponse(
-                            songRepository.generateAudioUpload(
-                                songId = songId,
-                                requesterId = myUserId,
-                                fileName = receive<AudioUploadRequest>().fileName
-                            )
-                        )
-                    )
                 }
                 post("audio") {
                     respond(
