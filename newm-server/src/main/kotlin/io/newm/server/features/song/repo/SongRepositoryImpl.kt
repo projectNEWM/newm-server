@@ -23,7 +23,6 @@ import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_PRI
 import io.newm.server.features.cardano.database.KeyTable
 import io.newm.server.features.cardano.model.Key
 import io.newm.server.features.cardano.repo.CardanoRepository
-import io.newm.server.features.collaboration.model.CollaborationFilters
 import io.newm.server.features.collaboration.model.CollaborationStatus
 import io.newm.server.features.collaboration.repo.CollaborationRepository
 import io.newm.server.features.distribution.DistributionRepository
@@ -52,6 +51,7 @@ import io.newm.shared.ktx.getLong
 import io.newm.shared.ktx.getString
 import io.newm.shared.ktx.info
 import io.newm.shared.ktx.megabytesToBytes
+import io.newm.shared.ktx.orZero
 import io.newm.shared.ktx.propertiesFromResource
 import io.newm.shared.ktx.toTempFile
 import kotlinx.serialization.encodeToString
@@ -347,24 +347,15 @@ internal class SongRepositoryImpl(
     }
 
     override suspend fun getUnapprovedCollaboratorCount(songId: UUID): Int {
-        val song = get(songId)
-        return collaborationRepository.getAll(
-            userId = song.ownerId!!,
-            CollaborationFilters(songIds = listOf(song.id!!)),
-            offset = 0,
-            limit = Int.MAX_VALUE,
-        ).count { (it.royaltyRate ?: BigDecimal.ZERO) > BigDecimal.ZERO && it.status != CollaborationStatus.Accepted }
+        return collaborationRepository.getAllBySongId(songId)
+            .count { it.royaltyRate.orZero() > BigDecimal.ZERO && it.status != CollaborationStatus.Accepted }
     }
 
     override suspend fun getMintingPaymentAmountCborHex(songId: UUID, requesterId: UUID): String {
         logger.debug { "getMintingPaymentAmount: songId = $songId" }
         // TODO: We might need to change this code in the future if we're charging NEWM tokens in addition to ada
-        val numberOfCollaborators = collaborationRepository.getAll(
-            userId = requesterId,
-            filters = CollaborationFilters(songIds = listOf(songId)),
-            offset = 0,
-            limit = Int.MAX_VALUE,
-        ).count { (it.royaltyRate ?: BigDecimal.ZERO) > BigDecimal.ZERO }
+        val numberOfCollaborators = collaborationRepository.getAllBySongId(songId)
+            .count { it.royaltyRate.orZero() > BigDecimal.ZERO }
         val mintCostBase = configRepository.getLong(CONFIG_KEY_MINT_PRICE)
         val changeAmount = 1000000L // 1 ada
         val minUtxo: Long = cardanoRepository.queryStreamTokenMinUtxo()
@@ -442,14 +433,27 @@ internal class SongRepositoryImpl(
             val song = SongEntity[songId]
             song to UserEntity[song.ownerId]
         }
+
+        val messageArgs = mutableMapOf<String, String>()
+        messageArgs += "song" to song.title
+        if (path == "started") {
+            val collabs = collaborationRepository.getAllBySongId(song.id.value)
+                .filter { it.royaltyRate.orZero() > BigDecimal.ZERO }
+            val users = transaction {
+                collabs.associate {
+                    it.id to UserEntity.getByEmail(it.email!!)
+                }
+            }
+            messageArgs += "collabs" to collabs.joinToString(separator = "") {
+                "<li>${users[it.id]?.stageOrFullName ?: it.email}: ${it.royaltyRate}%</li>"
+            }
+        }
+
         emailRepository.send(
             to = owner.email,
             subject = environment.getConfigString("mintingNotifications.$path.subject"),
             messageUrl = environment.getConfigString("mintingNotifications.$path.messageUrl"),
-            messageArgs = mapOf(
-                "song" to song.title,
-                "owner" to owner.stageOrFullName
-            )
+            messageArgs = messageArgs
         )
     }
 

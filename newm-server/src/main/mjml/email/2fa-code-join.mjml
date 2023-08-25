@@ -1,6 +1,7 @@
 <mjml>
   <mj-head>
     <mj-preview>Secure two-step verification code to complete your NEWM profile setup</mj-preview>
+    <mj-font name="Inter" href="https://fonts.googleapis.com/css?family=Inter" />
     <mj-attributes>
       <mj-section padding="0 0" />
       <mj-column padding="0 0" />
@@ -17,10 +18,10 @@
     </mj-section>
     <mj-section>
       <mj-column>
-        <mj-text padding-top="40px" color="#FFF" align="center" font-family="Inter" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
+        <mj-text padding-top="40px" color="#FFF" align="center" font-family="Inter,sans-serif" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
           Your secure verification code is:
         </mj-text>
-        <mj-text padding-top="30px" padding-bottom="50px" color="#FFF" align="center" font-family="Inter" font-size="60px" font-style="normal" font-weight="600" line-height="18px">
+        <mj-text padding-top="30px" padding-bottom="50px" color="#FFF" align="center" font-family="Inter,sans-serif" font-size="60px" font-style="normal" font-weight="600" line-height="18px">
           {code}
         </mj-text>
         <mj-spacer mj-class="separator" />
@@ -28,11 +29,11 @@
     </mj-section>
     <mj-section>
       <mj-column>
-        <mj-text padding-top="40px" color="#FFF" align="left" font-family="Inter" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
+        <mj-text padding-top="40px" color="#FFF" align="left" font-family="Inter,sans-serif" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
           Enter this code in our <a href="https://artist.garage.newm.io" style="color: #FFF">website</a> to activate your account and complete your profile.<br><br>
           If you are not attempting to create a NEWM account or believe you have received this email by mistake, please ignore this message.
         </mj-text>
-        <mj-text padding="60px 0" color="#636366" align="center" font-family="Inter" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
+        <mj-text padding="60px 0" color="#636366" align="center" font-family="Inter,sans-serif" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
           PLEASE DO NOT REPLY TO THIS MESSAGE
         </mj-text>
         <mj-spacer mj-class="separator" />
@@ -60,7 +61,7 @@
     </mj-section>
     <mj-section>
       <mj-column>
-        <mj-text padding-top="20px" padding-bottom="40px" color="#FFF" align="center" font-family="Inter" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
+        <mj-text padding-top="20px" padding-bottom="40px" color="#FFF" align="center" font-family="Inter,sans-serif" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
           Join our community on <a href="https://discord.com/invite/z4sYqxqgvQ" style="color: #DC3CAA;font-family: Inter;font-size: 14px;font-style: normal;font-weight: 700;line-height: 18px;">Discord!</a>
         </mj-text>
         <mj-spacer mj-class="separator" />
@@ -68,8 +69,8 @@
     </mj-section>
     <mj-section>
       <mj-column>
-        <mj-text padding-top="40px" padding-bottom="78px" color="#FFF" align="center" font-family="Inter" font-size="12px" font-style="italic" font-weight="500" line-height="18px">
-          Copyright © 2023 NEWM, All rights reserved
+        <mj-text padding-top="40px" padding-bottom="78px" color="#FFF" align="center" font-family="Inter,sans-serif" font-size="12px" font-style="italic" font-weight="500" line-height="18px">
+          Copyright &copy; 2023 NEWM, All rights reserved
         </mj-text>
       </mj-column>
     </mj-section>

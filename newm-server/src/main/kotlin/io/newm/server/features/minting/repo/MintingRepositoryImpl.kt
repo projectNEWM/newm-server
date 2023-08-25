@@ -31,7 +31,6 @@ import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_STA
 import io.newm.server.features.cardano.model.Key
 import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.collaboration.model.Collaboration
-import io.newm.server.features.collaboration.model.CollaborationFilters
 import io.newm.server.features.collaboration.repo.CollaborationRepository
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.user.database.UserEntity
@@ -40,6 +39,7 @@ import io.newm.server.features.user.repo.UserRepository
 import io.newm.server.ktx.sign
 import io.newm.server.ktx.toReferenceUtxo
 import io.newm.shared.koin.inject
+import io.newm.shared.ktx.orZero
 import io.newm.shared.ktx.toHexString
 import io.newm.txbuilder.ktx.toCborObject
 import io.newm.txbuilder.ktx.toPlutusData
@@ -61,12 +61,7 @@ class MintingRepositoryImpl(
 
     override suspend fun mint(song: Song): String {
         val user = userRepository.get(song.ownerId!!)
-        val collabs = collabRepository.getAll(
-            userId = user.id!!,
-            filters = CollaborationFilters(songIds = listOf(song.id!!)),
-            offset = 0,
-            limit = Integer.MAX_VALUE
-        )
+        val collabs = collabRepository.getAllBySongId(song.id!!)
         val cip68Metadata = buildStreamTokenMetadata(song, user, collabs)
         val streamTokensTotal = 100_000_000L.toBigDecimal()
         var streamTokensRemaining = 100_000_000L
@@ -269,8 +264,7 @@ class MintingRepositoryImpl(
                         address = it
                         lovelace = (
                             cashRegisterCollectionAmount + (
-                                moneyBoxUtxos?.sumOf { it.lovelace.toLong() }
-                                    ?: 0L
+                                moneyBoxUtxos?.sumOf { it.lovelace.toLong() }.orZero()
                                 )
                             ).toString()
                     }

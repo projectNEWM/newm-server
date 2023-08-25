@@ -36,7 +36,6 @@ import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_EVEARA_C
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_EVEARA_CLIENT_SECRET
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_EVEARA_PARTNER_SUBSCRIPTION_ID
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_EVEARA_SERVER
-import io.newm.server.features.collaboration.model.CollaborationFilters
 import io.newm.server.features.collaboration.model.CollaborationStatus
 import io.newm.server.features.collaboration.repo.CollaborationRepository
 import io.newm.server.features.distribution.DistributionRepository
@@ -703,12 +702,7 @@ class EvearaDistributionRepositoryImpl(
         requireNotNull(user.distributionUserId) { "User.distributionUserId must not be null!" }
         val genres = getGenres().genres
         val languages = getLanguages().languages
-        val collabs = collabRepository.getAll(
-            userId = user.id!!,
-            filters = CollaborationFilters(songIds = listOf(song.id!!)),
-            offset = 0,
-            limit = Integer.MAX_VALUE
-        )
+        val collabs = collabRepository.getAllBySongId(song.id!!)
 
         val artistIds = listOf(user.distributionArtistId!!) +
             collabs.filter { it.role == "Artist" && it.featured == false && it.email != user.email }
@@ -809,12 +803,7 @@ class EvearaDistributionRepositoryImpl(
 
     override suspend fun addAlbum(user: User, trackId: Long, song: Song): AddAlbumResponse {
         requireNotNull(user.distributionUserId) { "User.distributionUserId must not be null!" }
-        val collabs = collabRepository.getAll(
-            userId = user.id!!,
-            filters = CollaborationFilters(songIds = listOf(song.id!!)),
-            offset = 0,
-            limit = Integer.MAX_VALUE
-        )
+        val collabs = collabRepository.getAllBySongId(song.id!!)
         val artistIds = listOf(user.distributionArtistId!!) +
             collabs.filter { it.role == "Artist" && it.featured == false && it.email != user.email }
                 .map { it.distributionArtistId!! }.distinct()
@@ -918,12 +907,7 @@ class EvearaDistributionRepositoryImpl(
     override suspend fun updateAlbum(user: User, trackId: Long, song: Song): EvearaSimpleResponse {
         requireNotNull(user.distributionUserId) { "User.distributionUserId must not be null!" }
         requireNotNull(song.distributionReleaseId) { "Song.distributionReleaseId must not be null!" }
-        val collabs = collabRepository.getAll(
-            userId = user.id!!,
-            filters = CollaborationFilters(songIds = listOf(song.id!!)),
-            offset = 0,
-            limit = Integer.MAX_VALUE
-        )
+        val collabs = collabRepository.getAllBySongId(song.id!!)
 
         val artistIds = listOf(user.distributionArtistId!!) +
             collabs.filter { it.role == "Artist" && it.featured == false && it.email != user.email }
@@ -1159,12 +1143,7 @@ class EvearaDistributionRepositoryImpl(
         requireNotNull(user.id) { "User.id must not be null!" }
         createDistributionUserIfNeeded(user)
 
-        val collabs = collabRepository.getAll(
-            userId = user.id,
-            filters = CollaborationFilters(songIds = listOf(mutableSong.id!!)),
-            offset = 0,
-            limit = Integer.MAX_VALUE
-        )
+        val collabs = collabRepository.getAllBySongId(mutableSong.id!!)
         require(collabs.all { it.status == CollaborationStatus.Accepted }) { "All Collaborations must be accepted!" }
 
         // Create the distribution artistId for each collaborator if they don't exist yet

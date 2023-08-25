@@ -1,6 +1,7 @@
 <mjml>
   <mj-head>
     <mj-preview>Your verification request is in review</mj-preview>
+    <mj-font name="Inter" href="https://fonts.googleapis.com/css?family=Inter" />
     <mj-attributes>
       <mj-section padding="0 0" />
       <mj-column padding="0 0" />
@@ -17,13 +18,13 @@
     </mj-section>
     <mj-section>
       <mj-column>
-        <mj-text padding-top="40px" color="#FFF" align="left" font-family="Inter" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
+        <mj-text padding-top="40px" color="#FFF" align="left" font-family="Inter,sans-serif" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
           Hey there,<br><br>
           Your identity verification request has been received and is being reviewed. Please allow up to 20 minutes for the verification process to be finalized.<br><br>
           Once it has been completed, you will receive an email notification with further instructions and/or details.<br><br>
           For any questions or further assistance please reach out to <a href="mailto:support@newm.io" style="color: #FFF">support@newm.io</a>.
         </mj-text>
-        <mj-text padding="60px 0" color="#636366" align="center" font-family="Inter" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
+        <mj-text padding="60px 0" color="#636366" align="center" font-family="Inter,sans-serif" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
           PLEASE DO NOT REPLY TO THIS MESSAGE
         </mj-text>
         <mj-spacer mj-class="separator" />
@@ -51,7 +52,7 @@
     </mj-section>
     <mj-section>
       <mj-column>
-        <mj-text padding-top="20px" padding-bottom="40px" color="#FFF" align="center" font-family="Inter" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
+        <mj-text padding-top="20px" padding-bottom="40px" color="#FFF" align="center" font-family="Inter,sans-serif" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
           Join our community on <a href="https://discord.com/invite/z4sYqxqgvQ" style="color: #DC3CAA;font-family: Inter;font-size: 14px;font-style: normal;font-weight: 700;line-height: 18px;">Discord!</a>
         </mj-text>
         <mj-spacer mj-class="separator" />
@@ -59,8 +60,8 @@
     </mj-section>
     <mj-section>
       <mj-column>
-        <mj-text padding-top="40px" padding-bottom="66px" color="#FFF" align="center" font-family="Inter" font-size="12px" font-style="italic" font-weight="500" line-height="18px">
-          Copyright © 2023 NEWM, All rights reserved
+        <mj-text padding-top="40px" padding-bottom="66px" color="#FFF" align="center" font-family="Inter,sans-serif" font-size="12px" font-style="italic" font-weight="500" line-height="18px">
+          Copyright &copy; 2023 NEWM, All rights reserved
         </mj-text>
       </mj-column>
     </mj-section>
