@@ -212,6 +212,10 @@ object Dependencies {
         const val CLOUDFRONT = "software.amazon.awssdk:cloudfront"
     }
 
+    object Zensum {
+        const val HEALTH_CHECK = "cc.rbbl:ktor-health-check:2.0.0"
+    }
+
     object Arweave {
         private const val ARWEAVE4S_VERSION = "0.21.0"
         private const val SCALA_JAVA8_COMPAT_VERSION = "1.0.2"

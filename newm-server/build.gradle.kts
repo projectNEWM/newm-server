@@ -67,6 +67,7 @@ dependencies {
     implementation(Dependencies.Exposed.DAO)
     implementation(Dependencies.Exposed.JDBC)
     implementation(Dependencies.Exposed.TIME)
+    implementation(Dependencies.Zensum.HEALTH_CHECK)
 
     implementation(Dependencies.HikariCP.ALL)
     implementation(Dependencies.PostgreSQL.ALL)
