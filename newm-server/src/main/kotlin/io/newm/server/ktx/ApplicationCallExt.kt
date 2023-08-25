@@ -10,6 +10,7 @@ import io.ktor.server.response.respond
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.bits.Memory
 import io.newm.shared.exception.HttpUnauthorizedException
+import io.newm.shared.ktx.orZero
 import io.newm.shared.ktx.splitAndTrim
 import io.newm.shared.ktx.toHexString
 import io.newm.shared.ktx.toLocalDateTime
@@ -47,7 +48,7 @@ val ApplicationCall.collaborationId: UUID
     get() = parameters["collaborationId"]!!.toUUID()
 
 val ApplicationCall.offset: Int
-    get() = parameters["offset"]?.toInt() ?: 0
+    get() = parameters["offset"]?.toInt().orZero()
 
 val ApplicationCall.limit: Int
     get() = parameters["limit"]?.toInt() ?: 25

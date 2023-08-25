@@ -1,6 +1,7 @@
 <mjml>
   <mj-head>
     <mj-preview>Here's what you need to know...</mj-preview>
+    <mj-font name="Inter" href="https://fonts.googleapis.com/css?family=Inter" />
     <mj-attributes>
       <mj-section padding="0 0" />
       <mj-column padding="0 0" />
@@ -17,16 +18,17 @@
     </mj-section>
     <mj-section>
       <mj-column>
-        <mj-text padding="40px 0" color="#FFF" align="left" font-family="Inter" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
+        <mj-text padding="40px 0" color="#FFF" align="left" font-family="Inter,sans-serif" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
           Congrats {owner}! Your request to mint the following song has been successfully submitted!<br><br>
-          {song}
+          "{song}"<br>
+          <ul style="padding-left:0;list-style-position:inside;">{collabs}</ul>
         </mj-text>
         <mj-spacer mj-class="separator" />
       </mj-column>
     </mj-section>
     <mj-section>
       <mj-column>
-        <mj-text padding-top="40px" color="#FFF" align="left" font-family="Inter" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
+        <mj-text padding-top="40px" color="#FFF" align="left" font-family="Inter,sans-serif" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
           Here's what you can expect...<br><br>
           Now that your song has been submitted, all listed contributors and/or featured artists will receive an email notification, requesting approval of the ownership percentage(s) you provided. Please note that a song cannot be minted until approval from ALL collaborators and/or featured artists has been confirmed.<br><br>
           If you did not list any collaborators and/or featured artists, you're all set, and the minting process begins immediately! This can take between 3-15 days to complete, depending on quality control and other factors. Once the process is complete, the minted song will be displayed in your library within the Artist Portal.<br><br>
@@ -34,7 +36,7 @@
           The NEWM Team<br><br>
           <span style="color: #8E8E93">P.S. Got a question about the minting process? Please send your question to <a href="mailto:support@newm.io" style="color: #8E8E93">support@newm.io</a> for assistance.</span>
         </mj-text>
-        <mj-text padding="60px 0" color="#636366" align="center" font-family="Inter" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
+        <mj-text padding="60px 0" color="#636366" align="center" font-family="Inter,sans-serif" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
           PLEASE DO NOT REPLY TO THIS MESSAGE
         </mj-text>
         <mj-spacer mj-class="separator" />
@@ -62,7 +64,7 @@
     </mj-section>
     <mj-section>
       <mj-column>
-        <mj-text padding-top="20px" padding-bottom="40px" color="#FFF" align="center" font-family="Inter" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
+        <mj-text padding-top="20px" padding-bottom="40px" color="#FFF" align="center" font-family="Inter,sans-serif" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
           Join our community on <a href="https://discord.com/invite/z4sYqxqgvQ" style="color: #DC3CAA;font-family: Inter;font-size: 14px;font-style: normal;font-weight: 700;line-height: 18px;">Discord!</a>
         </mj-text>
         <mj-spacer mj-class="separator" />
@@ -70,8 +72,8 @@
     </mj-section>
     <mj-section>
       <mj-column>
-        <mj-text padding-top="40px" padding-bottom="66px" color="#FFF" align="center" font-family="Inter" font-size="12px" font-style="italic" font-weight="500" line-height="18px">
-          Copyright © 2023 NEWM, All rights reserved
+        <mj-text padding-top="40px" padding-bottom="66px" color="#FFF" align="center" font-family="Inter,sans-serif" font-size="12px" font-style="italic" font-weight="500" line-height="18px">
+          Copyright &copy; 2023 NEWM, All rights reserved
         </mj-text>
       </mj-column>
     </mj-section>

@@ -1,6 +1,7 @@
 <mjml>
   <mj-head>
     <mj-preview>An error has occurred...</mj-preview>
+    <mj-font name="Inter" href="https://fonts.googleapis.com/css?family=Inter" />
     <mj-attributes>
       <mj-section padding="0 0" />
       <mj-column padding="0 0" />
@@ -17,21 +18,21 @@
     </mj-section>
     <mj-section>
       <mj-column>
-        <mj-text padding="40px 0" color="#FFF" align="left" font-family="Inter" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
+        <mj-text padding="40px 0" color="#FFF" align="left" font-family="Inter,sans-serif" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
           Hi {owner}!<br><br>
           Minting for the following song submission could not be completed:<br><br>
-          {song}
+          "{song}"
         </mj-text>
         <mj-spacer mj-class="separator" />
       </mj-column>
     </mj-section>
     <mj-section>
       <mj-column>
-        <mj-text padding-top="40px" color="#FFF" align="left" font-family="Inter" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
+        <mj-text padding-top="40px" color="#FFF" align="left" font-family="Inter,sans-serif" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
           If you would like to resubmit the song for minting, please visit <a href="https://artist.garage.newm.io" style="color: #FFF">artist.garage.newm.io</a> and verify that all song details have been entered correctly, and that all contributors/featured artists have approved the minting request.<br><br>
           <span style="color: #8E8E93">If you would like further information, please send your questions to <a href="mailto:support@newm.io" style="color: #8E8E93">support@newm.io</a> for assistance.</span>
         </mj-text>
-        <mj-text padding="60px 0" color="#636366" align="center" font-family="Inter" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
+        <mj-text padding="60px 0" color="#636366" align="center" font-family="Inter,sans-serif" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
           PLEASE DO NOT REPLY TO THIS MESSAGE
         </mj-text>
         <mj-spacer mj-class="separator" />
@@ -59,7 +60,7 @@
     </mj-section>
     <mj-section>
       <mj-column>
-        <mj-text padding-top="20px" padding-bottom="40px" color="#FFF" align="center" font-family="Inter" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
+        <mj-text padding-top="20px" padding-bottom="40px" color="#FFF" align="center" font-family="Inter,sans-serif" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
           Join our community on <a href="https://discord.com/invite/z4sYqxqgvQ" style="color: #DC3CAA;font-family: Inter;font-size: 14px;font-style: normal;font-weight: 700;line-height: 18px;">Discord!</a>
         </mj-text>
         <mj-spacer mj-class="separator" />
@@ -67,8 +68,8 @@
     </mj-section>
     <mj-section>
       <mj-column>
-        <mj-text padding-top="40px" padding-bottom="66px" color="#FFF" align="center" font-family="Inter" font-size="12px" font-style="italic" font-weight="500" line-height="18px">
-          Copyright © 2023 NEWM, All rights reserved
+        <mj-text padding-top="40px" padding-bottom="66px" color="#FFF" align="center" font-family="Inter,sans-serif" font-size="12px" font-style="italic" font-weight="500" line-height="18px">
+          Copyright &copy; 2023 NEWM, All rights reserved
         </mj-text>
       </mj-column>
     </mj-section>

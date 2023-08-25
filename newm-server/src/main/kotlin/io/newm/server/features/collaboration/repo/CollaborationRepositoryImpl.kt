@@ -21,8 +21,8 @@ import io.newm.shared.exception.HttpForbiddenException
 import io.newm.shared.exception.HttpUnprocessableEntityException
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.debug
-import io.newm.shared.ktx.format
 import io.newm.shared.ktx.getConfigString
+import io.newm.shared.ktx.millisToMinutesSecondsString
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.Transaction
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -150,6 +150,13 @@ internal class CollaborationRepositoryImpl(
         }
     }
 
+    override suspend fun getAllBySongId(songId: UUID): List<Collaboration> = getAll(
+        userId = transaction { SongEntity[songId].ownerId.value },
+        filters = CollaborationFilters(songIds = listOf(songId)),
+        offset = 0,
+        limit = Integer.MAX_VALUE
+    )
+
     override suspend fun getCollaboratorCount(userId: UUID, filters: CollaboratorFilters): Long {
         logger.debug { "getCollaboratorCount: userId = $userId, filters = $filters" }
         return transaction {
@@ -176,7 +183,7 @@ internal class CollaborationRepositoryImpl(
 
     private suspend fun invite(songId: UUID, getCollaborations: Transaction.() -> Iterable<CollaborationEntity>) {
         val emails = mutableListOf<String>()
-        val (song, owner) = transaction {
+        val song = transaction {
             val song = SongEntity[songId]
             val owner = UserEntity[song.ownerId]
             getCollaborations().forEach { collab ->
@@ -187,19 +194,18 @@ internal class CollaborationRepositoryImpl(
                     CollaborationStatus.Waiting
                 }
             }
-            song to owner
+            song
         }
         if (emails.isNotEmpty()) {
-            val args = mapOf(
-                "song" to song.title,
-                "owner" to owner.stageOrFullName
-            )
             emailRepository.send(
                 to = emptyList(),
                 bcc = emails,
-                subject = environment.getConfigString("collaboration.email.subject").format(args),
+                subject = environment.getConfigString("collaboration.email.subject"),
                 messageUrl = environment.getConfigString("collaboration.email.messageUrl"),
-                messageArgs = args
+                messageArgs = mapOf(
+                    "title" to song.title,
+                    "duration" to song.duration?.toLong()?.millisToMinutesSecondsString().orEmpty()
+                )
             )
         }
     }

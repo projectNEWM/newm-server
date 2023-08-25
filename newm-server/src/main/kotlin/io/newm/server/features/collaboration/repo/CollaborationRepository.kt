@@ -12,6 +12,7 @@ interface CollaborationRepository {
     suspend fun delete(collaborationId: UUID, requesterId: UUID)
     suspend fun get(collaborationId: UUID, requesterId: UUID): Collaboration
     suspend fun getAll(userId: UUID, filters: CollaborationFilters, offset: Int, limit: Int): List<Collaboration>
+    suspend fun getAllBySongId(songId: UUID): List<Collaboration>
     suspend fun getAllCount(userId: UUID, filters: CollaborationFilters): Long
     suspend fun getCollaborators(userId: UUID, filters: CollaboratorFilters, offset: Int, limit: Int): List<Collaborator>
     suspend fun getCollaboratorCount(userId: UUID, filters: CollaboratorFilters): Long
