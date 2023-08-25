@@ -1,6 +1,5 @@
 package io.newm.server.features.song.repo
 
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.sqs.model.SendMessageRequest
 import com.google.iot.cbor.CborInteger
@@ -14,9 +13,6 @@ import io.newm.chain.grpc.Utxo
 import io.newm.chain.grpc.outputUtxo
 import io.newm.chain.util.toHexString
 import io.newm.server.aws.cloudfront.cloudfrontAudioStreamData
-import io.newm.server.aws.s3.createPresignedPost
-import io.newm.server.aws.s3.model.ContentLengthRangeCondition
-import io.newm.server.aws.s3.model.PresignedPost
 import io.newm.server.aws.s3.s3UrlStringOf
 import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_PRICE
@@ -208,40 +204,6 @@ internal class SongRepositoryImpl(
         logger.debug { "getGenresCount: filters = $filters" }
         return transaction {
             SongEntity.genres(filters).count()
-        }
-    }
-
-    // TODO: CU-86a0e050w - remove next generateAudioUpload function
-    override suspend fun generateAudioUpload(
-        songId: UUID,
-        requesterId: UUID,
-        fileName: String
-    ): PresignedPost {
-        logger.debug { "generateAudioUpload: songId = $songId, fileName = $fileName" }
-
-        if ('/' in fileName) throw HttpUnprocessableEntityException("Invalid fileName: $fileName")
-
-        val config = environment.getConfigChild("aws.s3.audio")
-        val bucket = config.getString("bucketName")
-        val key = "$songId/$fileName"
-        val url = s3UrlStringOf(bucket, key)
-        transaction {
-            val entity = SongEntity[songId]
-            entity.checkRequester(requesterId)
-            entity.originalAudioUrl = url
-        }
-
-        return s3.createPresignedPost {
-            this.bucket = bucket
-            this.key = key
-            credentials = DefaultAWSCredentialsProviderChain.getInstance().credentials
-            conditions = listOf(
-                ContentLengthRangeCondition(
-                    min = config.getLong("minFileSizeMB").megabytesToBytes(),
-                    max = config.getLong("maxFileSizeMB").megabytesToBytes()
-                )
-            )
-            expiresSeconds = config.getLong("timeToLive")
         }
     }
 

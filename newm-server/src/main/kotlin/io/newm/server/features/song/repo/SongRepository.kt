@@ -2,7 +2,6 @@ package io.newm.server.features.song.repo
 
 import io.ktor.utils.io.ByteReadChannel
 import io.newm.chain.grpc.Utxo
-import io.newm.server.aws.s3.model.PresignedPost
 import io.newm.server.features.song.model.AudioStreamData
 import io.newm.server.features.song.model.AudioUploadReport
 import io.newm.server.features.song.model.MintingStatus
@@ -19,7 +18,6 @@ interface SongRepository {
     suspend fun getAllCount(filters: SongFilters): Long
     suspend fun getGenres(filters: SongFilters, offset: Int, limit: Int): List<String>
     suspend fun getGenreCount(filters: SongFilters): Long
-    suspend fun generateAudioUpload(songId: UUID, requesterId: UUID, fileName: String): PresignedPost
     suspend fun uploadAudio(songId: UUID, requesterId: UUID, data: ByteReadChannel): AudioUploadReport
     suspend fun generateAudioStreamData(songId: UUID): AudioStreamData
     suspend fun processStreamTokenAgreement(songId: UUID, requesterId: UUID, accepted: Boolean)
