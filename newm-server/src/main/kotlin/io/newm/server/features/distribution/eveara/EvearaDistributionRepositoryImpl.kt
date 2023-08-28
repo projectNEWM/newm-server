@@ -1423,9 +1423,12 @@ class EvearaDistributionRepositoryImpl(
         require(validateReleaseResponse.validateData.errorFields.isNullOrEmpty()) { "Error validating release: $validateReleaseResponse" }
         log.info { "Validated distribution album ${mutableSong.title} with id ${mutableSong.distributionReleaseId}: ${validateReleaseResponse.message}" }
 
-        // Simulate the release to outlets
-        val simulateReleaseResponse = simulateDistributeRelease(user, mutableSong.distributionReleaseId!!)
-        log.info { "Simulated release ${mutableSong.title} with id ${mutableSong.distributionReleaseId}: ${simulateReleaseResponse.message}" }
+//        /**
+//         * FIXME: Simulate distributed should only be done for testnet and AFTER we have initiated distribution.
+//         */
+//        // Simulate the release to outlets
+//        val simulateReleaseResponse = simulateDistributeRelease(user, mutableSong.distributionReleaseId!!)
+//        log.info { "Simulated release ${mutableSong.title} with id ${mutableSong.distributionReleaseId}: ${simulateReleaseResponse.message}" }
 
         // Distribute the release to outlets
         val distributeReleaseResponse =
