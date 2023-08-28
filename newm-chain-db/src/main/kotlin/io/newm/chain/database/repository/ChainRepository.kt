@@ -13,4 +13,6 @@ interface ChainRepository {
     fun insertAll(blocks: List<ChainBlock>)
 
     fun insert(block: ChainBlock): Long
+
+    fun rollback(blockNumber: Long): Int
 }

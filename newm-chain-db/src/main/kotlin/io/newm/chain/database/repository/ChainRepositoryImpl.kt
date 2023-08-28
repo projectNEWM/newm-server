@@ -1,5 +1,6 @@
 package io.newm.chain.database.repository
 
+import com.github.benmanes.caffeine.cache.Caffeine
 import io.newm.chain.config.Config
 import io.newm.chain.database.entity.ChainBlock
 import io.newm.chain.database.table.ChainTable
@@ -129,22 +130,23 @@ class ChainRepositoryImpl : ChainRepository {
         }
     }
 
+    private var prevEtaVCache = Caffeine.newBuilder().maximumSize(100L).build<Long, String>()
+
     override fun insert(block: ChainBlock): Long {
         return transaction {
-            ChainTable.deleteWhere { blockNumber greaterEq block.blockNumber }
-            val prevEtaV: String = ChainTable.slice(
+            val prevEtaV: String = prevEtaVCache.getIfPresent(block.blockNumber - 1) ?: ChainTable.slice(
                 ChainTable.etaV
-            ).select { ChainTable.slotNumber eqSubQuery ChainTable.slice(ChainTable.slotNumber.max()).selectAll() }
-                .singleOrNull()?.get(ChainTable.etaV)
+            ).select { ChainTable.blockNumber eq (block.blockNumber - 1) }.singleOrNull()?.get(ChainTable.etaV)
                 ?: Config.shelleyGenesisHash
 
+            val newEtaV = calculateEtaV(prevEtaV, block.etaVrf0)
             val chainId = ChainTable.insertAndGetId { row ->
                 row[blockNumber] = block.blockNumber
                 row[slotNumber] = block.slotNumber
                 row[hash] = block.hash
                 row[prevHash] = block.prevHash
                 row[poolId] = nodeVKeyToPoolId(block.nodeVkey)
-                row[etaV] = calculateEtaV(prevEtaV, block.etaVrf0)
+                row[etaV] = newEtaV
                 row[nodeVkey] = block.nodeVkey
                 row[nodeVrfVkey] = block.nodeVrfVkey
                 row[blockVrf0] = block.blockVrf
@@ -164,6 +166,7 @@ class ChainRepositoryImpl : ChainRepository {
                 row[created] = System.currentTimeMillis()
                 row[processed] = false
             }.value
+            prevEtaVCache.put(block.blockNumber, newEtaV)
 
             if (block.stakeDestAddresses.isNotEmpty()) {
                 // Ignore errors as we want to just keep the existing record as-is because it's older
@@ -179,6 +182,10 @@ class ChainRepositoryImpl : ChainRepository {
 
             chainId
         }
+    }
+
+    override fun rollback(blockNumber: Long) = transaction {
+        ChainTable.deleteWhere { ChainTable.blockNumber greaterEq blockNumber }
     }
 
     private fun nodeVKeyToPoolId(nodeVKey: String): String {

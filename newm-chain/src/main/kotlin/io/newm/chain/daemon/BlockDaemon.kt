@@ -67,10 +67,12 @@ import io.newm.shared.ktx.getConfigString
 import io.newm.txbuilder.ktx.cborHexToPlutusData
 import io.newm.txbuilder.ktx.toPlutusData
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.jetbrains.exposed.sql.batchInsert
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -103,6 +105,7 @@ class BlockDaemon(
         environment.getConfigSplitStrings("newmchain.monitorAddresses")
     }
 
+    private var blockBufferSize = 1
     private val blockBuffer: MutableList<Block> = mutableListOf()
 
     private var tipBlockHeight = 0L
@@ -263,11 +266,13 @@ class BlockDaemon(
 
     private suspend fun processBlock(block: Block, isTip: Boolean) {
         blockBuffer.add(block)
-        if (blockBuffer.size == BLOCK_BUFFER_SIZE || isTip) {
+        if (blockBuffer.size == blockBufferSize || isTip) {
             // Create a copy of the list
             val blocksToCommit = blockBuffer.toMutableList()
             blockBuffer.clear()
-            commitBlocks(blocksToCommit, isTip)
+            withContext(NonCancellable) {
+                commitBlocks(blocksToCommit, isTip)
+            }
         }
     }
 
@@ -284,17 +289,22 @@ class BlockDaemon(
         var pruneTime = 0L
         measureTimeMillis {
             newSuspendedTransaction {
-//            warnLongQueriesDuration = 200L
+                warnLongQueriesDuration = 1000L
+                val firstBlock = blocksToCommit.first()
+                val lastBlock = blocksToCommit.last()
+                rollbackTime += measureTimeMillis {
+                    chainRepository.rollback(firstBlock.header.blockHeight)
+                    ledgerRepository.doRollback(firstBlock.header.blockHeight)
+                }
+
                 blocksToCommit.forEach { block ->
 //                    if (block.header.blockHeight <= 60) {
 //                        log.warn("block: $block")
 //                    }
                     // Mark same block number as rolled back
                     rollbackTime += measureTimeMillis {
-                        ledgerRepository.doRollback(block.header.blockHeight)
-
                         // Handle re-submitting any of our own transactions that got rolled back
-                        val tip = isTip && block == blocksToCommit.last()
+                        val tip = isTip && block == lastBlock
                         if (tip || blockRollbackCache.getIfPresent(block.header.blockHeight) != null) {
                             val ourTransactionIdsInBlock =
                                 block.toCreatedUtxoSet().map { createdUtxo -> createdUtxo.hash }.toSet()
@@ -356,8 +366,7 @@ class BlockDaemon(
                                     metadataMap.extractAssetMetadata(assetList)
                                 )
                             } catch (e: Throwable) {
-                                log.error("metadataMap: $metadataMap")
-                                log.error("assetList: $assetList")
+                                log.error("metadataError at block ${block.header.blockHeight}, metadataMap: $metadataMap, assetList: $assetList")
                                 throw e
                             }
                         }
@@ -368,7 +377,7 @@ class BlockDaemon(
                                 block.toAssetMetadataList(mintedLedgerAssets)
                             )
                         } catch (e: Throwable) {
-                            log.error("mintedLedgerAssets: $mintedLedgerAssets")
+                            log.error("metadataError at block ${block.header.blockHeight}, mintedLedgerAssets: $mintedLedgerAssets")
                             throw e
                         }
                     }
@@ -377,8 +386,8 @@ class BlockDaemon(
                 val latestBlock = blocksToCommit.last()
                 // Prune any old spent utxos we don't need any longer
                 pruneTime = measureTimeMillis {
-                    // only prune every 1000 blocks
-                    if (latestBlock.header.blockHeight % 1000L == 0L) {
+                    // only prune every 10000 blocks
+                    if (latestBlock.header.blockHeight % 10_000L == 0L) {
                         ledgerRepository.pruneSpent(latestBlock.header.slot)
                     }
                 }
@@ -394,8 +403,17 @@ class BlockDaemon(
                 log.info("commitBlock: block $blockHeight of $tipBlockHeight: %.2f%% committed".format(percent))
                 lastLoggedCommit = now
             }
-            if (isTip && totalTime > COMMIT_BLOCKS_WARN_LEVEL_MILLIS) {
-                log.warn("commitBlocks() total: ${totalTime}ms, rollback: ${rollbackTime}ms, nativeAsset: ${nativeAssetTime}ms, create: ${createTime}ms, spend: ${spendTime}ms, prune: ${pruneTime}ms")
+            if ((isTip && totalTime > COMMIT_BLOCKS_WARN_LEVEL_MILLIS) || (totalTime > COMMIT_BLOCKS_ERROR_LEVEL_MILLIS)) {
+                log.warn("commitBlocks(${blocksToCommit.size}) total: ${totalTime}ms, rollback: ${rollbackTime}ms, nativeAsset: ${nativeAssetTime}ms, create: ${createTime}ms, spend: ${spendTime}ms, prune: ${pruneTime}ms")
+            }
+
+            // Adjust blockBufferSize based on how long it took to commit these blocks
+            if (totalTime > COMMIT_BLOCKS_ERROR_LEVEL_MILLIS * 2) {
+                val averageTimePerBlock = totalTime / blocksToCommit.size
+                // get 10 seconds worth of blocks next time
+                blockBufferSize = max(1, ((COMMIT_BLOCKS_ERROR_LEVEL_MILLIS * 2) / averageTimePerBlock).toInt())
+            } else if (totalTime < COMMIT_BLOCKS_ERROR_LEVEL_MILLIS) {
+                blockBufferSize++
             }
         }
     }
@@ -809,8 +827,8 @@ class BlockDaemon(
 
     companion object {
         private const val RETRY_DELAY_MILLIS = 10_000L
-        private const val BLOCK_BUFFER_SIZE = 100
         private const val COMMIT_BLOCKS_WARN_LEVEL_MILLIS = 1_000L
+        private const val COMMIT_BLOCKS_ERROR_LEVEL_MILLIS = 5_000L
         private val NATIVE_ASSET_METADATA_TAG = 721.toBigInteger()
         private val ASSET_NAME_METADATA_TAG = MetadataString("name")
         private val ASSET_IMAGE_METADATA_TAG = MetadataString("image")

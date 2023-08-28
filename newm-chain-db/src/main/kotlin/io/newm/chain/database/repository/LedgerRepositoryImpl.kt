@@ -534,7 +534,7 @@ class LedgerRepositoryImpl : LedgerRepository {
             it[keyType] = ledgerAssetMetadata.keyType
             it[key] = ledgerAssetMetadata.key
             it[valueType] = ledgerAssetMetadata.valueType
-            it[value] = ledgerAssetMetadata.value
+            it[value] = ledgerAssetMetadata.value.replace("\u0000", "\\u0000")
             it[nestLevel] = ledgerAssetMetadata.nestLevel
             it[LedgerAssetMetadataTable.parentId] = parentId
         }.value
