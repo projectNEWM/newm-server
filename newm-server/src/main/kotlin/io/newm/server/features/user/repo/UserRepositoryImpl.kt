@@ -4,9 +4,12 @@ import io.ktor.util.logging.Logger
 import io.newm.server.auth.oauth.model.OAuthTokens
 import io.newm.server.auth.oauth.model.OAuthType
 import io.newm.server.auth.twofactor.repo.TwoFactorAuthRepository
+import io.newm.server.config.repo.ConfigRepository
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_EMAIL_WHITELIST
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.model.User
 import io.newm.server.features.user.model.UserFilters
+import io.newm.server.features.user.oauth.OAuthUser
 import io.newm.server.features.user.oauth.providers.AppleUserProvider
 import io.newm.server.features.user.oauth.providers.FacebookUserProvider
 import io.newm.server.features.user.oauth.providers.GoogleUserProvider
@@ -35,6 +38,7 @@ internal class UserRepositoryImpl(
     private val linkedInUserProvider: LinkedInUserProvider,
     private val appleUserProvider: AppleUserProvider,
     private val twoFactorAuthRepository: TwoFactorAuthRepository,
+    private val configRepository: ConfigRepository,
 ) : UserRepository {
 
     private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
@@ -42,6 +46,7 @@ internal class UserRepositoryImpl(
     override suspend fun add(user: User): UUID {
         logger.debug { "add: user = $user" }
 
+        user.checkWhitelist()
         user.checkFieldLengths()
         val email = user.email.asValidEmail().asVerifiedEmail(user.authCode)
         val passwordHash = user.newPassword.asValidPassword(user.confirmPassword).toHash()
@@ -100,6 +105,7 @@ internal class UserRepositoryImpl(
         }
         logger.debug { "findOrAdd: oauthUser = $user" }
 
+        user.checkWhitelist()
         val email = user.email.asValidEmail()
         if (user.isEmailVerified != true) {
             throw HttpUnauthorizedException("Unverified email: $email")
@@ -265,6 +271,23 @@ internal class UserRepositoryImpl(
     private fun Password?.checkAuth(hash: String?) {
         if (this == null) throw HttpBadRequestException("Missing password")
         if (hash == null || !verify(hash)) throw HttpUnauthorizedException("Invalid password")
+    }
+
+    private suspend fun User.checkWhitelist() {
+        checkWhitelist(email!!)
+    }
+
+    private suspend fun OAuthUser.checkWhitelist() {
+        checkWhitelist(email!!)
+    }
+
+    private suspend fun checkWhitelist(email: String) {
+        if (configRepository.exists(CONFIG_KEY_EMAIL_WHITELIST)) {
+            val whitelistRegexList = configRepository.getStrings(CONFIG_KEY_EMAIL_WHITELIST).map { Regex(it) }
+            if (whitelistRegexList.none { it.matches(email) }) {
+                throw HttpUnauthorizedException("Email not whitelisted: $email")
+            }
+        }
     }
 
     private fun User.checkFieldLengths() {

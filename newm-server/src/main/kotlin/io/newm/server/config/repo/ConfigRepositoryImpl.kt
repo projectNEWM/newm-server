@@ -43,4 +43,8 @@ internal class ConfigRepositoryImpl : ConfigRepository {
         }
         configCache.invalidate(id)
     }
+
+    override fun invalidateCache() {
+        configCache.invalidateAll()
+    }
 }

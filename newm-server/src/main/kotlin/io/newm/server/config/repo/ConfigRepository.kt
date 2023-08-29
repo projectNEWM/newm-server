@@ -12,6 +12,8 @@ interface ConfigRepository {
     suspend fun getBooleans(id: String): List<Boolean>
     suspend fun putString(id: String, value: String)
 
+    fun invalidateCache()
+
     companion object {
         const val CONFIG_KEY_ENCRYPTION_SALT = "encryption.salt"
         const val CONFIG_KEY_ENCRYPTION_PASSWORD = "encryption.password"
@@ -30,5 +32,6 @@ interface ConfigRepository {
         const val CONFIG_KEY_EVEARA_PARTNER_SUBSCRIPTION_ID = "eveara.partnerSubscriptionId"
         const val CONFIG_KEY_EVEARA_NEWM_EMAIL = "eveara.newmEmail"
         const val CONFIG_KEY_EVEARA_STATUS_CHECK_MINUTES = "eveara.statusCheckMinutes"
+        const val CONFIG_KEY_EMAIL_WHITELIST = "email.whitelist"
     }
 }
