@@ -9,7 +9,7 @@ import io.newm.server.features.user.repo.UserRepositoryImpl
 import org.koin.dsl.module
 
 val userKoinModule = module {
-    single<UserRepository> { UserRepositoryImpl(get(), get(), get(), get(), get()) }
+    single<UserRepository> { UserRepositoryImpl(get(), get(), get(), get(), get(), get()) }
     single { GoogleUserProvider(get(), get()) }
     single { FacebookUserProvider(get(), get()) }
     single { LinkedInUserProvider(get(), get()) }
