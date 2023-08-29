@@ -48,7 +48,9 @@ class MintingMessageReceiver : SqsMessageReceiver {
                 throw IllegalStateException("No SQS message expected for MintingStatus: ${MintingStatus.StreamTokenAgreementApproved}!")
             }
 
-            MintingStatus.MintingPaymentRequested -> {
+            MintingStatus.MintingPaymentRequested -> {} // nothing to do here for now
+
+            MintingStatus.MintingPaymentSubmitted -> {
                 val song = songRepository.get(mintingStatusSqsMessage.songId)
                 val paymentKey = cardanoRepository.getKey(song.paymentKeyId!!)
                 val response = cardanoRepository.awaitPayment(
