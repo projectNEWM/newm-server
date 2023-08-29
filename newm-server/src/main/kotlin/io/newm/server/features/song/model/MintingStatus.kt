@@ -7,6 +7,7 @@ enum class MintingStatus {
     // TODO: Add statuses to ensure the song successfully encodes for streaming.
 
     MintingPaymentRequested, // We've created a payment address and presented that to the Artist's wallet for payment.
+    MintingPaymentSubmitted, // Payment was submitted to the blockchain.
     MintingPaymentReceived, // Payment has been received in the payment address and 3 blocks have occurred since.
     AwaitingCollaboratorApproval, // We're waiting for collaborators to approve their percentages
     ReadyToDistribute, // Ready for the distribution team to send all the song information to distribution partners.

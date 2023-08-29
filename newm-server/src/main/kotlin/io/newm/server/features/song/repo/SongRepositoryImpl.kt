@@ -377,7 +377,7 @@ internal class SongRepositoryImpl(
         logger.info { "sent: $messageToSend" }
 
         when (mintingStatus) {
-            MintingStatus.MintingPaymentReceived -> {
+            MintingStatus.MintingPaymentSubmitted -> {
                 collaborationRepository.invite(songId)
                 sendMintingNotification("started", songId)
             }
