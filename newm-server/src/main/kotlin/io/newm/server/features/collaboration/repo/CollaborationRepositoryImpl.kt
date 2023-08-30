@@ -164,15 +164,16 @@ internal class CollaborationRepositoryImpl(
         }
     }
 
-    override suspend fun reply(collaborationId: UUID, requesterId: UUID, accepted: Boolean) {
+    override suspend fun reply(collaborationId: UUID, requesterId: UUID, accepted: Boolean): Collaboration {
         logger.debug { "reply: collaborationId = $collaborationId, accepted = $accepted" }
-        transaction {
+        return transaction {
             val collaboration = CollaborationEntity[collaborationId]
             if (!userMatches(requesterId, collaboration.email)) {
                 throw HttpForbiddenException("Operation allowed only by collaborator")
             }
             collaboration.checkStatus(CollaborationStatus.Waiting)
             collaboration.status = if (accepted) CollaborationStatus.Accepted else CollaborationStatus.Rejected
+            collaboration.toModel()
         }
     }
 

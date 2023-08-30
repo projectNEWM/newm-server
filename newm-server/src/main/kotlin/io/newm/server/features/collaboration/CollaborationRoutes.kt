@@ -13,6 +13,7 @@ import io.newm.server.features.collaboration.model.collaborationFilters
 import io.newm.server.features.collaboration.model.collaboratorFilters
 import io.newm.server.features.collaboration.repo.CollaborationRepository
 import io.newm.server.features.model.CountResponse
+import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.ktx.collaborationId
 import io.newm.server.ktx.limit
 import io.newm.server.ktx.myUserId
@@ -26,42 +27,44 @@ import io.newm.shared.ktx.put
 
 @Suppress("unused")
 fun Routing.createCollaborationRoutes() {
-    val repository: CollaborationRepository by inject()
+    val collabRepository: CollaborationRepository by inject()
+    val songRepository: SongRepository by inject()
 
     authenticate(AUTH_JWT) {
         route("v1/collaborations") {
             post {
-                respond(CollaborationIdBody(repository.add(receive(), myUserId)))
+                respond(CollaborationIdBody(collabRepository.add(receive(), myUserId)))
             }
             get {
-                respond(repository.getAll(myUserId, collaborationFilters, offset, limit))
+                respond(collabRepository.getAll(myUserId, collaborationFilters, offset, limit))
             }
             get("count") {
-                respond(CountResponse(repository.getAllCount(myUserId, collaborationFilters)))
+                respond(CountResponse(collabRepository.getAllCount(myUserId, collaborationFilters)))
             }
             route("{collaborationId}") {
                 patch {
-                    repository.update(receive(), collaborationId, myUserId)
+                    collabRepository.update(receive(), collaborationId, myUserId)
                     respond(HttpStatusCode.NoContent)
                 }
                 get {
-                    respond(repository.get(collaborationId, myUserId))
+                    respond(collabRepository.get(collaborationId, myUserId))
                 }
                 delete {
-                    repository.delete(collaborationId, myUserId)
+                    collabRepository.delete(collaborationId, myUserId)
                     respond(HttpStatusCode.NoContent)
                 }
                 put("reply") {
-                    repository.reply(collaborationId, myUserId, receive<CollaborationReply>().accepted)
+                    val collab = collabRepository.reply(collaborationId, myUserId, receive<CollaborationReply>().accepted)
+                    songRepository.processCollaborations(collab.songId!!)
                     respond(HttpStatusCode.NoContent)
                 }
             }
             route("collaborators") {
                 get {
-                    respond(repository.getCollaborators(myUserId, collaboratorFilters, offset, limit))
+                    respond(collabRepository.getCollaborators(myUserId, collaboratorFilters, offset, limit))
                 }
                 get("count") {
-                    respond(CountResponse(repository.getCollaboratorCount(myUserId, collaboratorFilters)))
+                    respond(CountResponse(collabRepository.getCollaboratorCount(myUserId, collaboratorFilters)))
                 }
             }
         }

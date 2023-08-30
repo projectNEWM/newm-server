@@ -31,7 +31,7 @@ interface SongRepository {
         changeAddress: String
     ): String
 
-    suspend fun getUnapprovedCollaboratorCount(songId: UUID): Int
+    suspend fun processCollaborations(songId: UUID)
 
     suspend fun updateSongMintingStatus(songId: UUID, mintingStatus: MintingStatus)
 
