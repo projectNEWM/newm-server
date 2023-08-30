@@ -308,9 +308,15 @@ internal class SongRepositoryImpl(
         }
     }
 
-    override suspend fun getUnapprovedCollaboratorCount(songId: UUID): Int {
-        return collaborationRepository.getAllBySongId(songId)
-            .count { it.royaltyRate.orZero() > BigDecimal.ZERO && it.status != CollaborationStatus.Accepted }
+    override suspend fun processCollaborations(songId: UUID) {
+        logger.debug { "processCollaborations: songId = $songId" }
+        if (transaction { SongEntity[songId].mintingStatus } == MintingStatus.AwaitingCollaboratorApproval) {
+            val allDone = collaborationRepository.getAllBySongId(songId)
+                .none { it.royaltyRate.orZero() > BigDecimal.ZERO && it.status != CollaborationStatus.Accepted }
+            if (allDone) {
+                updateSongMintingStatus(songId, MintingStatus.ReadyToDistribute)
+            }
+        }
     }
 
     override suspend fun getMintingPaymentAmountCborHex(songId: UUID, requesterId: UUID): String {

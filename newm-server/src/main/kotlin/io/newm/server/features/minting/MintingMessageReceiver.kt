@@ -79,15 +79,7 @@ class MintingMessageReceiver : SqsMessageReceiver {
             }
 
             MintingStatus.AwaitingCollaboratorApproval -> {
-                if (songRepository.getUnapprovedCollaboratorCount(mintingStatusSqsMessage.songId) == 0) {
-                    // All collaborators have approved. Move -> ReadyToDistribute
-                    songRepository.updateSongMintingStatus(
-                        songId = mintingStatusSqsMessage.songId,
-                        mintingStatus = MintingStatus.ReadyToDistribute
-                    )
-                } else {
-                    // Do Nothing. Once the final collaborator approves, move -> ReadyToDistribute
-                }
+                songRepository.processCollaborations(mintingStatusSqsMessage.songId)
             }
 
             MintingStatus.ReadyToDistribute -> {
