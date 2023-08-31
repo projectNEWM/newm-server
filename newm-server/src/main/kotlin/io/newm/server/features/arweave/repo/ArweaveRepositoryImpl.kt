@@ -202,6 +202,10 @@ class ArweaveRepositoryImpl(
                         }
                     }
 
+                    502 -> {
+                        log.warn { "Bad Gateway, transaction could not be found!: $transactionId, $mimeType" }
+                    }
+
                     else -> {
                         throw IOException("Error, something bad happened!: $txResponse")
                     }
@@ -218,6 +222,7 @@ class ArweaveRepositoryImpl(
     }
 
     override suspend fun uploadSongAssets(song: Song) {
+        log.info { "Uploading song assets for song: ${song.id}" }
         val balance = getWalletARBalance()
         if (balance < minWalletBalance) {
             log.warn { "Low Wallet Balance: $balance AR" }
