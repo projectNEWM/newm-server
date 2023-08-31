@@ -371,16 +371,28 @@ internal class SongRepositoryImpl(
             Song(mintingStatus = mintingStatus)
         )
 
-        // Update SQS
-        val messageToSend = MintingStatusSqsMessage(
-            songId = songId,
-            mintingStatus = mintingStatus
-        )
-        SendMessageRequest()
-            .withQueueUrl(queueUrl)
-            .withMessageBody(json.encodeToString(messageToSend))
-            .await()
-        logger.info { "sent: $messageToSend" }
+        when (mintingStatus) {
+            MintingStatus.MintingPaymentSubmitted,
+            MintingStatus.MintingPaymentReceived,
+            MintingStatus.AwaitingCollaboratorApproval,
+            MintingStatus.ReadyToDistribute,
+            MintingStatus.SubmittedForDistribution,
+            MintingStatus.Distributed,
+            MintingStatus.Pending -> {
+                // Update SQS
+                val messageToSend = MintingStatusSqsMessage(
+                    songId = songId,
+                    mintingStatus = mintingStatus
+                )
+                SendMessageRequest()
+                    .withQueueUrl(queueUrl)
+                    .withMessageBody(json.encodeToString(messageToSend))
+                    .await()
+                logger.info { "sent: $messageToSend" }
+            }
+
+            else -> {}
+        }
 
         when (mintingStatus) {
             MintingStatus.MintingPaymentSubmitted -> {
