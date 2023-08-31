@@ -33,9 +33,9 @@ class EvearaReleaseStatusJob : Job {
         }
 
         runBlocking {
+            val userId = context.mergedJobDataMap.getString("userId").toUUID()
+            val songId = context.mergedJobDataMap.getString("songId").toUUID()
             try {
-                val userId = context.mergedJobDataMap.getString("userId").toUUID()
-                val songId = context.mergedJobDataMap.getString("songId").toUUID()
                 val user = userRepository.get(userId)
                 val song = songRepository.get(songId)
                 val distributionReleaseStatusResponse =
@@ -92,6 +92,18 @@ class EvearaReleaseStatusJob : Job {
                 }
             } catch (e: Exception) {
                 log.error("Error in EvearaReleaseStatusJob: ${context.mergedJobDataMap}", e)
+                songRepository.updateSongMintingStatus(
+                    songId = songId,
+                    mintingStatus = MintingStatus.SubmittedForDistributionException
+                )
+
+                // Cancel this job's future executions
+                context.scheduler.deleteJob(
+                    JobKey.jobKey(
+                        context.jobDetail.key.name,
+                        context.jobDetail.key.group
+                    )
+                )
             }
         }
     }

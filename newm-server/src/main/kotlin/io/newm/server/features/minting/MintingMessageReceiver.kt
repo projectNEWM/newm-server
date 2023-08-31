@@ -40,33 +40,38 @@ class MintingMessageReceiver : SqsMessageReceiver {
         log.info { "received: $mintingStatusSqsMessage" }
 
         when (mintingStatusSqsMessage.mintingStatus) {
-            MintingStatus.Undistributed -> {
-                throw IllegalStateException("No SQS message expected for MintingStatus: ${MintingStatus.Undistributed}!")
-            }
-
-            MintingStatus.StreamTokenAgreementApproved -> {
-                throw IllegalStateException("No SQS message expected for MintingStatus: ${MintingStatus.StreamTokenAgreementApproved}!")
-            }
-
-            MintingStatus.MintingPaymentRequested -> {} // nothing to do here for now
-
             MintingStatus.MintingPaymentSubmitted -> {
-                val song = songRepository.get(mintingStatusSqsMessage.songId)
-                val paymentKey = cardanoRepository.getKey(song.paymentKeyId!!)
-                val response = cardanoRepository.awaitPayment(
-                    monitorPaymentAddressRequest {
-                        address = paymentKey.address
-                        lovelace = song.mintCostLovelace!!.toString()
-                        timeoutMs =
-                            configRepository.getLong(CONFIG_KEY_MINT_MONITOR_PAYMENT_ADDRESS_TIMEOUT_MIN).minutes.inWholeMilliseconds
+                try {
+                    val song = songRepository.get(mintingStatusSqsMessage.songId)
+                    val paymentKey = cardanoRepository.getKey(song.paymentKeyId!!)
+                    val response = cardanoRepository.awaitPayment(
+                        monitorPaymentAddressRequest {
+                            address = paymentKey.address
+                            lovelace = song.mintCostLovelace!!.toString()
+                            timeoutMs =
+                                configRepository.getLong(CONFIG_KEY_MINT_MONITOR_PAYMENT_ADDRESS_TIMEOUT_MIN).minutes.inWholeMilliseconds
+                        }
+                    )
+                    if (response.success) {
+                        // We got paid!!! Move -> MintingPaymentReceived
+                        songRepository.updateSongMintingStatus(
+                            songId = mintingStatusSqsMessage.songId,
+                            mintingStatus = MintingStatus.MintingPaymentReceived
+                        )
+                    } else {
+                        // We timed out waiting for payment.
+                        songRepository.updateSongMintingStatus(
+                            songId = mintingStatusSqsMessage.songId,
+                            mintingStatus = MintingStatus.MintingPaymentTimeout
+                        )
                     }
-                )
-                if (response.success) {
-                    // We got paid!!! Move -> MintingPaymentReceived
+                } catch (e: Throwable) {
+                    log.error("Error while waiting for payment!", e)
                     songRepository.updateSongMintingStatus(
                         songId = mintingStatusSqsMessage.songId,
-                        mintingStatus = MintingStatus.MintingPaymentReceived
+                        mintingStatus = MintingStatus.MintingPaymentException
                     )
+                    throw e
                 }
             }
 
@@ -83,75 +88,106 @@ class MintingMessageReceiver : SqsMessageReceiver {
             }
 
             MintingStatus.ReadyToDistribute -> {
-                songRepository.distribute(mintingStatusSqsMessage.songId)
+                try {
+                    songRepository.distribute(mintingStatusSqsMessage.songId)
 
-                // Done submitting distributing. Move -> SubmittedForDistribution
-                songRepository.updateSongMintingStatus(
-                    songId = mintingStatusSqsMessage.songId,
-                    mintingStatus = MintingStatus.SubmittedForDistribution
-                )
+                    // Done submitting distributing. Move -> SubmittedForDistribution
+                    songRepository.updateSongMintingStatus(
+                        songId = mintingStatusSqsMessage.songId,
+                        mintingStatus = MintingStatus.SubmittedForDistribution
+                    )
+                } catch (e: Throwable) {
+                    log.error("Error while distributing!", e)
+                    songRepository.updateSongMintingStatus(
+                        songId = mintingStatusSqsMessage.songId,
+                        mintingStatus = MintingStatus.DistributionException
+                    )
+                    throw e
+                }
             }
 
             MintingStatus.SubmittedForDistribution -> {
-                // Schedule a job to check the release status every 24 hours
-                val song = songRepository.get(mintingStatusSqsMessage.songId)
+                try {
+                    // Schedule a job to check the release status every 24 hours
+                    val song = songRepository.get(mintingStatusSqsMessage.songId)
 
-                val jobKey = JobKey("EvearaReleaseStatusJob-${song.id}", "EvearaReleaseStatusJobGroup")
-                val jobDetail = newJob(EvearaReleaseStatusJob::class.java)
-                    .withIdentity(jobKey)
-                    .usingJobData("songId", song.id.toString())
-                    .usingJobData("userId", song.ownerId.toString())
-                    .requestRecovery(true)
-                    .build()
-                val trigger = newTrigger()
-                    .forJob(jobDetail)
-                    .withSchedule(
-                        simpleSchedule()
-                            .withIntervalInMinutes(configRepository.getInt(CONFIG_KEY_EVEARA_STATUS_CHECK_MINUTES))
-                            .repeatForever()
+                    val jobKey = JobKey("EvearaReleaseStatusJob-${song.id}", "EvearaReleaseStatusJobGroup")
+                    val jobDetail = newJob(EvearaReleaseStatusJob::class.java)
+                        .withIdentity(jobKey)
+                        .usingJobData("songId", song.id.toString())
+                        .usingJobData("userId", song.ownerId.toString())
+                        .requestRecovery(true)
+                        .build()
+                    val trigger = newTrigger()
+                        .forJob(jobDetail)
+                        .withSchedule(
+                            simpleSchedule()
+                                .withIntervalInMinutes(configRepository.getInt(CONFIG_KEY_EVEARA_STATUS_CHECK_MINUTES))
+                                .repeatForever()
+                        )
+                        .build()
+
+                    quartzSchedulerDaemon.scheduleJob(jobDetail, trigger)
+
+                    if (!cardanoRepository.isMainnet()) {
+                        // If we are on testnet, pretend that the song is already successfully distributed
+                        songRepository.update(song.id!!, Song(forceDistributed = true))
+                    }
+                } catch (e: Throwable) {
+                    log.error("Error while creating distribution check job!", e)
+                    songRepository.updateSongMintingStatus(
+                        songId = mintingStatusSqsMessage.songId,
+                        mintingStatus = MintingStatus.SubmittedForDistributionException
                     )
-                    .build()
-
-                quartzSchedulerDaemon.scheduleJob(jobDetail, trigger)
-
-                if (!cardanoRepository.isMainnet()) {
-                    // If we are on testnet, pretend that the song is already successfully distributed
-                    songRepository.update(song.id!!, Song(forceDistributed = true))
+                    throw e
                 }
             }
 
             MintingStatus.Distributed -> {
-                // Upload 30-second clip, lyrics.txt, streamtokenagreement.pdf, coverArt to arweave and save those URLs
-                // on the Song record
-                val song = songRepository.get(mintingStatusSqsMessage.songId)
-                arweaveRepository.uploadSongAssets(song)
+                try {
+                    // Upload 30-second clip, lyrics.txt, streamtokenagreement.pdf, coverArt to arweave and save those URLs
+                    // on the Song record
+                    val song = songRepository.get(mintingStatusSqsMessage.songId)
+                    arweaveRepository.uploadSongAssets(song)
 
-                // Done with arweave. Move -> Pending for minting
-                songRepository.updateSongMintingStatus(
-                    songId = mintingStatusSqsMessage.songId,
-                    mintingStatus = MintingStatus.Pending
-                )
-            }
-
-            MintingStatus.Declined -> {
-                // TODO: Notify the user and our support team via email that the distribution was declined.
-                // We'll have to change the minting status manually to re-process things if necessary.
+                    // Done with arweave. Move -> Pending for minting
+                    songRepository.updateSongMintingStatus(
+                        songId = mintingStatusSqsMessage.songId,
+                        mintingStatus = MintingStatus.Pending
+                    )
+                } catch (e: Throwable) {
+                    log.error("Error while uploading song assets to arweave!", e)
+                    songRepository.updateSongMintingStatus(
+                        songId = mintingStatusSqsMessage.songId,
+                        mintingStatus = MintingStatus.ArweaveUploadException
+                    )
+                    throw e
+                }
             }
 
             MintingStatus.Pending -> {
-                // Create and submit the mint transaction
-                val song = songRepository.get(mintingStatusSqsMessage.songId)
-                mintingRepository.mint(song)
+                try {
+                    // Create and submit the mint transaction
+                    val song = songRepository.get(mintingStatusSqsMessage.songId)
+                    mintingRepository.mint(song)
 
-                // Done submitting mint transaction. Move -> Minted
-                songRepository.updateSongMintingStatus(
-                    songId = mintingStatusSqsMessage.songId,
-                    mintingStatus = MintingStatus.Minted
-                )
+                    // Done submitting mint transaction. Move -> Minted
+                    songRepository.updateSongMintingStatus(
+                        songId = mintingStatusSqsMessage.songId,
+                        mintingStatus = MintingStatus.Minted
+                    )
+                } catch (e: Throwable) {
+                    log.error("Error while minting!", e)
+                    songRepository.updateSongMintingStatus(
+                        songId = mintingStatusSqsMessage.songId,
+                        mintingStatus = MintingStatus.MintingException
+                    )
+                    throw e
+                }
             }
 
-            MintingStatus.Minted -> {
-                // TODO: Notify the user that the process has been completed
+            else -> {
+                throw IllegalStateException("No SQS message expected for MintingStatus: ${mintingStatusSqsMessage.mintingStatus}!")
             }
         }
     }

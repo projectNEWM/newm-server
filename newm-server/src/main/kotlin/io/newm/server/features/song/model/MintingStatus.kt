@@ -16,4 +16,12 @@ enum class MintingStatus {
     Declined, // Distribution partner rejected song for some reason. Manual triage required.
     Pending, // Song has entered the queue for minting
     Minted, // Song has completed the minting process and stream tokens are in the Artist wallet.
+
+    // Error statuses
+    MintingPaymentTimeout, // We timed out waiting for payment.
+    MintingPaymentException, // An exception occurred while waiting for payment.
+    DistributionException, // An exception occurred while distributing.
+    SubmittedForDistributionException, // An exception occurred while checking submitted for distribution.
+    ArweaveUploadException, // An exception occurred while uploading to Arweave.
+    MintingException, // An exception occurred while minting.
 }
