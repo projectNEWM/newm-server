@@ -414,8 +414,10 @@ internal class SongRepositoryImpl(
             song to UserEntity[song.ownerId]
         }
 
-        val messageArgs = mutableMapOf<String, String>()
-        messageArgs += "song" to song.title
+        val messageArgs = mutableMapOf<String, String>().apply {
+            put("song", song.title)
+            put("owner", owner.stageOrFullName)
+        }
         if (path == "started") {
             val collabs = collaborationRepository.getAllBySongId(song.id.value)
                 .filter { it.royaltyRate.orZero() > BigDecimal.ZERO }

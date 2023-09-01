@@ -6,6 +6,7 @@ import io.newm.shared.koin.inject
 import io.newm.shared.ktx.debug
 import io.newm.shared.ktx.format
 import io.newm.shared.ktx.getBoolean
+import io.newm.shared.ktx.getChild
 import io.newm.shared.ktx.getConfigChild
 import io.newm.shared.ktx.getInt
 import io.newm.shared.ktx.toUrl
@@ -37,13 +38,13 @@ internal class EmailRepositoryImpl(
     ) {
         logger.debug { "send to: $to, bcc: $bcc, subject: $subject" }
 
-        val message = messageUrl
-            .toUrl()
-            .readText()
-            .format(messageArgs)
-
         with(environment.getConfigChild("email")) {
             if (getBoolean("enabled")) {
+                val message = messageUrl
+                    .toUrl()
+                    .readText()
+                    .format(messageArgs + getChild("arguments").toMap())
+
                 HtmlEmail().apply {
                     hostName = getSecureString("smtpHost")
                     setSmtpPort(getInt("smtpPort"))
