@@ -5,70 +5,68 @@
     <mj-attributes>
       <mj-section padding="0 0" />
       <mj-column padding="0 0" />
+      <mj-image padding="0 0" />
       <mj-text padding="0 0" />
-      <mj-class name="separator" height="2px " container-background-color="var(--gradients-gradient-magazine, linear-gradient(45deg, #F53C69 0%, #FF6E32 100%))" />
+      <mj-class name="separator1" height="1px" container-background-color="var(--gradients-gradient-music, linear-gradient(53deg, #C341F0 0%, #F53C69 100%))" />
+      <mj-class name="separator2" height="1px" container-background-color="var(--greys-grey-400, #2C2C2E)" />
     </mj-attributes>
   </mj-head>
   <mj-body background-color="#000" width="720px">
     <mj-section>
       <mj-column>
-        <mj-image padding="60px 0" width="360px" src="https://res.cloudinary.com/newm/image/upload/f_auto,q_auto/v1/newmserver-emails/evyqe3bowwczeifsbi14" />
-        <mj-spacer mj-class="separator" />
+        <mj-image padding-top="100px" width="150px" align="left" src="https://res.cloudinary.com/newm/image/upload/f_auto,q_auto/v1/newmserver-emails/th1dmzejiyqp6dzadeae" />
       </mj-column>
     </mj-section>
     <mj-section>
       <mj-column>
-        <mj-text padding="40px 0" color="#FFF" align="left" font-family="Inter,sans-serif" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
-          Hi {owner}!<br><br>
+        <mj-text padding-top="80px" color="#FFF" align="left" font-family="Inter,sans-serif" font-size="32px" font-style="normal" font-weight="500" line-height="18px">
+          Hi {owner}!
+        </mj-text>
+        <mj-text padding-top="24px" color="#FFF" align="left" font-family="Inter,sans-serif" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
           Minting for the following song submission could not be completed:<br><br>
           "{song}"
         </mj-text>
-        <mj-spacer mj-class="separator" />
-      </mj-column>
-    </mj-section>
-    <mj-section>
-      <mj-column>
         <mj-text padding-top="40px" color="#FFF" align="left" font-family="Inter,sans-serif" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
-          If you would like to resubmit the song for minting, please visit <a href="https://artist.garage.newm.io" style="color: #FFF">artist.garage.newm.io</a> and verify that all song details have been entered correctly, and that all contributors/featured artists have approved the minting request.<br><br>
+          If you would like to resubmit the song for minting, please visit <a href="{webAppUrl}" style="color: #DC3CAA;text-decoration: none;font-weight: 700">newm.studio</a> and verify that all song details have been entered correctly, and that all contributors/featured artists have approved the minting request.<br><br>
           <span style="color: #8E8E93">If you would like further information, please send your questions to <a href="mailto:support@newm.io" style="color: #8E8E93">support@newm.io</a> for assistance.</span>
         </mj-text>
-        <mj-text padding="60px 0" color="#636366" align="center" font-family="Inter,sans-serif" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
+        <mj-text padding="40px 0 60px 0" color="#636366" align="center" font-family="Inter,sans-serif" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
           PLEASE DO NOT REPLY TO THIS MESSAGE
         </mj-text>
-        <mj-spacer mj-class="separator" />
+        <mj-spacer mj-class="separator1" />
       </mj-column>
     </mj-section>
     <mj-section>
       <mj-column width="64px">
-        <mj-image width="24px" padding="40px 0" src="https://res.cloudinary.com/newm/image/upload/f_auto,q_auto/v1/newmserver-emails/uguj3in5g8hg4ofrzdwq" href="https://t.me/NEWMofficial" />
+        <mj-image width="24px" padding-top="40px" src="https://res.cloudinary.com/newm/image/upload/f_auto,q_auto/v1/newmserver-emails/uguj3in5g8hg4ofrzdwq" href="https://t.me/NEWMofficial" />
       </mj-column>
       <mj-column width="64px">
-        <mj-image width="24px" padding="40px 0" src="https://res.cloudinary.com/newm/image/upload/f_auto,q_auto/v1/newmserver-emails/aqvu7wjkpymijdbjovhf" href="https://twitter.com/projectNEWM" />
+        <mj-image width="24px" padding-top="40px" src="https://res.cloudinary.com/newm/image/upload/f_auto,q_auto/v1/newmserver-emails/aqvu7wjkpymijdbjovhf" href="https://twitter.com/projectNEWM" />
       </mj-column>
       <mj-column width="64px">
-        <mj-image width="24px" padding="40px 0" src="https://res.cloudinary.com/newm/image/upload/f_auto,q_auto/v1/newmserver-emails/f8u1zdg6osweqmioeesl" href="https://discord.com/invite/z4sYqxqgvQ" />
+        <mj-image width="24px" padding-top="40px" src="https://res.cloudinary.com/newm/image/upload/f_auto,q_auto/v1/newmserver-emails/f8u1zdg6osweqmioeesl" href="https://discord.com/invite/z4sYqxqgvQ" />
       </mj-column>
       <mj-column width="64px">
-        <mj-image width="24px" padding="40px 0" src="https://res.cloudinary.com/newm/image/upload/f_auto,q_auto/v1/newmserver-emails/at5dxsfeqpy30snybkw1" href="https://instagram.com/projectnewm.io" />
+        <mj-image width="24px" padding-top="40px" src="https://res.cloudinary.com/newm/image/upload/f_auto,q_auto/v1/newmserver-emails/at5dxsfeqpy30snybkw1" href="https://instagram.com/projectnewm.io" />
       </mj-column>
       <mj-column width="64px">
-        <mj-image width="24px" padding="40px 0" src="https://res.cloudinary.com/newm/image/upload/f_auto,q_auto/v1/newmserver-emails/l5w03sjsdw0bt0qpst8f" href="https://github.com/projectNEWM" />
+        <mj-image width="24px" padding-top="40px" src="https://res.cloudinary.com/newm/image/upload/f_auto,q_auto/v1/newmserver-emails/l5w03sjsdw0bt0qpst8f" href="https://github.com/projectNEWM" />
       </mj-column>
       <mj-column width="64px">
-        <mj-image width="24px" padding="40px 0" src="https://res.cloudinary.com/newm/image/upload/f_auto,q_auto/v1/newmserver-emails/vmvrwooaithktecqjd6p" href="https://www.youtube.com/channel/UCcsBNWGjIf8YarD9uaZEEvw" />
+        <mj-image width="24px" padding-top="40px" src="https://res.cloudinary.com/newm/image/upload/f_auto,q_auto/v1/newmserver-emails/vmvrwooaithktecqjd6p" href="https://www.youtube.com/channel/UCcsBNWGjIf8YarD9uaZEEvw" />
       </mj-column>
     </mj-section>
     <mj-section>
       <mj-column>
-        <mj-text padding-top="20px" padding-bottom="40px" color="#FFF" align="center" font-family="Inter,sans-serif" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
-          Join our community on <a href="https://discord.com/invite/z4sYqxqgvQ" style="color: #DC3CAA;font-family: Inter;font-size: 14px;font-style: normal;font-weight: 700;line-height: 18px;">Discord!</a>
+        <mj-text padding="40px 0 53px 0" color="#FFF" align="center" font-family="Inter,sans-serif" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
+          Join our community on <a href="https://discord.com/invite/z4sYqxqgvQ" style="color: #DC3CAA;text-decoration: none;font-weight: 700">Discord</a>!
         </mj-text>
-        <mj-spacer mj-class="separator" />
+        <mj-spacer mj-class="separator2" />
       </mj-column>
     </mj-section>
     <mj-section>
       <mj-column>
-        <mj-text padding-top="40px" padding-bottom="66px" color="#FFF" align="center" font-family="Inter,sans-serif" font-size="12px" font-style="italic" font-weight="500" line-height="18px">
+        <mj-text padding="40px 0 62px 0" color="#636366" align="center" font-family="Inter,sans-serif" font-size="12px" font-style="italic" font-weight="500" line-height="18px">
           Copyright &copy; 2023 NEWM, All rights reserved
         </mj-text>
       </mj-column>

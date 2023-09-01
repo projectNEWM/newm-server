@@ -65,6 +65,6 @@ fun String.toLocalDateTime(): LocalDateTime = LocalDateTime.parse(this)
 /**
  * Formats a String with curly brace delimited arguments.
  */
-fun String.format(args: Map<String, Any>): String = FORMAT_REGEX.replace(this) { result ->
+fun String.format(args: Map<String, Any?>): String = FORMAT_REGEX.replace(this) { result ->
     args[result.groupValues[1]]?.toString() ?: result.value
 }
