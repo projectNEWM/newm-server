@@ -39,8 +39,8 @@ object Constants {
     val receiveAddressRegex = Regex(RECEIVE_ADDRESS_PATTERN)
     val stakeAddressRegex = Regex(STAKE_ADDRESS_PATTERN)
 
-    val NONCE_VRF_HEADER = ByteArray(1) { 0x4E.toByte() /* 'N' */ }
-    val LEADER_VRF_HEADER = ByteArray(1) { 0x4C.toByte() /* 'L' */ }
+    val NONCE_VRF_HEADER = ByteArray(1) { 0x4E.toByte() } // 'N'
+    val LEADER_VRF_HEADER = ByteArray(1) { 0x4C.toByte() } // 'L'
 
     val UTXO_ADDRESS_INDEX: CborInteger = CborInteger.create(0)
     val UTXO_AMOUNT_INDEX: CborInteger = CborInteger.create(1)
