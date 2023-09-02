@@ -14,9 +14,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nl.altindag.ssl.SSLFactory
+import nl.altindag.ssl.netty.util.NettySslUtils
+import nl.altindag.ssl.pem.util.PemUtils
 import nl.altindag.ssl.util.KeyManagerUtils
-import nl.altindag.ssl.util.NettySslUtils
-import nl.altindag.ssl.util.PemUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.nio.file.Files
@@ -50,17 +50,18 @@ object GrpcConfig {
 
                 val grpcConfig = appConfig.config("grpc")
 
-                val certChain = Paths.get(
+                val certificateChainPath = Paths.get(
                     grpcConfig.propertyOrNull("sslCertChainPath")?.getString() ?: "/nonexistent_${randomHex(16)}.pem"
                 )
-                val privateKey = Paths.get(
+                val privateKeyPath = Paths.get(
                     grpcConfig.propertyOrNull("sslPrivateKeyPath")?.getString() ?: "/nonexistent_${randomHex(16)}.pem"
                 )
 
-                if (certChain.exists() && privateKey.exists()) {
+                if (certificateChainPath.exists() && privateKeyPath.exists()) {
                     (this as? NettyServerBuilder)?.let { nettyServerBuilder ->
                         log.warn("gRPC Secured with TLS")
-                        val keyManager: X509ExtendedKeyManager = PemUtils.loadIdentityMaterial(certChain, privateKey)
+                        val keyManager: X509ExtendedKeyManager =
+                            PemUtils.loadIdentityMaterial(certificateChainPath, privateKeyPath)
                         val sslFactory = SSLFactory.builder()
                             .withIdentityMaterial(keyManager)
                             .withSwappableIdentityMaterial()
@@ -71,26 +72,27 @@ object GrpcConfig {
                         @OptIn(DelicateCoroutinesApi::class)
                         GlobalScope.launch {
                             var privateKeyLastModified = withContext(Dispatchers.IO) {
-                                Files.readAttributes(privateKey, BasicFileAttributes::class.java).lastModifiedTime()
+                                Files.readAttributes(privateKeyPath, BasicFileAttributes::class.java).lastModifiedTime()
                             }
                             var certChainLastModified = withContext(Dispatchers.IO) {
-                                Files.readAttributes(certChain, BasicFileAttributes::class.java).lastModifiedTime()
+                                Files.readAttributes(certificateChainPath, BasicFileAttributes::class.java)
+                                    .lastModifiedTime()
                             }
                             while (true) {
                                 try {
                                     delay(60000L)
                                     val checkPrivateKeyLastModified = withContext(Dispatchers.IO) {
-                                        Files.readAttributes(privateKey, BasicFileAttributes::class.java)
+                                        Files.readAttributes(privateKeyPath, BasicFileAttributes::class.java)
                                             .lastModifiedTime()
                                     }
                                     val checkCertChainLastModified = withContext(Dispatchers.IO) {
-                                        Files.readAttributes(certChain, BasicFileAttributes::class.java)
+                                        Files.readAttributes(certificateChainPath, BasicFileAttributes::class.java)
                                             .lastModifiedTime()
                                     }
                                     if (privateKeyLastModified != checkPrivateKeyLastModified || certChainLastModified != checkCertChainLastModified) {
                                         // data has changed. reload it
                                         val newKeyManager: X509ExtendedKeyManager =
-                                            PemUtils.loadIdentityMaterial(certChain, privateKey)
+                                            PemUtils.loadIdentityMaterial(certificateChainPath, privateKeyPath)
                                         KeyManagerUtils.swapKeyManager(sslFactory.keyManager.get(), newKeyManager)
 
                                         privateKeyLastModified = checkPrivateKeyLastModified
@@ -108,11 +110,11 @@ object GrpcConfig {
                     } ?: log.error("gRPC TLS Failed: ServerBuilder is not a NettyServerBuilder!")
                 } else {
                     log.warn("gRPC Unsecured with plaintext")
-                    if (!certChain.exists()) {
-                        log.warn("File not found: ${certChain.absolutePathString()}")
+                    if (!certificateChainPath.exists()) {
+                        log.warn("File not found: ${certificateChainPath.absolutePathString()}")
                     }
-                    if (!privateKey.exists()) {
-                        log.warn("File not found: ${privateKey.absolutePathString()}")
+                    if (!privateKeyPath.exists()) {
+                        log.warn("File not found: ${privateKeyPath.absolutePathString()}")
                     }
                 }
             } catch (e: Throwable) {
