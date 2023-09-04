@@ -206,6 +206,7 @@ object Dependencies {
         const val SQS = "com.amazonaws:aws-java-sdk-sqs"
         const val KMS = "com.amazonaws:aws-java-sdk-kms"
         const val SECRETS_MANAGER = "com.amazonaws:aws-java-sdk-secretsmanager"
+        const val LAMBDA = "com.amazonaws:aws-java-sdk-lambda"
         const val JAXB = "javax.xml.bind:jaxb-api:$JAXB_VERSION"
 
         const val BOM2 = "software.amazon.awssdk:bom:$VERSION2"

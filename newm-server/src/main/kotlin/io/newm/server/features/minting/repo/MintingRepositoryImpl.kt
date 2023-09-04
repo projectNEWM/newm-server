@@ -112,7 +112,9 @@ class MintingRepositoryImpl(
         // sort utxos lexicographically smallest to largest to find the one we'll use as the reference utxo
         val refUtxo = (
             cashRegisterUtxos + listOf(paymentUtxo) + (moneyBoxUtxos ?: emptyList())
-            ).minByOrNull { "${it.hash}#${it.ix}" }!!
+            ).sortedWith { o1, o2 ->
+            o1.hash.compareTo(o2.hash).let { if (it == 0) o1.ix.compareTo(o2.ix) else it }
+        }.first()
         val (refTokenName, fracTokenName) = calculateTokenNames(refUtxo)
         val collateralKey =
             requireNotNull(cardanoRepository.getKeyByName("collateral")) { "collateral key not defined!" }
@@ -390,7 +392,8 @@ class MintingRepositoryImpl(
                                     )
                                     add(createPlutusDataRelease(song, collabs))
                                     add(createPlutusDataFiles(song, user, collabs))
-                                    add(createPlutusDataLinks(user, collabs))
+                                    // DO NOT ADD LINKS for now. Revisit later
+                                    // add(createPlutusDataLinks(user, collabs))
                                 }
                             }
                         }

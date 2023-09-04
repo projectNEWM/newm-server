@@ -95,6 +95,7 @@ dependencies {
     implementation(Dependencies.Aws.SQS)
     implementation(Dependencies.Aws.KMS)
     implementation(Dependencies.Aws.SECRETS_MANAGER)
+    implementation(Dependencies.Aws.LAMBDA)
     implementation(Dependencies.Aws.JAXB)
 
     implementation(platform(Dependencies.Aws.BOM2))
