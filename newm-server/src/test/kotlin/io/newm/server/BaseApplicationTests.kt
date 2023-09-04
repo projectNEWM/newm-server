@@ -190,7 +190,10 @@ open class BaseApplicationTests {
             album = song.album
             track = song.track
             language = song.language
-            copyright = song.copyright
+            compositionCopyrightOwner = song.compositionCopyrightOwner
+            compositionCopyrightYear = song.compositionCopyrightYear
+            phonographicCopyrightOwner = song.phonographicCopyrightOwner
+            phonographicCopyrightYear = song.phonographicCopyrightYear
             parentalAdvisory = song.parentalAdvisory
             isrc = song.isrc
             iswc = song.iswc

@@ -231,7 +231,7 @@ object Dependencies {
     }
 
     object Cbor {
-        private const val VERSION = "0.01.05-NEWM"
+        private const val VERSION = "0.01.06-NEWM"
 
         const val CBOR = "io.newm:com.google.iot.cbor:$VERSION"
     }

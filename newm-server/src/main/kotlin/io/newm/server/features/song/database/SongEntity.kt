@@ -39,7 +39,10 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var album: String? by SongTable.album
     var track: Int? by SongTable.track
     var language: String? by SongTable.language
-    var copyright: String? by SongTable.copyright
+    var compositionCopyrightOwner: String? by SongTable.compositionCopyrightOwner
+    var compositionCopyrightYear: Int? by SongTable.compositionCopyrightYear
+    var phonographicCopyrightOwner: String? by SongTable.phonographicCopyrightOwner
+    var phonographicCopyrightYear: Int? by SongTable.phonographicCopyrightYear
     var parentalAdvisory: String? by SongTable.parentalAdvisory
     var barcodeType: SongBarcodeType? by SongTable.barcodeType
     var barcodeNumber: String? by SongTable.barcodeNumber
@@ -80,7 +83,10 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         album = album,
         track = track,
         language = language,
-        copyright = copyright,
+        compositionCopyrightOwner = compositionCopyrightOwner,
+        compositionCopyrightYear = compositionCopyrightYear,
+        phonographicCopyrightOwner = phonographicCopyrightOwner,
+        phonographicCopyrightYear = phonographicCopyrightYear,
         parentalAdvisory = parentalAdvisory,
         barcodeType = barcodeType,
         barcodeNumber = barcodeNumber,

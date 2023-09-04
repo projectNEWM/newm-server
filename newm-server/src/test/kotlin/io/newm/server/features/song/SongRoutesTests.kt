@@ -86,7 +86,10 @@ class SongRoutesTests : BaseApplicationTests() {
         assertThat(song.album).isEqualTo(testSong1.album)
         assertThat(song.track).isEqualTo(testSong1.track)
         assertThat(song.language).isEqualTo(testSong1.language)
-        assertThat(song.copyright).isEqualTo(testSong1.copyright)
+        assertThat(song.compositionCopyrightOwner).isEqualTo(testSong1.compositionCopyrightOwner)
+        assertThat(song.compositionCopyrightYear).isEqualTo(testSong1.compositionCopyrightYear)
+        assertThat(song.phonographicCopyrightOwner).isEqualTo(testSong1.phonographicCopyrightOwner)
+        assertThat(song.phonographicCopyrightYear).isEqualTo(testSong1.phonographicCopyrightYear)
         assertThat(song.parentalAdvisory).isEqualTo(testSong1.parentalAdvisory)
         assertThat(song.barcodeType).isEqualTo(testSong1.barcodeType)
         assertThat(song.barcodeNumber).isEqualTo(testSong1.barcodeNumber)
@@ -485,7 +488,10 @@ class SongRoutesTests : BaseApplicationTests() {
         assertThat(song2.album).isEqualTo(testSong2.album)
         assertThat(song2.track).isEqualTo(testSong2.track)
         assertThat(song2.language).isEqualTo(testSong2.language)
-        assertThat(song2.copyright).isEqualTo(testSong2.copyright)
+        assertThat(song2.compositionCopyrightOwner).isEqualTo(testSong2.compositionCopyrightOwner)
+        assertThat(song2.compositionCopyrightYear).isEqualTo(testSong2.compositionCopyrightYear)
+        assertThat(song2.phonographicCopyrightOwner).isEqualTo(testSong2.phonographicCopyrightOwner)
+        assertThat(song2.phonographicCopyrightYear).isEqualTo(testSong2.phonographicCopyrightYear)
         assertThat(song2.parentalAdvisory).isEqualTo(testSong2.parentalAdvisory)
         assertThat(song2.barcodeType).isEqualTo(testSong2.barcodeType)
         assertThat(song2.barcodeNumber).isEqualTo(testSong2.barcodeNumber)
@@ -816,7 +822,10 @@ fun addSongToDatabase(
             coverArtUrl = "https://newm.io/cover$offset"
             track = offset
             language = "language$offset"
-            copyright = "copyright$offset"
+            compositionCopyrightOwner = "compositionCopyrightOwner$offset"
+            compositionCopyrightYear = offset
+            phonographicCopyrightOwner = "copyright$phonographicCopyrightOwner"
+            phonographicCopyrightYear = 2 * offset
             parentalAdvisory = "parentalAdvisory$offset"
             barcodeType = SongBarcodeType.values()[offset % SongBarcodeType.values().size]
             barcodeNumber = "barcodeNumber$offset"

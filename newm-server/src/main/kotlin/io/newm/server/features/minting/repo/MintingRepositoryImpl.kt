@@ -592,7 +592,7 @@ class MintingRepositoryImpl(
                     add(
                         plutusDataMapItem {
                             mapItemKey = "copyright".toPlutusData()
-                            mapItemValue = song.copyright!!.toPlutusData()
+                            mapItemValue = "© ${song.compositionCopyrightYear} ${song.compositionCopyrightOwner}, ℗ ${song.phonographicCopyrightYear} ${song.phonographicCopyrightOwner}".toPlutusData()
                         }
                     )
                     if (!song.arweaveLyricsUrl.isNullOrBlank()) {
