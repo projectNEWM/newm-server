@@ -38,7 +38,7 @@ fun Application.module() {
     installStatusPages()
     installCORS()
     installForwarder()
-    installHealthCheck()
+    // installHealthCheck()
 
     routing {
         createStaticContentRoutes()
