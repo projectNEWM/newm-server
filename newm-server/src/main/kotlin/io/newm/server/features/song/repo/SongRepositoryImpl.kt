@@ -95,7 +95,10 @@ internal class SongRepositoryImpl(
                 album = song.album
                 track = song.track
                 language = song.language
-                copyright = song.copyright
+                compositionCopyrightOwner = song.compositionCopyrightOwner
+                compositionCopyrightYear = song.compositionCopyrightYear
+                phonographicCopyrightOwner = song.phonographicCopyrightOwner
+                phonographicCopyrightYear = song.phonographicCopyrightYear
                 parentalAdvisory = song.parentalAdvisory
                 barcodeType = song.barcodeType
                 barcodeNumber = song.barcodeNumber
@@ -124,7 +127,10 @@ internal class SongRepositoryImpl(
                 album?.let { entity.album = it }
                 track?.let { entity.track = it }
                 language?.let { entity.language = it }
-                copyright?.let { entity.copyright = it }
+                compositionCopyrightOwner?.let { entity.compositionCopyrightOwner = it }
+                compositionCopyrightYear?.let { entity.compositionCopyrightYear = it }
+                phonographicCopyrightOwner?.let { entity.phonographicCopyrightOwner = it }
+                phonographicCopyrightYear?.let { entity.phonographicCopyrightYear = it }
                 parentalAdvisory?.let { entity.parentalAdvisory = it }
                 barcodeType?.let { entity.barcodeType = it }
                 barcodeNumber?.let { entity.barcodeNumber = it }
@@ -460,7 +466,8 @@ internal class SongRepositoryImpl(
         description?.checkLength("description", 250)
         album?.checkLength("album")
         language?.checkLength("language")
-        copyright?.checkLength("copyright")
+        compositionCopyrightOwner?.checkLength("compositionCopyrightOwner")
+        phonographicCopyrightOwner?.checkLength("phonographicCopyrightOwner")
         parentalAdvisory?.checkLength("parentalAdvisory")
         barcodeNumber?.checkLength("barcodeNumber")
         isrc?.checkLength("isrc")

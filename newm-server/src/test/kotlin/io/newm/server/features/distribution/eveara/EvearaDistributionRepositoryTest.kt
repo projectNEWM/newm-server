@@ -153,7 +153,10 @@ class EvearaDistributionRepositoryTest : BaseApplicationTests() {
                 album = "Daisuke",
                 duration = 200000,
                 track = 1,
-                copyright = "© Mirai Music Publishing, ℗ Danketsu, Mirai Music, NSTASIA",
+                compositionCopyrightOwner = "Mirai Music Publishing",
+                compositionCopyrightYear = 2023,
+                phonographicCopyrightOwner = "Danketsu, Mirai Music, NSTASIA",
+                phonographicCopyrightYear = 2023,
                 originalAudioUrl = "s3://garageaudiotranscoders3s-audiotranscoderinputbuck-873y4j5zz15i/cabb57b8-89f0-476f-8e95-e5c7a7d992c6/Vibrate.flac",
                 mintingStatus = MintingStatus.Pending
             )
