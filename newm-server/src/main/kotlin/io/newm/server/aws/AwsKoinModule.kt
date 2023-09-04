@@ -3,6 +3,8 @@ package io.newm.server.aws
 import com.amazonaws.regions.Regions
 import com.amazonaws.services.kms.AWSKMSAsync
 import com.amazonaws.services.kms.AWSKMSAsyncClientBuilder
+import com.amazonaws.services.lambda.AWSLambdaAsync
+import com.amazonaws.services.lambda.AWSLambdaAsyncClientBuilder
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import com.amazonaws.services.secretsmanager.AWSSecretsManagerAsync
@@ -35,6 +37,12 @@ val awsKoinModule = module {
 
     single<AWSSecretsManagerAsync> {
         AWSSecretsManagerAsyncClientBuilder.standard()
+            .withRegion(get<Regions>())
+            .build()
+    }
+
+    single<AWSLambdaAsync> {
+        AWSLambdaAsyncClientBuilder.standard()
             .withRegion(get<Regions>())
             .build()
     }
