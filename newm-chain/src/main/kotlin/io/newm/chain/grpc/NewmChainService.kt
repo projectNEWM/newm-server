@@ -28,6 +28,7 @@ import io.newm.txbuilder.TransactionBuilder
 import io.newm.txbuilder.ktx.cborHexToPlutusData
 import io.newm.txbuilder.ktx.toNativeAssetMap
 import io.newm.txbuilder.ktx.withMinUtxo
+import io.sentry.Sentry
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -76,6 +77,7 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
             utxos.addAll(
                 this@toQueryUtxosResponse.map { utxo ->
                     utxo {
+                        address = utxo.address
                         hash = utxo.hash
                         ix = utxo.ix
                         lovelace = utxo.lovelace.toString()
@@ -137,7 +139,11 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                             result = "MsgAcceptTx"
                             txId = transactionId
                         }.also {
-                            log.warn { "submitTransaction(cbor: ${request.cbor.toByteArray().toHexString()}) SUCCESS. txId: ${it.txId}" }
+                            log.warn {
+                                "submitTransaction(cbor: ${
+                                    request.cbor.toByteArray().toHexString()
+                                }) SUCCESS. txId: ${it.txId}"
+                            }
                         }
                     }
 
@@ -145,12 +151,17 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                         submitTransactionResponse {
                             result = response.result.toString()
                         }.also {
-                            log.warn { "submitTransaction(cbor: ${request.cbor.toByteArray().toHexString()}) FAILED. result: ${it.result}" }
+                            log.warn {
+                                "submitTransaction(cbor: ${
+                                    request.cbor.toByteArray().toHexString()
+                                }) FAILED. result: ${it.result}"
+                            }
                         }
                     }
                 }
             }
         } catch (e: Throwable) {
+            Sentry.addBreadcrumb(request.toString(), "NewmChainService")
             log.error("submitTransaction($request) failed.", e)
             submitTransactionResponse {
                 result = "submitTransaction($request) failed. Exception: ${e.message}"
@@ -249,6 +260,7 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                 val protocolParams =
                     stateQueryClient.currentProtocolParameters().result as QueryCurrentProtocolBabbageParametersResult
                 val calculateTxExecutionUnits: suspend (ByteArray) -> EvaluationResult = { cborBytes ->
+                    Sentry.addBreadcrumb("txSubmitClient.evaluate cbor: ${cborBytes.toHexString()}", "NewmChainService")
                     val evaluateResponse = txSubmitClient.evaluate(cborBytes.toHexString())
                     if (evaluateResponse.result !is EvaluationResult) {
                         throw IllegalStateException(evaluateResponse.result.toString())
@@ -265,12 +277,10 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                             }.distinct().map {
                                 it.hexToByteArray().toByteString()
                             }
-                        log.warn("transactionBuilder: adding requiredSigners: $requiredSigners")
                         request.toBuilder()
                             .addAllRequiredSigners(requiredSigners)
                             .build()
                     } else {
-                        log.warn("transactionBuilder: not adding requiredSigners")
                         request
                     }
 
@@ -286,6 +296,7 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                 }
             }
         } catch (e: Throwable) {
+            Sentry.addBreadcrumb(request.toString(), "NewmChainService")
             log.error("TransactionBuilder error!", e)
             throw e
         }
@@ -319,6 +330,7 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                 }
             } catch (e: Throwable) {
                 if (e !is CancellationException) {
+                    Sentry.addBreadcrumb(request.toString(), "NewmChainService")
                     log.error(e.message, e)
                 }
             }
@@ -339,6 +351,7 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                 request.withMinUtxo(protocolParams.coinsPerUtxoByte.toLong())
             }
         } catch (e: Throwable) {
+            Sentry.addBreadcrumb(request.toString(), "NewmChainService")
             log.error("calculateMinUtxoForOutput error!", e)
             throw e
         }
@@ -357,6 +370,7 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                 this.snapshotEntries.addAll(snapshotEntries)
             }
         } catch (e: Throwable) {
+            Sentry.addBreadcrumb(request.toString(), "NewmChainService")
             log.error("snapshotNativeAssets error!", e)
             throw e
         }
@@ -393,6 +407,7 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                 this.paymentStakeChangeAddress.addAll(paymentStakeChangeAddresses)
             }
         } catch (e: Throwable) {
+            Sentry.addBreadcrumb(request.toString(), "NewmChainService")
             log.error("deriveWalletAddresses error!", e)
             throw e
         }
@@ -463,7 +478,37 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                 this.addressUtxos.addAll(addressUtxosList)
             }
         } catch (e: Throwable) {
+            Sentry.addBreadcrumb(request.toString(), "NewmChainService")
             log.error("queryWalletControlledUtxos error!", e)
+            throw e
+        }
+    }
+
+    override suspend fun queryUtxoByNativeAsset(request: QueryByNativeAssetRequest): Utxo {
+        try {
+            return ledgerRepository.queryUtxoByNativeAsset(request.name, request.policy)?.let { utxo ->
+                utxo {
+                    hash = utxo.hash
+                    ix = utxo.ix
+                    lovelace = utxo.lovelace.toString()
+                    utxo.datumHash?.let { datumHash = it }
+                    utxo.datum?.let {
+                        datum = it.cborHexToPlutusData()
+                    }
+                    nativeAssets.addAll(
+                        utxo.nativeAssets.map { nativeAsset ->
+                            nativeAsset {
+                                policy = nativeAsset.policy
+                                name = nativeAsset.name
+                                amount = nativeAsset.amount.toString()
+                            }
+                        }
+                    )
+                }
+            } ?: utxo { }
+        } catch (e: Throwable) {
+            Sentry.addBreadcrumb(request.toString(), "NewmChainService")
+            log.error("queryUtxoByNativeAsset error!", e)
             throw e
         }
     }

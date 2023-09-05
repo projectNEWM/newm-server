@@ -6,6 +6,7 @@ import java.math.BigInteger
 
 @Serializable
 data class Utxo(
+    val address: String,
     val hash: String,
     val ix: Long,
     @Contextual val lovelace: BigInteger,

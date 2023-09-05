@@ -107,6 +107,7 @@ class LedgerRepositoryImpl : LedgerRepository {
                 }
 
                 Utxo(
+                    address = row[LedgerTable.address],
                     hash = row[LedgerUtxosTable.txId],
                     ix = row[LedgerUtxosTable.txIx].toLong(),
                     lovelace = BigInteger(row[LedgerUtxosTable.lovelace]),
@@ -143,6 +144,7 @@ class LedgerRepositoryImpl : LedgerRepository {
             }
 
             Utxo(
+                address = row[LedgerTable.address],
                 hash = row[LedgerUtxosTable.txId],
                 ix = row[LedgerUtxosTable.txIx].toLong(),
                 lovelace = BigInteger(row[LedgerUtxosTable.lovelace]),
@@ -152,6 +154,47 @@ class LedgerRepositoryImpl : LedgerRepository {
                 scriptRef = row[LedgerUtxosTable.scriptRef],
             )
         }.toHashSet()
+    }
+
+    override fun queryUtxoByNativeAsset(name: String, policy: String): Utxo? = transaction {
+        LedgerTable.innerJoin(
+            LedgerUtxosTable,
+            { LedgerTable.id },
+            { ledgerId },
+        ).innerJoin(
+            LedgerUtxoAssetsTable,
+            { LedgerUtxosTable.id },
+            { ledgerUtxoId },
+        ).innerJoin(
+            LedgerAssetsTable,
+            { LedgerUtxoAssetsTable.ledgerAssetId },
+            { LedgerAssetsTable.id },
+        ).select { (LedgerAssetsTable.name eq name) and (LedgerAssetsTable.policy eq policy) }.firstOrNull()
+            ?.let { row ->
+                val ledgerUtxoId = row[LedgerUtxosTable.id].value
+                val nativeAssets = LedgerUtxoAssetsTable.innerJoin(
+                    LedgerAssetsTable,
+                    { ledgerAssetId },
+                    { LedgerAssetsTable.id },
+                    { LedgerUtxoAssetsTable.ledgerUtxoId eq ledgerUtxoId }
+                ).selectAll().map { naRow ->
+                    NativeAsset(
+                        name = naRow[LedgerAssetsTable.name],
+                        policy = naRow[LedgerAssetsTable.policy],
+                        amount = BigInteger(naRow[LedgerUtxoAssetsTable.amount])
+                    )
+                }
+                Utxo(
+                    address = row[LedgerTable.address],
+                    hash = row[LedgerUtxosTable.txId],
+                    ix = row[LedgerUtxosTable.txIx].toLong(),
+                    lovelace = BigInteger(row[LedgerUtxosTable.lovelace]),
+                    nativeAssets = nativeAssets,
+                    datumHash = row[LedgerUtxosTable.datumHash],
+                    datum = row[LedgerUtxosTable.datum],
+                    scriptRef = row[LedgerUtxosTable.scriptRef],
+                )
+            }
     }
 
     override fun queryPublicKeyHashByOutputRef(hash: String, ix: Int): String? = transaction {
@@ -172,7 +215,7 @@ class LedgerRepositoryImpl : LedgerRepository {
     }
 
     override fun queryUtxosByOutputRef(hash: String, ix: Int): Set<Utxo> = transaction {
-        LedgerUtxosTable.select {
+        LedgerUtxosTable.innerJoin(LedgerTable, { ledgerId }, { LedgerTable.id }).select {
             (LedgerUtxosTable.txId eq hash) and
                 (LedgerUtxosTable.txIx eq ix) and
                 LedgerUtxosTable.blockSpent.isNull() and
@@ -194,6 +237,7 @@ class LedgerRepositoryImpl : LedgerRepository {
             }
 
             Utxo(
+                address = row[LedgerTable.address],
                 hash = row[LedgerUtxosTable.txId],
                 ix = row[LedgerUtxosTable.txIx].toLong(),
                 lovelace = BigInteger(row[LedgerUtxosTable.lovelace]),
@@ -366,8 +410,8 @@ class LedgerRepositoryImpl : LedgerRepository {
                     else -> throw IllegalStateException("txOutput is not Array or Map!")
                 }
                 processLiveUtxoFromSubmitTx(
-                    address,
                     Utxo(
+                        address = address,
                         hash = transactionId,
                         ix = ix.toLong(),
                         lovelace = lovelace,
@@ -453,12 +497,12 @@ class LedgerRepositoryImpl : LedgerRepository {
         }
     }
 
-    private fun processLiveUtxoFromSubmitTx(address: String, liveUtxo: Utxo) {
-        val newUtxoSet = liveUtxoMap[address]?.toMutableSet()?.apply { add(liveUtxo) } ?: setOf(liveUtxo)
+    private fun processLiveUtxoFromSubmitTx(liveUtxo: Utxo) {
+        val newUtxoSet = liveUtxoMap[liveUtxo.address]?.toMutableSet()?.apply { add(liveUtxo) } ?: setOf(liveUtxo)
         if (log.isDebugEnabled) {
-            log.debug("processLiveUtxoFromSubmitTx: address: $address, adding: $newUtxoSet")
+            log.debug("processLiveUtxoFromSubmitTx: address: ${liveUtxo.address}, adding: $newUtxoSet")
         }
-        liveUtxoMap[address] = newUtxoSet
+        liveUtxoMap[liveUtxo.address] = newUtxoSet
     }
 
     override fun doRollback(blockNumber: Long) {
@@ -791,6 +835,7 @@ class LedgerRepositoryImpl : LedgerRepository {
                     }
 
                 Utxo(
+                    address = row[LedgerTable.address],
                     hash = row[LedgerUtxosTable.txId],
                     ix = row[LedgerUtxosTable.txIx].toLong(),
                     lovelace = BigInteger(row[LedgerUtxosTable.lovelace]),
