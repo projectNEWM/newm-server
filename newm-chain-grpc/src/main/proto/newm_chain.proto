@@ -24,6 +24,7 @@ service NewmChain {
   rpc DeriveWalletAddresses (WalletRequest) returns (DeriveWalletAddressesResponse) {}
   rpc QueryWalletControlledLiveUtxos (WalletRequest) returns (QueryWalletControlledUtxosResponse) {}
   rpc QueryPublicKeyHashByOutputRef (QueryUtxosOutputRefRequest) returns (QueryPublicKeyHashResponse) {}
+  rpc QueryUtxoByNativeAsset (QueryByNativeAssetRequest) returns (Utxo) {}
 }
 
 message SubmitTransactionRequest {
@@ -71,12 +72,13 @@ message QueryTransactionConfirmationCountResponse {
 }
 
 message Utxo {
-  string hash = 1;
-  sint64 ix = 2;
-  string lovelace = 3;
-  optional string datum_hash = 4;
-  optional PlutusData datum = 5;
-  repeated NativeAsset native_assets = 6;
+  string address = 1;
+  string hash = 2;
+  sint64 ix = 3;
+  string lovelace = 4;
+  optional string datum_hash = 5;
+  optional PlutusData datum = 6;
+  repeated NativeAsset native_assets = 7;
 }
 
 message OutputUtxo {
@@ -92,6 +94,11 @@ message NativeAsset {
   string name = 1;
   string policy = 2;
   string amount = 3;
+}
+
+message QueryByNativeAssetRequest {
+  string name = 1;
+  string policy = 2;
 }
 
 message SigningKey {

@@ -17,6 +17,7 @@ import io.ktor.utils.io.core.toByteArray
 import io.newm.chain.database.entity.User
 import io.newm.chain.database.repository.UsersRepository
 import io.newm.shared.koin.inject
+import io.sentry.Sentry
 import org.koin.core.parameter.parametersOf
 import org.slf4j.Logger
 import java.security.MessageDigest
@@ -66,6 +67,7 @@ class JwtAuthorizationServerInterceptor(jwtConfig: ApplicationConfig) : ServerIn
                         val jwtUser = "$user|jwt"
                         usersRepository.getByName(jwtUser)?.let {
                             val ctx = Context.current().withValue(CLIENT_ID_CONTEXT_KEY, user)
+                            Sentry.addBreadcrumb("jwtUser: $jwtUser", "auth")
                             return Contexts.interceptCall(ctx, call, headers, next)
                         } ?: Status.UNAUTHENTICATED.withDescription("Missing JWT user account")
                     } ?: Status.UNAUTHENTICATED.withDescription("JWT has no user claim")
