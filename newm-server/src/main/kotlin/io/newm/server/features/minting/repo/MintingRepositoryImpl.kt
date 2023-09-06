@@ -109,7 +109,11 @@ class MintingRepositoryImpl(
                 .take(5)
         }
 
-        val (refTokenName, fracTokenName) = calculateTokenNames(paymentUtxo)
+        // sort utxos lexicographically smallest to largest to find the one we'll use as the reference utxo
+        val refUtxo = (
+            cashRegisterUtxos + listOf(paymentUtxo) + (moneyBoxUtxos ?: emptyList())
+            ).minByOrNull { "${it.hash}#${it.ix}" }!!
+        val (refTokenName, fracTokenName) = calculateTokenNames(refUtxo)
         val collateralKey =
             requireNotNull(cardanoRepository.getKeyByName("collateral")) { "collateral key not defined!" }
         val collateralUtxo = requireNotNull(
@@ -592,7 +596,8 @@ class MintingRepositoryImpl(
                     add(
                         plutusDataMapItem {
                             mapItemKey = "copyright".toPlutusData()
-                            mapItemValue = "© ${song.compositionCopyrightYear} ${song.compositionCopyrightOwner}, ℗ ${song.phonographicCopyrightYear} ${song.phonographicCopyrightOwner}".toPlutusData()
+                            mapItemValue =
+                                "© ${song.compositionCopyrightYear} ${song.compositionCopyrightOwner}, ℗ ${song.phonographicCopyrightYear} ${song.phonographicCopyrightOwner}".toPlutusData()
                         }
                     )
                     if (!song.arweaveLyricsUrl.isNullOrBlank()) {

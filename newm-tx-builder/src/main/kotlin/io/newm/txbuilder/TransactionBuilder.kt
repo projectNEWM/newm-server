@@ -48,6 +48,8 @@ class TransactionBuilder(
     private val txFeeFixed by lazy { protocolParameters.minFeeConstant.toLong() }
     private val txFeePerByte by lazy { protocolParameters.minFeeCoefficient.toLong() }
     private val utxoCostPerByte by lazy { protocolParameters.coinsPerUtxoByte.toLong() }
+    private val maxTxExecutionMemory by lazy { protocolParameters.maxExecutionUnitsPerTransaction.memory.toLong() }
+    private val maxTxExecutionSteps by lazy { protocolParameters.maxExecutionUnitsPerTransaction.steps.toLong() }
 
     private var sourceUtxos: MutableList<Utxo>? = null
     private var outputUtxos: MutableList<OutputUtxo>? = null
@@ -556,7 +558,7 @@ class TransactionBuilder(
 
     private fun createRedeemerWitnesses(): CborObject? {
         return redeemers.takeUnless { it.isNullOrEmpty() }?.let {
-            CborArray.create(it.map { redeemer -> redeemer.toCborObject() })
+            CborArray.create(it.map { redeemer -> redeemer.toCborObject(maxTxExecutionMemory, maxTxExecutionSteps) })
         }
     }
 

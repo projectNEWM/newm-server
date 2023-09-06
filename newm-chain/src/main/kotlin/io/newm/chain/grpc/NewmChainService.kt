@@ -260,9 +260,9 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                 val protocolParams =
                     stateQueryClient.currentProtocolParameters().result as QueryCurrentProtocolBabbageParametersResult
                 val calculateTxExecutionUnits: suspend (ByteArray) -> EvaluationResult = { cborBytes ->
-                    Sentry.addBreadcrumb("txSubmitClient.evaluate cbor: ${cborBytes.toHexString()}", "NewmChainService")
                     val evaluateResponse = txSubmitClient.evaluate(cborBytes.toHexString())
                     if (evaluateResponse.result !is EvaluationResult) {
+                        log.warn { "evaluate failed, cbor: ${cborBytes.toHexString()}" }
                         throw IllegalStateException(evaluateResponse.result.toString())
                     }
                     (evaluateResponse.result as EvaluationResult)

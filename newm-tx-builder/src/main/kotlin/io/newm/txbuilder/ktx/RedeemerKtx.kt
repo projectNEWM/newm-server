@@ -9,7 +9,7 @@ import io.newm.chain.grpc.RedeemerTag
 /**
  * Convert a redeemer object into cbor so it can be included in a transaction.
  */
-fun Redeemer.toCborObject(): CborObject {
+fun Redeemer.toCborObject(dummyExUnitsMemory: Long, dummyExUnitsSteps: Long): CborObject {
     return CborArray.create(
         listOf(
             // redeemer tag
@@ -32,8 +32,8 @@ fun Redeemer.toCborObject(): CborObject {
                 // calculations based on byte size can be correct.
                 CborArray.create(
                     listOf(
-                        CborInteger.create(DUMMY_MAX_MEMORY),
-                        CborInteger.create(DUMMY_MAX_STEPS),
+                        CborInteger.create(dummyExUnitsMemory),
+                        CborInteger.create(dummyExUnitsSteps),
                     )
                 )
             }
@@ -59,6 +59,3 @@ fun String.toRedeemerTagAndIndex(): Pair<RedeemerTag, Long> {
         key[1].toLong()
     )
 }
-
-private const val DUMMY_MAX_MEMORY = 14000000L
-private const val DUMMY_MAX_STEPS = 10000000000L
