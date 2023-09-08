@@ -120,23 +120,24 @@ class QuartzSchedulerDaemon : Daemon {
     }
 
     private fun startArweaveCheckAndFund(scheduler: Scheduler) {
-        val jobKey = JobKey(ARWEAVE_CHECK_AND_FUND_JOB_KEY, ARWEAVE_CHECK_AND_FUND_JOB_GROUP)
         try {
-            log.debug { "Validate Scheduled jobs..." }
-            val triggerKey = TriggerKey("${jobKey.name}_trigger", ARWEAVE_CHECK_AND_FUND_JOB_GROUP)
-            if (!scheduler.checkExists(jobKey)) {
-                log.info { "Creating new job for $jobKey" }
-                val jobDetail = newJob(ArweaveCheckAndFundJob::class.java)
-                    .withIdentity(jobKey)
-                    .build()
-                val trigger = newTrigger()
-                    .withIdentity(triggerKey)
-                    .startNow()
-                    .withSchedule(simpleSchedule().withIntervalInHours(24).repeatForever())
-                    .build()
-                scheduler.scheduleJob(jobDetail, trigger)
-                log.warn { "Scheduled job $jobKey with trigger: $trigger" }
+            val jobKey = JobKey(ARWEAVE_CHECK_AND_FUND_JOB_KEY, ARWEAVE_CHECK_AND_FUND_JOB_GROUP)
+            if (scheduler.checkExists(jobKey)) {
+                log.info { "Deleting existing job for $jobKey" }
+                scheduler.deleteJob(jobKey)
             }
+            val triggerKey = TriggerKey("${jobKey.name}_trigger", ARWEAVE_CHECK_AND_FUND_JOB_GROUP)
+            log.info { "Creating new job for $jobKey" }
+            val jobDetail = newJob(ArweaveCheckAndFundJob::class.java)
+                .withIdentity(jobKey)
+                .build()
+            val trigger = newTrigger()
+                .withIdentity(triggerKey)
+                .startAt(Date(System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(30)))
+                .withSchedule(simpleSchedule().withIntervalInHours(24).repeatForever())
+                .build()
+            scheduler.scheduleJob(jobDetail, trigger)
+            log.warn { "Scheduled job $jobKey with trigger: $trigger" }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Throwable) {
