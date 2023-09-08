@@ -48,7 +48,8 @@ class ArweaveRepositoryTest {
                             url = "https://res.cloudinary.com/newm/image/upload/v1671486226/welnjdtkmqevkxe0lrxg.webp",
                             contentType = "image/png"
                         )
-                    )
+                    ),
+                    checkAndFund = false,
                 )
             )
         )
