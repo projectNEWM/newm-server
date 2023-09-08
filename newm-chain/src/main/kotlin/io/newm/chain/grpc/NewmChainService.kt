@@ -139,11 +139,7 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                             result = "MsgAcceptTx"
                             txId = transactionId
                         }.also {
-                            log.warn {
-                                "submitTransaction(cbor: ${
-                                    request.cbor.toByteArray().toHexString()
-                                }) SUCCESS. txId: ${it.txId}"
-                            }
+                            log.warn { "submitTransaction SUCCESS. txId: ${it.txId}" }
                         }
                     }
 
@@ -253,7 +249,6 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
     }
 
     override suspend fun transactionBuilder(request: TransactionBuilderRequest): TransactionBuilderResponse {
-        log.warn("transactionBuilder request: $request")
         try {
             return txSubmitClientPool.useInstance { txSubmitClient ->
                 val stateQueryClient = txSubmitClient as StateQueryClient
