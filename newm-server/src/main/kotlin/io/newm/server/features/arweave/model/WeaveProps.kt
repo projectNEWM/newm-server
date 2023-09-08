@@ -9,4 +9,6 @@ data class WeaveProps(
     val arweaveWalletJson: String,
     @SerialName("files")
     val files: List<WeaveFile>,
+    @SerialName("checkAndFund")
+    val checkAndFund: Boolean,
 )

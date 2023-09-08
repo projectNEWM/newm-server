@@ -2,6 +2,7 @@ package io.newm.server.features.daemon
 
 import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_SCHEDULER_EVEARA_SYNC
+import io.newm.server.features.scheduler.ArweaveCheckAndFundJob
 import io.newm.server.features.scheduler.EvearaSyncJob
 import io.newm.shared.daemon.Daemon
 import io.newm.shared.koin.inject
@@ -19,6 +20,7 @@ import org.quartz.JobBuilder.newJob
 import org.quartz.JobDetail
 import org.quartz.JobKey
 import org.quartz.Scheduler
+import org.quartz.SimpleScheduleBuilder.simpleSchedule
 import org.quartz.Trigger
 import org.quartz.TriggerBuilder.newTrigger
 import org.quartz.TriggerKey
@@ -42,6 +44,7 @@ class QuartzSchedulerDaemon : Daemon {
             return
         }
         startEvearaSync(scheduler)
+        startArweaveCheckAndFund(scheduler)
         log.info { "startup complete." }
     }
 
@@ -116,6 +119,31 @@ class QuartzSchedulerDaemon : Daemon {
         }
     }
 
+    private fun startArweaveCheckAndFund(scheduler: Scheduler) {
+        val jobKey = JobKey(ARWEAVE_CHECK_AND_FUND_JOB_KEY, ARWEAVE_CHECK_AND_FUND_JOB_GROUP)
+        try {
+            log.debug { "Validate Scheduled jobs..." }
+            val triggerKey = TriggerKey("${jobKey.name}_trigger", ARWEAVE_CHECK_AND_FUND_JOB_GROUP)
+            if (!scheduler.checkExists(jobKey)) {
+                log.info { "Creating new job for $jobKey" }
+                val jobDetail = newJob(ArweaveCheckAndFundJob::class.java)
+                    .withIdentity(jobKey)
+                    .build()
+                val trigger = newTrigger()
+                    .withIdentity(triggerKey)
+                    .startNow()
+                    .withSchedule(simpleSchedule().withIntervalInHours(24).repeatForever())
+                    .build()
+                scheduler.scheduleJob(jobDetail, trigger)
+                log.warn { "Scheduled job $jobKey with trigger: $trigger" }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            log.error("Error validating scheduled jobs!", e)
+        }
+    }
+
     fun scheduleJob(jobDetail: JobDetail, trigger: Trigger): Date {
         val date = scheduler.scheduleJob(jobDetail, trigger)
         log.warn { "Scheduled job ${jobDetail.key} with trigger: $trigger" }
@@ -125,5 +153,7 @@ class QuartzSchedulerDaemon : Daemon {
     companion object {
         private const val EVEARA_SYNC_QUARTZ_JOB_KEY = "eveara_sync_job"
         private const val EVEARA_SYNC_QUARTZ_GROUP = "eveara_sync_group"
+        private const val ARWEAVE_CHECK_AND_FUND_JOB_KEY = "arweave_check_and_fund_job"
+        private const val ARWEAVE_CHECK_AND_FUND_JOB_GROUP = "arweave_check_and_fund_group"
     }
 }

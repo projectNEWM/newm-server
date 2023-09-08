@@ -298,6 +298,7 @@ class ArweaveRepositoryImpl(
                             contentType = contentType,
                         )
                     },
+                    checkAndFund = false,
                 )
             )
         )
