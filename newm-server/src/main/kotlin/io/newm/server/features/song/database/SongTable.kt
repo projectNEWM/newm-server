@@ -1,6 +1,7 @@
 package io.newm.server.features.song.database
 
 import io.newm.server.features.cardano.database.KeyTable
+import io.newm.server.features.song.model.AudioEncodingStatus
 import io.newm.server.features.song.model.MarketplaceStatus
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.SongBarcodeType
@@ -48,6 +49,8 @@ object SongTable : UUIDTable(name = "songs") {
     val duration: Column<Int?> = integer("duration").nullable()
     val nftPolicyId: Column<String?> = text("nft_policy_id").nullable()
     val nftName: Column<String?> = text("nft_name").nullable()
+    val audioEncodingStatus: Column<AudioEncodingStatus> =
+        enumeration("audio_encoding_status", AudioEncodingStatus::class).default(AudioEncodingStatus.NotStarted)
     val mintingStatus: Column<MintingStatus> =
         enumeration("minting_status", MintingStatus::class).default(MintingStatus.Undistributed)
     val marketplaceStatus: Column<MarketplaceStatus> =

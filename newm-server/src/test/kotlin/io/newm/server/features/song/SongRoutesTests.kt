@@ -24,6 +24,7 @@ import io.newm.server.features.cardano.database.KeyTable
 import io.newm.server.features.model.CountResponse
 import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.database.SongTable
+import io.newm.server.features.song.model.AudioEncodingStatus
 import io.newm.server.features.song.model.AudioStreamResponse
 import io.newm.server.features.song.model.AudioUploadReport
 import io.newm.server.features.song.model.MarketplaceStatus
@@ -98,6 +99,7 @@ class SongRoutesTests : BaseApplicationTests() {
         assertThat(song.releaseDate).isEqualTo(testSong1.releaseDate)
         assertThat(song.publicationDate).isEqualTo(testSong1.publicationDate)
         assertThat(song.lyricsUrl).isEqualTo(testSong1.lyricsUrl)
+        assertThat(song.audioEncodingStatus).isEqualTo(AudioEncodingStatus.NotStarted)
         assertThat(song.mintingStatus).isEqualTo(MintingStatus.Undistributed)
         assertThat(song.marketplaceStatus).isEqualTo(MarketplaceStatus.NotSelling)
     }
@@ -500,6 +502,7 @@ class SongRoutesTests : BaseApplicationTests() {
         assertThat(song2.releaseDate).isEqualTo(testSong2.releaseDate)
         assertThat(song2.publicationDate).isEqualTo(testSong2.publicationDate)
         assertThat(song2.lyricsUrl).isEqualTo(testSong2.lyricsUrl)
+        assertThat(song2.audioEncodingStatus).isEqualTo(AudioEncodingStatus.NotStarted)
         assertThat(song2.mintingStatus).isEqualTo(MintingStatus.Undistributed)
         assertThat(song2.marketplaceStatus).isEqualTo(MarketplaceStatus.NotSelling)
     }
@@ -841,6 +844,7 @@ fun addSongToDatabase(
             streamUrl = "https://newm.io/stream$offset"
             duration = offset
             nftPolicyId = "nftPolicyId$offset"
+            audioEncodingStatus = AudioEncodingStatus.values()[offset % AudioEncodingStatus.values().size]
             mintingStatus = MintingStatus.values()[offset % MintingStatus.values().size]
             marketplaceStatus = MarketplaceStatus.values()[offset % MarketplaceStatus.values().size]
             this.paymentKeyId = paymentKeyId
