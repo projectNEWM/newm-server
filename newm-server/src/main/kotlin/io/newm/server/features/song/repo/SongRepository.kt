@@ -22,6 +22,8 @@ interface SongRepository {
     suspend fun generateAudioStreamData(songId: UUID): AudioStreamData
     suspend fun processStreamTokenAgreement(songId: UUID, requesterId: UUID, accepted: Boolean)
 
+    suspend fun processAudioEncoding(songId: UUID)
+
     suspend fun getMintingPaymentAmountCborHex(songId: UUID, requesterId: UUID): String
 
     suspend fun generateMintingPaymentTransaction(

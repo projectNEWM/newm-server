@@ -76,11 +76,15 @@ class MintingMessageReceiver : SqsMessageReceiver {
             }
 
             MintingStatus.MintingPaymentReceived -> {
-                // Payment received. Move -> AwaitingCollaboratorApproval
+                // Payment received. Move -> AwaitingAudioEncoding
                 songRepository.updateSongMintingStatus(
                     songId = mintingStatusSqsMessage.songId,
-                    mintingStatus = MintingStatus.AwaitingCollaboratorApproval
+                    mintingStatus = MintingStatus.AwaitingAudioEncoding
                 )
+            }
+
+            MintingStatus.AwaitingAudioEncoding -> {
+                songRepository.processAudioEncoding(mintingStatusSqsMessage.songId)
             }
 
             MintingStatus.AwaitingCollaboratorApproval -> {

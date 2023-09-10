@@ -25,6 +25,7 @@ import io.newm.server.features.distribution.DistributionRepository
 import io.newm.server.features.email.repo.EmailRepository
 import io.newm.server.features.minting.MintingStatusSqsMessage
 import io.newm.server.features.song.database.SongEntity
+import io.newm.server.features.song.model.AudioEncodingStatus
 import io.newm.server.features.song.model.AudioStreamData
 import io.newm.server.features.song.model.AudioUploadReport
 import io.newm.server.features.song.model.MintingStatus
@@ -149,6 +150,7 @@ internal class SongRepositoryImpl(
                     duration?.let { entity.duration = it }
                     nftPolicyId?.let { entity.nftPolicyId = it }
                     nftName?.let { entity.nftName = it }
+                    audioEncodingStatus?.let { entity.audioEncodingStatus = it }
                     mintingStatus?.let { entity.mintingStatus = it }
                     marketplaceStatus?.let { entity.marketplaceStatus = it }
                     paymentKeyId?.let { entity.paymentKeyId = EntityID(it, KeyTable) }
@@ -253,9 +255,15 @@ internal class SongRepositoryImpl(
 
             val url = s3UrlStringOf(bucket, key)
             transaction {
-                SongEntity[songId].originalAudioUrl = url
+                with(SongEntity[songId]) {
+                    originalAudioUrl = url
+                    audioEncodingStatus = AudioEncodingStatus.Started
+                }
             }
             return AudioUploadReport(url, type, size, duration, sampleRate)
+        } catch (throwable: Throwable) {
+            transaction { SongEntity[songId].audioEncodingStatus = AudioEncodingStatus.Failed }
+            throw throwable
         } finally {
             file.delete()
         }
@@ -311,6 +319,29 @@ internal class SongRepositoryImpl(
         } else {
             update(songId, Song(mintingStatus = MintingStatus.Undistributed))
             s3.deleteObject(bucketName, key)
+        }
+    }
+
+    override suspend fun processAudioEncoding(songId: UUID) {
+        logger.debug { "processAudioEncoding: songId = $songId" }
+        with(get(songId)) {
+            when (audioEncodingStatus) {
+                AudioEncodingStatus.Started -> {
+                    if (clipUrl != null && streamUrl != null) {
+                        update(songId, Song(audioEncodingStatus = AudioEncodingStatus.Completed))
+                        if (mintingStatus?.ordinal.orZero() >= MintingStatus.MintingPaymentSubmitted.ordinal) {
+                            sendMintingStartedNotification(songId)
+                        }
+                    }
+                }
+
+                AudioEncodingStatus.Completed -> {}
+
+                else -> return
+            }
+            if (mintingStatus == MintingStatus.AwaitingAudioEncoding) {
+                updateSongMintingStatus(songId, MintingStatus.AwaitingCollaboratorApproval)
+            }
         }
     }
 
@@ -380,6 +411,7 @@ internal class SongRepositoryImpl(
         when (mintingStatus) {
             MintingStatus.MintingPaymentSubmitted,
             MintingStatus.MintingPaymentReceived,
+            MintingStatus.AwaitingAudioEncoding,
             MintingStatus.AwaitingCollaboratorApproval,
             MintingStatus.ReadyToDistribute,
             MintingStatus.SubmittedForDistribution,
@@ -402,8 +434,9 @@ internal class SongRepositoryImpl(
 
         when (mintingStatus) {
             MintingStatus.MintingPaymentSubmitted -> {
-                collaborationRepository.invite(songId)
-                sendMintingNotification("started", songId)
+                if (transaction { SongEntity[songId].audioEncodingStatus } == AudioEncodingStatus.Completed) {
+                    sendMintingStartedNotification(songId)
+                }
             }
 
             MintingStatus.Minted -> sendMintingNotification("succeeded", songId)
@@ -412,6 +445,11 @@ internal class SongRepositoryImpl(
 
             else -> Unit
         }
+    }
+
+    private suspend fun sendMintingStartedNotification(songId: UUID) {
+        collaborationRepository.invite(songId)
+        sendMintingNotification("started", songId)
     }
 
     private suspend fun sendMintingNotification(path: String, songId: UUID) {

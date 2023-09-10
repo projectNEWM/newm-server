@@ -1,5 +1,6 @@
 package io.newm.server.features.song.database
 
+import io.newm.server.features.song.model.AudioEncodingStatus
 import io.newm.server.features.song.model.MarketplaceStatus
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Song
@@ -59,6 +60,7 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var duration: Int? by SongTable.duration
     var nftPolicyId: String? by SongTable.nftPolicyId
     var nftName: String? by SongTable.nftName
+    var audioEncodingStatus: AudioEncodingStatus by SongTable.audioEncodingStatus
     var mintingStatus: MintingStatus by SongTable.mintingStatus
     var marketplaceStatus: MarketplaceStatus by SongTable.marketplaceStatus
     var paymentKeyId: EntityID<UUID>? by SongTable.paymentKeyId
@@ -103,6 +105,7 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         duration = duration,
         nftPolicyId = nftPolicyId,
         nftName = nftName,
+        audioEncodingStatus = audioEncodingStatus,
         mintingStatus = mintingStatus,
         marketplaceStatus = marketplaceStatus,
         paymentKeyId = paymentKeyId?.value,

@@ -43,9 +43,11 @@ class AudioMessageReceiver : SqsMessageReceiver {
             "stream" -> {
                 val hostUrl = environment.getConfigString("aws.cloudFront.audioStream.hostUrl")
                 repository.update(songId, Song(duration = duration, streamUrl = "$hostUrl/$shortPath"))
+                repository.processAudioEncoding(songId)
             }
             "clip" -> {
                 repository.update(songId, Song(clipUrl = fullPath))
+                repository.processAudioEncoding(songId)
             }
         }
     }
