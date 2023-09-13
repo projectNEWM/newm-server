@@ -49,6 +49,7 @@ data class Song(
     val nftName: String? = null,
     val audioEncodingStatus: AudioEncodingStatus? = null,
     val mintingStatus: MintingStatus? = null,
+    val mintingTxId: String? = null,
     val marketplaceStatus: MarketplaceStatus? = null,
     @Serializable(with = UUIDSerializer::class)
     val paymentKeyId: UUID? = null,

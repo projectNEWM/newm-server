@@ -32,6 +32,7 @@ import io.newm.server.features.cardano.model.Key
 import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.collaboration.model.Collaboration
 import io.newm.server.features.collaboration.repo.CollaborationRepository
+import io.newm.server.features.minting.model.MintInfo
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.model.User
@@ -59,7 +60,7 @@ class MintingRepositoryImpl(
 
     private val log: Logger by inject { parametersOf(javaClass.simpleName) }
 
-    override suspend fun mint(song: Song): String {
+    override suspend fun mint(song: Song): MintInfo {
         val user = userRepository.get(song.ownerId!!)
         val collabs = collabRepository.getAllBySongId(song.id!!)
         val cip68Metadata = buildStreamTokenMetadata(song, user, collabs)
@@ -178,7 +179,11 @@ class MintingRepositoryImpl(
             )
         val submitTransactionResponse = cardanoRepository.submitTransaction(transactionBuilderResponse.transactionCbor)
         return if (submitTransactionResponse.result == "MsgAcceptTx") {
-            submitTransactionResponse.txId
+            MintInfo(
+                transactionId = submitTransactionResponse.txId,
+                policyId = cip68Policy,
+                assetName = fracTokenName,
+            )
         } else {
             throw IllegalStateException(submitTransactionResponse.result)
         }

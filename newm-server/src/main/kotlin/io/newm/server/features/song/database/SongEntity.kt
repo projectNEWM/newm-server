@@ -62,6 +62,7 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var nftName: String? by SongTable.nftName
     var audioEncodingStatus: AudioEncodingStatus by SongTable.audioEncodingStatus
     var mintingStatus: MintingStatus by SongTable.mintingStatus
+    var mintingTxId: String? by SongTable.mintingTxId
     var marketplaceStatus: MarketplaceStatus by SongTable.marketplaceStatus
     var paymentKeyId: EntityID<UUID>? by SongTable.paymentKeyId
     var arweaveCoverArtUrl: String? by SongTable.arweaveCoverArtUrl
@@ -107,6 +108,7 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         nftName = nftName,
         audioEncodingStatus = audioEncodingStatus,
         mintingStatus = mintingStatus,
+        mintingTxId = mintingTxId,
         marketplaceStatus = marketplaceStatus,
         paymentKeyId = paymentKeyId?.value,
         arweaveCoverArtUrl = arweaveCoverArtUrl,

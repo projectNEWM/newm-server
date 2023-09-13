@@ -173,7 +173,17 @@ class MintingMessageReceiver : SqsMessageReceiver {
                 try {
                     // Create and submit the mint transaction
                     val song = songRepository.get(mintingStatusSqsMessage.songId)
-                    mintingRepository.mint(song)
+                    val mintInfo = mintingRepository.mint(song)
+
+                    // Update the song record with the minting info
+                    songRepository.update(
+                        songId = mintingStatusSqsMessage.songId,
+                        song = Song(
+                            mintingTxId = mintInfo.transactionId,
+                            nftPolicyId = mintInfo.policyId,
+                            nftName = mintInfo.assetName,
+                        )
+                    )
 
                     // Done submitting mint transaction. Move -> Minted
                     songRepository.updateSongMintingStatus(

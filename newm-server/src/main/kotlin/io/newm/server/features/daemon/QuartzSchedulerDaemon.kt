@@ -90,7 +90,7 @@ class QuartzSchedulerDaemon : Daemon {
                             .withSchedule(cronSchedule(evearaCronSyncSchedule))
                             .build()
                         scheduler.scheduleJob(jobDetail, trigger)
-                        log.warn { "Scheduled job $jobKey with trigger: $trigger" }
+                        log.info { "Scheduled job $jobKey with trigger: $trigger" }
                     } else {
                         val jobDetail = scheduler.getJobDetail(jobKey)
                         val currentTriggers = scheduler.getTriggersOfJob(jobKey)
@@ -106,7 +106,7 @@ class QuartzSchedulerDaemon : Daemon {
                                 .build()
 
                             scheduler.scheduleJob(jobDetail, trigger)
-                            log.warn { "Rescheduled job $jobKey with trigger: $trigger" }
+                            log.info { "Rescheduled job $jobKey with trigger: $trigger" }
                         }
                     }
                 } catch (e: CancellationException) {
@@ -137,7 +137,7 @@ class QuartzSchedulerDaemon : Daemon {
                 .withSchedule(simpleSchedule().withIntervalInHours(24).repeatForever())
                 .build()
             scheduler.scheduleJob(jobDetail, trigger)
-            log.warn { "Scheduled job $jobKey with trigger: $trigger" }
+            log.info { "Scheduled job $jobKey with trigger: $trigger" }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Throwable) {
