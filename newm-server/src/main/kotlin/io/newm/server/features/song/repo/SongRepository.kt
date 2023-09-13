@@ -7,6 +7,7 @@ import io.newm.server.features.song.model.AudioUploadReport
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongFilters
+import java.math.BigInteger
 import java.util.UUID
 
 interface SongRepository {
@@ -24,7 +25,7 @@ interface SongRepository {
 
     suspend fun processAudioEncoding(songId: UUID)
 
-    suspend fun getMintingPaymentAmountCborHex(songId: UUID, requesterId: UUID): String
+    suspend fun getMintingPaymentAmount(songId: UUID, requesterId: UUID): Pair<String, BigInteger>
 
     suspend fun generateMintingPaymentTransaction(
         songId: UUID,

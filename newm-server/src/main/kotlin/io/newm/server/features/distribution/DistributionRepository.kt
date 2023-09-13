@@ -58,11 +58,11 @@ interface DistributionRepository {
 
     suspend fun getUserSubscription(user: User): GetUserSubscriptionResponse
 
-    suspend fun addUserLabel(user: User): AddUserLabelResponse
+    suspend fun addUserLabel(distributionUserId: String, label: String): AddUserLabelResponse
 
     suspend fun getUserLabel(user: User): GetUserLabelResponse
 
-    suspend fun updateUserLabel(user: User): UpdateUserLabelResponse
+    suspend fun updateUserLabel(distributionLabelId: Long, distributionUserId: String, label: String): UpdateUserLabelResponse
 
     suspend fun deleteUserLabel(user: User): DeleteUserLabelResponse
 

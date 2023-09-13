@@ -425,16 +425,15 @@ class EvearaDistributionRepositoryImpl(
         return getUserSubscriptionResponse
     }
 
-    override suspend fun addUserLabel(user: User): AddUserLabelResponse {
-        requireNotNull(user.distributionUserId) { "User.distributionUserId must not be null!" }
+    override suspend fun addUserLabel(distributionUserId: String, label: String): AddUserLabelResponse {
         val response = httpClient.post("$evearaApiBaseUrl/labels") {
             contentType(ContentType.Application.Json)
             accept(ContentType.Application.Json)
             bearerAuth(getEvearaApiToken())
             setBody(
                 AddUserLabelRequest(
-                    uuid = user.distributionUserId!!,
-                    name = user.companyOrStageOrFullName,
+                    uuid = distributionUserId,
+                    name = label,
                 ).logRequestJson(log)
             )
         }
@@ -449,16 +448,19 @@ class EvearaDistributionRepositoryImpl(
         return addUserLabelResponse
     }
 
-    override suspend fun updateUserLabel(user: User): UpdateUserLabelResponse {
-        requireNotNull(user.distributionLabelId) { "User.distributionLabelId must not be null!" }
-        val response = httpClient.put("$evearaApiBaseUrl/labels/${user.distributionLabelId}") {
+    override suspend fun updateUserLabel(
+        distributionLabelId: Long,
+        distributionUserId: String,
+        label: String
+    ): UpdateUserLabelResponse {
+        val response = httpClient.put("$evearaApiBaseUrl/labels/$distributionLabelId") {
             contentType(ContentType.Application.Json)
             accept(ContentType.Application.Json)
             bearerAuth(getEvearaApiToken())
             setBody(
                 UpdateUserLabelRequest(
-                    uuid = user.distributionUserId!!,
-                    name = user.companyOrStageOrFullName,
+                    uuid = distributionUserId,
+                    name = label,
                 ).logRequestJson(log)
             )
         }
@@ -1265,6 +1267,7 @@ class EvearaDistributionRepositoryImpl(
         }
 
         // Add or Update Distribution Label
+        val desiredLabelName = song.phonographicCopyrightOwner ?: user.companyOrStageOrFullName
         val getUserLabelsResponse = getUserLabel(user)
         if (getUserLabelsResponse.totalRecords > 1) {
             val existingLabel = getUserLabelsResponse.userLabelData.first { it.name != "NEWM" } // TODO: FIX hardcoding
@@ -1275,14 +1278,24 @@ class EvearaDistributionRepositoryImpl(
             } else {
                 require(user.distributionLabelId == existingLabel.labelId) { "User.distributionLabelId: ${user.distributionLabelId} does not match existing distribution label! ${existingLabel.labelId}" }
             }
-            if (existingLabel.name != user.companyOrStageOrFullName) {
-                log.info { "Updating distribution label ${user.email} with id ${existingLabel.labelId}, name ${existingLabel.name} -> ${user.companyOrStageOrFullName}" }
-                val response = updateUserLabel(user)
+            if (existingLabel.name != desiredLabelName) {
+                log.info { "Updating distribution label ${user.email} with id ${existingLabel.labelId}, name ${existingLabel.name} -> $desiredLabelName" }
+                requireNotNull(user.distributionLabelId) { "User.distributionLabelId must not be null!" }
+                requireNotNull(user.distributionUserId) { "User.distributionUserId must not be null!" }
+                val response = updateUserLabel(
+                    user.distributionLabelId!!,
+                    user.distributionUserId!!,
+                    desiredLabelName,
+                )
                 log.info { "Updated distribution label ${user.email} with id ${response.labelData.labelId}: ${response.message}" }
             }
         } else {
             require(user.distributionLabelId == null) { "User.distributionLabelId: ${user.distributionLabelId} not found in Eveara!" }
-            val response = addUserLabel(user)
+            requireNotNull(user.distributionUserId) { "User.distributionUserId must not be null!" }
+            val response = addUserLabel(
+                user.distributionUserId!!,
+                desiredLabelName,
+            )
             log.info { "Created distribution label ${user.email} with id ${response.labelId}: ${response.message}" }
             user.distributionLabelId = response.labelId
             userRepository.updateUserData(user.id, user)

@@ -16,8 +16,13 @@ import io.newm.chain.grpc.SubmitTransactionResponse
 import io.newm.chain.grpc.TransactionBuilderRequestKt
 import io.newm.chain.grpc.TransactionBuilderResponse
 import io.newm.chain.grpc.Utxo
+import io.newm.chain.grpc.datumOrNull
+import io.newm.chain.grpc.listOrNull
+import io.newm.chain.grpc.mapItemValueOrNull
+import io.newm.chain.grpc.mapOrNull
 import io.newm.chain.grpc.nativeAsset
 import io.newm.chain.grpc.outputUtxo
+import io.newm.chain.grpc.queryByNativeAssetRequest
 import io.newm.chain.grpc.queryUtxosOutputRefRequest
 import io.newm.chain.grpc.queryUtxosRequest
 import io.newm.chain.grpc.submitTransactionRequest
@@ -177,6 +182,41 @@ internal class CardanoRepositoryImpl(
             }
         )
         return outputUtxo.lovelace.toLong()
+    }
+
+    private var oracleUtxoCached: Utxo? = null
+
+    /**
+     * Returns the current ada price in USD as a Long assuming 6 decimal places.
+     */
+    override suspend fun queryAdaUSDPrice(): Long {
+        val now = System.currentTimeMillis()
+        val oracleUtxoStartTimestamp =
+            oracleUtxoCached?.datumOrNull?.listOrNull?.getListItem(0)?.mapOrNull?.getMapItem(1)?.mapItemValueOrNull?.int
+                ?: Long.MAX_VALUE
+        val oracleUtxoEndTimestamp =
+            oracleUtxoCached?.datumOrNull?.listOrNull?.getListItem(0)?.mapOrNull?.getMapItem(2)?.mapItemValueOrNull?.int
+                ?: Long.MIN_VALUE
+        if (now < oracleUtxoStartTimestamp || now > oracleUtxoEndTimestamp) {
+            // Outside of range. Get a new oracle utxo
+            oracleUtxoCached = client.queryUtxoByNativeAsset(
+                queryByNativeAssetRequest {
+                    // Charli3 ADA/USD OracleFeed token
+                    policy = "3d0d75aad1eb32f0ce78fb1ebc101b6b51de5d8f13c12daa88017624"
+                    name = "4f7261636c6546656564"
+                }
+            )
+        }
+        val usdPrice =
+            oracleUtxoCached?.datumOrNull?.listOrNull?.getListItem(0)?.mapOrNull?.getMapItem(0)?.mapItemValueOrNull?.int
+        return usdPrice ?: run {
+            if (isMainnet()) {
+                throw IllegalStateException("Oracle Utxo does not contain a USD price!")
+            } else {
+                // On testnet, we don't have an oracle utxo, so we just return a dummy price of $0.25
+                250000L
+            }
+        }
     }
 
     private suspend fun encryptKmsBytes(bytes: ByteArray): String {
