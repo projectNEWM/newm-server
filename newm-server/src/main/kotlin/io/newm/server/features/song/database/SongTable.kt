@@ -53,6 +53,7 @@ object SongTable : UUIDTable(name = "songs") {
         enumeration("audio_encoding_status", AudioEncodingStatus::class).default(AudioEncodingStatus.NotStarted)
     val mintingStatus: Column<MintingStatus> =
         enumeration("minting_status", MintingStatus::class).default(MintingStatus.Undistributed)
+    val mintingTxId: Column<String?> = text("minting_tx_id").nullable()
     val marketplaceStatus: Column<MarketplaceStatus> =
         enumeration("marketplace_status", MarketplaceStatus::class).default(MarketplaceStatus.NotSelling)
     val paymentKeyId: Column<EntityID<UUID>?> =
