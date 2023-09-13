@@ -8,6 +8,7 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.config.ApplicationConfig
 import io.ktor.server.testing.TestApplication
+import io.mockk.coEvery
 import io.mockk.mockk
 import io.newm.server.auth.jwt.database.JwtTable
 import io.newm.server.auth.twofactor.database.TwoFactorAuthTable
@@ -34,6 +35,7 @@ import io.newm.server.features.user.oauth.providers.LinkedInUserProvider
 import io.newm.server.ktx.asValidUrl
 import io.newm.shared.auth.Password
 import io.newm.shared.serialization.BigDecimalSerializer
+import io.newm.shared.serialization.BigIntegerSerializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import org.jetbrains.exposed.dao.id.EntityID
@@ -49,6 +51,7 @@ import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 import java.math.BigDecimal
+import java.math.BigInteger
 import java.util.UUID
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -73,6 +76,7 @@ open class BaseApplicationTests {
                         isLenient = true
                         serializersModule = SerializersModule {
                             contextual(BigDecimal::class, BigDecimalSerializer)
+                            contextual(BigInteger::class, BigIntegerSerializer)
                         }
                     }
                 )
@@ -130,7 +134,11 @@ open class BaseApplicationTests {
         application.start()
         loadKoinModules(
             module {
-                single { mockk<CardanoRepository>(relaxed = true) }
+                single {
+                    mockk<CardanoRepository>(relaxed = true) {
+                        coEvery { queryAdaUSDPrice() } returns 253400L // $0.2534 ada price
+                    }
+                }
                 single { mockk<GoogleUserProvider>(relaxed = true) }
                 single { mockk<FacebookUserProvider>(relaxed = true) }
                 single { mockk<LinkedInUserProvider>(relaxed = true) }

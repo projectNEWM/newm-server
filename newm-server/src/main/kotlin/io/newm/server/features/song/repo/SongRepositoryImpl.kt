@@ -59,6 +59,7 @@ import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf
 import java.math.BigDecimal
+import java.math.BigInteger
 import java.net.URL
 import java.util.Properties
 import java.util.UUID
@@ -356,20 +357,28 @@ internal class SongRepositoryImpl(
         }
     }
 
-    override suspend fun getMintingPaymentAmountCborHex(songId: UUID, requesterId: UUID): String {
+    override suspend fun getMintingPaymentAmount(songId: UUID, requesterId: UUID): Pair<String, BigInteger> {
         logger.debug { "getMintingPaymentAmount: songId = $songId" }
         // TODO: We might need to change this code in the future if we're charging NEWM tokens in addition to ada
         val numberOfCollaborators = collaborationRepository.getAllBySongId(songId)
             .count { it.royaltyRate.orZero() > BigDecimal.ZERO }
         val mintCostBase = configRepository.getLong(CONFIG_KEY_MINT_PRICE)
-        val changeAmount = 1000000L // 1 ada
+        val changeAmountLovelace = 1000000L // 1 ada
         val minUtxo: Long = cardanoRepository.queryStreamTokenMinUtxo()
-        val mintCostTotal = mintCostBase + (numberOfCollaborators * minUtxo)
+        val mintCostLovelace = mintCostBase + (numberOfCollaborators * minUtxo)
 
         // Save the mint cost to the database
-        update(songId, Song(mintCostLovelace = mintCostTotal))
+        update(songId, Song(mintCostLovelace = mintCostLovelace))
 
-        return CborInteger.create(mintCostTotal + changeAmount).toCborByteArray().toHexString()
+        val usdPrice = (
+            cardanoRepository.queryAdaUSDPrice()
+                .toBigInteger() * (mintCostLovelace + changeAmountLovelace).toBigInteger()
+            ).div(1000000.toBigInteger())
+
+        return Pair(
+            CborInteger.create(mintCostLovelace + changeAmountLovelace).toCborByteArray().toHexString(),
+            usdPrice
+        )
     }
 
     override suspend fun generateMintingPaymentTransaction(

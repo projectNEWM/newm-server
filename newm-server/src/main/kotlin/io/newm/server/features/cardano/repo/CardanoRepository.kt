@@ -23,4 +23,5 @@ interface CardanoRepository {
     suspend fun queryPublicKeyHashByOutputRef(hash: String, ix: Long): String
     suspend fun saveEncryptionParams(encryptionRequest: EncryptionRequest)
     suspend fun queryStreamTokenMinUtxo(): Long
+    suspend fun queryAdaUSDPrice(): Long
 }

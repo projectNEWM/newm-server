@@ -12,6 +12,7 @@ import io.newm.chain.grpc.QueryTransactionConfirmationCountResponse
 import io.newm.chain.grpc.QueryUtxosResponse
 import io.newm.chain.grpc.SnapshotNativeAssetsResponse
 import io.newm.chain.grpc.SubmitTransactionResponse
+import io.newm.chain.grpc.datumOrNull
 import io.newm.chain.grpc.monitorAddressRequest
 import io.newm.chain.grpc.monitorNativeAssetsRequest
 import io.newm.chain.grpc.monitorPaymentAddressRequest
@@ -339,5 +340,6 @@ class GrpcTests {
         }
         val response = client.queryUtxoByNativeAsset(request)
         println("response: $response")
+        assertThat(response.datumOrNull).isNotNull()
     }
 }
