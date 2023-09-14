@@ -40,6 +40,7 @@ import io.newm.server.features.user.repo.UserRepository
 import io.newm.server.ktx.sign
 import io.newm.server.ktx.toReferenceUtxo
 import io.newm.shared.koin.inject
+import io.newm.shared.ktx.info
 import io.newm.shared.ktx.orZero
 import io.newm.shared.ktx.toHexString
 import io.newm.txbuilder.ktx.toCborObject
@@ -67,6 +68,7 @@ class MintingRepositoryImpl(
         val streamTokensTotal = 100_000_000L.toBigDecimal()
         var streamTokensRemaining = 100_000_000L
         val splitCollabs = collabs.filter { it.royaltyRate!! > BigDecimal.ZERO }.sortedByDescending { it.royaltyRate }
+        log.info { "splitCollabs for songId: ${song.id} - $splitCollabs" }
         val royaltySum = splitCollabs.sumOf { it.royaltyRate!! }
         require(royaltySum.compareTo(100.toBigDecimal()) == 0) { "Collaboration royalty rates must sum to 100 but was $royaltySum" }
         val streamTokenSplits = splitCollabs.mapIndexed { index, collaboration ->
@@ -81,6 +83,7 @@ class MintingRepositoryImpl(
             streamTokensRemaining -= amount
             Pair(collabUser.walletAddress!!, amount)
         }
+        log.info { "Royalty splits for songId: ${song.id} - $streamTokenSplits" }
         val paymentKey = cardanoRepository.getKey(song.paymentKeyId!!)
         val mintPriceLovelace = song.mintCostLovelace.toString()
         val cip68ScriptAddress = configRepository.getString(CONFIG_KEY_MINT_CIP68_SCRIPT_ADDRESS)
