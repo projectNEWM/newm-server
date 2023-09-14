@@ -10,6 +10,4 @@ private val minutesSecondsFormatter = SimpleDateFormat("mm:ss").apply {
 
 fun Long?.orZero(): Long = this ?: 0L
 
-fun Long.megabytesToBytes(): Long = this * 1024 * 1024
-
 fun Long.millisToMinutesSecondsString(): String = minutesSecondsFormatter.format(Date(this))

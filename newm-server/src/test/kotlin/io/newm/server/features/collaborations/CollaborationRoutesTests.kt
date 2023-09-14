@@ -346,6 +346,41 @@ class CollaborationRoutesTests : BaseApplicationTests() {
     }
 
     @Test
+    fun testGetCollaborationsByEmails() = runBlocking {
+        // Add collaborations directly into database
+        val allCollaborations = mutableListOf<Collaboration>()
+        for (offset in 0..30) {
+            allCollaborations += addCollaborationToDatabase(testUserId, offset)
+        }
+
+        // filter out 1st and last
+        val expectedCollaborations = allCollaborations.subList(1, allCollaborations.size - 1)
+        val emails = expectedCollaborations.joinToString { it.email!! }
+
+        // Get all collaborations forcing pagination
+        var offset = 0
+        val limit = 5
+        val actualCollaborations = mutableListOf<Collaboration>()
+        while (true) {
+            val response = client.get("v1/collaborations") {
+                bearerAuth(testUserToken)
+                accept(ContentType.Application.Json)
+                parameter("offset", offset)
+                parameter("limit", limit)
+                parameter("emails", emails)
+            }
+            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+            val collaborations = response.body<List<Collaboration>>()
+            if (collaborations.isEmpty()) break
+            actualCollaborations += collaborations
+            offset += limit
+        }
+
+        // verify all
+        assertThat(actualCollaborations).isEqualTo(expectedCollaborations)
+    }
+
+    @Test
     fun testGetCollaborationsByStatuses() = runBlocking {
         // Add collaborations directly into database
         val allCollaborations = mutableListOf<Collaboration>()
@@ -457,18 +492,17 @@ class CollaborationRoutesTests : BaseApplicationTests() {
         val allCollaborators = mutableListOf<Collaborator>()
         for (offset in 0..30) {
             val email = "collaborator$offset@email.com"
-            val user = if (offset % 2 == 0) {
+            val user = takeIf { offset % 2 == 0 }?.let {
                 transaction {
                     UserEntity.new {
                         this.email = email
                     }
                 }.toModel(false)
-            } else {
-                null
             }
             val songCount = (offset % 4) + 1
+            val status = user?.let { CollaborationStatus.Accepted }
             for (i in 1..songCount) {
-                addCollaborationToDatabase(testUserId, i, email)
+                addCollaborationToDatabase(testUserId, i, email, status)
             }
             allCollaborators += Collaborator(email, songCount.toLong(), user)
         }
@@ -502,18 +536,17 @@ class CollaborationRoutesTests : BaseApplicationTests() {
         val allCollaborators = mutableListOf<Collaborator>()
         for (offset in 0..30) {
             val email = "collaborator$offset@email.com"
-            val user = if (offset % 2 == 0) {
+            val user = takeIf { offset % 2 == 0 }?.let {
                 transaction {
                     UserEntity.new {
                         this.email = email
                     }
                 }.toModel(false)
-            } else {
-                null
             }
             val songCount = (offset % 4) + 1
+            val status = user?.let { CollaborationStatus.Accepted }
             for (i in 1..songCount) {
-                addCollaborationToDatabase(testUserId, i, email)
+                addCollaborationToDatabase(testUserId, i, email, status)
             }
             allCollaborators += Collaborator(email, songCount.toLong(), user)
         }
@@ -549,19 +582,18 @@ class CollaborationRoutesTests : BaseApplicationTests() {
         val allCollaborations = mutableListOf<Collaboration>()
         for (offset in 0..30) {
             val email = testUserEmail.takeIf { offset % 3 == 0 } ?: "collaborator$offset@email.com"
-            val user = if (offset % 2 == 0) {
+            val user = takeIf { offset % 2 == 0 }?.let {
                 transaction {
                     UserEntity.new {
                         this.email = email
                     }
                 }.toModel(false)
-            } else {
-                null
             }
 
             val songCount = (offset % 4) + 1
+            val status = user?.let { CollaborationStatus.Accepted }
             for (i in 1..songCount) {
-                allCollaborations += addCollaborationToDatabase(testUserId, i, email)
+                allCollaborations += addCollaborationToDatabase(testUserId, i, email, status)
             }
             allCollaborators += Collaborator(email, songCount.toLong(), user)
         }
@@ -601,18 +633,17 @@ class CollaborationRoutesTests : BaseApplicationTests() {
         val allCollaborations = mutableListOf<Collaboration>()
         for (offset in 0..30) {
             val email = "collaborator$offset@email.com"
-            val user = if (offset % 2 == 0) {
+            val user = takeIf { offset % 2 == 0 }?.let {
                 transaction {
                     UserEntity.new {
                         this.email = email
                     }
                 }.toModel(false)
-            } else {
-                null
             }
             val songCount = (offset % 4) + 1
+            val status = user?.let { CollaborationStatus.Accepted }
             for (i in 1..songCount) {
-                allCollaborations += addCollaborationToDatabase(testUserId, i, email)
+                allCollaborations += addCollaborationToDatabase(testUserId, i, email, status)
             }
             allCollaborators += Collaborator(email, songCount.toLong(), user)
         }
@@ -649,6 +680,59 @@ class CollaborationRoutesTests : BaseApplicationTests() {
     }
 
     @Test
+    fun testGetCollaboratorsByEmails() = runBlocking {
+        // Add Collaborations directly into database
+        val allCollaborators = mutableListOf<Collaborator>()
+        val allCollaborations = mutableListOf<Collaboration>()
+        for (offset in 0..30) {
+            val email = "collaborator$offset@email.com"
+            val user = takeIf { offset % 2 == 0 }?.let {
+                transaction {
+                    UserEntity.new {
+                        this.email = email
+                    }
+                }.toModel(false)
+            }
+            val songCount = (offset % 4) + 1
+            val status = user?.let { CollaborationStatus.Accepted }
+            for (i in 1..songCount) {
+                allCollaborations += addCollaborationToDatabase(testUserId, i, email, status)
+            }
+            allCollaborators += Collaborator(email, songCount.toLong(), user)
+        }
+
+        // filter out 1st and last
+        val expectedCollaborators = allCollaborators.subList(1, allCollaborators.size - 1)
+        val emails = allCollaborations.filter {
+            it.email != allCollaborators.first().email && it.email != allCollaborators.last().email
+        }.joinToString { it.email!! }
+
+        // Get all collaborations forcing pagination
+        var offset = 0
+        val limit = 5
+        val actualCollaborators = mutableListOf<Collaborator>()
+        while (true) {
+            val response = client.get("v1/collaborations/collaborators") {
+                bearerAuth(testUserToken)
+                accept(ContentType.Application.Json)
+                parameter("offset", offset)
+                parameter("limit", limit)
+                parameter("emails", emails)
+            }
+            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+            val collaborators = response.body<List<Collaborator>>()
+            if (collaborators.isEmpty()) break
+            actualCollaborators += collaborators
+            offset += limit
+        }
+
+        // verify all
+        val actualSorted = actualCollaborators.sortedBy { it.email }
+        val expectedSorted = expectedCollaborators.sortedBy { it.email }
+        assertThat(actualSorted).isEqualTo(expectedSorted)
+    }
+
+    @Test
     fun testGetCollaboratorsByPhrase() = runBlocking {
         val phrase = "abcde"
         fun phraseOrBlank(offset: Int, target: Int) = phrase.takeIf { offset % 3 == target }.orEmpty()
@@ -658,20 +742,17 @@ class CollaborationRoutesTests : BaseApplicationTests() {
         val allCollaborations = mutableListOf<Collaboration>()
         for (offset in 0..30) {
             val email = "collaborator${phraseOrBlank(offset, 0)}$offset@email.com"
-            val user = if (offset % 2 == 0) {
+            val user = takeIf { offset % 2 == 0 }?.let {
                 transaction {
                     UserEntity.new {
                         this.email = email
-                        firstName = "First${phraseOrBlank(offset, 1)}$offset"
-                        lastName = "Last${phraseOrBlank(offset, 2)}$offset"
                     }
                 }.toModel(false)
-            } else {
-                null
             }
             val songCount = (offset % 4) + 1
+            val status = user?.let { CollaborationStatus.Accepted }
             for (i in 1..songCount) {
-                allCollaborations += addCollaborationToDatabase(testUserId, i, email)
+                allCollaborations += addCollaborationToDatabase(testUserId, i, email, status)
             }
             allCollaborators += Collaborator(email, songCount.toLong(), user)
         }

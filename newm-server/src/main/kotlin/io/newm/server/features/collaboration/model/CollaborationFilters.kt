@@ -1,6 +1,7 @@
 package io.newm.server.features.collaboration.model
 
 import io.ktor.server.application.ApplicationCall
+import io.newm.server.ktx.emails
 import io.newm.server.ktx.ids
 import io.newm.server.ktx.newerThan
 import io.newm.server.ktx.olderThan
@@ -18,6 +19,7 @@ data class CollaborationFilters(
     val newerThan: LocalDateTime? = null,
     val ids: List<UUID>? = null,
     val songIds: List<UUID>? = null,
+    val emails: List<String>? = null,
     val statuses: List<CollaborationStatus>? = null
 )
 
@@ -28,4 +30,4 @@ val ApplicationCall.statuses: List<CollaborationStatus>?
     get() = parameters["statuses"]?.splitAndTrim()?.map(CollaborationStatus::valueOf)
 
 val ApplicationCall.collaborationFilters: CollaborationFilters
-    get() = CollaborationFilters(sortOrder, inbound, olderThan, newerThan, ids, songIds, statuses)
+    get() = CollaborationFilters(sortOrder, inbound, olderThan, newerThan, ids, songIds, emails, statuses)

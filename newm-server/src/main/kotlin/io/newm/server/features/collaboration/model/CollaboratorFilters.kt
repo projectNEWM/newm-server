@@ -1,6 +1,7 @@
 package io.newm.server.features.collaboration.model
 
 import io.ktor.server.application.ApplicationCall
+import io.newm.server.ktx.emails
 import io.newm.server.ktx.phrase
 import io.newm.server.ktx.songIds
 import io.newm.server.ktx.sortOrder
@@ -11,6 +12,7 @@ data class CollaboratorFilters(
     val sortOrder: SortOrder?,
     val excludeMe: Boolean?,
     val songIds: List<UUID>?,
+    val emails: List<String>?,
     val phrase: String?
 )
 
@@ -18,4 +20,4 @@ val ApplicationCall.excludeMe: Boolean?
     get() = parameters["excludeMe"]?.toBoolean()
 
 val ApplicationCall.collaboratorFilters: CollaboratorFilters
-    get() = CollaboratorFilters(sortOrder, excludeMe, songIds, phrase)
+    get() = CollaboratorFilters(sortOrder, excludeMe, songIds, emails, phrase)
