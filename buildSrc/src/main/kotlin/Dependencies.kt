@@ -97,9 +97,9 @@ object Dependencies {
     }
 
     object Koin {
-        private const val VERSION = "3.4.3"
-        private const val KTOR_VERSION = "3.4.3"
-        private const val TEST_JUNIT_VERSION = "3.4.3"
+        private const val VERSION = "3.5.0"
+        private const val KTOR_VERSION = "3.5.0"
+        private const val TEST_JUNIT_VERSION = "3.5.0"
 
         const val KTOR = "io.insert-koin:koin-ktor:$KTOR_VERSION"
         const val TEST = "io.insert-koin:koin-test:$VERSION"
@@ -134,7 +134,7 @@ object Dependencies {
     }
 
     object FlywayDB {
-        private const val VERSION = "9.22.0"
+        private const val VERSION = "9.22.1"
 
         const val ALL = "org.flywaydb:flyway-core:$VERSION"
     }
@@ -197,8 +197,8 @@ object Dependencies {
     }
 
     object Aws {
-        private const val VERSION = "1.12.543"
-        private const val VERSION2 = "2.20.140"
+        private const val VERSION = "1.12.550"
+        private const val VERSION2 = "2.20.147"
         private const val JAXB_VERSION = "2.3.1"
 
         const val BOM = "com.amazonaws:aws-java-sdk-bom:$VERSION"
@@ -250,7 +250,7 @@ object Dependencies {
     }
 
     object Sentry {
-        private const val VERSION = "6.28.0"
+        private const val VERSION = "6.29.0"
 
         const val CORE = "io.sentry:sentry:$VERSION"
         const val LOGBACK = "io.sentry:sentry-logback:$VERSION"
@@ -263,7 +263,7 @@ object Dependencies {
     }
 
     object Grpc {
-        private const val VERSION = "1.57.2"
+        private const val VERSION = "1.58.0"
 
         const val STUB = "io.grpc:grpc-stub:$VERSION"
         const val API = "io.grpc:grpc-api:$VERSION"
@@ -280,7 +280,7 @@ object Dependencies {
     }
 
     object Protobuf {
-        private const val VERSION = "3.24.2"
+        private const val VERSION = "3.24.3"
 
         const val JAVA_UTIL = "com.google.protobuf:protobuf-java-util:$VERSION"
         const val KOTLIN = "com.google.protobuf:protobuf-kotlin:$VERSION"
