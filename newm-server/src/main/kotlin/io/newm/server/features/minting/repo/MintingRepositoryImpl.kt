@@ -65,7 +65,7 @@ class MintingRepositoryImpl(
         val user = userRepository.get(song.ownerId!!)
         val collabs = collabRepository.getAllBySongId(song.id!!)
         val cip68Metadata = buildStreamTokenMetadata(song, user, collabs)
-        val streamTokensTotal = 100_000_000L.toBigDecimal()
+        val streamTokensTotal = 100_000_000L
         var streamTokensRemaining = 100_000_000L
         val splitCollabs = collabs.filter { it.royaltyRate!! > BigDecimal.ZERO }.sortedByDescending { it.royaltyRate }
         log.info { "splitCollabs for songId: ${song.id} - $splitCollabs" }
@@ -73,7 +73,7 @@ class MintingRepositoryImpl(
         require(royaltySum.compareTo(100.toBigDecimal()) == 0) { "Collaboration royalty rates must sum to 100 but was $royaltySum" }
         val streamTokenSplits = splitCollabs.mapIndexed { index, collaboration ->
             val collabUser = userRepository.findByEmail(collaboration.email!!)
-            val splitMultiplier = collaboration.royaltyRate!! / 100.toBigDecimal()
+            val splitMultiplier = collaboration.royaltyRate!!.toDouble() / 100.0
             val amount = if (index < splitCollabs.lastIndex) {
                 // round down to nearest whole token
                 (streamTokensTotal * splitMultiplier).toLong()
