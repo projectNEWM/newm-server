@@ -64,7 +64,7 @@ tasks {
     val javadocJar by registering(Jar::class) {
         archiveClassifier.set("javadoc")
         dependsOn("javadoc")
-        from("$buildDir/javadoc")
+        from("${layout.buildDirectory}/javadoc")
     }
 
     artifacts {
