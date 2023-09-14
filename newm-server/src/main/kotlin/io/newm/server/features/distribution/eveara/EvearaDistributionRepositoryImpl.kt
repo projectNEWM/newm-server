@@ -1287,7 +1287,7 @@ class EvearaDistributionRepositoryImpl(
                     user.distributionUserId!!,
                     desiredLabelName,
                 )
-                log.info { "Updated distribution label ${user.email} with id ${response.labelData.labelId}: ${response.message}" }
+                log.info { "Updated distribution label ${user.email} with id ${response.labelData?.labelId}: ${response.message}" }
             }
         } else {
             require(user.distributionLabelId == null) { "User.distributionLabelId: ${user.distributionLabelId} not found in Eveara!" }

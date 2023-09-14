@@ -10,5 +10,5 @@ data class UpdateUserLabelResponse(
     @SerialName("success")
     val success: Boolean,
     @SerialName("data")
-    val labelData: LabelData
+    val labelData: LabelData? = null,
 )
