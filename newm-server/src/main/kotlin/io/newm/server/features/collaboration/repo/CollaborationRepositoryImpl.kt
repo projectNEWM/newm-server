@@ -144,7 +144,9 @@ internal class CollaborationRepositoryImpl(
                     Collaborator(
                         email = email,
                         songCount = songCount,
-                        user = UserEntity.getByEmail(email)?.toModel(false)
+                        user = takeIf {
+                            CollaborationEntity.exists(userId, email, CollaborationStatus.Accepted)
+                        }?.let { UserEntity.getByEmail(email)?.toModel(false) }
                     )
                 }
         }

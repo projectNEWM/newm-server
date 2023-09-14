@@ -12,7 +12,6 @@ import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.AndOp
-import org.jetbrains.exposed.sql.JoinType
 import org.jetbrains.exposed.sql.Op
 import org.jetbrains.exposed.sql.SizedIterable
 import org.jetbrains.exposed.sql.SortOrder
@@ -24,6 +23,8 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.neq
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.count
+import org.jetbrains.exposed.sql.innerJoin
+import org.jetbrains.exposed.sql.leftJoin
 import org.jetbrains.exposed.sql.lowerCase
 import org.jetbrains.exposed.sql.mapLazy
 import org.jetbrains.exposed.sql.or
@@ -60,6 +61,18 @@ class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             (CollaborationTable.songId eq songId) and (CollaborationTable.email.lowerCase() eq email.lowercase())
         }
 
+        fun exists(ownerId: UUID, email: String, status: CollaborationStatus): Boolean {
+            return CollaborationTable.innerJoin(
+                otherTable = SongTable,
+                onColumn = { songId },
+                otherColumn = { id }
+            ).select {
+                (SongTable.ownerId eq ownerId) and
+                    (CollaborationTable.email.lowerCase() eq email.lowercase()) and
+                    (CollaborationTable.status eq status)
+            }.any()
+        }
+
         fun all(userId: UUID, filters: CollaborationFilters): SizedIterable<CollaborationEntity> {
             val inbound = filters.inbound == true
             val ops = mutableListOf<Op<Boolean>>()
@@ -81,6 +94,9 @@ class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                 songIds?.let {
                     ops += CollaborationTable.songId inList it
                 }
+                emails?.let {
+                    ops += CollaborationTable.email.lowerCase() inList it.map(String::lowercase)
+                }
                 statuses?.let {
                     ops += CollaborationTable.status inList it
                 }
@@ -90,11 +106,11 @@ class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                 find(andOp)
             } else {
                 CollaborationEntity.wrapRows(
-                    CollaborationTable.join(
+                    CollaborationTable.innerJoin(
                         otherTable = SongTable,
-                        joinType = JoinType.INNER,
-                        additionalConstraint = { CollaborationTable.songId eq SongTable.id }
-                    ).slice(CollaborationTable.columns).select(andOp)
+                        onColumn = { songId },
+                        otherColumn = { id }
+                    ).select(andOp)
                 )
             }
             return res.orderBy(CollaborationTable.createdAt to (filters.sortOrder ?: SortOrder.ASC))
@@ -113,22 +129,23 @@ class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                 songIds?.let {
                     ops += CollaborationTable.songId inList it
                 }
+                emails?.let {
+                    ops += CollaborationTable.email.lowerCase() inList it.map(String::lowercase)
+                }
                 phrase?.let {
                     val pattern = "%${it.lowercase()}%"
-                    ops += (
-                        (CollaborationTable.email.lowerCase() like pattern)
-                            or (UserTable.firstName.lowerCase() like pattern)
-                            or (UserTable.lastName.lowerCase() like pattern)
-                        )
+                    ops += (CollaborationTable.email.lowerCase() like pattern) or
+                        (UserTable.firstName.lowerCase() like pattern) or
+                        (UserTable.lastName.lowerCase() like pattern)
                 }
-                return CollaborationTable.join(
+                return CollaborationTable.innerJoin(
                     otherTable = SongTable,
-                    joinType = JoinType.INNER,
-                    additionalConstraint = { CollaborationTable.songId eq SongTable.id }
-                ).join(
+                    onColumn = { songId },
+                    otherColumn = { id }
+                ).leftJoin(
                     otherTable = UserTable,
-                    joinType = JoinType.LEFT,
-                    additionalConstraint = { CollaborationTable.email.lowerCase() eq UserTable.email.lowerCase() }
+                    onColumn = { CollaborationTable.email.lowerCase() },
+                    otherColumn = { email.lowerCase() }
                 ).slice(CollaborationTable.email.lowerCase(), SongTable.id.count())
                     .select(AndOp(ops))
                     .groupBy(CollaborationTable.email.lowerCase())

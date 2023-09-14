@@ -47,7 +47,6 @@ import io.newm.shared.ktx.getInt
 import io.newm.shared.ktx.getLong
 import io.newm.shared.ktx.getString
 import io.newm.shared.ktx.info
-import io.newm.shared.ktx.megabytesToBytes
 import io.newm.shared.ktx.orZero
 import io.newm.shared.ktx.propertiesFromResource
 import io.newm.shared.ktx.toTempFile
@@ -229,9 +228,9 @@ internal class SongRepositoryImpl(
         try {
             // enforce file size
             val size = file.length()
-            val minSize = config.getLong("minFileSizeMB").megabytesToBytes()
+            val minSize = config.getLong("minFileSize")
             if (size < minSize) throw HttpUnprocessableEntityException("File is too small: $size bytes")
-            val maxSize = config.getLong("maxFileSizeMB").megabytesToBytes()
+            val maxSize = config.getLong("maxFileSize")
             if (size > maxSize) throw HttpUnprocessableEntityException("File is too large: $size bytes")
 
             // enforce supported format
