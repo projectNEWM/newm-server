@@ -150,6 +150,7 @@ internal class SongRepositoryImpl(
                     duration?.let { entity.duration = it }
                     nftPolicyId?.let { entity.nftPolicyId = it }
                     nftName?.let { entity.nftName = it }
+                    mintingTxId?.let { entity.mintingTxId = it }
                     audioEncodingStatus?.let { entity.audioEncodingStatus = it }
                     mintingStatus?.let { entity.mintingStatus = it }
                     marketplaceStatus?.let { entity.marketplaceStatus = it }
