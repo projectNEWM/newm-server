@@ -116,6 +116,7 @@ import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 import java.util.Date
 import java.util.UUID
+import kotlin.random.Random.Default.nextLong
 import kotlin.time.Duration.Companion.minutes
 
 class EvearaDistributionRepositoryImpl(
@@ -391,7 +392,8 @@ class EvearaDistributionRepositoryImpl(
                     subscriptions = listOf(
                         Subscription(
                             subscriptionId = configRepository.getLong(CONFIG_KEY_EVEARA_PARTNER_SUBSCRIPTION_ID),
-                            partnerReferenceId = user.id.toString(),
+                            // Add random number so no dups on eveara side
+                            partnerReferenceId = "${user.id} - ${nextLong(Long.MAX_VALUE)}",
                         )
                     )
                 ).logRequestJson(log)
