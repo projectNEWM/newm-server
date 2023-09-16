@@ -393,7 +393,7 @@ class EvearaDistributionRepositoryImpl(
                         Subscription(
                             subscriptionId = configRepository.getLong(CONFIG_KEY_EVEARA_PARTNER_SUBSCRIPTION_ID),
                             // Add random number so no dups on eveara side
-                            partnerReferenceId = "${user.id} - ${nextLong(Long.MAX_VALUE)}",
+                            partnerReferenceId = "${user.id}_${nextLong(Long.MAX_VALUE)}".substring(0..49),
                         )
                     )
                 ).logRequestJson(log)
