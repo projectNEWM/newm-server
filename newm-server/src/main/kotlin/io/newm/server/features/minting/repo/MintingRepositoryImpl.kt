@@ -62,133 +62,137 @@ class MintingRepositoryImpl(
     private val log: Logger by inject { parametersOf(javaClass.simpleName) }
 
     override suspend fun mint(song: Song): MintInfo {
-        val user = userRepository.get(song.ownerId!!)
-        val collabs = collabRepository.getAllBySongId(song.id!!)
-        val cip68Metadata = buildStreamTokenMetadata(song, user, collabs)
-        val streamTokensTotal = 100_000_000L
-        var streamTokensRemaining = 100_000_000L
-        val splitCollabs = collabs.filter { it.royaltyRate!! > BigDecimal.ZERO }.sortedByDescending { it.royaltyRate }
-        log.info { "splitCollabs for songId: ${song.id} - $splitCollabs" }
-        val royaltySum = splitCollabs.sumOf { it.royaltyRate!! }
-        require(royaltySum.compareTo(100.toBigDecimal()) == 0) { "Collaboration royalty rates must sum to 100 but was $royaltySum" }
-        val streamTokenSplits = splitCollabs.mapIndexed { index, collaboration ->
-            val collabUser = userRepository.findByEmail(collaboration.email!!)
-            val splitMultiplier = collaboration.royaltyRate!!.toDouble() / 100.0
-            val amount = if (index < splitCollabs.lastIndex) {
-                // round down to nearest whole token
-                (streamTokensTotal * splitMultiplier).toLong()
-            } else {
-                streamTokensRemaining
+        return cardanoRepository.withLock {
+            val user = userRepository.get(song.ownerId!!)
+            val collabs = collabRepository.getAllBySongId(song.id!!)
+            val cip68Metadata = buildStreamTokenMetadata(song, user, collabs)
+            val streamTokensTotal = 100_000_000L
+            var streamTokensRemaining = 100_000_000L
+            val splitCollabs =
+                collabs.filter { it.royaltyRate!! > BigDecimal.ZERO }.sortedByDescending { it.royaltyRate }
+            log.info { "splitCollabs for songId: ${song.id} - $splitCollabs" }
+            val royaltySum = splitCollabs.sumOf { it.royaltyRate!! }
+            require(royaltySum.compareTo(100.toBigDecimal()) == 0) { "Collaboration royalty rates must sum to 100 but was $royaltySum" }
+            val streamTokenSplits = splitCollabs.mapIndexed { index, collaboration ->
+                val collabUser = userRepository.findByEmail(collaboration.email!!)
+                val splitMultiplier = collaboration.royaltyRate!!.toDouble() / 100.0
+                val amount = if (index < splitCollabs.lastIndex) {
+                    // round down to nearest whole token
+                    (streamTokensTotal * splitMultiplier).toLong()
+                } else {
+                    streamTokensRemaining
+                }
+                streamTokensRemaining -= amount
+                Pair(collabUser.walletAddress!!, amount)
             }
-            streamTokensRemaining -= amount
-            Pair(collabUser.walletAddress!!, amount)
-        }
-        log.info { "Royalty splits for songId: ${song.id} - $streamTokenSplits" }
-        val paymentKey = cardanoRepository.getKey(song.paymentKeyId!!)
-        val mintPriceLovelace = song.mintCostLovelace.toString()
-        val cip68ScriptAddress = configRepository.getString(CONFIG_KEY_MINT_CIP68_SCRIPT_ADDRESS)
-        val cip68Policy = configRepository.getString(CONFIG_KEY_MINT_CIP68_POLICY)
-        val cashRegisterCollectionAmount = configRepository.getLong(CONFIG_KEY_MINT_CASH_REGISTER_COLLECTION_AMOUNT)
-        val cashRegisterMinAmount = configRepository.getLong(CONFIG_KEY_MINT_CASH_REGISTER_MIN_AMOUNT)
-        val paymentUtxo = cardanoRepository.queryLiveUtxos(paymentKey.address)
-            .first { it.lovelace == mintPriceLovelace && it.nativeAssetsCount == 0 }
-        val cashRegisterKey =
-            requireNotNull(cardanoRepository.getKeyByName("cashRegister")) { "cashRegister key not defined!" }
-        val cashRegisterUtxos = cardanoRepository.queryLiveUtxos(cashRegisterKey.address)
-            .filter { it.nativeAssetsCount == 0 }
-            .sortedByDescending { it.lovelace.toLong() }
-            .take(5)
-        val cashRegisterAmount = cashRegisterUtxos.sumOf { it.lovelace.toLong() }
-        require(cashRegisterUtxos.isNotEmpty()) { "cashRegister has no utxos!" }
-        val moneyBoxKey = if (cashRegisterAmount >= cashRegisterCollectionAmount + cashRegisterMinAmount) {
-            // we should collect to the moneybox
-            cardanoRepository.getKeyByName("moneyBox")
-        } else {
-            null
-        }
-        val moneyBoxUtxos = moneyBoxKey?.let {
-            cardanoRepository.queryLiveUtxos(moneyBoxKey.address)
+            log.info { "Royalty splits for songId: ${song.id} - $streamTokenSplits" }
+            val paymentKey = cardanoRepository.getKey(song.paymentKeyId!!)
+            val mintPriceLovelace = song.mintCostLovelace.toString()
+            val cip68ScriptAddress = configRepository.getString(CONFIG_KEY_MINT_CIP68_SCRIPT_ADDRESS)
+            val cip68Policy = configRepository.getString(CONFIG_KEY_MINT_CIP68_POLICY)
+            val cashRegisterCollectionAmount = configRepository.getLong(CONFIG_KEY_MINT_CASH_REGISTER_COLLECTION_AMOUNT)
+            val cashRegisterMinAmount = configRepository.getLong(CONFIG_KEY_MINT_CASH_REGISTER_MIN_AMOUNT)
+            val paymentUtxo = cardanoRepository.queryLiveUtxos(paymentKey.address)
+                .first { it.lovelace == mintPriceLovelace && it.nativeAssetsCount == 0 }
+            val cashRegisterKey =
+                requireNotNull(cardanoRepository.getKeyByName("cashRegister")) { "cashRegister key not defined!" }
+            val cashRegisterUtxos = cardanoRepository.queryLiveUtxos(cashRegisterKey.address)
                 .filter { it.nativeAssetsCount == 0 }
                 .sortedByDescending { it.lovelace.toLong() }
                 .take(5)
-        }
+            val cashRegisterAmount = cashRegisterUtxos.sumOf { it.lovelace.toLong() }
+            require(cashRegisterUtxos.isNotEmpty()) { "cashRegister has no utxos!" }
+            val moneyBoxKey = if (cashRegisterAmount >= cashRegisterCollectionAmount + cashRegisterMinAmount) {
+                // we should collect to the moneybox
+                cardanoRepository.getKeyByName("moneyBox")
+            } else {
+                null
+            }
+            val moneyBoxUtxos = moneyBoxKey?.let {
+                cardanoRepository.queryLiveUtxos(moneyBoxKey.address)
+                    .filter { it.nativeAssetsCount == 0 }
+                    .sortedByDescending { it.lovelace.toLong() }
+                    .take(5)
+            }
 
-        // sort utxos lexicographically smallest to largest to find the one we'll use as the reference utxo
-        val refUtxo = (
-            cashRegisterUtxos + listOf(paymentUtxo) + (moneyBoxUtxos ?: emptyList())
-            ).sortedWith { o1, o2 ->
-            o1.hash.compareTo(o2.hash).let { if (it == 0) o1.ix.compareTo(o2.ix) else it }
-        }.first()
-        val (refTokenName, fracTokenName) = calculateTokenNames(refUtxo)
-        val collateralKey =
-            requireNotNull(cardanoRepository.getKeyByName("collateral")) { "collateral key not defined!" }
-        val collateralUtxo = requireNotNull(
-            cardanoRepository.queryLiveUtxos(collateralKey.address)
-                .filter { it.nativeAssetsCount == 0 }
-                .maxByOrNull { it.lovelace.toLong() }
-        ) { "collateral utxo not found!" }
-        val starterTokenUtxoReference =
-            configRepository.getString(CONFIG_KEY_MINT_STARTER_TOKEN_UTXO_REFERENCE).toReferenceUtxo()
-        val scriptUtxoReference =
-            configRepository.getString(CONFIG_KEY_MINT_SCRIPT_UTXO_REFERENCE).toReferenceUtxo()
+            // sort utxos lexicographically smallest to largest to find the one we'll use as the reference utxo
+            val refUtxo = (
+                cashRegisterUtxos + listOf(paymentUtxo) + (moneyBoxUtxos ?: emptyList())
+                ).sortedWith { o1, o2 ->
+                o1.hash.compareTo(o2.hash).let { if (it == 0) o1.ix.compareTo(o2.ix) else it }
+            }.first()
+            val (refTokenName, fracTokenName) = calculateTokenNames(refUtxo)
+            val collateralKey =
+                requireNotNull(cardanoRepository.getKeyByName("collateral")) { "collateral key not defined!" }
+            val collateralUtxo = requireNotNull(
+                cardanoRepository.queryLiveUtxos(collateralKey.address)
+                    .filter { it.nativeAssetsCount == 0 }
+                    .maxByOrNull { it.lovelace.toLong() }
+            ) { "collateral utxo not found!" }
+            val starterTokenUtxoReference =
+                configRepository.getString(CONFIG_KEY_MINT_STARTER_TOKEN_UTXO_REFERENCE).toReferenceUtxo()
+            val scriptUtxoReference =
+                configRepository.getString(CONFIG_KEY_MINT_SCRIPT_UTXO_REFERENCE).toReferenceUtxo()
 
-        val signingKeys = listOfNotNull(cashRegisterKey, moneyBoxKey, paymentKey, collateralKey)
+            val signingKeys = listOfNotNull(cashRegisterKey, moneyBoxKey, paymentKey, collateralKey)
 
-        var transactionBuilderResponse =
-            buildMintingTransaction(
-                paymentUtxo = paymentUtxo,
-                cashRegisterUtxos = cashRegisterUtxos,
-                changeAddress = cashRegisterKey.address,
-                moneyBoxUtxos = moneyBoxUtxos,
-                moneyBoxAddress = moneyBoxKey?.address,
-                cashRegisterCollectionAmount = cashRegisterCollectionAmount,
-                collateralUtxo = collateralUtxo,
-                collateralReturnAddress = collateralKey.address,
-                cip68ScriptAddress = cip68ScriptAddress,
-                cip68Metadata = cip68Metadata,
-                cip68Policy = cip68Policy,
-                refTokenName = refTokenName,
-                fracTokenName = fracTokenName,
-                streamTokenSplits = streamTokenSplits,
-                requiredSigners = signingKeys,
-                starterTokenUtxoReference = starterTokenUtxoReference,
-                mintScriptUtxoReference = scriptUtxoReference,
-                signatures = signTransactionDummy(signingKeys.size)
-            )
+            var transactionBuilderResponse =
+                buildMintingTransaction(
+                    paymentUtxo = paymentUtxo,
+                    cashRegisterUtxos = cashRegisterUtxos,
+                    changeAddress = cashRegisterKey.address,
+                    moneyBoxUtxos = moneyBoxUtxos,
+                    moneyBoxAddress = moneyBoxKey?.address,
+                    cashRegisterCollectionAmount = cashRegisterCollectionAmount,
+                    collateralUtxo = collateralUtxo,
+                    collateralReturnAddress = collateralKey.address,
+                    cip68ScriptAddress = cip68ScriptAddress,
+                    cip68Metadata = cip68Metadata,
+                    cip68Policy = cip68Policy,
+                    refTokenName = refTokenName,
+                    fracTokenName = fracTokenName,
+                    streamTokenSplits = streamTokenSplits,
+                    requiredSigners = signingKeys,
+                    starterTokenUtxoReference = starterTokenUtxoReference,
+                    mintScriptUtxoReference = scriptUtxoReference,
+                    signatures = signTransactionDummy(signingKeys.size)
+                )
 
-        val transactionIdBytes = transactionBuilderResponse.transactionId.hexToByteArray()
+            val transactionIdBytes = transactionBuilderResponse.transactionId.hexToByteArray()
 
-        // get signatures for this transaction
-        transactionBuilderResponse =
-            buildMintingTransaction(
-                paymentUtxo = paymentUtxo,
-                cashRegisterUtxos = cashRegisterUtxos,
-                changeAddress = cashRegisterKey.address,
-                moneyBoxUtxos = moneyBoxUtxos,
-                moneyBoxAddress = moneyBoxKey?.address,
-                cashRegisterCollectionAmount = cashRegisterCollectionAmount,
-                collateralUtxo = collateralUtxo,
-                collateralReturnAddress = collateralKey.address,
-                cip68ScriptAddress = cip68ScriptAddress,
-                cip68Metadata = cip68Metadata,
-                cip68Policy = cip68Policy,
-                refTokenName = refTokenName,
-                fracTokenName = fracTokenName,
-                streamTokenSplits = streamTokenSplits,
-                requiredSigners = signingKeys,
-                starterTokenUtxoReference = starterTokenUtxoReference,
-                mintScriptUtxoReference = scriptUtxoReference,
-                signatures = signTransaction(transactionIdBytes, signingKeys),
-            )
-        val submitTransactionResponse = cardanoRepository.submitTransaction(transactionBuilderResponse.transactionCbor)
-        return if (submitTransactionResponse.result == "MsgAcceptTx") {
-            MintInfo(
-                transactionId = submitTransactionResponse.txId,
-                policyId = cip68Policy,
-                assetName = fracTokenName,
-            )
-        } else {
-            throw IllegalStateException(submitTransactionResponse.result)
+            // get signatures for this transaction
+            transactionBuilderResponse =
+                buildMintingTransaction(
+                    paymentUtxo = paymentUtxo,
+                    cashRegisterUtxos = cashRegisterUtxos,
+                    changeAddress = cashRegisterKey.address,
+                    moneyBoxUtxos = moneyBoxUtxos,
+                    moneyBoxAddress = moneyBoxKey?.address,
+                    cashRegisterCollectionAmount = cashRegisterCollectionAmount,
+                    collateralUtxo = collateralUtxo,
+                    collateralReturnAddress = collateralKey.address,
+                    cip68ScriptAddress = cip68ScriptAddress,
+                    cip68Metadata = cip68Metadata,
+                    cip68Policy = cip68Policy,
+                    refTokenName = refTokenName,
+                    fracTokenName = fracTokenName,
+                    streamTokenSplits = streamTokenSplits,
+                    requiredSigners = signingKeys,
+                    starterTokenUtxoReference = starterTokenUtxoReference,
+                    mintScriptUtxoReference = scriptUtxoReference,
+                    signatures = signTransaction(transactionIdBytes, signingKeys),
+                )
+            val submitTransactionResponse =
+                cardanoRepository.submitTransaction(transactionBuilderResponse.transactionCbor)
+            return@withLock if (submitTransactionResponse.result == "MsgAcceptTx") {
+                MintInfo(
+                    transactionId = submitTransactionResponse.txId,
+                    policyId = cip68Policy,
+                    assetName = fracTokenName,
+                )
+            } else {
+                throw IllegalStateException(submitTransactionResponse.result)
+            }
         }
     }
 

@@ -15,6 +15,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.koin.core.parameter.parametersOf
+import org.quartz.DisallowConcurrentExecution
 import org.quartz.Job
 import org.quartz.JobExecutionContext
 import org.slf4j.Logger
@@ -22,6 +23,7 @@ import java.time.LocalDateTime
 import java.time.ZoneOffset
 import kotlin.coroutines.cancellation.CancellationException
 
+@DisallowConcurrentExecution
 class ArweaveCheckAndFundJob : Job {
     private val log: Logger by inject { parametersOf(javaClass.simpleName) }
     private val environment: ApplicationEnvironment by inject()

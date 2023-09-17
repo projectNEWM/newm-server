@@ -86,7 +86,6 @@ class QuartzSchedulerDaemon : Daemon {
                             .build()
                         val trigger = newTrigger()
                             .withIdentity(triggerKey)
-                            .startNow()
                             .withSchedule(cronSchedule(evearaCronSyncSchedule))
                             .build()
                         scheduler.scheduleJob(jobDetail, trigger)
@@ -102,7 +101,6 @@ class QuartzSchedulerDaemon : Daemon {
                             val trigger = newTrigger()
                                 .withIdentity(triggerKey)
                                 .withSchedule(cronSchedule(evearaCronSyncSchedule))
-                                .startNow()
                                 .build()
 
                             scheduler.scheduleJob(jobDetail, trigger)
@@ -123,8 +121,8 @@ class QuartzSchedulerDaemon : Daemon {
         try {
             val jobKey = JobKey(ARWEAVE_CHECK_AND_FUND_JOB_KEY, ARWEAVE_CHECK_AND_FUND_JOB_GROUP)
             if (scheduler.checkExists(jobKey)) {
-                log.info { "Deleting existing job for $jobKey" }
-                scheduler.deleteJob(jobKey)
+                log.info { "Found existing job for $jobKey" }
+                return
             }
             val triggerKey = TriggerKey("${jobKey.name}_trigger", ARWEAVE_CHECK_AND_FUND_JOB_GROUP)
             log.info { "Creating new job for $jobKey" }

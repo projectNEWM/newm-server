@@ -10,6 +10,7 @@ import io.newm.shared.ktx.info
 import io.newm.shared.ktx.toUUID
 import kotlinx.coroutines.runBlocking
 import org.koin.core.parameter.parametersOf
+import org.quartz.DisallowConcurrentExecution
 import org.quartz.Job
 import org.quartz.JobExecutionContext
 import org.quartz.JobKey
@@ -17,6 +18,7 @@ import org.slf4j.Logger
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 
+@DisallowConcurrentExecution
 class EvearaReleaseStatusJob : Job {
     private val log: Logger by inject { parametersOf(javaClass.simpleName) }
     private val distributionRepository: DistributionRepository by inject()
