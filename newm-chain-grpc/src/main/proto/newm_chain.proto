@@ -6,25 +6,27 @@ option java_package = "io.newm.chain.grpc";
 package newmchain;
 
 service NewmChain {
-  rpc SubmitTransaction (SubmitTransactionRequest) returns (SubmitTransactionResponse) {}
-  rpc QueryCurrentEpoch (QueryCurrentEpochRequest) returns (QueryCurrentEpochResponse) {}
-  rpc QueryUtxos (QueryUtxosRequest) returns (QueryUtxosResponse) {}
-  rpc QueryLiveUtxos (QueryUtxosRequest) returns (QueryUtxosResponse) {}
-  rpc QueryUtxosByOutputRef (QueryUtxosOutputRefRequest) returns (QueryUtxosResponse) {}
-  rpc QueryUtxosByStakeAddress (QueryUtxosRequest) returns (QueryUtxosResponse) {}
-  rpc QueryDatumByHash (QueryDatumByHashRequest) returns (QueryDatumByHashResponse) {}
-  rpc QueryTransactionConfirmationCount (QueryTransactionConfirmationCountRequest) returns (QueryTransactionConfirmationCountResponse) {}
-  rpc MonitorAddress (MonitorAddressRequest) returns (stream MonitorAddressResponse) {}
-  rpc IsMainnet (IsMainnetRequest) returns (IsMainnetResponse) {}
-  rpc MonitorPaymentAddress (MonitorPaymentAddressRequest) returns (MonitorPaymentAddressResponse) {}
-  rpc TransactionBuilder (TransactionBuilderRequest) returns (TransactionBuilderResponse) {}
-  rpc MonitorNativeAssets (MonitorNativeAssetsRequest) returns (stream MonitorNativeAssetsResponse) {}
-  rpc CalculateMinUtxoForOutput (OutputUtxo) returns (OutputUtxo) {}
-  rpc SnapshotNativeAssets (SnapshotNativeAssetsRequest) returns (SnapshotNativeAssetsResponse) {}
-  rpc DeriveWalletAddresses (WalletRequest) returns (DeriveWalletAddressesResponse) {}
-  rpc QueryWalletControlledLiveUtxos (WalletRequest) returns (QueryWalletControlledUtxosResponse) {}
-  rpc QueryPublicKeyHashByOutputRef (QueryUtxosOutputRefRequest) returns (QueryPublicKeyHashResponse) {}
-  rpc QueryUtxoByNativeAsset (QueryByNativeAssetRequest) returns (Utxo) {}
+  rpc SubmitTransaction (SubmitTransactionRequest) returns (SubmitTransactionResponse);
+  rpc QueryCurrentEpoch (QueryCurrentEpochRequest) returns (QueryCurrentEpochResponse);
+  rpc QueryUtxos (QueryUtxosRequest) returns (QueryUtxosResponse);
+  rpc QueryLiveUtxos (QueryUtxosRequest) returns (QueryUtxosResponse);
+  rpc QueryUtxosByOutputRef (QueryUtxosOutputRefRequest) returns (QueryUtxosResponse);
+  rpc QueryUtxosByStakeAddress (QueryUtxosRequest) returns (QueryUtxosResponse);
+  rpc QueryDatumByHash (QueryDatumByHashRequest) returns (QueryDatumByHashResponse);
+  rpc QueryTransactionConfirmationCount (QueryTransactionConfirmationCountRequest) returns (QueryTransactionConfirmationCountResponse);
+  rpc MonitorAddress (MonitorAddressRequest) returns (stream MonitorAddressResponse);
+  rpc IsMainnet (IsMainnetRequest) returns (IsMainnetResponse);
+  rpc MonitorPaymentAddress (MonitorPaymentAddressRequest) returns (MonitorPaymentAddressResponse);
+  rpc TransactionBuilder (TransactionBuilderRequest) returns (TransactionBuilderResponse);
+  rpc MonitorNativeAssets (MonitorNativeAssetsRequest) returns (stream MonitorNativeAssetsResponse);
+  rpc CalculateMinUtxoForOutput (OutputUtxo) returns (OutputUtxo);
+  rpc SnapshotNativeAssets (SnapshotNativeAssetsRequest) returns (SnapshotNativeAssetsResponse);
+  rpc DeriveWalletAddresses (WalletRequest) returns (DeriveWalletAddressesResponse);
+  rpc QueryWalletControlledLiveUtxos (WalletRequest) returns (QueryWalletControlledUtxosResponse);
+  rpc QueryPublicKeyHashByOutputRef (QueryUtxosOutputRefRequest) returns (QueryPublicKeyHashResponse);
+  rpc QueryUtxoByNativeAsset (QueryByNativeAssetRequest) returns (Utxo);
+  rpc AcquireMutex (AcquireMutexRequest) returns (MutexResponse);
+  rpc ReleaseMutex (ReleaseMutexRequest) returns (MutexResponse);
 }
 
 message SubmitTransactionRequest {
@@ -335,4 +337,19 @@ message AddressUtxos {
 
 message QueryPublicKeyHashResponse {
   optional string public_key_hash = 1;
+}
+
+message AcquireMutexRequest {
+  string mutex_name = 1; // name of the mutex to acquire
+  uint64 acquire_wait_timeout_ms = 2; // max time to wait to acquire the lock
+  uint64 lock_expiry_ms = 3; // max time to hold the lock
+}
+
+message MutexResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message ReleaseMutexRequest {
+  string mutex_name = 1; // name of the mutex to release
 }

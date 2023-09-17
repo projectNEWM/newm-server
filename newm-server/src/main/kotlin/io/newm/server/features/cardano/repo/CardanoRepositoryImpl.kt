@@ -16,6 +16,7 @@ import io.newm.chain.grpc.SubmitTransactionResponse
 import io.newm.chain.grpc.TransactionBuilderRequestKt
 import io.newm.chain.grpc.TransactionBuilderResponse
 import io.newm.chain.grpc.Utxo
+import io.newm.chain.grpc.acquireMutexRequest
 import io.newm.chain.grpc.datumOrNull
 import io.newm.chain.grpc.listOrNull
 import io.newm.chain.grpc.mapItemValueOrNull
@@ -25,6 +26,7 @@ import io.newm.chain.grpc.outputUtxo
 import io.newm.chain.grpc.queryByNativeAssetRequest
 import io.newm.chain.grpc.queryUtxosOutputRefRequest
 import io.newm.chain.grpc.queryUtxosRequest
+import io.newm.chain.grpc.releaseMutexRequest
 import io.newm.chain.grpc.submitTransactionRequest
 import io.newm.chain.util.Constants
 import io.newm.chain.util.b64ToByteArray
@@ -52,6 +54,7 @@ import java.util.UUID
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
+import kotlin.time.Duration.Companion.minutes
 
 internal class CardanoRepositoryImpl(
     private val client: NewmChainCoroutineStub,
@@ -219,6 +222,25 @@ internal class CardanoRepositoryImpl(
         }
     }
 
+    override suspend fun <T> withLock(block: suspend () -> T): T {
+        try {
+            client.acquireMutex(
+                acquireMutexRequest {
+                    mutexName = MUTEX_NAME
+                    acquireWaitTimeoutMs = 30.minutes.inWholeMilliseconds
+                    lockExpiryMs = 1.minutes.inWholeMilliseconds
+                }
+            )
+            return block()
+        } finally {
+            client.releaseMutex(
+                releaseMutexRequest {
+                    mutexName = MUTEX_NAME
+                }
+            )
+        }
+    }
+
     private suspend fun encryptKmsBytes(bytes: ByteArray): String {
         val plaintextBuffer = DefaultByteBufferPool.borrow()
         try {
@@ -302,5 +324,9 @@ internal class CardanoRepositoryImpl(
             _bytesEncryptor = Encryptors.stronger(password, salt)
             _bytesEncryptor!!
         }
+    }
+
+    companion object {
+        const val MUTEX_NAME = "newm-server"
     }
 }

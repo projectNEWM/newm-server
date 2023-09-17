@@ -24,4 +24,5 @@ interface CardanoRepository {
     suspend fun saveEncryptionParams(encryptionRequest: EncryptionRequest)
     suspend fun queryStreamTokenMinUtxo(): Long
     suspend fun queryAdaUSDPrice(): Long
+    suspend fun <T> withLock(block: suspend () -> T): T
 }
