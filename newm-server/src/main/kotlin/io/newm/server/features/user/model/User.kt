@@ -75,6 +75,6 @@ data class User(
             nickname: String?,
             firstName: String?,
             lastName: String?
-        ): String = nickname ?: "${firstName.orEmpty()} ${lastName.orEmpty()}".trim()
+        ): String = if (nickname.isNullOrBlank()) "${firstName.orEmpty()} ${lastName.orEmpty()}".trim() else nickname
     }
 }
