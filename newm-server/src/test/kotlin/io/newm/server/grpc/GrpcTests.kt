@@ -12,6 +12,7 @@ import io.newm.chain.grpc.QueryTransactionConfirmationCountResponse
 import io.newm.chain.grpc.QueryUtxosResponse
 import io.newm.chain.grpc.SnapshotNativeAssetsResponse
 import io.newm.chain.grpc.SubmitTransactionResponse
+import io.newm.chain.grpc.acquireMutexRequest
 import io.newm.chain.grpc.datumOrNull
 import io.newm.chain.grpc.monitorAddressRequest
 import io.newm.chain.grpc.monitorNativeAssetsRequest
@@ -23,6 +24,7 @@ import io.newm.chain.grpc.queryDatumByHashRequest
 import io.newm.chain.grpc.queryTransactionConfirmationCountRequest
 import io.newm.chain.grpc.queryUtxosOutputRefRequest
 import io.newm.chain.grpc.queryUtxosRequest
+import io.newm.chain.grpc.releaseMutexRequest
 import io.newm.chain.grpc.snapshotNativeAssetsRequest
 import io.newm.chain.grpc.submitTransactionRequest
 import io.newm.chain.grpc.walletRequest
@@ -341,5 +343,31 @@ class GrpcTests {
         val response = client.queryUtxoByNativeAsset(request)
         println("response: $response")
         assertThat(response.datumOrNull).isNotNull()
+    }
+
+    @Test
+    @Disabled
+    fun `test mutex`() = runBlocking {
+        val client = buildClient()
+        try {
+            client.acquireMutex(
+                acquireMutexRequest {
+                    mutexName = "test"
+                    this.lockExpiryMs = 10000
+                    this.acquireWaitTimeoutMs = 10000
+                }
+            )
+
+            val request = snapshotNativeAssetsRequest {
+                policy = "769c4c6e9bc3ba5406b9b89fb7beb6819e638ff2e2de63f008d5bcff"
+                name = "744e45574d" // tNEWM
+            }
+            val response = client.snapshotNativeAssets(request)
+            assertThat(response).isInstanceOf(SnapshotNativeAssetsResponse::class.java)
+            val stakeAddressToAmountMap = response.snapshotEntriesList.associate { it.stakeAddress to it.amount }
+            assertThat(stakeAddressToAmountMap.size).isEqualTo(4)
+        } finally {
+            client.releaseMutex(releaseMutexRequest { mutexName = "test" })
+        }
     }
 }

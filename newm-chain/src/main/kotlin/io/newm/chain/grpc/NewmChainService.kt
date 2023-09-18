@@ -43,6 +43,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import org.koin.core.parameter.parametersOf
 import org.koin.core.qualifier.named
 import org.slf4j.Logger
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
@@ -511,51 +512,66 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
     }
 
     private val mutexMap = ConcurrentHashMap<String, Mutex>()
+    private val mutexOwnerMap = ConcurrentHashMap<String, UUID>()
     private val mutexExpiryJobMap = ConcurrentHashMap<String, Job>()
 
     override suspend fun acquireMutex(request: AcquireMutexRequest): MutexResponse {
-        val mutex = mutexMap.getOrPut(request.mutexName) { Mutex() }
-        val locked = withTimeoutOrNull(request.acquireWaitTimeoutMs) {
-            mutex.lock(request.mutexName)
-            true
-        } ?: false
+        try {
+            val mutex = mutexMap.getOrPut(request.mutexName) { Mutex() }
+            val locked = withTimeoutOrNull(request.acquireWaitTimeoutMs) {
+                val owner = mutexOwnerMap.getOrPut(request.mutexName) { UUID.randomUUID() }
+                mutex.lock(owner)
+                true
+            } ?: false
 
-        return if (locked) {
-            mutexExpiryJobMap[request.mutexName] = CoroutineScope(context).launch {
-                delay(request.lockExpiryMs)
-                // There's a highly-unlikely race condition with unlocking the mutex here.
-                // If the mutex is also unlocked by the releaseMutex request at the same moment, then this will throw an exception.
-                mutex.unlock(request.mutexName)
-                mutexExpiryJobMap.remove(request.mutexName)
+            return if (locked) {
+                mutexExpiryJobMap[request.mutexName] = CoroutineScope(context).launch {
+                    delay(request.lockExpiryMs)
+                    // There's a highly-unlikely race condition with unlocking the mutex here.
+                    // If the mutex is also unlocked by the releaseMutex request at the same moment, then this will throw an exception.
+                    mutex.unlock(request.mutexName)
+                    mutexExpiryJobMap.remove(request.mutexName)
+                }
+                mutexResponse {
+                    success = true
+                    message = "Mutex acquired!"
+                }
+            } else {
+                mutexResponse {
+                    success = false
+                    message = "Mutex acquire timeout!"
+                }
             }
-            mutexResponse {
-                success = true
-                message = "Mutex acquired!"
-            }
-        } else {
-            mutexResponse {
-                success = false
-                message = "Mutex acquire timeout!"
-            }
+        } catch (e: Throwable) {
+            Sentry.addBreadcrumb(request.toString(), "NewmChainService")
+            log.error("acquireMutex error!", e)
+            throw e
         }
     }
 
     override suspend fun releaseMutex(request: ReleaseMutexRequest): MutexResponse {
-        val mutex = mutexMap[request.mutexName]
-        return if (mutex != null) {
-            mutexExpiryJobMap.remove(request.mutexName)?.cancel()
-            // There's a highly-unlikely race condition with unlocking the mutex here.
-            // If the mutex is also unlocked by the expiry job at the same moment, then this will throw an exception.
-            mutex.unlock(request.mutexName)
-            mutexResponse {
-                success = true
-                message = "Mutex released!"
+        try {
+            val mutex = mutexMap[request.mutexName]
+            return if (mutex != null) {
+                mutexExpiryJobMap.remove(request.mutexName)?.cancel()
+                // There's a highly-unlikely race condition with unlocking the mutex here.
+                // If the mutex is also unlocked by the expiry job at the same moment, then this will throw an exception.
+                val owner = mutexOwnerMap.remove(request.mutexName)
+                mutex.unlock(owner)
+                mutexResponse {
+                    success = true
+                    message = "Mutex released!"
+                }
+            } else {
+                mutexResponse {
+                    success = false
+                    message = "Mutex not found!"
+                }
             }
-        } else {
-            mutexResponse {
-                success = false
-                message = "Mutex not found!"
-            }
+        } catch (e: Throwable) {
+            Sentry.addBreadcrumb(request.toString(), "NewmChainService")
+            log.error("releaseMutex error!", e)
+            throw e
         }
     }
 }
