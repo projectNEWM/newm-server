@@ -453,6 +453,7 @@ class TransactionBuilder(
                         val index = changePolicyNativeAssets.indexOf(changeNativeAsset)
                         changePolicyNativeAssets[index] =
                             changeNativeAsset.toBuilder().setAmount(amountRemaining.toString()).build()
+                        changeNativeAssetMap[nativeAsset.policy] = changePolicyNativeAssets
                     }
                 }
             }

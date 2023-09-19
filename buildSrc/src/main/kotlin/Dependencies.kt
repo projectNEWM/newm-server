@@ -97,9 +97,9 @@ object Dependencies {
     }
 
     object Koin {
-        private const val VERSION = "3.5.0"
-        private const val KTOR_VERSION = "3.5.0"
-        private const val TEST_JUNIT_VERSION = "3.5.0"
+        private const val VERSION = "3.4.3"
+        private const val KTOR_VERSION = "3.4.3"
+        private const val TEST_JUNIT_VERSION = "3.4.3"
 
         const val KTOR = "io.insert-koin:koin-ktor:$KTOR_VERSION"
         const val TEST = "io.insert-koin:koin-test:$VERSION"
