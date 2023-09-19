@@ -1323,7 +1323,7 @@ class EvearaDistributionRepositoryImpl(
             log.info { "Found existing distribution track ${mutableSong.isrc} with id ${existingTrack.trackId}" }
             val response = deleteTrack(user, existingTrack.trackId)
             log.info { "Deleted distribution track ${mutableSong.isrc} with id ${existingTrack.trackId}: ${response.message}" }
-            mutableSong = mutableSong.copy(distributionTrackId = null)
+            mutableSong = mutableSong.copy(distributionTrackId = null, isrc = null)
             songRepository.update(mutableSong.id!!, mutableSong)
         }
 
