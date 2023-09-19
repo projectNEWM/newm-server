@@ -5,6 +5,7 @@ import io.newm.server.features.song.model.SongBarcodeType
 import java.time.LocalDate
 
 val testSong1 = Song(
+    archived = false,
     title = "Test Song 1",
     genres = listOf("Genre 1.1", "Genre 1.2"),
     moods = listOf("Mood 1.1", "Mood 1.2"),
@@ -29,6 +30,7 @@ val testSong1 = Song(
 )
 
 val testSong2 = Song(
+    archived = true,
     title = "Test Song 2",
     genres = listOf("Genre 2.1", "Genre 2.2"),
     moods = listOf("Mood 2.1", "Mood 2.2"),

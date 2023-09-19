@@ -87,6 +87,7 @@ internal class SongRepositoryImpl(
         song.checkFieldLengths()
         return transaction {
             SongEntity.new {
+                archived = song.archived ?: false
                 this.ownerId = EntityID(ownerId, UserTable)
                 this.title = title
                 this.genres = genres.toTypedArray()
@@ -120,6 +121,7 @@ internal class SongRepositoryImpl(
             val entity = SongEntity[songId]
             requesterId?.let { entity.checkRequester(it) }
             with(song) {
+                archived?.let { entity.archived = it }
                 title?.let { entity.title = it }
                 genres?.let { entity.genres = it.toTypedArray() }
                 moods?.let { entity.moods = it.toTypedArray() }
