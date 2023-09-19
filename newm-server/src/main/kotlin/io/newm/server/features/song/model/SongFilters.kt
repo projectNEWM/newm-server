@@ -1,6 +1,7 @@
 package io.newm.server.features.song.model
 
 import io.ktor.server.application.ApplicationCall
+import io.newm.server.ktx.archived
 import io.newm.server.ktx.genres
 import io.newm.server.ktx.ids
 import io.newm.server.ktx.moods
@@ -15,6 +16,7 @@ import java.time.LocalDateTime
 import java.util.UUID
 
 data class SongFilters(
+    val archived: Boolean?,
     val sortOrder: SortOrder?,
     val olderThan: LocalDateTime?,
     val newerThan: LocalDateTime?,
@@ -30,4 +32,4 @@ val ApplicationCall.mintingStatuses: List<MintingStatus>?
     get() = parameters["mintingStatuses"]?.splitAndTrim()?.map(MintingStatus::valueOf)
 
 val ApplicationCall.songFilters: SongFilters
-    get() = SongFilters(sortOrder, olderThan, newerThan, ids, ownerIds, genres, moods, mintingStatuses, phrase)
+    get() = SongFilters(archived, sortOrder, olderThan, newerThan, ids, ownerIds, genres, moods, mintingStatuses, phrase)

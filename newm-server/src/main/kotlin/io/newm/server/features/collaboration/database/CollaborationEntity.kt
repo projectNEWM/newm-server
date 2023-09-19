@@ -67,7 +67,8 @@ class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                 onColumn = { songId },
                 otherColumn = { id }
             ).select {
-                (SongTable.ownerId eq ownerId) and
+                (SongTable.archived eq false) and
+                    (SongTable.ownerId eq ownerId) and
                     (CollaborationTable.email.lowerCase() eq email.lowercase()) and
                     (CollaborationTable.status eq status)
             }.any()
@@ -76,10 +77,11 @@ class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         fun all(userId: UUID, filters: CollaborationFilters): SizedIterable<CollaborationEntity> {
             val inbound = filters.inbound == true
             val ops = mutableListOf<Op<Boolean>>()
-            ops += if (inbound) {
-                CollaborationTable.email.lowerCase() eq UserEntity[userId].email.lowercase()
+            if (inbound) {
+                ops += CollaborationTable.email.lowerCase() eq UserEntity[userId].email.lowercase()
             } else {
-                SongTable.ownerId eq userId
+                ops += SongTable.archived eq false
+                ops += SongTable.ownerId eq userId
             }
             with(filters) {
                 olderThan?.let {
@@ -121,6 +123,7 @@ class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
 
         fun collaborators(userId: UUID, filters: CollaboratorFilters): SizedIterable<Pair<String, Long>> {
             val ops = mutableListOf<Op<Boolean>>()
+            ops += SongTable.archived eq false
             ops += SongTable.ownerId eq userId
             with(filters) {
                 if (excludeMe == true) {

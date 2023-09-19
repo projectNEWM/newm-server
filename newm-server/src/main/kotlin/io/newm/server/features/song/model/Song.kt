@@ -13,6 +13,7 @@ import java.util.UUID
 data class Song(
     @Serializable(with = UUIDSerializer::class)
     val id: UUID? = null,
+    val archived: Boolean? = null,
     @Serializable(with = UUIDSerializer::class)
     val ownerId: UUID? = null,
     @Serializable(with = LocalDateTimeSerializer::class)

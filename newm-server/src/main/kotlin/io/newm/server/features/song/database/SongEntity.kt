@@ -15,6 +15,7 @@ import org.jetbrains.exposed.sql.AndOp
 import org.jetbrains.exposed.sql.Op
 import org.jetbrains.exposed.sql.SizedIterable
 import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
@@ -30,6 +31,7 @@ import java.time.LocalDateTime
 import java.util.UUID
 
 class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
+    var archived: Boolean by SongTable.archived
     val createdAt: LocalDateTime by SongTable.createdAt
     var ownerId: EntityID<UUID> by SongTable.ownerId
     var title: String by SongTable.title
@@ -76,6 +78,7 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
 
     fun toModel(): Song = Song(
         id = id.value,
+        archived = archived,
         ownerId = ownerId.value,
         createdAt = createdAt,
         title = title,
@@ -140,6 +143,7 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
 
         private fun SongFilters.toOps(): List<Op<Boolean>> {
             val ops = mutableListOf<Op<Boolean>>()
+            ops += SongTable.archived eq (archived ?: false)
             olderThan?.let {
                 ops += SongTable.createdAt less it
             }

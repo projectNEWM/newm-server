@@ -19,6 +19,7 @@ import java.time.LocalDateTime
 import java.util.UUID
 
 object SongTable : UUIDTable(name = "songs") {
+    val archived: Column<Boolean> = bool("archived").default(false)
     val createdAt: Column<LocalDateTime> = datetime("created_at").defaultExpression(CurrentDateTime)
     val ownerId: Column<EntityID<UUID>> = reference("owner_id", UserTable, onDelete = ReferenceOption.CASCADE)
     val title: Column<String> = text("title")

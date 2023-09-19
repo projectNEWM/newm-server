@@ -78,6 +78,7 @@ class SongRoutesTests : BaseApplicationTests() {
         // Read Song directly from database & verify it
         val song = transaction { SongEntity[songId] }.toModel()
         assertThat(song.id).isEqualTo(songId)
+        assertThat(song.archived).isEqualTo(false)
         assertThat(song.ownerId).isEqualTo(testUserId)
         assertThat(song.createdAt).isAtLeast(startTime)
         assertThat(song.title).isEqualTo(testSong1.title)
@@ -168,6 +169,107 @@ class SongRoutesTests : BaseApplicationTests() {
                 parameter("offset", offset)
                 parameter("limit", limit)
                 parameter("sortOrder", "desc")
+            }
+            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+            val songs = response.body<List<Song>>()
+            if (songs.isEmpty()) break
+            actualSongs += songs
+            offset += limit
+        }
+
+        // verify all
+        assertThat(actualSongs).isEqualTo(expectedSongs)
+    }
+
+    @Test
+    fun testGetNonArchivedSongsImplicitly() = runBlocking {
+        // Add Songs directly into database
+        val allSongs = mutableListOf<Song>()
+        for (offset in 0..30) {
+            allSongs += addSongToDatabase(offset, archived = (offset % 2) == 0)
+        }
+
+        // filter out archived
+        val expectedSongs = allSongs.filter { it.archived == false }
+
+        // Get all songs forcing pagination
+        var offset = 0
+        val limit = 5
+        val actualSongs = mutableListOf<Song>()
+        while (true) {
+            val response = client.get("v1/songs") {
+                bearerAuth(testUserToken)
+                accept(ContentType.Application.Json)
+                parameter("offset", offset)
+                parameter("limit", limit)
+            }
+            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+            val songs = response.body<List<Song>>()
+            if (songs.isEmpty()) break
+            actualSongs += songs
+            offset += limit
+        }
+
+        // verify all
+        assertThat(actualSongs).isEqualTo(expectedSongs)
+    }
+
+    @Test
+    fun testGetNonArchivedSongsExplicitly() = runBlocking {
+        // Add Songs directly into database
+        val allSongs = mutableListOf<Song>()
+        for (offset in 0..30) {
+            allSongs += addSongToDatabase(offset, archived = (offset % 2) == 0)
+        }
+
+        // filter out archived
+        val expectedSongs = allSongs.filter { it.archived == false }
+
+        // Get all songs forcing pagination
+        var offset = 0
+        val limit = 5
+        val actualSongs = mutableListOf<Song>()
+        while (true) {
+            val response = client.get("v1/songs") {
+                bearerAuth(testUserToken)
+                accept(ContentType.Application.Json)
+                parameter("offset", offset)
+                parameter("limit", limit)
+                parameter("archived", false)
+            }
+            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+            val songs = response.body<List<Song>>()
+            if (songs.isEmpty()) break
+            actualSongs += songs
+            offset += limit
+        }
+
+        // verify all
+        assertThat(actualSongs).isEqualTo(expectedSongs)
+    }
+
+    @Test
+    fun testGetArchivedSongs() = runBlocking {
+        // Add Songs directly into database
+        val allSongs = mutableListOf<Song>()
+        for (offset in 0..30) {
+            allSongs += addSongToDatabase(offset, archived = (offset % 2) == 0)
+        }
+
+        // filter out non-archived
+        val expectedSongs = allSongs.filter { it.archived == true }
+
+        // Get all songs forcing pagination
+        var offset = 0
+        val limit = 5
+        val actualSongs = mutableListOf<Song>()
+        while (true) {
+            val response = client.get("v1/songs") {
+                bearerAuth(testUserToken)
+                accept(ContentType.Application.Json)
+                parameter("offset", offset)
+                parameter("limit", limit)
+                parameter("archived", true)
             }
             assertThat(response.status).isEqualTo(HttpStatusCode.OK)
             val songs = response.body<List<Song>>()
@@ -481,6 +583,7 @@ class SongRoutesTests : BaseApplicationTests() {
         // Read Song directly from database & verify it
         val song2 = transaction { SongEntity[songId] }.toModel()
         assertThat(song2.id).isEqualTo(songId)
+        assertThat(song2.archived).isEqualTo(testSong2.archived)
         assertThat(song2.ownerId).isEqualTo(testUserId)
         assertThat(song2.createdAt).isAtLeast(song1.createdAt)
         assertThat(song2.title).isEqualTo(testSong2.title)
@@ -794,6 +897,7 @@ class SongRoutesTests : BaseApplicationTests() {
 fun addSongToDatabase(
     offset: Int = 0,
     ownerId: UUID? = null,
+    archived: Boolean = false,
     phrase: String? = null,
     init: (SongEntity.() -> Unit)? = null
 ): Song {
@@ -817,6 +921,7 @@ fun addSongToDatabase(
 
     return transaction {
         SongEntity.new {
+            this.archived = archived
             this.ownerId = ownerEntityId
             title = "title$offset ${phraseOrBlank(offset, 0)} blah blah"
             description = "description$offset ${phraseOrBlank(offset, 1)} blah blah"

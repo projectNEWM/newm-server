@@ -87,6 +87,9 @@ val ApplicationCall.newerThan: LocalDateTime?
 val ApplicationCall.phrase: String?
     get() = parameters["phrase"]
 
+val ApplicationCall.archived: Boolean?
+    get() = parameters["archived"]?.toBoolean()
+
 suspend inline fun ApplicationCall.identifyUser(
     crossinline body: suspend ApplicationCall.(UUID, Boolean) -> Unit
 ) {
