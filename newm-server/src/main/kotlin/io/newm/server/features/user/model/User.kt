@@ -27,6 +27,9 @@ data class User(
     val websiteUrl: String? = null,
     val twitterUrl: String? = null,
     val instagramUrl: String? = null,
+    val spotifyProfile: String? = null,
+    val soundCloudProfile: String? = null,
+    val appleMusicProfile: String? = null,
     val location: String? = null,
     val role: String? = null,
     val genre: String? = null,
@@ -40,7 +43,7 @@ data class User(
     val verificationStatus: UserVerificationStatus? = null,
     val companyName: String? = null,
     val companyLogoUrl: String? = null,
-    var companyIpRights: Boolean? = null,
+    val companyIpRights: Boolean? = null,
     @Transient
     var distributionUserId: String? = null,
     @Transient
