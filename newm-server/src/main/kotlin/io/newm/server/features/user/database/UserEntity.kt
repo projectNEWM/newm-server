@@ -31,6 +31,9 @@ class UserEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var websiteUrl: String? by UserTable.websiteUrl
     var twitterUrl: String? by UserTable.twitterUrl
     var instagramUrl: String? by UserTable.instagramUrl
+    var spotifyProfile: String? by UserTable.spotifyProfile
+    var soundCloudProfile: String? by UserTable.soundCloudProfile
+    var appleMusicProfile: String? by UserTable.appleMusicProfile
     var location: String? by UserTable.location
     var role: String? by UserTable.role
     var genre: String? by UserTable.genre
@@ -65,6 +68,9 @@ class UserEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         websiteUrl = websiteUrl,
         twitterUrl = twitterUrl,
         instagramUrl = instagramUrl,
+        spotifyProfile = spotifyProfile,
+        soundCloudProfile = soundCloudProfile,
+        appleMusicProfile = appleMusicProfile,
         location = location,
         role = role,
         genre = genre,

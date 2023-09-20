@@ -62,6 +62,9 @@ internal class UserRepositoryImpl(
                 this.websiteUrl = user.websiteUrl?.asValidUrl()
                 this.twitterUrl = user.twitterUrl?.asValidUrl()
                 this.instagramUrl = user.instagramUrl?.asValidUrl()
+                this.spotifyProfile = user.spotifyProfile
+                this.soundCloudProfile = user.soundCloudProfile
+                this.appleMusicProfile = user.appleMusicProfile
                 this.location = user.location
                 this.role = user.role
                 this.genre = user.genre
@@ -167,6 +170,9 @@ internal class UserRepositoryImpl(
             user.websiteUrl?.let { entity.websiteUrl = it.asValidUrl() }
             user.twitterUrl?.let { entity.twitterUrl = it.asValidUrl() }
             user.instagramUrl?.let { entity.instagramUrl = it.asValidUrl() }
+            user.spotifyProfile?.let { entity.spotifyProfile = it }
+            user.soundCloudProfile?.let { entity.soundCloudProfile = it }
+            user.appleMusicProfile?.let { entity.appleMusicProfile = it }
             user.location?.let { entity.location = it }
             user.role?.let { entity.role = it }
             user.genre?.let { entity.genre = it }
@@ -209,6 +215,9 @@ internal class UserRepositoryImpl(
             user.websiteUrl?.let { entity.websiteUrl = it.asValidUrl() }
             user.twitterUrl?.let { entity.twitterUrl = it.asValidUrl() }
             user.instagramUrl?.let { entity.instagramUrl = it.asValidUrl() }
+            user.spotifyProfile?.let { entity.spotifyProfile = it }
+            user.soundCloudProfile?.let { entity.soundCloudProfile = it }
+            user.appleMusicProfile?.let { entity.appleMusicProfile = it }
             user.location?.let { entity.location = it }
             user.role?.let { entity.role = it }
             user.genre?.let { entity.genre = it }

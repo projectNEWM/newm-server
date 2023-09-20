@@ -83,6 +83,9 @@ class UserRoutesTests : BaseApplicationTests() {
         assertThat(user.websiteUrl).isEqualTo(testUser1.websiteUrl)
         assertThat(user.twitterUrl).isEqualTo(testUser1.twitterUrl)
         assertThat(user.instagramUrl).isEqualTo(testUser1.instagramUrl)
+        assertThat(user.spotifyProfile).isEqualTo(testUser1.spotifyProfile)
+        assertThat(user.soundCloudProfile).isEqualTo(testUser1.soundCloudProfile)
+        assertThat(user.appleMusicProfile).isEqualTo(testUser1.appleMusicProfile)
         assertThat(user.location).isEqualTo(testUser1.location)
         assertThat(user.role).isEqualTo(testUser1.role)
         assertThat(user.genre).isEqualTo(testUser1.genre)
@@ -153,6 +156,9 @@ class UserRoutesTests : BaseApplicationTests() {
         assertThat(user.websiteUrl).isEqualTo(testUser1.websiteUrl)
         assertThat(user.twitterUrl).isEqualTo(testUser1.twitterUrl)
         assertThat(user.instagramUrl).isEqualTo(testUser1.instagramUrl)
+        assertThat(user.spotifyProfile).isEqualTo(testUser1.spotifyProfile)
+        assertThat(user.soundCloudProfile).isEqualTo(testUser1.soundCloudProfile)
+        assertThat(user.appleMusicProfile).isEqualTo(testUser1.appleMusicProfile)
         assertThat(user.location).isEqualTo(testUser1.location)
         assertThat(user.role).isEqualTo(testUser1.role)
         assertThat(user.genre).isEqualTo(testUser1.genre)
@@ -188,6 +194,9 @@ class UserRoutesTests : BaseApplicationTests() {
         assertThat(user.websiteUrl).isEqualTo(testUser1.websiteUrl)
         assertThat(user.twitterUrl).isEqualTo(testUser1.twitterUrl)
         assertThat(user.instagramUrl).isEqualTo(testUser1.instagramUrl)
+        assertThat(user.spotifyProfile).isEqualTo(testUser1.spotifyProfile)
+        assertThat(user.soundCloudProfile).isEqualTo(testUser1.soundCloudProfile)
+        assertThat(user.appleMusicProfile).isEqualTo(testUser1.appleMusicProfile)
         assertThat(user.location).isEqualTo(testUser1.location)
         assertThat(user.role).isEqualTo(testUser1.role)
         assertThat(user.genre).isEqualTo(testUser1.genre)
@@ -234,6 +243,9 @@ class UserRoutesTests : BaseApplicationTests() {
         assertThat(user.websiteUrl).isEqualTo(testUser2.websiteUrl)
         assertThat(user.twitterUrl).isEqualTo(testUser2.twitterUrl)
         assertThat(user.instagramUrl).isEqualTo(testUser2.instagramUrl)
+        assertThat(user.spotifyProfile).isEqualTo(testUser2.spotifyProfile)
+        assertThat(user.soundCloudProfile).isEqualTo(testUser2.soundCloudProfile)
+        assertThat(user.appleMusicProfile).isEqualTo(testUser2.appleMusicProfile)
         assertThat(user.location).isEqualTo(testUser2.location)
         assertThat(user.role).isEqualTo(testUser2.role)
         assertThat(user.genre).isEqualTo(testUser2.genre)
@@ -340,6 +352,9 @@ class UserRoutesTests : BaseApplicationTests() {
             assertThat(actualUser.websiteUrl).isEqualTo(expectedUser.websiteUrl)
             assertThat(actualUser.twitterUrl).isEqualTo(expectedUser.twitterUrl)
             assertThat(actualUser.instagramUrl).isEqualTo(expectedUser.instagramUrl)
+            assertThat(actualUser.spotifyProfile).isEqualTo(expectedUser.spotifyProfile)
+            assertThat(actualUser.soundCloudProfile).isEqualTo(expectedUser.soundCloudProfile)
+            assertThat(actualUser.appleMusicProfile).isEqualTo(expectedUser.appleMusicProfile)
             assertThat(actualUser.location).isEqualTo(expectedUser.location)
             assertThat(actualUser.role).isEqualTo(expectedUser.role)
             assertThat(actualUser.genre).isEqualTo(expectedUser.genre)
@@ -392,6 +407,9 @@ class UserRoutesTests : BaseApplicationTests() {
             assertThat(actualUser.websiteUrl).isEqualTo(expectedUser.websiteUrl)
             assertThat(actualUser.twitterUrl).isEqualTo(expectedUser.twitterUrl)
             assertThat(actualUser.instagramUrl).isEqualTo(expectedUser.instagramUrl)
+            assertThat(actualUser.spotifyProfile).isEqualTo(expectedUser.spotifyProfile)
+            assertThat(actualUser.soundCloudProfile).isEqualTo(expectedUser.soundCloudProfile)
+            assertThat(actualUser.appleMusicProfile).isEqualTo(expectedUser.appleMusicProfile)
             assertThat(actualUser.location).isEqualTo(expectedUser.location)
             assertThat(actualUser.role).isEqualTo(expectedUser.role)
             assertThat(actualUser.genre).isEqualTo(expectedUser.genre)
@@ -447,6 +465,9 @@ class UserRoutesTests : BaseApplicationTests() {
             assertThat(actualUser.websiteUrl).isEqualTo(expectedUser.websiteUrl)
             assertThat(actualUser.twitterUrl).isEqualTo(expectedUser.twitterUrl)
             assertThat(actualUser.instagramUrl).isEqualTo(expectedUser.instagramUrl)
+            assertThat(actualUser.spotifyProfile).isEqualTo(expectedUser.spotifyProfile)
+            assertThat(actualUser.soundCloudProfile).isEqualTo(expectedUser.soundCloudProfile)
+            assertThat(actualUser.appleMusicProfile).isEqualTo(expectedUser.appleMusicProfile)
             assertThat(actualUser.location).isEqualTo(expectedUser.location)
             assertThat(actualUser.role).isEqualTo(expectedUser.role)
             assertThat(actualUser.genre).isEqualTo(expectedUser.genre)
@@ -502,6 +523,9 @@ class UserRoutesTests : BaseApplicationTests() {
             assertThat(actualUser.websiteUrl).isEqualTo(expectedUser.websiteUrl)
             assertThat(actualUser.twitterUrl).isEqualTo(expectedUser.twitterUrl)
             assertThat(actualUser.instagramUrl).isEqualTo(expectedUser.instagramUrl)
+            assertThat(actualUser.spotifyProfile).isEqualTo(expectedUser.spotifyProfile)
+            assertThat(actualUser.soundCloudProfile).isEqualTo(expectedUser.soundCloudProfile)
+            assertThat(actualUser.appleMusicProfile).isEqualTo(expectedUser.appleMusicProfile)
             assertThat(actualUser.location).isEqualTo(expectedUser.location)
             assertThat(actualUser.role).isEqualTo(expectedUser.role)
             assertThat(actualUser.genre).isEqualTo(expectedUser.genre)
@@ -557,6 +581,9 @@ class UserRoutesTests : BaseApplicationTests() {
             assertThat(actualUser.websiteUrl).isEqualTo(expectedUser.websiteUrl)
             assertThat(actualUser.twitterUrl).isEqualTo(expectedUser.twitterUrl)
             assertThat(actualUser.instagramUrl).isEqualTo(expectedUser.instagramUrl)
+            assertThat(actualUser.spotifyProfile).isEqualTo(expectedUser.spotifyProfile)
+            assertThat(actualUser.soundCloudProfile).isEqualTo(expectedUser.soundCloudProfile)
+            assertThat(actualUser.appleMusicProfile).isEqualTo(expectedUser.appleMusicProfile)
             assertThat(actualUser.location).isEqualTo(expectedUser.location)
             assertThat(actualUser.role).isEqualTo(expectedUser.role)
             assertThat(actualUser.genre).isEqualTo(expectedUser.genre)
@@ -612,6 +639,9 @@ class UserRoutesTests : BaseApplicationTests() {
             assertThat(actualUser.websiteUrl).isEqualTo(expectedUser.websiteUrl)
             assertThat(actualUser.twitterUrl).isEqualTo(expectedUser.twitterUrl)
             assertThat(actualUser.instagramUrl).isEqualTo(expectedUser.instagramUrl)
+            assertThat(actualUser.spotifyProfile).isEqualTo(expectedUser.spotifyProfile)
+            assertThat(actualUser.soundCloudProfile).isEqualTo(expectedUser.soundCloudProfile)
+            assertThat(actualUser.appleMusicProfile).isEqualTo(expectedUser.appleMusicProfile)
             assertThat(actualUser.location).isEqualTo(expectedUser.location)
             assertThat(actualUser.role).isEqualTo(expectedUser.role)
             assertThat(actualUser.genre).isEqualTo(expectedUser.genre)
@@ -667,6 +697,9 @@ class UserRoutesTests : BaseApplicationTests() {
             assertThat(actualUser.websiteUrl).isEqualTo(expectedUser.websiteUrl)
             assertThat(actualUser.twitterUrl).isEqualTo(expectedUser.twitterUrl)
             assertThat(actualUser.instagramUrl).isEqualTo(expectedUser.instagramUrl)
+            assertThat(actualUser.spotifyProfile).isEqualTo(expectedUser.spotifyProfile)
+            assertThat(actualUser.soundCloudProfile).isEqualTo(expectedUser.soundCloudProfile)
+            assertThat(actualUser.appleMusicProfile).isEqualTo(expectedUser.appleMusicProfile)
             assertThat(actualUser.location).isEqualTo(expectedUser.location)
             assertThat(actualUser.role).isEqualTo(expectedUser.role)
             assertThat(actualUser.genre).isEqualTo(expectedUser.genre)
@@ -704,18 +737,21 @@ private fun addUserToDatabase(offset: Int): User = transaction {
         firstName = "firstName$offset"
         lastName = "lastName$offset"
         nickname = "nickname$offset"
-        pictureUrl = "pictureUrl$offset"
-        bannerUrl = "bannerUrl$offset"
-        websiteUrl = "websiteUrl$offset"
-        twitterUrl = "twitterUrl$offset"
-        instagramUrl = "instagramUrl$offset"
+        pictureUrl = "https://picture/$offset"
+        bannerUrl = "https://banner/$offset"
+        websiteUrl = "https://website/$offset"
+        twitterUrl = "https://twitter/$offset"
+        instagramUrl = "https://instagram/$offset"
+        spotifyProfile = "spotifyProfile$offset"
+        soundCloudProfile = "soundCloudProfile$offset"
+        appleMusicProfile = "appleMusicProfile$offset"
         location = "location$offset"
         role = "role$offset"
         genre = "genre$offset"
         biography = "biography$offset"
         email = "email$offset"
         companyName = "companyName$offset"
-        companyLogoUrl = "companyLogoUrl$offset"
+        companyLogoUrl = "https://companylogo/$offset"
         companyIpRights = offset % 2 == 0
     }
 }.toModel(includeAll = false)

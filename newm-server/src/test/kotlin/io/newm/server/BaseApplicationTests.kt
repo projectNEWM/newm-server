@@ -163,6 +163,9 @@ open class BaseApplicationTests {
             websiteUrl = user.websiteUrl
             twitterUrl = user.twitterUrl
             instagramUrl = user.instagramUrl
+            spotifyProfile = user.spotifyProfile
+            soundCloudProfile = user.soundCloudProfile
+            appleMusicProfile = user.appleMusicProfile
             location = user.location
             role = user.role
             genre = user.genre
