@@ -2,7 +2,6 @@ package io.newm.server.health
 
 import cc.rbbl.ktor_health_check.Health
 import com.amazonaws.services.s3.AmazonS3
-import com.zaxxer.hikari.HikariDataSource
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.server.application.install
@@ -22,16 +21,16 @@ fun Health.Configuration.healthtechChecks() {
 }
 
 fun Application.installHealthCheck() {
-    val hikariDataSource: HikariDataSource by inject()
+//    val hikariDataSource: HikariDataSource by inject()
     val environment: ApplicationEnvironment by inject()
     val s3: AmazonS3 by inject()
 
     install(Health) {
         healthtechChecks()
 
-        readyCheck("database") {
-            hikariDataSource.connection.isValid(5)
-        }
+//        readyCheck("database") {
+//            hikariDataSource.connection.isValid(5)
+//        }
 
         readyCheck("aws.s3") {
             val bucketName = environment.getConfigString("aws.s3.agreement.bucketName")
