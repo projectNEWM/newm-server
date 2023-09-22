@@ -21,6 +21,14 @@ class CloudfrontAudioStreamDataTest : BaseApplicationTests() {
             this.privateKey = pk
         }
 
+        val url = streamData.url
+        val cookies = streamData.cookies
+        println("url=$url")
+        assertThat(streamData.url).contains("https://newm.io/path/filename.m3u8?")
+        assertThat(streamData.url).contains("Policy=")
+        assertThat(streamData.url).contains("Key-Pair-Id=")
+        assertThat(streamData.url).contains("Signature=")
+
         assertThat(streamData.cookies.filter { it.name == "CloudFront-Key-Pair-Id" }).isNotEmpty()
         assertThat(streamData.cookies.filter { it.name == "CloudFront-Signature" }).isNotEmpty()
         assertThat(streamData.cookies.filter { it.name == "CloudFront-Policy" }).isNotEmpty()
