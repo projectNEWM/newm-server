@@ -1316,15 +1316,17 @@ class EvearaDistributionRepositoryImpl(
                     log.info { "Found existing distribution album ${mutableSong.title} with id ${existingAlbum.releaseId}" }
                     val response = deleteAlbum(user, existingAlbum.releaseId)
                     log.info { "Deleted distribution album ${mutableSong.title} with id ${existingAlbum.releaseId}: ${response.message}" }
-                    mutableSong = mutableSong.copy(distributionReleaseId = null)
-                    songRepository.update(mutableSong.id!!, mutableSong)
+                    songRepository.set(mutableSong.id!!) {
+                        it.distributionReleaseId = null
+                    }
                 }
             }
             log.info { "Found existing distribution track ${mutableSong.isrc} with id ${existingTrack.trackId}" }
             val response = deleteTrack(user, existingTrack.trackId)
             log.info { "Deleted distribution track ${mutableSong.isrc} with id ${existingTrack.trackId}: ${response.message}" }
-            mutableSong = mutableSong.copy(distributionTrackId = null)
-            songRepository.update(mutableSong.id!!, mutableSong)
+            songRepository.set(mutableSong.id!!) {
+                it.distributionTrackId = null
+            }
         }
 
         // Upload and add metadata to the distribution track
@@ -1360,7 +1362,7 @@ class EvearaDistributionRepositoryImpl(
             val response = addTrack(user, trackFile)
             log.info { "Created distribution track ${mutableSong.title} with track_id ${response.trackId}: ${response.message}" }
             mutableSong = mutableSong.copy(distributionTrackId = response.trackId)
-            songRepository.update(mutableSong.id!!, mutableSong)
+            songRepository.update(mutableSong.id!!, Song(distributionTrackId = response.trackId))
             trackFile.delete()
 
             // update track with collaborators and other metadata
@@ -1380,7 +1382,7 @@ class EvearaDistributionRepositoryImpl(
             val isrc = "$isrcCountry-$isrcRegistrant-$isrcYear-$isrcDesignation"
             log.info { "Updating song isrc from ${mutableSong.isrc} to $isrc" }
             mutableSong = mutableSong.copy(isrc = isrc)
-            songRepository.update(mutableSong.id!!, mutableSong)
+            songRepository.update(mutableSong.id!!, Song(isrc = isrc))
         }
 
         // Wait for track to be processed
@@ -1408,12 +1410,19 @@ class EvearaDistributionRepositoryImpl(
                     barcodeNumber = barcode,
                     barcodeType = barcodeType
                 )
-                songRepository.update(mutableSong.id!!, mutableSong)
+                songRepository.update(
+                    mutableSong.id!!,
+                    Song(
+                        distributionReleaseId = response.releaseId,
+                        barcodeNumber = barcode,
+                        barcodeType = barcodeType
+                    )
+                )
             } else {
                 log.info { "Found existing distribution album ${mutableSong.title} with id ${existingAlbum.releaseId}, title ${existingAlbum.name}" }
                 if (mutableSong.distributionReleaseId == null) {
                     mutableSong = mutableSong.copy(distributionReleaseId = existingAlbum.releaseId)
-                    songRepository.update(mutableSong.id!!, mutableSong)
+                    songRepository.update(mutableSong.id!!, Song(distributionReleaseId = existingAlbum.releaseId))
                 } else {
                     require(mutableSong.distributionReleaseId == existingAlbum.releaseId) { "Song.distributionReleaseId: ${mutableSong.distributionReleaseId} does not match existing distribution album! ${existingAlbum.releaseId}" }
                 }
@@ -1430,7 +1439,14 @@ class EvearaDistributionRepositoryImpl(
                 barcodeNumber = barcode,
                 barcodeType = barcodeType
             )
-            songRepository.update(mutableSong.id!!, mutableSong)
+            songRepository.update(
+                mutableSong.id!!,
+                Song(
+                    distributionReleaseId = response.releaseId,
+                    barcodeNumber = barcode,
+                    barcodeType = barcodeType
+                )
+            )
         }
 
         // Validate Distribution Album
@@ -1444,6 +1460,13 @@ class EvearaDistributionRepositoryImpl(
 //        // Simulate the release to outlets
 //        val simulateReleaseResponse = simulateDistributeRelease(user, mutableSong.distributionReleaseId!!)
 //        log.info { "Simulated release ${mutableSong.title} with id ${mutableSong.distributionReleaseId}: ${simulateReleaseResponse.message}" }
+
+        // Verify we have enough days to distribute the release (in case this is a re-process and some days have passed)
+        val earliestReleaseDate = getEarliestReleaseDate(user.id)
+        if (earliestReleaseDate.isAfter(mutableSong.releaseDate!!)) {
+            mutableSong = mutableSong.copy(releaseDate = earliestReleaseDate)
+            songRepository.update(mutableSong.id!!, Song(releaseDate = earliestReleaseDate))
+        }
 
         // Distribute the release to outlets
         val distributeReleaseResponse =

@@ -170,6 +170,14 @@ internal class SongRepositoryImpl(
         }
     }
 
+    override fun set(songId: UUID, editor: (SongEntity) -> Unit) {
+        logger.debug { "editFields: songId = $songId" }
+        transaction {
+            val entity = SongEntity[songId]
+            editor(entity)
+        }
+    }
+
     override suspend fun delete(songId: UUID, requesterId: UUID) {
         logger.debug { "delete: songId = $songId, requesterId = $requesterId" }
         transaction {

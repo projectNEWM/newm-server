@@ -2,6 +2,7 @@ package io.newm.server.features.song.repo
 
 import io.ktor.utils.io.ByteReadChannel
 import io.newm.chain.grpc.Utxo
+import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.model.AudioStreamData
 import io.newm.server.features.song.model.AudioUploadReport
 import io.newm.server.features.song.model.MintingStatus
@@ -39,4 +40,6 @@ interface SongRepository {
     suspend fun updateSongMintingStatus(songId: UUID, mintingStatus: MintingStatus)
 
     suspend fun distribute(songId: UUID)
+
+    abstract fun set(songId: UUID, editor: (SongEntity) -> Unit)
 }
