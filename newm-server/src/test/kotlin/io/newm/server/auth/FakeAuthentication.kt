@@ -18,6 +18,7 @@ fun Application.installFakeAuthentication() {
     install(Authentication) {
         register(FakeAuthProvider("auth-jwt"))
         register(FakeAuthProvider("auth-jwt-refresh"))
+        register(FakeAuthProvider("auth-jwt-admin"))
         configIdenfyFakeServerAuth()
     }
 }

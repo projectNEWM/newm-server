@@ -174,6 +174,9 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                         or (SongTable.nftName.lowerCase() like pattern)
                     )
             }
+            nftNames?.let {
+                ops += SongTable.nftName inList it
+            }
             return ops
         }
     }

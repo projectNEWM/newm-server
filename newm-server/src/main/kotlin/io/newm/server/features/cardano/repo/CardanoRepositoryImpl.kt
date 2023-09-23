@@ -40,10 +40,17 @@ import io.newm.server.features.cardano.database.KeyEntity
 import io.newm.server.features.cardano.database.KeyTable
 import io.newm.server.features.cardano.model.EncryptionRequest
 import io.newm.server.features.cardano.model.Key
+import io.newm.server.features.cardano.model.WalletSong
+import io.newm.server.features.song.model.Song
+import io.newm.server.features.song.model.SongFilters
+import io.newm.server.features.song.repo.SongRepository
+import io.newm.server.ktx.cborHexToUtxo
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.debug
 import io.newm.shared.ktx.isValidHex
 import io.newm.shared.ktx.isValidPassword
+import io.newm.txbuilder.ktx.toNativeAssetMap
+import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf
 import org.slf4j.Logger
@@ -64,6 +71,8 @@ internal class CardanoRepositoryImpl(
 ) : CardanoRepository {
 
     private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
+
+    private val songRepository: SongRepository by inject()
 
     private var _isMainnet: Boolean? = null
 
@@ -237,6 +246,35 @@ internal class CardanoRepositoryImpl(
                 releaseMutexRequest {
                     mutexName = MUTEX_NAME
                 }
+            )
+        }
+    }
+
+    override suspend fun getWalletSongs(request: List<String>, offset: Int, limit: Int): List<WalletSong> {
+        logger.debug { "getWalletSongs: request = $request, offset = $offset, limit = $limit" }
+        val utxos = request.map { it.cborHexToUtxo() }
+        val nativeAssetMap = utxos.map { it.nativeAssetsList }.flatten().toNativeAssetMap()
+        val streamTokenNames = nativeAssetMap.values.flatten().map { it.name }
+        return songRepository.getAll(
+            filters = SongFilters(
+                archived = false,
+                sortOrder = SortOrder.DESC,
+                olderThan = null,
+                newerThan = null,
+                ids = null,
+                ownerIds = null,
+                genres = null,
+                moods = null,
+                mintingStatuses = null,
+                phrase = null,
+                nftNames = streamTokenNames,
+            ),
+            offset = offset,
+            limit = limit,
+        ).map { song: Song ->
+            WalletSong(
+                song = song,
+                tokenAmount = nativeAssetMap[song.nftPolicyId]!!.find { it.name == song.nftName }!!.amount!!.toLong(),
             )
         }
     }

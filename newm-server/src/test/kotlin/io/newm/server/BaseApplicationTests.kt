@@ -8,14 +8,12 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.config.ApplicationConfig
 import io.ktor.server.testing.TestApplication
-import io.mockk.coEvery
 import io.mockk.mockk
 import io.newm.server.auth.jwt.database.JwtTable
 import io.newm.server.auth.twofactor.database.TwoFactorAuthTable
 import io.newm.server.config.database.ConfigEntity
 import io.newm.server.config.database.ConfigTable
 import io.newm.server.features.cardano.database.KeyTable
-import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.collaboration.database.CollaborationEntity
 import io.newm.server.features.collaboration.database.CollaborationTable
 import io.newm.server.features.collaboration.model.Collaboration
@@ -134,11 +132,6 @@ open class BaseApplicationTests {
         application.start()
         loadKoinModules(
             module {
-                single {
-                    mockk<CardanoRepository>(relaxed = true) {
-                        coEvery { queryAdaUSDPrice() } returns 253400L // $0.2534 ada price
-                    }
-                }
                 single { mockk<GoogleUserProvider>(relaxed = true) }
                 single { mockk<FacebookUserProvider>(relaxed = true) }
                 single { mockk<LinkedInUserProvider>(relaxed = true) }
