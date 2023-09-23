@@ -16,6 +16,9 @@ import io.newm.server.features.cardano.model.SubmitTransactionResponse
 import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.repo.SongRepository
+import io.newm.server.ktx.limit
+import io.newm.server.ktx.offset
+import io.newm.shared.ktx.get
 import io.newm.shared.ktx.post
 import org.koin.core.parameter.parametersOf
 import org.koin.ktor.ext.inject
@@ -23,8 +26,8 @@ import org.slf4j.Logger
 
 fun Routing.createCardanoRoutes() {
     val log: Logger by inject { parametersOf("CardanoRoutes") }
-    val cardanoRepository: CardanoRepository by inject()
     val songRepository: SongRepository by inject()
+    val cardanoRepository: CardanoRepository by inject()
 
     authenticate(AUTH_JWT_ADMIN) {
         post("/v1/cardano/key") {
@@ -62,6 +65,17 @@ fun Routing.createCardanoRoutes() {
                 respond(HttpStatusCode.Accepted, SubmitTransactionResponse(response.txId, response.result))
             } catch (e: Exception) {
                 log.error("Failed to submit transaction: ${e.message}")
+                throw e
+            }
+        }
+
+        get("/v1/cardano/songs") {
+            try {
+                val request = receive<List<String>>()
+                val response = cardanoRepository.getWalletSongs(request, offset, limit)
+                respond(response)
+            } catch (e: Exception) {
+                log.error("Failed to get wallet songs: ${e.message}")
                 throw e
             }
         }

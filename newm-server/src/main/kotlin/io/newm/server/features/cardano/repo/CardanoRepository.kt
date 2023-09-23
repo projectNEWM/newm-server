@@ -9,6 +9,7 @@ import io.newm.chain.grpc.TransactionBuilderResponse
 import io.newm.chain.grpc.Utxo
 import io.newm.server.features.cardano.model.EncryptionRequest
 import io.newm.server.features.cardano.model.Key
+import io.newm.server.features.cardano.model.WalletSong
 import java.util.UUID
 
 interface CardanoRepository {
@@ -25,4 +26,5 @@ interface CardanoRepository {
     suspend fun queryStreamTokenMinUtxo(): Long
     suspend fun queryAdaUSDPrice(): Long
     suspend fun <T> withLock(block: suspend () -> T): T
+    suspend fun getWalletSongs(request: List<String>, offset: Int, limit: Int): List<WalletSong>
 }

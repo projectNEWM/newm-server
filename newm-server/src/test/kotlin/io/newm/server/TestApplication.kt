@@ -6,6 +6,7 @@ import io.newm.server.auth.createAuthenticationRoutes
 import io.newm.server.auth.installFakeAuthentication
 import io.newm.server.content.installContentNegotiation
 import io.newm.server.di.installDependencyInjection
+import io.newm.server.features.cardano.createCardanoRoutes
 import io.newm.server.features.cloudinary.createCloudinaryRoutes
 import io.newm.server.features.collaboration.createCollaborationRoutes
 import io.newm.server.features.idenfy.createIdenfyFakeServerRoutes
@@ -29,6 +30,7 @@ fun Application.testModule() {
         createStaticContentRoutes()
         createAuthenticationRoutes()
         createUserRoutes()
+        createCardanoRoutes()
         createSongRoutes()
         createCollaborationRoutes()
         createPlaylistRoutes()

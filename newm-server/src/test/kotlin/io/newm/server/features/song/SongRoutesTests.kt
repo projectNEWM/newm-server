@@ -17,10 +17,13 @@ import io.ktor.http.URLProtocol
 import io.ktor.http.contentType
 import io.ktor.http.setCookie
 import io.ktor.server.application.ApplicationEnvironment
+import io.mockk.coEvery
+import io.mockk.mockk
 import io.newm.chain.util.toHexString
 import io.newm.server.BaseApplicationTests
 import io.newm.server.features.cardano.database.KeyEntity
 import io.newm.server.features.cardano.database.KeyTable
+import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.model.CountResponse
 import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.database.SongTable
@@ -33,6 +36,8 @@ import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongBarcodeType
 import io.newm.server.features.song.model.SongIdBody
+import io.newm.server.features.song.repo.SongRepository
+import io.newm.server.features.song.repo.SongRepositoryImpl
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
 import io.newm.server.utils.ResourceOutgoingContent
@@ -45,13 +50,37 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.neq
 import org.jetbrains.exposed.sql.deleteAll
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.koin.core.context.GlobalContext.loadKoinModules
+import org.koin.dsl.module
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
 
 class SongRoutesTests : BaseApplicationTests() {
+
+    @BeforeAll
+    fun beforeAllSongRoutesTests() {
+        val module = module {
+            single<SongRepository> {
+                SongRepositoryImpl(
+                    get(),
+                    get(),
+                    get(),
+                    // we need to mock the CardanoRepository to have a fixed ada price
+                    mockk<CardanoRepository>(relaxed = true) {
+                        coEvery { queryAdaUSDPrice() } returns 253400L // $0.2534 ada price
+                    },
+                    get(),
+                    get(),
+                    get()
+                )
+            }
+        }
+        loadKoinModules(module)
+    }
 
     @BeforeEach
     fun beforeEach() {

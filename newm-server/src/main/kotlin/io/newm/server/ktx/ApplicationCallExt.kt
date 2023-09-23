@@ -9,6 +9,7 @@ import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.bits.Memory
+import io.newm.server.features.song.model.MintingStatus
 import io.newm.shared.exception.HttpUnauthorizedException
 import io.newm.shared.ktx.orZero
 import io.newm.shared.ktx.splitAndTrim
@@ -89,6 +90,12 @@ val ApplicationCall.phrase: String?
 
 val ApplicationCall.archived: Boolean?
     get() = parameters["archived"]?.toBoolean()
+
+val ApplicationCall.mintingStatuses: List<MintingStatus>?
+    get() = parameters["mintingStatuses"]?.splitAndTrim()?.map(MintingStatus::valueOf)
+
+val ApplicationCall.nftNames: List<String>?
+    get() = parameters["nftNames"]?.splitAndTrim()
 
 suspend inline fun ApplicationCall.identifyUser(
     crossinline body: suspend ApplicationCall.(UUID, Boolean) -> Unit

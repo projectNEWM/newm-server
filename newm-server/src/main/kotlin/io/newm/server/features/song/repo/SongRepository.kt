@@ -41,5 +41,5 @@ interface SongRepository {
 
     suspend fun distribute(songId: UUID)
 
-    abstract fun set(songId: UUID, editor: (SongEntity) -> Unit)
+    fun set(songId: UUID, editor: (SongEntity) -> Unit)
 }
