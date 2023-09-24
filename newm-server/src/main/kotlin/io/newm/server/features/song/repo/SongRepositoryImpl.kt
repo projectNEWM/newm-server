@@ -20,6 +20,7 @@ import io.newm.server.features.cardano.database.KeyTable
 import io.newm.server.features.cardano.model.Key
 import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.collaboration.model.CollaborationStatus
+import io.newm.server.features.collaboration.model.CollaboratorFilters
 import io.newm.server.features.collaboration.repo.CollaborationRepository
 import io.newm.server.features.distribution.DistributionRepository
 import io.newm.server.features.email.repo.EmailRepository
@@ -477,28 +478,30 @@ internal class SongRepositoryImpl(
             song to UserEntity[song.ownerId]
         }
 
-        val messageArgs = mutableMapOf<String, String>().apply {
-            put("song", song.title)
-            put("owner", owner.stageOrFullName)
-        }
-        if (path == "started") {
-            val collabs = collaborationRepository.getAllBySongId(song.id.value)
-                .filter { it.royaltyRate.orZero() > BigDecimal.ZERO }
-            val users = transaction {
-                collabs.associate {
-                    it.id to UserEntity.getByEmail(it.email!!)
-                }
-            }
-            messageArgs += "collabs" to collabs.joinToString(separator = "") {
-                "<li>${users[it.id]?.stageOrFullName ?: it.email}: ${it.royaltyRate}%</li>"
-            }
-        }
+        val collaborations = collaborationRepository.getAllBySongId(song.id.value)
+            .filter { it.royaltyRate.orZero() > BigDecimal.ZERO }
+
+        val collaborators = collaborationRepository.getCollaborators(
+            userId = owner.id.value,
+            filters = CollaboratorFilters(emails = collaborations.mapNotNull { it.email }),
+            offset = 0,
+            limit = Int.MAX_VALUE
+        )
 
         emailRepository.send(
             to = owner.email,
             subject = environment.getConfigString("mintingNotifications.$path.subject"),
             messageUrl = environment.getConfigString("mintingNotifications.$path.messageUrl"),
-            messageArgs = messageArgs
+            messageArgs = mapOf(
+                "owner" to owner.stageOrFullName,
+                "song" to song.title,
+                "collabs" to collaborations.joinToString(separator = "") { collaboration ->
+                    "<li>${
+                        collaborators.firstOrNull { it.email.equals(collaboration.email, ignoreCase = true) }
+                            ?.user?.stageOrFullName ?: collaboration.email
+                    }: ${collaboration.royaltyRate}%</li>"
+                }
+            )
         )
     }
 
