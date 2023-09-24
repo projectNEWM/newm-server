@@ -39,6 +39,7 @@ import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_ENCRYPTI
 import io.newm.server.features.cardano.database.KeyEntity
 import io.newm.server.features.cardano.database.KeyTable
 import io.newm.server.features.cardano.model.EncryptionRequest
+import io.newm.server.features.cardano.model.GetWalletSongsResponse
 import io.newm.server.features.cardano.model.Key
 import io.newm.server.features.cardano.model.WalletSong
 import io.newm.server.features.song.model.Song
@@ -250,12 +251,27 @@ internal class CardanoRepositoryImpl(
         }
     }
 
-    override suspend fun getWalletSongs(request: List<String>, offset: Int, limit: Int): List<WalletSong> {
+    override suspend fun getWalletSongs(request: List<String>, offset: Int, limit: Int): GetWalletSongsResponse {
         logger.debug { "getWalletSongs: request = $request, offset = $offset, limit = $limit" }
         val utxos = request.map { it.cborHexToUtxo() }
         val nativeAssetMap = utxos.map { it.nativeAssetsList }.flatten().toNativeAssetMap()
         val streamTokenNames = nativeAssetMap.values.flatten().map { it.name }
-        return songRepository.getAll(
+        val count = songRepository.getAllCount(
+            filters = SongFilters(
+                archived = false,
+                sortOrder = SortOrder.DESC,
+                olderThan = null,
+                newerThan = null,
+                ids = null,
+                ownerIds = null,
+                genres = null,
+                moods = null,
+                mintingStatuses = null,
+                phrase = null,
+                nftNames = streamTokenNames,
+            )
+        )
+        val songs = songRepository.getAll(
             filters = SongFilters(
                 archived = false,
                 sortOrder = SortOrder.DESC,
@@ -277,6 +293,13 @@ internal class CardanoRepositoryImpl(
                 tokenAmount = nativeAssetMap[song.nftPolicyId]!!.find { it.name == song.nftName }!!.amount!!.toLong(),
             )
         }
+
+        return GetWalletSongsResponse(
+            songs = songs,
+            total = count,
+            offset = offset,
+            limit = limit,
+        )
     }
 
     private suspend fun encryptKmsBytes(bytes: ByteArray): String {
