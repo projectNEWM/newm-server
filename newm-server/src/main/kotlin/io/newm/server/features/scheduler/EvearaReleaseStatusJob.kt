@@ -43,8 +43,12 @@ class EvearaReleaseStatusJob : Job {
                 val distributionReleaseStatusResponse =
                     distributionRepository.distributionOutletReleaseStatus(user, song.distributionReleaseId!!)
                 val spotifyOutletStatusCode = if (song.forceDistributed == true) {
-                    // If the song is force distributed, then we can mark it as distributed
-                    OutletStatusCode.DISTRIBUTED
+                    // If the song is force distributed, then we can mark it as disapproved or distributed
+                    if (song.title!!.contains("[DistributionFailure]")) {
+                        OutletStatusCode.DISAPPROVED
+                    } else {
+                        OutletStatusCode.DISTRIBUTED
+                    }
                 } else {
                     distributionReleaseStatusResponse.outletReleaseStatuses?.find {
                         it.storeName.equals(
