@@ -13,7 +13,7 @@ import io.ktor.http.contentType
 import io.newm.server.BaseApplicationTests
 import io.newm.server.features.cardano.database.KeyEntity
 import io.newm.server.features.cardano.database.KeyTable
-import io.newm.server.features.cardano.model.WalletSong
+import io.newm.server.features.cardano.model.GetWalletSongsResponse
 import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.database.SongTable
 import io.newm.server.features.song.model.AudioEncodingStatus
@@ -280,8 +280,11 @@ class CardanoRoutesTests : BaseApplicationTests() {
             )
         }
         assertThat(response.status).isEqualTo(HttpStatusCode.OK)
-        val body: List<WalletSong> = response.body()
-        assertThat(body.size).isEqualTo(9)
+        val body: GetWalletSongsResponse = response.body()
+        assertThat(body.songs.size).isEqualTo(9)
+        assertThat(body.total).isEqualTo(9)
+        assertThat(body.offset).isEqualTo(0)
+        assertThat(body.limit).isEqualTo(25)
     }
 }
 
