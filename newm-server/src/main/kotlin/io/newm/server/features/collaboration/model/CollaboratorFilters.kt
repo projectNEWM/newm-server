@@ -9,11 +9,11 @@ import org.jetbrains.exposed.sql.SortOrder
 import java.util.UUID
 
 data class CollaboratorFilters(
-    val sortOrder: SortOrder?,
-    val excludeMe: Boolean?,
-    val songIds: List<UUID>?,
-    val emails: List<String>?,
-    val phrase: String?
+    val sortOrder: SortOrder? = null,
+    val excludeMe: Boolean? = null,
+    val songIds: List<UUID>? = null,
+    val emails: List<String>? = null,
+    val phrase: String? = null
 )
 
 val ApplicationCall.excludeMe: Boolean?
