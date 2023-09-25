@@ -6,6 +6,7 @@ import io.ktor.client.request.accept
 import io.ktor.client.request.bearerAuth
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
+import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
@@ -46,7 +47,7 @@ class CardanoRoutesTests : BaseApplicationTests() {
     }
 
     @Test
-    fun testGetWalletSongs() = runBlocking {
+    fun testPostWalletSongs() = runBlocking {
         // Add Songs directly into database
         addSongToDatabase(
             "beec4fac1e41e603f4a8620d7864c1e2d55a2b9ae5522b675cfa6c52",
@@ -250,7 +251,7 @@ class CardanoRoutesTests : BaseApplicationTests() {
         )
 
         // Get wallet songs
-        val response = client.get("v1/cardano/songs") {
+        val response = client.post("v1/cardano/songs") {
             bearerAuth(testUserToken)
             accept(ContentType.Application.Json)
             contentType(ContentType.Application.Json)
