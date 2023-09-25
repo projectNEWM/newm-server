@@ -69,7 +69,7 @@ fun Routing.createCardanoRoutes() {
             }
         }
 
-        get("/v1/cardano/songs") {
+        post("/v1/cardano/songs") {
             try {
                 val request = receive<List<String>>()
                 val response = cardanoRepository.getWalletSongs(request, offset, limit)
