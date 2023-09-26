@@ -53,7 +53,7 @@ interface LedgerRepository {
 
     fun queryAddressTxLogsAfter(address: String, afterTxId: String?): List<ByteArray>
 
-    fun queryNativeAssetLogsAfter(afterTableId: Long?): List<Pair<Long, ByteArray>>
+    fun queryNativeAssetLogsAfter(afterTableId: Long?, limit: Int, offset: Long): List<Pair<Long, ByteArray>>
 
     fun queryLedgerAssetMetadataList(assetId: Long, parentId: Long? = null): List<LedgerAssetMetadata>
 

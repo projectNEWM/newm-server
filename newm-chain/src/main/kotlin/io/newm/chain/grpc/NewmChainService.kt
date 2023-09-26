@@ -309,21 +309,32 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                 } else {
                     null
                 }
+                val limit = 1000
+                var offset = 0L
+                var nativeAssetLogList: List<Pair<Long, ByteArray>>
+                var nextStartAfterId: Long = -1L
                 while (true) {
-                    val nativeAssetLogList = ledgerRepository.queryNativeAssetLogsAfter(startAfterId)
+                    while (true) {
+                        // loop through all existing records before we change startAfterId
+                        nativeAssetLogList = ledgerRepository.queryNativeAssetLogsAfter(startAfterId, limit, offset)
 
-                    nativeAssetLogList.forEach { nativeAssetLog ->
-                        responseFlow.emit(
-                            MonitorNativeAssetsResponse.parseFrom(nativeAssetLog.second)
-                                .toBuilder()
-                                .setId(nativeAssetLog.first)
-                                .build()
-                        )
+                        if (nativeAssetLogList.isNotEmpty()) {
+                            nativeAssetLogList.forEach { nativeAssetLog ->
+                                responseFlow.emit(
+                                    MonitorNativeAssetsResponse.parseFrom(nativeAssetLog.second)
+                                        .toBuilder()
+                                        .setId(nativeAssetLog.first)
+                                        .build()
+                                )
+                            }
+                            offset += nativeAssetLogList.size
+                            nextStartAfterId = nativeAssetLogList.last().first
+                        } else {
+                            break
+                        }
                     }
 
-                    if (nativeAssetLogList.isNotEmpty()) {
-                        startAfterId = nativeAssetLogList.last().first
-                    }
+                    startAfterId = nextStartAfterId
                     delay(1000L)
                 }
             } catch (e: Throwable) {
