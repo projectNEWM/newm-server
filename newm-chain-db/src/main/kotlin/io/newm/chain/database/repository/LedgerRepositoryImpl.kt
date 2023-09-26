@@ -906,7 +906,7 @@ class LedgerRepositoryImpl : LedgerRepository {
         }
     }
 
-    override fun queryNativeAssetLogsAfter(afterTableId: Long?): List<Pair<Long, ByteArray>> = transaction {
+    override fun queryNativeAssetLogsAfter(afterTableId: Long?, limit: Int, offset: Long): List<Pair<Long, ByteArray>> = transaction {
         val afterId: Long = afterTableId?.let {
             NativeAssetMonitorLogTable.slice(NativeAssetMonitorLogTable.id).select {
                 NativeAssetMonitorLogTable.id eq it
@@ -915,7 +915,7 @@ class LedgerRepositoryImpl : LedgerRepository {
 
         NativeAssetMonitorLogTable.select {
             NativeAssetMonitorLogTable.id greater afterId
-        }.orderBy(NativeAssetMonitorLogTable.id).map { row ->
+        }.orderBy(NativeAssetMonitorLogTable.id).limit(limit, offset).map { row ->
             row[NativeAssetMonitorLogTable.id].value to row[NativeAssetMonitorLogTable.monitorNativeAssetsResponseBytes]
         }
     }
