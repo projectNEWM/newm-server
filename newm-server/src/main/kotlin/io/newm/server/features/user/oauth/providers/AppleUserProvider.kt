@@ -13,12 +13,14 @@ import io.newm.server.features.user.oauth.OAuthUserProvider
 import io.newm.server.ktx.getSecureConfigStrings
 import io.newm.server.ktx.toRSAKeyProvider
 import io.newm.server.ktx.withAnyOfAudience
+import io.newm.server.ktx.withAnyOfIssuer
 import io.newm.shared.exception.HttpBadRequestException
 import io.newm.shared.exception.HttpUnauthorizedException
 import io.newm.shared.ktx.getConfigString
+import io.newm.shared.ktx.getConfigStrings
 import kotlinx.coroutines.runBlocking
 
-private data class AppleUser(
+private class AppleUser(
     val jwt: DecodedJWT
 ) : OAuthUser {
 
@@ -44,7 +46,7 @@ internal class AppleUserProvider(
                 .build()
                 .toRSAKeyProvider()
         )
-    ).withIssuer("https://appleid.apple.com")
+    ).withAnyOfIssuer(environment.getConfigStrings("oauth.apple.issuers"))
         .withAnyOfAudience(runBlocking { environment.getSecureConfigStrings("oauth.apple.audiences") })
         .withClaimPresence("sub")
         .withClaimPresence("email")
