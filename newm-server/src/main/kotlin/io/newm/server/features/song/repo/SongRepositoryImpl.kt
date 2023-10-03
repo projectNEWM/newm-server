@@ -34,6 +34,7 @@ import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongFilters
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
+import io.newm.server.features.user.model.UserVerificationStatus
 import io.newm.server.ktx.asValidUrl
 import io.newm.server.ktx.await
 import io.newm.server.ktx.checkLength
@@ -311,7 +312,7 @@ internal class SongRepositoryImpl(
     override suspend fun processStreamTokenAgreement(songId: UUID, requesterId: UUID, accepted: Boolean) {
         logger.debug { "processStreamTokenAgreement: songId = $songId, accepted = $accepted" }
 
-        checkRequester(songId, requesterId)
+        checkRequester(songId, requesterId, verified = true)
 
         val bucketName = environment.getConfigString("aws.s3.agreement.bucketName")
         val fileName = environment.getConfigString("aws.s3.agreement.fileName")
@@ -400,7 +401,7 @@ internal class SongRepositoryImpl(
     ): String {
         logger.debug { "generateMintingPaymentTransaction: songId = $songId" }
 
-        checkRequester(songId, requesterId)
+        checkRequester(songId, requesterId, verified = true)
 
         val song = get(songId)
         val key = Key.generateNew()
@@ -511,12 +512,15 @@ internal class SongRepositoryImpl(
         distributionRepository.distributeSong(song)
     }
 
-    private fun checkRequester(songId: UUID, requesterId: UUID) = transaction {
-        SongEntity[songId].checkRequester(requesterId)
+    private fun checkRequester(songId: UUID, requesterId: UUID, verified: Boolean = false) = transaction {
+        SongEntity[songId].checkRequester(requesterId, verified)
     }
 
-    private fun SongEntity.checkRequester(requesterId: UUID) {
+    private fun SongEntity.checkRequester(requesterId: UUID, verified: Boolean = false) {
         if (ownerId.value != requesterId) throw HttpForbiddenException("operation allowed only by owner")
+        if (verified && UserEntity[requesterId].verificationStatus != UserVerificationStatus.Verified) {
+            throw HttpUnprocessableEntityException("operation allowed only after owner is KYC verified")
+        }
     }
 
     private fun Song.checkFieldLengths() {
