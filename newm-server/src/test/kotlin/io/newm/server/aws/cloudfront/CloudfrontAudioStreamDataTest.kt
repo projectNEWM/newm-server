@@ -22,7 +22,6 @@ class CloudfrontAudioStreamDataTest : BaseApplicationTests() {
         }
 
         val url = streamData.url
-        val cookies = streamData.cookies
         println("url=$url")
         assertThat(streamData.url).contains("https://newm.io/path/filename.m3u8?")
         assertThat(streamData.url).contains("Policy=")

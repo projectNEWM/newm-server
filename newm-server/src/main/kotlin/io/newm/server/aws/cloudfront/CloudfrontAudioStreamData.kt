@@ -88,8 +88,11 @@ class CloudfrontAudioStreamData(
             uri.rawPath +
                 (if (uri.getQuery() != null) "?" + uri.rawQuery + "&" else "?") +
                 "Policy=" + urlSafePolicy +
+                "&oPolicy=" + urlSafePolicy +
                 "&Signature=" + urlSafeSignature +
-                "&Key-Pair-Id=" + request.keyPairId()
+                "&oSignature=" + urlSafeSignature +
+                "&Key-Pair-Id=" + request.keyPairId() +
+                "&oKey-Pair-Id=" + request.keyPairId()
             )
         val signedUrl = DefaultSignedUrl.builder().protocol(protocol).domain(domain).encodedPath(encodedPath)
             .url("$protocol://$domain$encodedPath").build()
