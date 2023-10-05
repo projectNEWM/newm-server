@@ -51,7 +51,7 @@ interface LedgerRepository {
 
     fun queryUtxoHavingAddress(address: String, hash: String, ix: Int): Utxo?
 
-    fun queryAddressTxLogsAfter(address: String, afterTxId: String?): List<ByteArray>
+    fun queryAddressTxLogsAfter(address: String, afterTxId: String?, limit: Int, offset: Long): List<ByteArray>
 
     fun queryNativeAssetLogsAfter(afterTableId: Long?, limit: Int, offset: Long): List<Pair<Long, ByteArray>>
 

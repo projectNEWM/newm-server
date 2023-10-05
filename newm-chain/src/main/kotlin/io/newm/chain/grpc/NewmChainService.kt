@@ -173,22 +173,38 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
         val responseFlow = MutableSharedFlow<MonitorAddressResponse>(replay = 1)
         val messageHandlerJob: Job = CoroutineScope(context).launch {
             try {
-                var startAfterTxId: String? = request.startAfterTxId
+                var startAfterTxId: String? = if (request.hasStartAfterTxId()) {
+                    request.startAfterTxId
+                } else {
+                    null
+                }
+                val limit = 1000
+                var offset = 0L
+                var nextStartAfterTxId: String? = null
                 while (true) {
-                    val monitorAddressResponseList = ledgerRepository.queryAddressTxLogsAfter(
-                        request.address,
-                        startAfterTxId,
-                    ).map {
-                        MonitorAddressResponse.parseFrom(it)
+                    while (true) {
+                        val monitorAddressResponseList = ledgerRepository.queryAddressTxLogsAfter(
+                            request.address,
+                            startAfterTxId,
+                            limit,
+                            offset,
+                        ).map {
+                            MonitorAddressResponse.parseFrom(it)
+                        }
+
+                        if (monitorAddressResponseList.isNotEmpty()) {
+                            monitorAddressResponseList.forEach { monitorAddressResponse ->
+                                responseFlow.emit(monitorAddressResponse)
+                            }
+                            offset += monitorAddressResponseList.size
+                            nextStartAfterTxId = monitorAddressResponseList.last().txId
+                        } else {
+                            break
+                        }
                     }
 
-                    monitorAddressResponseList.forEach { monitorAddressResponse ->
-                        responseFlow.emit(monitorAddressResponse)
-                    }
-
-                    if (monitorAddressResponseList.isNotEmpty()) {
-                        startAfterTxId = monitorAddressResponseList.last().txId
-                    }
+                    startAfterTxId = nextStartAfterTxId
+                    offset = 0L
                     delay(1000L)
                 }
             } catch (e: Throwable) {
@@ -335,6 +351,7 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                     }
 
                     startAfterId = nextStartAfterId
+                    offset = 0L
                     delay(1000L)
                 }
             } catch (e: Throwable) {
@@ -583,6 +600,12 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
             Sentry.addBreadcrumb(request.toString(), "NewmChainService")
             log.error("releaseMutex error!", e)
             throw e
+        }
+    }
+
+    override suspend fun ping(request: PingRequest): PongResponse {
+        return pongResponse {
+            message = request.message
         }
     }
 }

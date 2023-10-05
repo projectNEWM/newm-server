@@ -27,6 +27,7 @@ service NewmChain {
   rpc QueryUtxoByNativeAsset (QueryByNativeAssetRequest) returns (Utxo);
   rpc AcquireMutex (AcquireMutexRequest) returns (MutexResponse);
   rpc ReleaseMutex (ReleaseMutexRequest) returns (MutexResponse);
+  rpc Ping (PingRequest) returns (PongResponse);
 }
 
 message SubmitTransactionRequest {
@@ -352,4 +353,12 @@ message MutexResponse {
 
 message ReleaseMutexRequest {
   string mutex_name = 1; // name of the mutex to release
+}
+
+message PingRequest {
+  string message = 1;
+}
+
+message PongResponse {
+  string message = 1;
 }

@@ -66,16 +66,15 @@ import io.newm.shared.ktx.getConfigSplitStrings
 import io.newm.shared.ktx.getConfigString
 import io.newm.txbuilder.ktx.cborHexToPlutusData
 import io.newm.txbuilder.ktx.toPlutusData
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.greaterEq
 import org.jetbrains.exposed.sql.batchInsert
+import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
-import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf
 import org.slf4j.Logger
 import java.io.ByteArrayOutputStream
@@ -83,7 +82,6 @@ import java.io.IOException
 import java.math.BigInteger
 import java.time.Duration
 import java.time.Instant
-import java.util.LinkedList
 import kotlin.math.max
 import kotlin.system.measureTimeMillis
 
@@ -92,8 +90,6 @@ class BlockDaemon(
     private val chainRepository: ChainRepository,
     private val ledgerRepository: LedgerRepository,
     private val submittedTransactionCache: SubmittedTransactionCache,
-    private val blockFlow: MutableSharedFlow<Block>,
-    private val confirmedBlockFlow: MutableSharedFlow<Block>,
 ) : Daemon {
     override val log: Logger by inject { parametersOf("BlockDaemon") }
 
@@ -125,8 +121,6 @@ class BlockDaemon(
     override fun start() {
         log.info("starting...")
         startChainSync()
-        startMonitorAddresses()
-        startMonitorNativeAssets()
         log.info("startup complete.")
     }
 
@@ -295,6 +289,8 @@ class BlockDaemon(
                 rollbackTime += measureTimeMillis {
                     chainRepository.rollback(firstBlock.header.blockHeight)
                     ledgerRepository.doRollback(firstBlock.header.blockHeight)
+                    AddressTxLogTable.deleteWhere { blockNumber greaterEq firstBlock.header.blockHeight }
+                    NativeAssetMonitorLogTable.deleteWhere { blockNumber greaterEq firstBlock.header.blockHeight }
                 }
 
                 blocksToCommit.forEach { block ->
@@ -381,6 +377,15 @@ class BlockDaemon(
                             throw e
                         }
                     }
+
+                    // Insert any monitor address tx log responses
+                    createTime += measureTimeMillis {
+                        commitMonitorAddressTransactions(block)
+                    }
+                    // Insert any native asset log responses
+                    nativeAssetTime += measureTimeMillis {
+                        commitNativeAssetLogTransactions(block)
+                    }
                 }
 
                 val latestBlock = blocksToCommit.last()
@@ -392,8 +397,6 @@ class BlockDaemon(
                     }
                 }
             }
-            // Emit all these blocks for further processing now that basic ledger entry is done
-            blocksToCommit.forEach { blockFlow.emit(it) }
         }.also { totalTime ->
             val now = Instant.now()
             val tenSecondsAgo = now.minusSeconds(10L)
@@ -506,322 +509,281 @@ class BlockDaemon(
         }
     }
 
-    private fun startMonitorAddresses() {
-        launch {
-            while (true) {
-                try {
-                    log.warn("startMonitorAddresses: $monitorAddresses")
-                    val blockDelayQueue = LinkedList<Block>()
-                    blockFlow.collect { block ->
-                        // Prune any rolled back blocks
-                        blockDelayQueue.removeIf { bdqBlock -> bdqBlock.header.blockHeight >= block.header.blockHeight }
-                        // Add this new block to our queue
-                        blockDelayQueue.add(block)
-                        // Wait for 3 confirmations before processing
-                        if (blockDelayQueue.size > 3) {
-                            val oldestBlock = blockDelayQueue.poll()
+    private fun commitMonitorAddressTransactions(block: Block) {
+        val spentUtxoMap = block.toSpentUtxoMap()
+        val createdUtxoMap = block.toCreatedUtxoMap()
+        val transactionIds = spentUtxoMap.keys + createdUtxoMap.keys
+        val monitorAddressResponsesMap = mutableMapOf<String, MutableList<MonitorAddressResponse>>()
 
-                            // emit block as confirmed for other monitors
-                            confirmedBlockFlow.emit(oldestBlock)
+        transactionIds.forEach { transactionId ->
+            monitorAddresses.forEach { monitorAddress ->
+                val spentAddressUtxos: List<Utxo> =
+                    spentUtxoMap[transactionId]?.mapNotNull { spentUtxo ->
+                        ledgerRepository.queryUtxoHavingAddress(
+                            monitorAddress,
+                            spentUtxo.hash,
+                            spentUtxo.ix.toInt()
+                        )
+                    }?.map { utxo ->
+                        Utxo.newBuilder().apply {
+                            hash = utxo.hash
+                            ix = utxo.ix
+                            lovelace = utxo.lovelace.toString()
+                            utxo.datumHash?.let { datumHash = it }
+                            utxo.datum?.let {
+                                datum = it.cborHexToPlutusData()
+                            }
+                            utxo.nativeAssets.forEach { nativeAsset ->
+                                addNativeAssets(
+                                    NativeAsset.newBuilder().apply {
+                                        policy = nativeAsset.policy
+                                        name = nativeAsset.name
+                                        amount = nativeAsset.amount.toString()
+                                    }
+                                )
+                            }
+                        }.build()
+                    }.orEmpty()
 
-                            val spentUtxoMap = oldestBlock.toSpentUtxoMap()
-                            val createdUtxoMap = oldestBlock.toCreatedUtxoMap()
-                            val transactionIds = spentUtxoMap.keys + createdUtxoMap.keys
-                            val monitorAddressResponsesMap = mutableMapOf<String, MutableList<MonitorAddressResponse>>()
+                val createdAddressUtxos = createdUtxoMap[transactionId]?.filter { createdUtxo ->
+                    createdUtxo.address == monitorAddress
+                }?.map { utxo ->
+                    Utxo.newBuilder().apply {
+                        hash = utxo.hash
+                        ix = utxo.ix
+                        lovelace = utxo.lovelace.toString()
+                        utxo.datumHash?.let { datumHash = it }
+                        utxo.datum?.let {
+                            datum = it.cborHexToPlutusData()
+                        }
+                        utxo.nativeAssets.forEach { nativeAsset ->
+                            addNativeAssets(
+                                NativeAsset.newBuilder().apply {
+                                    policy = nativeAsset.policy
+                                    name = nativeAsset.name
+                                    amount = nativeAsset.amount.toString()
+                                }
+                            )
+                        }
+                    }.build()
+                }.orEmpty()
 
-                            transactionIds.forEach { transactionId ->
-                                monitorAddresses.forEach { monitorAddress ->
-                                    val spentAddressUtxos: List<Utxo> =
-                                        spentUtxoMap[transactionId]?.mapNotNull { spentUtxo ->
-                                            ledgerRepository.queryUtxoHavingAddress(
-                                                monitorAddress,
-                                                spentUtxo.hash,
-                                                spentUtxo.ix.toInt()
-                                            )
-                                        }?.map { utxo ->
-                                            Utxo.newBuilder().apply {
-                                                hash = utxo.hash
-                                                ix = utxo.ix
-                                                lovelace = utxo.lovelace.toString()
-                                                utxo.datumHash?.let { datumHash = it }
-                                                utxo.datum?.let {
-                                                    datum = it.cborHexToPlutusData()
-                                                }
-                                                utxo.nativeAssets.forEach { nativeAsset ->
-                                                    addNativeAssets(
-                                                        NativeAsset.newBuilder().apply {
-                                                            policy = nativeAsset.policy
-                                                            name = nativeAsset.name
-                                                            amount = nativeAsset.amount.toString()
-                                                        }
-                                                    )
-                                                }
-                                            }.build()
-                                        }.orEmpty()
-
-                                    val createdAddressUtxos = createdUtxoMap[transactionId]?.filter { createdUtxo ->
-                                        createdUtxo.address == monitorAddress
-                                    }?.map { utxo ->
-                                        Utxo.newBuilder().apply {
-                                            hash = utxo.hash
-                                            ix = utxo.ix
-                                            lovelace = utxo.lovelace.toString()
-                                            utxo.datumHash?.let { datumHash = it }
-                                            utxo.datum?.let {
-                                                datum = it.cborHexToPlutusData()
-                                            }
-                                            utxo.nativeAssets.forEach { nativeAsset ->
-                                                addNativeAssets(
-                                                    NativeAsset.newBuilder().apply {
-                                                        policy = nativeAsset.policy
-                                                        name = nativeAsset.name
-                                                        amount = nativeAsset.amount.toString()
-                                                    }
+                if (spentAddressUtxos.isNotEmpty() || createdAddressUtxos.isNotEmpty()) {
+                    val monitorAddressResponses = monitorAddressResponsesMap[monitorAddress]
+                        ?: mutableListOf<MonitorAddressResponse>().also {
+                            monitorAddressResponsesMap[monitorAddress] = it
+                        }
+                    monitorAddressResponses.add(
+                        MonitorAddressResponse
+                            .newBuilder()
+                            .setBlock(block.header.blockHeight)
+                            .setSlot(block.header.slot)
+                            .setTxId(transactionId)
+                            .addAllSpentUtxos(spentAddressUtxos)
+                            .addAllCreatedUtxos(createdAddressUtxos)
+                            .apply {
+                                when (block) {
+                                    is BlockAlonzo -> block.alonzo.body.first { it.id == transactionId }.witness
+                                    is BlockBabbage -> block.babbage.body.first { it.id == transactionId }.witness
+                                    else -> null
+                                }?.let { witness ->
+                                    witness.datums?.let { datums ->
+                                        putAllDatums(
+                                            datums.entries.associate { entry ->
+                                                Pair(
+                                                    entry.key,
+                                                    entry.value.cborHexToPlutusData(),
                                                 )
                                             }
-                                        }.build()
-                                    }.orEmpty()
-
-                                    if (spentAddressUtxos.isNotEmpty() || createdAddressUtxos.isNotEmpty()) {
-                                        val monitorAddressResponses = monitorAddressResponsesMap[monitorAddress]
-                                            ?: mutableListOf<MonitorAddressResponse>().also {
-                                                monitorAddressResponsesMap[monitorAddress] = it
-                                            }
-                                        monitorAddressResponses.add(
-                                            MonitorAddressResponse
-                                                .newBuilder()
-                                                .setBlock(oldestBlock.header.blockHeight)
-                                                .setSlot(oldestBlock.header.slot)
-                                                .setTxId(transactionId)
-                                                .addAllSpentUtxos(spentAddressUtxos)
-                                                .addAllCreatedUtxos(createdAddressUtxos)
-                                                .apply {
-                                                    when (oldestBlock) {
-                                                        is BlockAlonzo -> oldestBlock.alonzo.body.first { it.id == transactionId }.witness
-                                                        is BlockBabbage -> oldestBlock.babbage.body.first { it.id == transactionId }.witness
-                                                        else -> null
-                                                    }?.let { witness ->
-                                                        witness.datums?.let { datums ->
-                                                            putAllDatums(
-                                                                datums.entries.associate { entry ->
-                                                                    Pair(
-                                                                        entry.key,
-                                                                        entry.value.cborHexToPlutusData(),
-                                                                    )
-                                                                }
-                                                            )
-                                                        }
-                                                        witness.redeemers?.let { redeemers ->
-                                                            putAllRedeemers(
-                                                                redeemers.entries.associate { (key, txRedeemer) ->
-                                                                    // log.debug("key, txRedeemer.redeemer: $key, ${txRedeemer.redeemer}")
-                                                                    val txRedeemerCbor = CborReader
-                                                                        .createFromByteArray(txRedeemer.redeemer.hexToByteArray())
-                                                                        .readDataItem()
-                                                                    val (redeemerTag, redeemerIndex) = key.split(":")
-                                                                        .let {
-                                                                            Pair(
-                                                                                when (it[0]) {
-                                                                                    "spend" -> RedeemerTag.SPEND
-                                                                                    "mint" -> RedeemerTag.MINT
-                                                                                    "certificate" -> RedeemerTag.CERT
-                                                                                    "withdrawal" -> RedeemerTag.REWARD
-                                                                                    else -> throw IllegalArgumentException(
-                                                                                        "Unknown redeemer tag"
-                                                                                    )
-                                                                                },
-                                                                                it[1].toLong()
-                                                                            )
-                                                                        }
-
-                                                                    val plutusData =
-                                                                        txRedeemerCbor.toPlutusData(txRedeemer.redeemer)
-                                                                    val exUnits = ExUnits.newBuilder()
-                                                                        .setMem(txRedeemer.executionUnits.memory.toLong())
-                                                                        .setSteps(txRedeemer.executionUnits.steps.toLong())
-                                                                        .build()
-
-                                                                    Pair(
-                                                                        key,
-                                                                        Redeemer.newBuilder()
-                                                                            .setTag(redeemerTag)
-                                                                            .setIndex(redeemerIndex)
-                                                                            .setData(plutusData)
-                                                                            .setExUnits(exUnits)
-                                                                            .build()
-                                                                    )
-                                                                }
-                                                            )
-                                                        }
+                                        )
+                                    }
+                                    witness.redeemers?.let { redeemers ->
+                                        putAllRedeemers(
+                                            redeemers.entries.associate { (key, txRedeemer) ->
+                                                // log.debug("key, txRedeemer.redeemer: $key, ${txRedeemer.redeemer}")
+                                                val txRedeemerCbor = CborReader
+                                                    .createFromByteArray(txRedeemer.redeemer.hexToByteArray())
+                                                    .readDataItem()
+                                                val (redeemerTag, redeemerIndex) = key.split(":")
+                                                    .let {
+                                                        Pair(
+                                                            when (it[0]) {
+                                                                "spend" -> RedeemerTag.SPEND
+                                                                "mint" -> RedeemerTag.MINT
+                                                                "certificate" -> RedeemerTag.CERT
+                                                                "withdrawal" -> RedeemerTag.REWARD
+                                                                else -> throw IllegalArgumentException(
+                                                                    "Unknown redeemer tag"
+                                                                )
+                                                            },
+                                                            it[1].toLong()
+                                                        )
                                                     }
-                                                }
-                                                .build()
+
+                                                val plutusData =
+                                                    txRedeemerCbor.toPlutusData(txRedeemer.redeemer)
+                                                val exUnits = ExUnits.newBuilder()
+                                                    .setMem(txRedeemer.executionUnits.memory.toLong())
+                                                    .setSteps(txRedeemer.executionUnits.steps.toLong())
+                                                    .build()
+
+                                                Pair(
+                                                    key,
+                                                    Redeemer.newBuilder()
+                                                        .setTag(redeemerTag)
+                                                        .setIndex(redeemerIndex)
+                                                        .setData(plutusData)
+                                                        .setExUnits(exUnits)
+                                                        .build()
+                                                )
+                                            }
                                         )
                                     }
                                 }
                             }
-                            val batch =
-                                monitorAddressResponsesMap.flatMap { (monitorAddress, monitorAddressResponsesList) ->
-                                    monitorAddressResponsesList.map {
-                                        Pair(monitorAddress, it)
-                                    }
-                                }
-                            transaction {
-                                AddressTxLogTable.batchInsert(
-                                    batch,
-                                    shouldReturnGeneratedValues = false
-                                ) { (monitorAddress, monitorAddressResponse) ->
-                                    this[AddressTxLogTable.address] = monitorAddress
-                                    this[AddressTxLogTable.txId] = monitorAddressResponse.txId
-                                    val bos = ByteArrayOutputStream()
-                                    monitorAddressResponse.writeTo(bos)
-                                    this[AddressTxLogTable.monitorAddressResponseBytes] = bos.toByteArray()
-                                }
-                            }
-                        }
-                    }
-                } catch (e: Throwable) {
-                    if (e !is CancellationException) {
-                        log.error(e.message, e)
-                    }
+                            .build()
+                    )
                 }
             }
         }
-    }
-
-    private fun startMonitorNativeAssets() {
-        launch {
-            while (true) {
-                try {
-                    log.warn("startMonitorNativeAssets")
-                    confirmedBlockFlow.collect { confirmedBlock ->
-                        transaction {
-                            val ledgerAssets = confirmedBlock.toLedgerAssets().map { ledgerAsset ->
-                                ledgerRepository.queryLedgerAsset(ledgerAsset.policy, ledgerAsset.name)!!
-                                    .copy(txId = ledgerAsset.txId)
-                            }
-                            // handle supply changes
-                            val batch = mutableListOf<ByteArray>()
-                            batch.addAll(
-                                ledgerAssets.mapNotNull { ledgerAsset ->
-                                    val bos = ByteArrayOutputStream()
-                                    monitorNativeAssetsResponse {
-                                        policy = ledgerAsset.policy
-                                        name = ledgerAsset.name
-                                        nativeAssetSupplyChange = ledgerAsset.supply.toString()
-                                        slot = confirmedBlock.header.slot
-                                        block = confirmedBlock.header.blockHeight
-                                        txHash = ledgerAsset.txId
-                                    }.writeTo(bos)
-                                    bos.toByteArray()
-                                }
-                            )
-
-                            // handle metadata updates for CIP-25 or if CIP-68 is minted without reference token
-                            batch.addAll(
-                                ledgerAssets.filter { it.supply > BigInteger.ZERO }.map { ledgerAsset ->
-                                    val metadataLedgerAsset = if (ledgerAsset.name.matches(CIP68_USER_TOKEN_REGEX)) {
-                                        val name = "$CIP68_REFERENCE_TOKEN_PREFIX${ledgerAsset.name.substring(8)}"
-                                        ledgerRepository.queryLedgerAsset(ledgerAsset.policy, name)
-                                            ?.copy(txId = ledgerAsset.txId) ?: run {
-                                            log.warn("No LedgerAsset found for: '${ledgerAsset.policy}.$name' !")
-                                            ledgerAsset
-                                        }
-                                    } else {
-                                        ledgerAsset
-                                    }
-
-                                    val ledgerAssetMetadataList =
-                                        ledgerRepository.queryLedgerAssetMetadataList(metadataLedgerAsset.id!!)
-                                    val bos = ByteArrayOutputStream()
-                                    monitorNativeAssetsResponse {
-                                        policy = ledgerAsset.policy
-                                        name = ledgerAsset.name
-                                        nativeAssetMetadataJson = ledgerAssetMetadataList.to721Json(
-                                            ledgerAsset.policy,
-                                            ledgerAsset.name,
-                                        )
-                                        slot = confirmedBlock.header.slot
-                                        block = confirmedBlock.header.blockHeight
-                                        txHash = ledgerAsset.txId
-                                    }.writeTo(bos)
-                                    bos.toByteArray()
-                                }
-                            )
-
-                            // handle metadata updates for CIP-68
-                            batch.addAll(
-                                confirmedBlock.toCreatedUtxoSet().mapNotNull { createdUtxo ->
-                                    createdUtxo.datum?.let {
-                                        createdUtxo.nativeAssets.filter { nativeAsset ->
-                                            nativeAsset.name.matches(CIP68_REFERENCE_TOKEN_REGEX)
-                                        }
-                                    }
-                                }.flatten().flatMap { updatedNativeAsset ->
-                                    val metadataBatch = mutableListOf<ByteArray>()
-                                    ledgerRepository.queryLedgerAsset(
-                                        updatedNativeAsset.policy,
-                                        updatedNativeAsset.name
-                                    )?.let { nativeAsset ->
-                                        val ledgerAssetMetadataList =
-                                            ledgerRepository.queryLedgerAssetMetadataList(nativeAsset.id!!)
-                                        val bos = ByteArrayOutputStream()
-                                        monitorNativeAssetsResponse {
-                                            policy = updatedNativeAsset.policy
-                                            name = updatedNativeAsset.name
-                                            nativeAssetMetadataJson = ledgerAssetMetadataList.to721Json(
-                                                updatedNativeAsset.policy,
-                                                updatedNativeAsset.name
-                                            )
-                                            slot = confirmedBlock.header.slot
-                                            block = confirmedBlock.header.blockHeight
-                                            txHash = ledgerAssets.firstOrNull {
-                                                it.name == updatedNativeAsset.name && it.policy == updatedNativeAsset.policy
-                                            }?.txId ?: ""
-                                        }.writeTo(bos)
-                                        metadataBatch.add(bos.toByteArray())
-
-                                        val prefixes =
-                                            listOf("000de140", "0014df10", "001bc280") // (222), (333), (444)
-
-                                        prefixes.forEach { prefix ->
-                                            val name = prefix + updatedNativeAsset.name.substring(8)
-                                            ledgerRepository.queryLedgerAsset(updatedNativeAsset.policy, name)
-                                                ?.let { nativeAsset ->
-                                                    val bos1 = ByteArrayOutputStream()
-                                                    monitorNativeAssetsResponse {
-                                                        this.policy = nativeAsset.policy
-                                                        this.name = nativeAsset.name
-                                                        nativeAssetMetadataJson = ledgerAssetMetadataList.to721Json(
-                                                            nativeAsset.policy,
-                                                            nativeAsset.name
-                                                        )
-                                                        slot = confirmedBlock.header.slot
-                                                        block = confirmedBlock.header.blockHeight
-                                                        txHash = ledgerAssets.firstOrNull {
-                                                            it.name == nativeAsset.name && it.policy == nativeAsset.policy
-                                                        }?.txId ?: ""
-                                                    }.writeTo(bos1)
-                                                    metadataBatch.add(bos1.toByteArray())
-                                                }
-                                        }
-                                    }
-                                    metadataBatch
-                                }
-                            )
-
-                            // Update the db for native asset changes
-                            NativeAssetMonitorLogTable.batchInsert(batch, shouldReturnGeneratedValues = false) {
-                                this[NativeAssetMonitorLogTable.monitorNativeAssetsResponseBytes] = it
-                            }
-                        }
-                    }
-                } catch (e: Throwable) {
-                    if (e !is CancellationException) {
-                        log.error(e.message, e)
-                    }
+        val batch =
+            monitorAddressResponsesMap.flatMap { (monitorAddress, monitorAddressResponsesList) ->
+                monitorAddressResponsesList.map {
+                    Pair(monitorAddress, it)
                 }
             }
+
+        AddressTxLogTable.batchInsert(
+            batch,
+            shouldReturnGeneratedValues = false
+        ) { (monitorAddress, monitorAddressResponse) ->
+            this[AddressTxLogTable.blockNumber] = block.header.blockHeight
+            this[AddressTxLogTable.address] = monitorAddress
+            this[AddressTxLogTable.txId] = monitorAddressResponse.txId
+            val bos = ByteArrayOutputStream()
+            monitorAddressResponse.writeTo(bos)
+            this[AddressTxLogTable.monitorAddressResponseBytes] = bos.toByteArray()
+        }
+    }
+
+    private fun commitNativeAssetLogTransactions(block: Block) {
+        val ledgerAssets = block.toLedgerAssets().map { ledgerAsset ->
+            ledgerRepository.queryLedgerAsset(ledgerAsset.policy, ledgerAsset.name)!!
+                .copy(txId = ledgerAsset.txId)
+        }
+        // handle supply changes
+        val batch = mutableListOf<ByteArray>()
+        batch.addAll(
+            ledgerAssets.mapNotNull { ledgerAsset ->
+                val bos = ByteArrayOutputStream()
+                monitorNativeAssetsResponse {
+                    policy = ledgerAsset.policy
+                    name = ledgerAsset.name
+                    nativeAssetSupplyChange = ledgerAsset.supply.toString()
+                    slot = block.header.slot
+                    this.block = block.header.blockHeight
+                    txHash = ledgerAsset.txId
+                }.writeTo(bos)
+                bos.toByteArray()
+            }
+        )
+
+        // handle metadata updates for CIP-25 or if CIP-68 is minted without reference token
+        batch.addAll(
+            ledgerAssets.filter { it.supply > BigInteger.ZERO }.map { ledgerAsset ->
+                val metadataLedgerAsset = if (ledgerAsset.name.matches(CIP68_USER_TOKEN_REGEX)) {
+                    val name = "$CIP68_REFERENCE_TOKEN_PREFIX${ledgerAsset.name.substring(8)}"
+                    ledgerRepository.queryLedgerAsset(ledgerAsset.policy, name)
+                        ?.copy(txId = ledgerAsset.txId) ?: run {
+                        log.warn("No LedgerAsset found for: '${ledgerAsset.policy}.$name' !")
+                        ledgerAsset
+                    }
+                } else {
+                    ledgerAsset
+                }
+
+                val ledgerAssetMetadataList =
+                    ledgerRepository.queryLedgerAssetMetadataList(metadataLedgerAsset.id!!)
+                val bos = ByteArrayOutputStream()
+                monitorNativeAssetsResponse {
+                    policy = ledgerAsset.policy
+                    name = ledgerAsset.name
+                    nativeAssetMetadataJson = ledgerAssetMetadataList.to721Json(
+                        ledgerAsset.policy,
+                        ledgerAsset.name,
+                    )
+                    slot = block.header.slot
+                    this.block = block.header.blockHeight
+                    txHash = ledgerAsset.txId
+                }.writeTo(bos)
+                bos.toByteArray()
+            }
+        )
+
+        // handle metadata updates for CIP-68
+        batch.addAll(
+            block.toCreatedUtxoSet().mapNotNull { createdUtxo ->
+                createdUtxo.datum?.let {
+                    createdUtxo.nativeAssets.filter { nativeAsset ->
+                        nativeAsset.name.matches(CIP68_REFERENCE_TOKEN_REGEX)
+                    }
+                }
+            }.flatten().flatMap { updatedNativeAsset ->
+                val metadataBatch = mutableListOf<ByteArray>()
+                ledgerRepository.queryLedgerAsset(
+                    updatedNativeAsset.policy,
+                    updatedNativeAsset.name
+                )?.let { nativeAsset ->
+                    val ledgerAssetMetadataList =
+                        ledgerRepository.queryLedgerAssetMetadataList(nativeAsset.id!!)
+                    val bos = ByteArrayOutputStream()
+                    monitorNativeAssetsResponse {
+                        policy = updatedNativeAsset.policy
+                        name = updatedNativeAsset.name
+                        nativeAssetMetadataJson = ledgerAssetMetadataList.to721Json(
+                            updatedNativeAsset.policy,
+                            updatedNativeAsset.name
+                        )
+                        slot = block.header.slot
+                        this.block = block.header.blockHeight
+                        txHash = ledgerAssets.firstOrNull {
+                            it.name == updatedNativeAsset.name && it.policy == updatedNativeAsset.policy
+                        }?.txId ?: ""
+                    }.writeTo(bos)
+                    metadataBatch.add(bos.toByteArray())
+
+                    val prefixes = listOf("000de140", "0014df10", "001bc280") // (222), (333), (444)
+
+                    prefixes.forEach { prefix ->
+                        val name = prefix + updatedNativeAsset.name.substring(8)
+                        ledgerRepository.queryLedgerAsset(updatedNativeAsset.policy, name)
+                            ?.let { nativeAsset ->
+                                val bos1 = ByteArrayOutputStream()
+                                monitorNativeAssetsResponse {
+                                    this.policy = nativeAsset.policy
+                                    this.name = nativeAsset.name
+                                    nativeAssetMetadataJson = ledgerAssetMetadataList.to721Json(
+                                        nativeAsset.policy,
+                                        nativeAsset.name
+                                    )
+                                    slot = block.header.slot
+                                    this.block = block.header.blockHeight
+                                    txHash = ledgerAssets.firstOrNull {
+                                        it.name == nativeAsset.name && it.policy == nativeAsset.policy
+                                    }?.txId ?: ""
+                                }.writeTo(bos1)
+                                metadataBatch.add(bos1.toByteArray())
+                            }
+                    }
+                }
+                metadataBatch
+            }
+        )
+
+        // Update the db for native asset changes
+        NativeAssetMonitorLogTable.batchInsert(batch, shouldReturnGeneratedValues = false) {
+            this[NativeAssetMonitorLogTable.monitorNativeAssetsResponseBytes] = it
+            this[NativeAssetMonitorLogTable.blockNumber] = block.header.blockHeight
         }
     }
 

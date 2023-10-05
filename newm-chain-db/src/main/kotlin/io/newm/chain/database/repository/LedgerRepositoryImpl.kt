@@ -14,6 +14,7 @@ import io.newm.chain.database.entity.RawTransaction
 import io.newm.chain.database.entity.StakeDelegation
 import io.newm.chain.database.entity.StakeRegistration
 import io.newm.chain.database.table.AddressTxLogTable
+import io.newm.chain.database.table.ChainTable
 import io.newm.chain.database.table.LedgerAssetMetadataTable
 import io.newm.chain.database.table.LedgerAssetsTable
 import io.newm.chain.database.table.LedgerTable
@@ -892,33 +893,56 @@ class LedgerRepositoryImpl : LedgerRepository {
         }
     }
 
-    override fun queryAddressTxLogsAfter(address: String, afterTxId: String?): List<ByteArray> = transaction {
+    override fun queryAddressTxLogsAfter(
+        address: String,
+        afterTxId: String?,
+        limit: Int,
+        offset: Long
+    ): List<ByteArray> = transaction {
         val afterId: Long = afterTxId?.let {
             AddressTxLogTable.slice(AddressTxLogTable.id).select {
                 (AddressTxLogTable.address eq address) and (AddressTxLogTable.txId eq it)
             }.firstOrNull()?.let { row -> row[AddressTxLogTable.id].value } ?: -1L
         } ?: -1L
 
+        val maxBlockNumberExpression = ChainTable.blockNumber.max()
+        val maxBlockNumber = (
+            ChainTable.slice(maxBlockNumberExpression).selectAll().firstOrNull()?.let {
+                it[maxBlockNumberExpression]
+            } ?: 0L
+            ) - 3L
+
         AddressTxLogTable.select {
-            (AddressTxLogTable.address eq address) and (AddressTxLogTable.id greater afterId)
-        }.orderBy(AddressTxLogTable.id).map { row ->
+            (AddressTxLogTable.address eq address) and
+                (AddressTxLogTable.id greater afterId) and
+                (AddressTxLogTable.blockNumber lessEq maxBlockNumber)
+        }.orderBy(AddressTxLogTable.id).limit(limit, offset).map { row ->
             row[AddressTxLogTable.monitorAddressResponseBytes]
         }
     }
 
-    override fun queryNativeAssetLogsAfter(afterTableId: Long?, limit: Int, offset: Long): List<Pair<Long, ByteArray>> = transaction {
-        val afterId: Long = afterTableId?.let {
-            NativeAssetMonitorLogTable.slice(NativeAssetMonitorLogTable.id).select {
-                NativeAssetMonitorLogTable.id eq it
-            }.firstOrNull()?.let { row -> row[NativeAssetMonitorLogTable.id].value } ?: -1L
-        } ?: -1L
+    override fun queryNativeAssetLogsAfter(afterTableId: Long?, limit: Int, offset: Long): List<Pair<Long, ByteArray>> =
+        transaction {
+            val afterId: Long = afterTableId?.let {
+                NativeAssetMonitorLogTable.slice(NativeAssetMonitorLogTable.id).select {
+                    NativeAssetMonitorLogTable.id eq it
+                }.firstOrNull()?.let { row -> row[NativeAssetMonitorLogTable.id].value } ?: -1L
+            } ?: -1L
 
-        NativeAssetMonitorLogTable.select {
-            NativeAssetMonitorLogTable.id greater afterId
-        }.orderBy(NativeAssetMonitorLogTable.id).limit(limit, offset).map { row ->
-            row[NativeAssetMonitorLogTable.id].value to row[NativeAssetMonitorLogTable.monitorNativeAssetsResponseBytes]
+            val maxBlockNumberExpression = ChainTable.blockNumber.max()
+            val maxBlockNumber = (
+                ChainTable.slice(maxBlockNumberExpression).selectAll().firstOrNull()?.let {
+                    it[maxBlockNumberExpression]
+                } ?: 0L
+                ) - 3L
+
+            NativeAssetMonitorLogTable.select {
+                (NativeAssetMonitorLogTable.id greater afterId) and
+                    (NativeAssetMonitorLogTable.blockNumber lessEq maxBlockNumber)
+            }.orderBy(NativeAssetMonitorLogTable.id).limit(limit, offset).map { row ->
+                row[NativeAssetMonitorLogTable.id].value to row[NativeAssetMonitorLogTable.monitorNativeAssetsResponseBytes]
+            }
         }
-    }
 
     override fun queryTransactionConfirmationCounts(txIds: List<String>): Map<String, Long> {
         return transaction {
