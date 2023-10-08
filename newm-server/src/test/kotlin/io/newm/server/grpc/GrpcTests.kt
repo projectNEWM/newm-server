@@ -370,4 +370,20 @@ class GrpcTests {
             client.releaseMutex(releaseMutexRequest { mutexName = "test" })
         }
     }
+
+    @Test
+    @Disabled
+    fun `test query music nfts`() = runBlocking {
+        val client = buildClient()
+        val request = queryByNativeAssetRequest {
+            policy = "e65559518eef9ebc25d3bacfa3f037d3e8cf0830b879c9a3fc6d7617"
+            name = "001bc280008557b67dfef2ddfdc102ed2b6c224bc266c44dc3401ff600e16501" // MusicNFT
+        }
+        val response = client.queryLedgerAssetMetadataListByNativeAsset(request)
+        assertThat(response).isNotNull()
+        assertThat(response.ledgerAssetMetadataCount).isEqualTo(6)
+        response.ledgerAssetMetadataList.forEach {
+            println(it)
+        }
+    }
 }

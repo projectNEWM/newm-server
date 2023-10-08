@@ -10,6 +10,7 @@ import com.github.benmanes.caffeine.cache.Caffeine
 import com.google.protobuf.ByteString
 import io.ktor.network.util.DefaultByteBufferPool
 import io.newm.chain.grpc.IsMainnetRequest
+import io.newm.chain.grpc.LedgerAssetMetadataItem
 import io.newm.chain.grpc.MonitorPaymentAddressRequest
 import io.newm.chain.grpc.NewmChainGrpcKt.NewmChainCoroutineStub
 import io.newm.chain.grpc.SubmitTransactionResponse
@@ -28,6 +29,7 @@ import io.newm.chain.grpc.queryUtxosOutputRefRequest
 import io.newm.chain.grpc.queryUtxosRequest
 import io.newm.chain.grpc.releaseMutexRequest
 import io.newm.chain.grpc.submitTransactionRequest
+import io.newm.chain.grpc.walletRequest
 import io.newm.chain.util.Constants
 import io.newm.chain.util.b64ToByteArray
 import io.newm.chain.util.toB64String
@@ -300,6 +302,35 @@ internal class CardanoRepositoryImpl(
             offset = offset,
             limit = limit,
         )
+    }
+
+    override suspend fun getWalletMusicNFTs(xpubKey: String): List<List<LedgerAssetMetadataItem>> {
+        val queryWalletControlledLiveUtxosResponse = client.queryWalletControlledLiveUtxos(
+            walletRequest {
+                this.accountXpubKey = xpubKey
+            }
+        )
+        // get all nativeAssets in the wallet
+        val nativeAssets = queryWalletControlledLiveUtxosResponse.addressUtxosList.flatMap { addressUtxos ->
+            addressUtxos.utxosList.flatMap { utxo -> utxo.nativeAssetsList }
+        }.toHashSet()
+
+        // get all nativeAssets that are music NFTs
+        return nativeAssets.map { nativeAsset ->
+            client.queryLedgerAssetMetadataListByNativeAsset(
+                queryByNativeAssetRequest {
+                    policy = nativeAsset.policy
+                    name = nativeAsset.name
+                }
+            ).takeIf {
+                it.ledgerAssetMetadataList.any { item ->
+                    item.key.equals(
+                        "music_metadata_version",
+                        true
+                    )
+                }
+            }?.ledgerAssetMetadataList.orEmpty()
+        }
     }
 
     private suspend fun encryptKmsBytes(bytes: ByteArray): String {

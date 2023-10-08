@@ -607,6 +607,23 @@ class LedgerRepositoryImpl : LedgerRepository {
         }
     }
 
+    override fun queryLedgerAssetMetadataListByNativeAsset(name: String, policy: String): List<LedgerAssetMetadata> {
+        val referenceTokenName = if (CIP68_USER_TOKEN_REGEX.matches(name)) {
+            CIP68_REFERENCE_TOKEN_PREFIX + name.substring(8)
+        } else {
+            name
+        }
+        return transaction {
+            LedgerAssetsTable.select {
+                (LedgerAssetsTable.name eq referenceTokenName) and
+                    (LedgerAssetsTable.policy eq policy)
+            }.firstOrNull()?.let { row ->
+                val assetId = row[LedgerAssetsTable.id].value
+                queryLedgerAssetMetadataList(assetId, null)
+            }.orEmpty()
+        }
+    }
+
     override fun pruneSpent(slotNumber: Long) {
         LedgerUtxosTable.deleteWhere { slotSpent less (slotNumber - 172800L) } // 48 hours
 
@@ -1081,5 +1098,8 @@ class LedgerRepositoryImpl : LedgerRepository {
 
     companion object {
         private const val ADA_HANDLES_POLICY = "f0ff48bbb7bbe9d59a40f1ce90e9e9d0ff5002ec48f232b49ca0fb9a"
+        private const val CIP68_REFERENCE_TOKEN_PREFIX = "000643b0"
+        private val CIP68_USER_TOKEN_REGEX =
+            Regex("^00(0de14|14df1|1bc28)0.*$") // (222)TokenName, (333)TokenName, (444)TokenName
     }
 }

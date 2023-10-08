@@ -3,7 +3,9 @@ package io.newm.chain.cardano
 import com.google.protobuf.ByteString
 import com.google.protobuf.kotlin.toByteString
 import io.newm.chain.database.entity.LedgerAssetMetadata
+import io.newm.chain.grpc.LedgerAssetMetadataItem
 import io.newm.chain.grpc.PlutusData
+import io.newm.chain.grpc.ledgerAssetMetadataItem
 import io.newm.chain.util.hexToByteArray
 import io.newm.chain.util.toB64String
 import io.newm.kogmios.protocols.model.MetadataBytes
@@ -68,6 +70,18 @@ fun PlutusData.toMetadataValue(): MetadataValue {
         }
 
         else -> throw IllegalStateException("plutusDataWrapper must be set!")
+    }
+}
+
+fun LedgerAssetMetadata.toLedgerAssetMetadataItem(): LedgerAssetMetadataItem {
+    val ledgerAssetMetadata = this
+    return ledgerAssetMetadataItem {
+        keyType = ledgerAssetMetadata.keyType
+        key = ledgerAssetMetadata.key
+        valueType = ledgerAssetMetadata.valueType
+        value = ledgerAssetMetadata.value
+        nestLevel = ledgerAssetMetadata.nestLevel
+        children.addAll(ledgerAssetMetadata.children.map { it.toLedgerAssetMetadataItem() })
     }
 }
 
