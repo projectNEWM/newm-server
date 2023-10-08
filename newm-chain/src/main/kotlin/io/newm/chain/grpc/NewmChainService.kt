@@ -5,6 +5,7 @@ import io.newm.chain.cardano.address.Address
 import io.newm.chain.cardano.address.AddressCredential
 import io.newm.chain.cardano.address.BIP32PublicKey
 import io.newm.chain.cardano.getCurrentEpoch
+import io.newm.chain.cardano.toLedgerAssetMetadataItem
 import io.newm.chain.config.Config
 import io.newm.chain.database.repository.LedgerRepository
 import io.newm.chain.ledger.SubmittedTransactionCache
@@ -606,6 +607,20 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
     override suspend fun ping(request: PingRequest): PongResponse {
         return pongResponse {
             message = request.message
+        }
+    }
+
+    override suspend fun queryLedgerAssetMetadataListByNativeAsset(request: QueryByNativeAssetRequest): LedgerAssetMetadataListResponse {
+        try {
+            return ledgerRepository.queryLedgerAssetMetadataListByNativeAsset(request.name, request.policy).let {
+                ledgerAssetMetadataListResponse {
+                    this.ledgerAssetMetadata.addAll(it.map { ledgerAssetMetadata -> ledgerAssetMetadata.toLedgerAssetMetadataItem() })
+                }
+            }
+        } catch (e: Throwable) {
+            Sentry.addBreadcrumb(request.toString(), "NewmChainService")
+            log.error("queryLedgerAssetMetadataListByNativeAsset error!", e)
+            throw e
         }
     }
 }

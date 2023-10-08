@@ -28,6 +28,7 @@ service NewmChain {
   rpc AcquireMutex (AcquireMutexRequest) returns (MutexResponse);
   rpc ReleaseMutex (ReleaseMutexRequest) returns (MutexResponse);
   rpc Ping (PingRequest) returns (PongResponse);
+  rpc QueryLedgerAssetMetadataListByNativeAsset (QueryByNativeAssetRequest) returns (LedgerAssetMetadataListResponse);
 }
 
 message SubmitTransactionRequest {
@@ -361,4 +362,17 @@ message PingRequest {
 
 message PongResponse {
   string message = 1;
+}
+
+message LedgerAssetMetadataListResponse {
+  repeated LedgerAssetMetadataItem ledger_asset_metadata = 1;
+}
+
+message LedgerAssetMetadataItem {
+  string key_type = 1;
+  string key = 2;
+  string value_type = 3;
+  string value = 4;
+  int32 nest_level = 5;
+  repeated LedgerAssetMetadataItem children = 6;
 }

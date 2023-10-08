@@ -79,5 +79,16 @@ fun Routing.createCardanoRoutes() {
                 throw e
             }
         }
+
+        get("/v1/cardano/nfts") {
+            try {
+                val xpubKey = parameters["xpub"] ?: throw IllegalArgumentException("xpub is required!")
+                val response = cardanoRepository.getWalletMusicNFTs(xpubKey)
+                respond(response)
+            } catch (e: Exception) {
+                log.error("Failed to get wallet NFTs: ${e.message}")
+                throw e
+            }
+        }
     }
 }
