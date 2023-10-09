@@ -292,7 +292,9 @@ internal class UserRepositoryImpl(
 
     private suspend fun checkWhitelist(email: String) {
         if (configRepository.exists(CONFIG_KEY_EMAIL_WHITELIST)) {
-            val whitelistRegexList = configRepository.getStrings(CONFIG_KEY_EMAIL_WHITELIST).map { Regex(it) }
+            val whitelistRegexList = configRepository.getStrings(CONFIG_KEY_EMAIL_WHITELIST).map {
+                Regex(it, RegexOption.IGNORE_CASE)
+            }
             if (whitelistRegexList.none { it.matches(email) }) {
                 throw HttpUnauthorizedException("Email not whitelisted: $email")
             }
