@@ -228,43 +228,63 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
     }
 
     override suspend fun monitorPaymentAddress(request: MonitorPaymentAddressRequest): MonitorPaymentAddressResponse {
-        val requestNativeAssetMap = request.nativeAssetsList.map {
-            io.newm.chain.model.NativeAsset(
-                policy = it.policy,
-                name = it.name,
-                amount = it.amount.toBigInteger()
-            )
-        }.toNativeAssetMap()
+        try {
+            val requestNativeAssetMap = request.nativeAssetsList.map {
+                io.newm.chain.model.NativeAsset(
+                    policy = it.policy,
+                    name = it.name,
+                    amount = it.amount.toBigInteger()
+                )
+            }.toNativeAssetMap()
 
-        return withTimeoutOrNull(request.timeoutMs) {
-            val matchingUtxo = confirmedBlockFlow.mapNotNull { block ->
-                block.toCreatedUtxoMap().values.flatten().firstOrNull { createdUtxo ->
-                    (createdUtxo.address == request.address) && // address matches
-                        (createdUtxo.lovelace == request.lovelace.toBigInteger()) && // lovelace matches
-                        (requestNativeAssetMap == createdUtxo.nativeAssets.toNativeAssetMap()) // nativeAssets match exactly
+            return withTimeoutOrNull(request.timeoutMs) {
+                // Check utxos immediately to see if payment has already arrived
+                val liveUtxosResponse = queryLiveUtxos(queryUtxosRequest { address = request.address })
+                val existingUtxo = liveUtxosResponse.utxosList.firstOrNull { utxo ->
+                    (utxo.lovelace == request.lovelace) && // lovelace matches
+                        (requestNativeAssetMap == utxo.nativeAssetsList.toNativeAssetMap()) // nativeAssets match exactly
                 }
-            }.firstOrNull()
+                if (existingUtxo != null) {
+                    monitorPaymentAddressResponse {
+                        success = true
+                        message = "Payment Received"
+                    }
+                } else {
+                    // Wait for payment to arrive
+                    val matchingUtxo = confirmedBlockFlow.mapNotNull { block ->
+                        block.toCreatedUtxoMap().values.flatten().firstOrNull { createdUtxo ->
+                            (createdUtxo.address == request.address) && // address matches
+                                (createdUtxo.lovelace == request.lovelace.toBigInteger()) && // lovelace matches
+                                (requestNativeAssetMap == createdUtxo.nativeAssets.toNativeAssetMap()) // nativeAssets match exactly
+                        }
+                    }.firstOrNull()
 
-            matchingUtxo?.let {
-                // Make sure this utxo is not spent by checking liveUtxos on the address
-                val response = queryLiveUtxos(queryUtxosRequest { address = request.address })
-                val lovelace = it.lovelace.toString()
-                val reqNativeAssetMap = request.nativeAssetsList.toNativeAssetMap()
-                response.utxosList.firstOrNull { utxo ->
-                    (utxo.hash == it.hash) &&
-                        (utxo.ix == it.ix) &&
-                        (utxo.lovelace == lovelace) &&
-                        (reqNativeAssetMap == utxo.nativeAssetsList.toNativeAssetMap())
-                }
+                    matchingUtxo?.let {
+                        // Make sure this utxo is not spent by checking liveUtxos on the address
+                        val response = queryLiveUtxos(queryUtxosRequest { address = request.address })
+                        val lovelace = it.lovelace.toString()
+                        val reqNativeAssetMap = request.nativeAssetsList.toNativeAssetMap()
+                        response.utxosList.firstOrNull { utxo ->
+                            (utxo.hash == it.hash) &&
+                                (utxo.ix == it.ix) &&
+                                (utxo.lovelace == lovelace) &&
+                                (reqNativeAssetMap == utxo.nativeAssetsList.toNativeAssetMap())
+                        }
 
-                monitorPaymentAddressResponse {
-                    success = true
-                    message = "Payment Received"
+                        monitorPaymentAddressResponse {
+                            success = true
+                            message = "Payment Received"
+                        }
+                    }
                 }
+            } ?: monitorPaymentAddressResponse {
+                success = false
+                message = "Timeout waiting for payment to arrive!"
             }
-        } ?: monitorPaymentAddressResponse {
-            success = false
-            message = "Timeout waiting for payment to arrive!"
+        } catch (e: Throwable) {
+            Sentry.addBreadcrumb(request.toString(), "NewmChainService")
+            log.error("monitorPaymentAddress error!", e)
+            throw e
         }
     }
 

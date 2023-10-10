@@ -17,6 +17,7 @@ import io.newm.server.features.distribution.model.GetArtistResponse
 import io.newm.server.features.distribution.model.GetCountriesResponse
 import io.newm.server.features.distribution.model.GetGenresResponse
 import io.newm.server.features.distribution.model.GetLanguagesResponse
+import io.newm.server.features.distribution.model.GetOutletProfileNamesResponse
 import io.newm.server.features.distribution.model.GetOutletsResponse
 import io.newm.server.features.distribution.model.GetParticipantsResponse
 import io.newm.server.features.distribution.model.GetRolesResponse
@@ -73,6 +74,8 @@ interface DistributionRepository {
     suspend fun getArtists(user: User): GetArtistResponse
 
     suspend fun updateArtist(artistId: Long, updateArtistRequest: UpdateArtistRequest): UpdateArtistResponse
+
+    suspend fun getArtistOutletProfileNames(user: User): GetOutletProfileNamesResponse
 
     suspend fun addParticipant(user: User): AddParticipantResponse
 
