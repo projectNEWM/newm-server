@@ -259,6 +259,21 @@ class GrpcTests {
 
     @Test
     @Disabled
+    fun `test monitorPaymentAddress ada-only`() = runBlocking {
+        val client = buildClient()
+        val response = client.monitorPaymentAddress(
+            monitorPaymentAddressRequest {
+                address = "addr_test1vr3enxw7xpvnq9yaur7l03907khnl4wac79c68yqy7906gq4e58wk"
+                lovelace = "7288690"
+                timeoutMs = 600000
+            }
+        )
+        assertThat(response.success).isTrue()
+        assertThat(response.message).isEqualTo("Payment Received")
+    }
+
+    @Test
+    @Disabled
     fun `test monitorNativeAssets`() = runBlocking {
         val client = buildClient()
         val flow = client.monitorNativeAssets(

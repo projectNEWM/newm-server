@@ -69,6 +69,7 @@ import io.newm.txbuilder.ktx.toPlutusData
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.greaterEq
@@ -90,6 +91,7 @@ class BlockDaemon(
     private val chainRepository: ChainRepository,
     private val ledgerRepository: LedgerRepository,
     private val submittedTransactionCache: SubmittedTransactionCache,
+    private val confirmedBlockFlow: MutableSharedFlow<Block>,
 ) : Daemon {
     override val log: Logger by inject { parametersOf("BlockDaemon") }
 
@@ -144,7 +146,7 @@ class BlockDaemon(
                     }
                     break
                 } catch (e: Throwable) {
-                    log.error("Error connecting Kogmios!", e)
+                    log.warn("Error connecting Kogmios!", e)
                     log.info("Wait 10 seconds to retry...")
                     delay(RETRY_DELAY_MILLIS)
                 }
@@ -162,7 +164,7 @@ class BlockDaemon(
                         syncBlockchain(localChainSyncClient)
                     }
                 } catch (e: Throwable) {
-                    log.error("Error syncing blockchain!", e)
+                    log.warn("Error syncing blockchain!", e)
                     if (e !is TimeoutCancellationException) {
                         e.captureToSentry()
                     }
@@ -397,6 +399,9 @@ class BlockDaemon(
                     }
                 }
             }
+
+            // Emit the blocks to the flow
+            blocksToCommit.forEach { confirmedBlockFlow.emit(it) }
         }.also { totalTime ->
             val now = Instant.now()
             val tenSecondsAgo = now.minusSeconds(10L)

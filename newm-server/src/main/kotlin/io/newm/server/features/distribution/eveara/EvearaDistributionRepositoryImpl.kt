@@ -64,6 +64,7 @@ import io.newm.server.features.distribution.model.GetArtistResponse
 import io.newm.server.features.distribution.model.GetCountriesResponse
 import io.newm.server.features.distribution.model.GetGenresResponse
 import io.newm.server.features.distribution.model.GetLanguagesResponse
+import io.newm.server.features.distribution.model.GetOutletProfileNamesResponse
 import io.newm.server.features.distribution.model.GetOutletsResponse
 import io.newm.server.features.distribution.model.GetParticipantsResponse
 import io.newm.server.features.distribution.model.GetRolesResponse
@@ -539,7 +540,7 @@ class EvearaDistributionRepositoryImpl(
             setBody(updateArtistRequest)
         }
         if (!response.status.isSuccess()) {
-            throw ServerResponseException(response, "Error updating artist!")
+            throw ServerResponseException(response, "Error updating artist!: ${response.bodyAsText()}")
         }
         val updateArtistResponse: UpdateArtistResponse = response.body()
         if (!updateArtistResponse.success) {
@@ -582,6 +583,24 @@ class EvearaDistributionRepositoryImpl(
         }
 
         return getArtistResponse
+    }
+
+    override suspend fun getArtistOutletProfileNames(user: User): GetOutletProfileNamesResponse {
+        requireNotNull(user.distributionUserId) { "User.distributionUserId must not be null!" }
+        val response = httpClient.get("$evearaApiBaseUrl/artist/outlet-profile") {
+            accept(ContentType.Application.Json)
+            bearerAuth(getEvearaApiToken())
+            parameter("uuid", user.distributionUserId)
+        }
+        if (!response.status.isSuccess()) {
+            throw ServerResponseException(response, "Error getting artist outlet profiles!: ${response.bodyAsText()}")
+        }
+        val getOutletProfileNamesResponse: GetOutletProfileNamesResponse = response.body()
+        if (!getOutletProfileNamesResponse.success) {
+            throw ServerResponseException(response, "Error getting artist outlet profiles! success==false")
+        }
+
+        return getOutletProfileNamesResponse
     }
 
     override suspend fun addParticipant(user: User): AddParticipantResponse {
@@ -1151,12 +1170,17 @@ class EvearaDistributionRepositoryImpl(
         require(collabs.all { it.status == CollaborationStatus.Accepted }) { "All Collaborations must be accepted!" }
 
         // Create the distribution artistId for each collaborator if they don't exist yet
-        val collabDistributionArtists = getArtists(user).artists.associate { it.name to it.artistId }.toMutableMap()
+        val collabDistributionArtists = getArtists(user).artists
+        val collabDistributionArtistsMap = collabDistributionArtists.associateBy { it.artistId }
+        val collabDistributionArtistsNameToIdMap =
+            getArtists(user).artists.associate { it.name to it.artistId }.toMutableMap()
+        val collabUserOutletProfileNamesMap =
+            getArtistOutletProfileNames(user).outletProfileNames.associate { it.name to it.id }
         collabs.forEach { collab ->
             if (collab.distributionArtistId == null) {
                 val collabUser = userRepository.findByEmail(collab.email!!)
 
-                collabDistributionArtists[collabUser.stageOrFullName]?.let { distributionArtistId ->
+                collabDistributionArtistsNameToIdMap[collabUser.stageOrFullName]?.let { distributionArtistId ->
                     log.info { "Found existing collab distribution artist ${collabUser.email} with id $distributionArtistId" }
                     collabRepository.update(
                         collab.copy(distributionArtistId = distributionArtistId),
@@ -1164,6 +1188,52 @@ class EvearaDistributionRepositoryImpl(
                         user.id,
                         skipStatusCheck = true
                     )
+
+                    // FIXME: Need to fix sending outlet profiles to Eveara when the artist name doesn't match
+                    /*
+                    val currentOutletsMap =
+                        collabDistributionArtistsMap[distributionArtistId]!!.outlets.associateBy { it.outletName }
+                    if (currentOutletsMap["Spotify"]?.outletId != collabUser.spotifyProfile.takeUnless { it.isNullOrBlank() } ||
+                        currentOutletsMap["SoundCloud"]?.outletId != collabUser.soundCloudProfile.takeUnless { it.isNullOrBlank() } ||
+                        currentOutletsMap["Apple"]?.outletId != collabUser.appleMusicProfile.takeUnless { it.isNullOrBlank() }
+                    ) {
+                        val response = updateArtist(
+                            distributionArtistId,
+                            UpdateArtistRequest(
+                                uuid = user.distributionUserId!!,
+                                name = collabUser.stageOrFullName,
+                                outletProfiles = mutableListOf<OutletProfile>().apply {
+                                    if (collabUser.spotifyProfile != null) {
+                                        add(
+                                            OutletProfile(
+                                                id = collabUserOutletProfileNamesMap["Spotify"]!!,
+                                                profileUrl = collabUser.spotifyProfile,
+                                            )
+                                        )
+                                    }
+                                    if (collabUser.soundCloudProfile != null) {
+                                        add(
+                                            OutletProfile(
+                                                id = collabUserOutletProfileNamesMap["SoundCloud"]!!,
+                                                profileUrl = collabUser.soundCloudProfile,
+                                            )
+                                        )
+                                    }
+                                    if (collabUser.appleMusicProfile != null) {
+                                        add(
+                                            OutletProfile(
+                                                id = collabUserOutletProfileNamesMap["Apple"]!!,
+                                                profileUrl = collabUser.appleMusicProfile,
+                                            )
+                                        )
+                                    }
+                                }
+
+                            )
+                        ).logRequestJson(log)
+                        log.info { "Updated collab distribution artist ${collabUser.email} with id ${response.artistData?.artistId}: ${response.message}" }
+                    }
+                     */
                 } ?: run {
                     // FIXME: don't hardcode artist's country
                     val hardcodedCountry =
@@ -1171,9 +1241,38 @@ class EvearaDistributionRepositoryImpl(
                     val response =
                         addArtist(
                             AddArtistRequest(
-                                user.distributionUserId!!,
-                                collabUser.stageOrFullName,
-                                hardcodedCountry
+                                uuid = user.distributionUserId!!,
+                                name = collabUser.stageOrFullName,
+                                country = hardcodedCountry,
+                                // FIXME: Need to fix sending outlet profiles to Eveara when the artist name doesn't match
+                                /*
+                                outletProfiles = mutableListOf<OutletProfile>().apply {
+                                    if (collabUser.spotifyProfile != null) {
+                                        add(
+                                            OutletProfile(
+                                                id = collabUserOutletProfileNamesMap["Spotify"]!!,
+                                                profileUrl = collabUser.spotifyProfile,
+                                            )
+                                        )
+                                    }
+                                    if (collabUser.soundCloudProfile != null) {
+                                        add(
+                                            OutletProfile(
+                                                id = collabUserOutletProfileNamesMap["SoundCloud"]!!,
+                                                profileUrl = collabUser.soundCloudProfile,
+                                            )
+                                        )
+                                    }
+                                    if (collabUser.appleMusicProfile != null) {
+                                        add(
+                                            OutletProfile(
+                                                id = collabUserOutletProfileNamesMap["Apple"]!!,
+                                                profileUrl = collabUser.appleMusicProfile,
+                                            )
+                                        )
+                                    }
+                                }
+                                 */
                             ).logRequestJson(log)
                         )
                     log.info { "Created collab distribution artist ${collabUser.email} with id ${response.artistId}: ${response.message}" }
@@ -1183,7 +1282,7 @@ class EvearaDistributionRepositoryImpl(
                         user.id,
                         skipStatusCheck = true
                     )
-                    collabDistributionArtists[collabUser.stageOrFullName] = response.artistId
+                    collabDistributionArtistsNameToIdMap[collabUser.stageOrFullName] = response.artistId
                 }
             }
         }
@@ -1208,22 +1307,151 @@ class EvearaDistributionRepositoryImpl(
         }
 
         // Add Distribution Artist if they don't yet exist
-        val existingDistributionArtist = collabDistributionArtists[user.stageOrFullName]
+        val existingDistributionArtist = collabDistributionArtistsNameToIdMap[user.stageOrFullName]
         if (user.distributionArtistId == null) {
             if (existingDistributionArtist != null) {
                 log.info { "Found existing distribution artist ${user.email} with id $existingDistributionArtist" }
                 user.distributionArtistId = existingDistributionArtist
                 userRepository.updateUserData(user.id, user)
+
+                // FIXME: Need to fix sending outlet profiles to Eveara when the artist name doesn't match
+                /*
+                val currentOutletsMap =
+                    collabDistributionArtistsMap[user.distributionArtistId]!!.outlets.associateBy { it.outletName }
+                if (currentOutletsMap["Spotify"]?.outletId != user.spotifyProfile.takeUnless { it.isNullOrBlank() } ||
+                    currentOutletsMap["SoundCloud"]?.outletId != user.soundCloudProfile.takeUnless { it.isNullOrBlank() } ||
+                    currentOutletsMap["Apple"]?.outletId != user.appleMusicProfile.takeUnless { it.isNullOrBlank() }
+                ) {
+                    val response = updateArtist(
+                        user.distributionArtistId!!,
+                        UpdateArtistRequest(
+                            uuid = user.distributionUserId!!,
+                            name = user.stageOrFullName,
+                            outletProfiles = mutableListOf<OutletProfile>().apply {
+                                if (user.spotifyProfile != null) {
+                                    add(
+                                        OutletProfile(
+                                            id = collabUserOutletProfileNamesMap["Spotify"]!!,
+                                            profileUrl = user.spotifyProfile,
+                                        )
+                                    )
+                                }
+                                if (user.soundCloudProfile != null) {
+                                    add(
+                                        OutletProfile(
+                                            id = collabUserOutletProfileNamesMap["SoundCloud"]!!,
+                                            profileUrl = user.soundCloudProfile,
+                                        )
+                                    )
+                                }
+                                if (user.appleMusicProfile != null) {
+                                    add(
+                                        OutletProfile(
+                                            id = collabUserOutletProfileNamesMap["Apple"]!!,
+                                            profileUrl = user.appleMusicProfile,
+                                        )
+                                    )
+                                }
+                            }
+
+                        )
+                    ).logRequestJson(log)
+                    log.info { "Updated distribution artist ${user.email} with id ${response.artistData?.artistId}: ${response.message}" }
+                }
+                 */
             } else {
                 // FIXME: don't hardcode artist's country
                 val hardcodedCountry =
                     getCountries().countries.first { it.countryCode.equals("us", ignoreCase = true) }.countryCode
-                val response =
-                    addArtist(AddArtistRequest(user.distributionUserId!!, user.stageOrFullName, hardcodedCountry))
+                val response = addArtist(
+                    AddArtistRequest(
+                        uuid = user.distributionUserId!!,
+                        name = user.stageOrFullName,
+                        country = hardcodedCountry,
+                        // FIXME: Need to fix sending outlet profiles to Eveara when the artist name doesn't match
+                        /*
+                        outletProfiles = mutableListOf<OutletProfile>().apply {
+                            if (user.spotifyProfile != null) {
+                                add(
+                                    OutletProfile(
+                                        id = collabUserOutletProfileNamesMap["Spotify"]!!,
+                                        profileUrl = user.spotifyProfile,
+                                    )
+                                )
+                            }
+                            if (user.soundCloudProfile != null) {
+                                add(
+                                    OutletProfile(
+                                        id = collabUserOutletProfileNamesMap["SoundCloud"]!!,
+                                        profileUrl = user.soundCloudProfile,
+                                    )
+                                )
+                            }
+                            if (user.appleMusicProfile != null) {
+                                add(
+                                    OutletProfile(
+                                        id = collabUserOutletProfileNamesMap["Apple"]!!,
+                                        profileUrl = user.appleMusicProfile,
+                                    )
+                                )
+                            }
+                        }
+                         */
+                    )
+                )
                 log.info { "Created distribution artist ${user.email} with id ${response.artistId}: ${response.message}" }
                 user.distributionArtistId = response.artistId
                 userRepository.updateUserData(user.id, user)
             }
+        } else {
+            val artist = getArtist(user).artists.first()
+            log.info { "Found existing distribution artist ${user.email} with id ${artist.artistId}" }
+
+            // FIXME: Need to fix sending outlet profiles to Eveara when the artist name doesn't match
+            /*
+            val currentOutletsMap =
+                collabDistributionArtistsMap[user.distributionArtistId]!!.outlets.associateBy { it.outletName }
+            if (currentOutletsMap["Spotify"]?.outletId != user.spotifyProfile.takeUnless { it.isNullOrBlank() } ||
+                currentOutletsMap["SoundCloud"]?.outletId != user.soundCloudProfile.takeUnless { it.isNullOrBlank() } ||
+                currentOutletsMap["Apple"]?.outletId != user.appleMusicProfile.takeUnless { it.isNullOrBlank() }
+            ) {
+                val response = updateArtist(
+                    user.distributionArtistId!!,
+                    UpdateArtistRequest(
+                        uuid = user.distributionUserId!!,
+                        name = user.stageOrFullName,
+                        outletProfiles = mutableListOf<OutletProfile>().apply {
+                            if (user.spotifyProfile != null) {
+                                add(
+                                    OutletProfile(
+                                        id = collabUserOutletProfileNamesMap["Spotify"]!!,
+                                        profileUrl = user.spotifyProfile,
+                                    )
+                                )
+                            }
+                            if (user.soundCloudProfile != null) {
+                                add(
+                                    OutletProfile(
+                                        id = collabUserOutletProfileNamesMap["SoundCloud"]!!,
+                                        profileUrl = user.soundCloudProfile,
+                                    )
+                                )
+                            }
+                            if (user.appleMusicProfile != null) {
+                                add(
+                                    OutletProfile(
+                                        id = collabUserOutletProfileNamesMap["Apple"]!!,
+                                        profileUrl = user.appleMusicProfile,
+                                    )
+                                )
+                            }
+                        }
+
+                    )
+                ).logRequestJson(log)
+                log.info { "Updated distribution artist ${user.email} with id ${response.artistData?.artistId}: ${response.message}" }
+            }
+             */
         }
 
         // Create the newm participant if they don't exist yet

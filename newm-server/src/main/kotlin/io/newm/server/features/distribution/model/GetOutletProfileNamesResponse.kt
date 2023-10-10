@@ -4,11 +4,11 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class UpdateArtistResponse(
-    @SerialName("message")
-    val message: String,
+data class GetOutletProfileNamesResponse(
     @SerialName("success")
     val success: Boolean,
+    @SerialName("message")
+    val message: String,
     @SerialName("data")
-    val artistData: ArtistData? = null,
+    val outletProfileNames: List<OutletProfileName>
 )

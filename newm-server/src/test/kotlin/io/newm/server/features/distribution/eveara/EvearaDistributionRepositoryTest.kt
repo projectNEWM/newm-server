@@ -57,9 +57,12 @@ class EvearaDistributionRepositoryTest : BaseApplicationTests() {
                 role = "Artist",
                 email = "danketsu@me.com",
                 nickname = "Danketsu",
+//                nickname = "ADA Ninjaz", // name on spotify
                 websiteUrl = "https://danketsu.io",
                 instagramUrl = "https://instagram.com/danketsu",
                 twitterUrl = "https://twitter.com/danketsu",
+                // FIXME: This fails at Eveara because their spotify name is "Ada Ninjaz" and not "Danketsu"
+                spotifyProfile = "https://open.spotify.com/artist/4EiSbT0iP4YARJ9MGClRgB",
             ),
             User(
                 firstName = "Mirai",
@@ -69,6 +72,7 @@ class EvearaDistributionRepositoryTest : BaseApplicationTests() {
                 email = "mirai@me.com",
                 nickname = "Mirai Music",
                 websiteUrl = "https://miraimusicproductions.com",
+                soundCloudProfile = "https://soundcloud.com/miraimusics",
             ),
             User(
                 firstName = "Ashley",
@@ -79,6 +83,7 @@ class EvearaDistributionRepositoryTest : BaseApplicationTests() {
                 nickname = "NSTASIA",
                 websiteUrl = "https://www.nstasia.com",
                 twitterUrl = "https://twitter.com/nstasia",
+                appleMusicProfile = "https://music.apple.com/us/artist/nastasia-griffin/975884342",
             ),
             User(
                 firstName = "Bob",

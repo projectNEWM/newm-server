@@ -12,5 +12,5 @@ data class AddArtistRequest(
     @SerialName("country")
     val country: String,
     @SerialName("outlets_profile")
-    val outletsProfile: OutletsProfile? = null
+    val outletProfiles: List<OutletProfile>? = null
 )
