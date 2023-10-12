@@ -14,6 +14,7 @@ import io.newm.server.features.user.oauth.providers.AppleUserProvider
 import io.newm.server.features.user.oauth.providers.FacebookUserProvider
 import io.newm.server.features.user.oauth.providers.GoogleUserProvider
 import io.newm.server.features.user.oauth.providers.LinkedInUserProvider
+import io.newm.server.features.user.verify.OutletProfileUrlVerifier
 import io.newm.server.ktx.asValidEmail
 import io.newm.server.ktx.asValidUrl
 import io.newm.server.ktx.checkLength
@@ -28,6 +29,7 @@ import io.newm.shared.koin.inject
 import io.newm.shared.ktx.debug
 import io.newm.shared.ktx.existsHavingId
 import io.newm.shared.ktx.isValidPassword
+import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf
 import java.util.UUID
@@ -39,6 +41,8 @@ internal class UserRepositoryImpl(
     private val appleUserProvider: AppleUserProvider,
     private val twoFactorAuthRepository: TwoFactorAuthRepository,
     private val configRepository: ConfigRepository,
+    private val spotifyProfileUrlVerifier: OutletProfileUrlVerifier,
+    private val appleMusicProfileUrlVerifier: OutletProfileUrlVerifier,
 ) : UserRepository {
 
     private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
@@ -50,6 +54,12 @@ internal class UserRepositoryImpl(
         user.checkFieldLengths()
         val email = user.email.asValidEmail().asVerifiedEmail(user.authCode)
         val passwordHash = user.newPassword.asValidPassword(user.confirmPassword).toHash()
+        user.spotifyProfile?.let {
+            spotifyProfileUrlVerifier.verify(it, user.stageOrFullName)
+        }
+        user.appleMusicProfile?.let {
+            appleMusicProfileUrlVerifier.verify(it, user.stageOrFullName)
+        }
 
         return transaction {
             email.checkEmailUnique()
@@ -160,7 +170,7 @@ internal class UserRepositoryImpl(
         val email = user.email?.asValidEmail()?.asVerifiedEmail(user.authCode)
         val passwordHash = user.newPassword?.asValidPassword(user.confirmPassword)?.toHash()
 
-        transaction {
+        newSuspendedTransaction {
             val entity = UserEntity[userId]
             user.firstName?.let { entity.firstName = it }
             user.lastName?.let { entity.lastName = it }
@@ -170,9 +180,15 @@ internal class UserRepositoryImpl(
             user.websiteUrl?.let { entity.websiteUrl = it.asValidUrl() }
             user.twitterUrl?.let { entity.twitterUrl = it.asValidUrl() }
             user.instagramUrl?.let { entity.instagramUrl = it.asValidUrl() }
-            user.spotifyProfile?.let { entity.spotifyProfile = it }
+            user.spotifyProfile?.let {
+                spotifyProfileUrlVerifier.verify(it, entity.stageOrFullName)
+                entity.spotifyProfile = it
+            }
             user.soundCloudProfile?.let { entity.soundCloudProfile = it }
-            user.appleMusicProfile?.let { entity.appleMusicProfile = it }
+            user.appleMusicProfile?.let {
+                appleMusicProfileUrlVerifier.verify(it, entity.stageOrFullName)
+                entity.appleMusicProfile = it
+            }
             user.location?.let { entity.location = it }
             user.role?.let { entity.role = it }
             user.genre?.let { entity.genre = it }

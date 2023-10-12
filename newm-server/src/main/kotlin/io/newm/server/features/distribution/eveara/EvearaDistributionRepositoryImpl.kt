@@ -73,6 +73,7 @@ import io.newm.server.features.distribution.model.GetTracksResponse
 import io.newm.server.features.distribution.model.GetUserLabelResponse
 import io.newm.server.features.distribution.model.GetUserResponse
 import io.newm.server.features.distribution.model.GetUserSubscriptionResponse
+import io.newm.server.features.distribution.model.OutletProfile
 import io.newm.server.features.distribution.model.OutletsDetail
 import io.newm.server.features.distribution.model.Participant
 import io.newm.server.features.distribution.model.Preview
@@ -1189,8 +1190,6 @@ class EvearaDistributionRepositoryImpl(
                         skipStatusCheck = true
                     )
 
-                    // FIXME: Need to fix sending outlet profiles to Eveara when the artist name doesn't match
-                    /*
                     val currentOutletsMap =
                         collabDistributionArtistsMap[distributionArtistId]!!.outlets.associateBy { it.outletName }
                     if (currentOutletsMap["Spotify"]?.outletId != collabUser.spotifyProfile.takeUnless { it.isNullOrBlank() } ||
@@ -1211,6 +1210,8 @@ class EvearaDistributionRepositoryImpl(
                                             )
                                         )
                                     }
+                                    // FIXME: support soundcloud after we have a validation API for it.
+                                    /*
                                     if (collabUser.soundCloudProfile != null) {
                                         add(
                                             OutletProfile(
@@ -1219,6 +1220,7 @@ class EvearaDistributionRepositoryImpl(
                                             )
                                         )
                                     }
+                                     */
                                     if (collabUser.appleMusicProfile != null) {
                                         add(
                                             OutletProfile(
@@ -1233,7 +1235,6 @@ class EvearaDistributionRepositoryImpl(
                         ).logRequestJson(log)
                         log.info { "Updated collab distribution artist ${collabUser.email} with id ${response.artistData?.artistId}: ${response.message}" }
                     }
-                     */
                 } ?: run {
                     // FIXME: don't hardcode artist's country
                     val hardcodedCountry =
@@ -1244,8 +1245,6 @@ class EvearaDistributionRepositoryImpl(
                                 uuid = user.distributionUserId!!,
                                 name = collabUser.stageOrFullName,
                                 country = hardcodedCountry,
-                                // FIXME: Need to fix sending outlet profiles to Eveara when the artist name doesn't match
-                                /*
                                 outletProfiles = mutableListOf<OutletProfile>().apply {
                                     if (collabUser.spotifyProfile != null) {
                                         add(
@@ -1255,6 +1254,8 @@ class EvearaDistributionRepositoryImpl(
                                             )
                                         )
                                     }
+                                    // FIXME: support soundcloud after we have a validation API for it.
+                                    /*
                                     if (collabUser.soundCloudProfile != null) {
                                         add(
                                             OutletProfile(
@@ -1263,6 +1264,7 @@ class EvearaDistributionRepositoryImpl(
                                             )
                                         )
                                     }
+                                     */
                                     if (collabUser.appleMusicProfile != null) {
                                         add(
                                             OutletProfile(
@@ -1272,7 +1274,6 @@ class EvearaDistributionRepositoryImpl(
                                         )
                                     }
                                 }
-                                 */
                             ).logRequestJson(log)
                         )
                     log.info { "Created collab distribution artist ${collabUser.email} with id ${response.artistId}: ${response.message}" }
@@ -1314,8 +1315,6 @@ class EvearaDistributionRepositoryImpl(
                 user.distributionArtistId = existingDistributionArtist
                 userRepository.updateUserData(user.id, user)
 
-                // FIXME: Need to fix sending outlet profiles to Eveara when the artist name doesn't match
-                /*
                 val currentOutletsMap =
                     collabDistributionArtistsMap[user.distributionArtistId]!!.outlets.associateBy { it.outletName }
                 if (currentOutletsMap["Spotify"]?.outletId != user.spotifyProfile.takeUnless { it.isNullOrBlank() } ||
@@ -1336,6 +1335,8 @@ class EvearaDistributionRepositoryImpl(
                                         )
                                     )
                                 }
+                                // FIXME: support soundcloud after we have a validation API for it.
+                                /*
                                 if (user.soundCloudProfile != null) {
                                     add(
                                         OutletProfile(
@@ -1344,6 +1345,7 @@ class EvearaDistributionRepositoryImpl(
                                         )
                                     )
                                 }
+                                 */
                                 if (user.appleMusicProfile != null) {
                                     add(
                                         OutletProfile(
@@ -1358,7 +1360,6 @@ class EvearaDistributionRepositoryImpl(
                     ).logRequestJson(log)
                     log.info { "Updated distribution artist ${user.email} with id ${response.artistData?.artistId}: ${response.message}" }
                 }
-                 */
             } else {
                 // FIXME: don't hardcode artist's country
                 val hardcodedCountry =
@@ -1368,8 +1369,6 @@ class EvearaDistributionRepositoryImpl(
                         uuid = user.distributionUserId!!,
                         name = user.stageOrFullName,
                         country = hardcodedCountry,
-                        // FIXME: Need to fix sending outlet profiles to Eveara when the artist name doesn't match
-                        /*
                         outletProfiles = mutableListOf<OutletProfile>().apply {
                             if (user.spotifyProfile != null) {
                                 add(
@@ -1379,6 +1378,8 @@ class EvearaDistributionRepositoryImpl(
                                     )
                                 )
                             }
+                            // FIXME: support soundcloud after we have a validation API for it.
+                            /*
                             if (user.soundCloudProfile != null) {
                                 add(
                                     OutletProfile(
@@ -1387,6 +1388,7 @@ class EvearaDistributionRepositoryImpl(
                                     )
                                 )
                             }
+                             */
                             if (user.appleMusicProfile != null) {
                                 add(
                                     OutletProfile(
@@ -1396,7 +1398,6 @@ class EvearaDistributionRepositoryImpl(
                                 )
                             }
                         }
-                         */
                     )
                 )
                 log.info { "Created distribution artist ${user.email} with id ${response.artistId}: ${response.message}" }
@@ -1407,8 +1408,6 @@ class EvearaDistributionRepositoryImpl(
             val artist = getArtist(user).artists.first()
             log.info { "Found existing distribution artist ${user.email} with id ${artist.artistId}" }
 
-            // FIXME: Need to fix sending outlet profiles to Eveara when the artist name doesn't match
-            /*
             val currentOutletsMap =
                 collabDistributionArtistsMap[user.distributionArtistId]!!.outlets.associateBy { it.outletName }
             if (currentOutletsMap["Spotify"]?.outletId != user.spotifyProfile.takeUnless { it.isNullOrBlank() } ||
@@ -1429,6 +1428,8 @@ class EvearaDistributionRepositoryImpl(
                                     )
                                 )
                             }
+                            // FIXME: support soundcloud after we have a validation API for it.
+                            /*
                             if (user.soundCloudProfile != null) {
                                 add(
                                     OutletProfile(
@@ -1437,6 +1438,7 @@ class EvearaDistributionRepositoryImpl(
                                     )
                                 )
                             }
+                             */
                             if (user.appleMusicProfile != null) {
                                 add(
                                     OutletProfile(
@@ -1451,7 +1453,6 @@ class EvearaDistributionRepositoryImpl(
                 ).logRequestJson(log)
                 log.info { "Updated distribution artist ${user.email} with id ${response.artistData?.artistId}: ${response.message}" }
             }
-             */
         }
 
         // Create the newm participant if they don't exist yet

@@ -6,10 +6,18 @@ import io.newm.server.features.user.oauth.providers.GoogleUserProvider
 import io.newm.server.features.user.oauth.providers.LinkedInUserProvider
 import io.newm.server.features.user.repo.UserRepository
 import io.newm.server.features.user.repo.UserRepositoryImpl
+import io.newm.server.features.user.verify.AppleMusicProfileUrlVerifier
+import io.newm.server.features.user.verify.OutletProfileUrlVerifier
+import io.newm.server.features.user.verify.SpotifyProfileUrlVerifier
+import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
 val userKoinModule = module {
-    single<UserRepository> { UserRepositoryImpl(get(), get(), get(), get(), get(), get()) }
+    single<OutletProfileUrlVerifier>(named("spotifyProfileUrlVerifier")) { SpotifyProfileUrlVerifier(get(), get()) }
+    single<OutletProfileUrlVerifier>(named("appleMusicProfileUrlVerifier")) { AppleMusicProfileUrlVerifier(get(), get()) }
+    single<UserRepository> {
+        UserRepositoryImpl(get(), get(), get(), get(), get(), get(), get(named("spotifyProfileUrlVerifier")), get(named("appleMusicProfileUrlVerifier")))
+    }
     single { GoogleUserProvider(get(), get()) }
     single { FacebookUserProvider(get(), get()) }
     single { LinkedInUserProvider(get(), get()) }

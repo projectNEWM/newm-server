@@ -6,9 +6,12 @@ object KeyParser {
     fun parse(key: String): ByteArray {
         // Remove the header and footer lines from the private key string
         val base64Key = key
-            .replace("\\-\\-\\-\\-\\-.*".toRegex(), "")
-            .replace("\\s".toRegex(), "")
+            .replace(headerFooterRegexPattern, "")
+            .replace(whitespaceRegexPattern, "")
 
         return base64Key.decodeBase64Bytes()
     }
+
+    private val headerFooterRegexPattern = Regex("-----.*?-----")
+    private val whitespaceRegexPattern = Regex("\\s")
 }
