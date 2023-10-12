@@ -30,6 +30,7 @@ import io.newm.server.features.user.oauth.providers.AppleUserProvider
 import io.newm.server.features.user.oauth.providers.FacebookUserProvider
 import io.newm.server.features.user.oauth.providers.GoogleUserProvider
 import io.newm.server.features.user.oauth.providers.LinkedInUserProvider
+import io.newm.server.features.user.verify.OutletProfileUrlVerifier
 import io.newm.server.ktx.asValidUrl
 import io.newm.shared.auth.Password
 import io.newm.shared.serialization.BigDecimalSerializer
@@ -44,6 +45,7 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.TestInstance
 import org.koin.core.context.GlobalContext.loadKoinModules
+import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Container
@@ -137,6 +139,12 @@ open class BaseApplicationTests {
                 single { mockk<LinkedInUserProvider>(relaxed = true) }
                 single { mockk<AppleUserProvider>(relaxed = true) }
                 single { mockk<AmazonS3>(relaxed = true) }
+                single<OutletProfileUrlVerifier>(named("spotifyProfileUrlVerifier")) {
+                    mockk<OutletProfileUrlVerifier>(relaxed = true)
+                }
+                single<OutletProfileUrlVerifier>(named("appleMusicProfileUrlVerifier")) {
+                    mockk<OutletProfileUrlVerifier>(relaxed = true)
+                }
             }
         )
     }
