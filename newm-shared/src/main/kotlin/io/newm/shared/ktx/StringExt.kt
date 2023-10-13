@@ -37,6 +37,8 @@ private object DummyURLHandler : URLStreamHandler() {
     }
 }
 
+fun String.orNull(): String? = takeIf { isNotBlank() }
+
 fun String.toUUID(): UUID = UUID.fromString(this)
 
 fun String.isValidEmail(): Boolean = EMAIL_REGEX.matches(this)
