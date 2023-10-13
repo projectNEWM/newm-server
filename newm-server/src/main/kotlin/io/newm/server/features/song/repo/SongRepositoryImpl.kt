@@ -49,6 +49,7 @@ import io.newm.shared.ktx.getInt
 import io.newm.shared.ktx.getLong
 import io.newm.shared.ktx.getString
 import io.newm.shared.ktx.info
+import io.newm.shared.ktx.orNull
 import io.newm.shared.ktx.orZero
 import io.newm.shared.ktx.propertiesFromResource
 import io.newm.shared.ktx.toTempFile
@@ -127,42 +128,42 @@ internal class SongRepositoryImpl(
                 title?.let { entity.title = it }
                 genres?.let { entity.genres = it.toTypedArray() }
                 moods?.let { entity.moods = it.toTypedArray() }
-                coverArtUrl?.let { entity.coverArtUrl = it.asValidUrl() }
-                description?.let { entity.description = it }
-                album?.let { entity.album = it }
+                coverArtUrl?.let { entity.coverArtUrl = it.orNull()?.asValidUrl() }
+                description?.let { entity.description = it.orNull() }
+                album?.let { entity.album = it.orNull() }
                 track?.let { entity.track = it }
-                language?.let { entity.language = it }
-                compositionCopyrightOwner?.let { entity.compositionCopyrightOwner = it }
+                language?.let { entity.language = it.orNull() }
+                compositionCopyrightOwner?.let { entity.compositionCopyrightOwner = it.orNull() }
                 compositionCopyrightYear?.let { entity.compositionCopyrightYear = it }
-                phonographicCopyrightOwner?.let { entity.phonographicCopyrightOwner = it }
+                phonographicCopyrightOwner?.let { entity.phonographicCopyrightOwner = it.orNull() }
                 phonographicCopyrightYear?.let { entity.phonographicCopyrightYear = it }
-                parentalAdvisory?.let { entity.parentalAdvisory = it }
+                parentalAdvisory?.let { entity.parentalAdvisory = it.orNull() }
                 barcodeType?.let { entity.barcodeType = it }
                 barcodeNumber?.let { entity.barcodeNumber = it }
-                isrc?.let { entity.isrc = it }
-                iswc?.let { entity.iswc = it }
+                isrc?.let { entity.isrc = it.orNull() }
+                iswc?.let { entity.iswc = it.orNull() }
                 ipis?.let { entity.ipis = it.toTypedArray() }
                 releaseDate?.let { entity.releaseDate = it }
                 publicationDate?.let { entity.publicationDate = it }
-                lyricsUrl?.let { entity.lyricsUrl = it.asValidUrl() }
+                lyricsUrl?.let { entity.lyricsUrl = it.orNull()?.asValidUrl() }
                 if (requesterId == null) {
                     // don't allow updating these fields when invoked from REST API
-                    tokenAgreementUrl?.let { entity.tokenAgreementUrl = it }
-                    originalAudioUrl?.let { entity.originalAudioUrl = it }
-                    clipUrl?.let { entity.clipUrl = it }
-                    streamUrl?.let { entity.streamUrl = it.asValidUrl() }
+                    tokenAgreementUrl?.let { entity.tokenAgreementUrl = it.orNull()?.asValidUrl() }
+                    originalAudioUrl?.let { entity.originalAudioUrl = it.orNull()?.asValidUrl() }
+                    clipUrl?.let { entity.clipUrl = it.orNull()?.asValidUrl() }
+                    streamUrl?.let { entity.streamUrl = it.orNull()?.asValidUrl() }
                     duration?.let { entity.duration = it }
-                    nftPolicyId?.let { entity.nftPolicyId = it }
-                    nftName?.let { entity.nftName = it }
-                    mintingTxId?.let { entity.mintingTxId = it }
+                    nftPolicyId?.let { entity.nftPolicyId = it.orNull() }
+                    nftName?.let { entity.nftName = it.orNull() }
+                    mintingTxId?.let { entity.mintingTxId = it.orNull() }
                     audioEncodingStatus?.let { entity.audioEncodingStatus = it }
                     mintingStatus?.let { entity.mintingStatus = it }
                     marketplaceStatus?.let { entity.marketplaceStatus = it }
                     paymentKeyId?.let { entity.paymentKeyId = EntityID(it, KeyTable) }
-                    arweaveCoverArtUrl?.let { entity.arweaveCoverArtUrl = it.asValidUrl() }
-                    arweaveLyricsUrl?.let { entity.arweaveLyricsUrl = it.asValidUrl() }
-                    arweaveClipUrl?.let { entity.arweaveClipUrl = it.asValidUrl() }
-                    arweaveTokenAgreementUrl?.let { entity.arweaveTokenAgreementUrl = it.asValidUrl() }
+                    arweaveCoverArtUrl?.let { entity.arweaveCoverArtUrl = it.orNull()?.asValidUrl() }
+                    arweaveLyricsUrl?.let { entity.arweaveLyricsUrl = it.orNull()?.asValidUrl() }
+                    arweaveClipUrl?.let { entity.arweaveClipUrl = it.orNull()?.asValidUrl() }
+                    arweaveTokenAgreementUrl?.let { entity.arweaveTokenAgreementUrl = it.orNull()?.asValidUrl() }
                     distributionTrackId?.let { entity.distributionTrackId = it }
                     distributionReleaseId?.let { entity.distributionReleaseId = it }
                     mintCostLovelace?.let { entity.mintCostLovelace = it }

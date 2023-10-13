@@ -29,6 +29,7 @@ import io.newm.shared.koin.inject
 import io.newm.shared.ktx.debug
 import io.newm.shared.ktx.existsHavingId
 import io.newm.shared.ktx.isValidPassword
+import io.newm.shared.ktx.orNull
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf
@@ -172,28 +173,30 @@ internal class UserRepositoryImpl(
 
         newSuspendedTransaction {
             val entity = UserEntity[userId]
-            user.firstName?.let { entity.firstName = it }
-            user.lastName?.let { entity.lastName = it }
-            user.nickname?.let { entity.nickname = it }
-            user.pictureUrl?.let { entity.pictureUrl = it.asValidUrl() }
-            user.bannerUrl?.let { entity.bannerUrl = it.asValidUrl() }
-            user.websiteUrl?.let { entity.websiteUrl = it.asValidUrl() }
-            user.twitterUrl?.let { entity.twitterUrl = it.asValidUrl() }
-            user.instagramUrl?.let { entity.instagramUrl = it.asValidUrl() }
+            user.firstName?.let { entity.firstName = it.orNull() }
+            user.lastName?.let { entity.lastName = it.orNull() }
+            user.nickname?.let { entity.nickname = it.orNull() }
+            user.pictureUrl?.let { entity.pictureUrl = it.orNull()?.asValidUrl() }
+            user.bannerUrl?.let { entity.bannerUrl = it.orNull()?.asValidUrl() }
+            user.websiteUrl?.let { entity.websiteUrl = it.orNull()?.asValidUrl() }
+            user.twitterUrl?.let { entity.twitterUrl = it.orNull()?.asValidUrl() }
+            user.instagramUrl?.let { entity.instagramUrl = it.orNull()?.asValidUrl() }
             user.spotifyProfile?.let {
-                spotifyProfileUrlVerifier.verify(it, entity.stageOrFullName)
-                entity.spotifyProfile = it
+                entity.spotifyProfile = it.orNull()?.also { profile ->
+                    spotifyProfileUrlVerifier.verify(profile, entity.stageOrFullName)
+                }
             }
-            user.soundCloudProfile?.let { entity.soundCloudProfile = it }
+            user.soundCloudProfile?.let { entity.soundCloudProfile = it.orNull() }
             user.appleMusicProfile?.let {
-                appleMusicProfileUrlVerifier.verify(it, entity.stageOrFullName)
-                entity.appleMusicProfile = it
+                entity.appleMusicProfile = it.orNull()?.also { profile ->
+                    appleMusicProfileUrlVerifier.verify(profile, entity.stageOrFullName)
+                }
             }
-            user.location?.let { entity.location = it }
-            user.role?.let { entity.role = it }
-            user.genre?.let { entity.genre = it }
-            user.biography?.let { entity.biography = it }
-            user.walletAddress?.let { entity.walletAddress = it }
+            user.location?.let { entity.location = it.orNull() }
+            user.role?.let { entity.role = it.orNull() }
+            user.genre?.let { entity.genre = it.orNull() }
+            user.biography?.let { entity.biography = it.orNull() }
+            user.walletAddress?.let { entity.walletAddress = it.orNull() }
             email?.let {
                 it.checkEmailUnique(entity.email)
                 entity.email = it
@@ -204,16 +207,16 @@ internal class UserRepositoryImpl(
                 }
                 entity.passwordHash = passwordHash
             }
-            user.companyName?.let { entity.companyName = it }
-            user.companyLogoUrl?.let { entity.companyLogoUrl = it.asValidUrl() }
+            user.companyName?.let { entity.companyName = it.orNull() }
+            user.companyLogoUrl?.let { entity.companyLogoUrl = it.orNull()?.asValidUrl() }
             user.companyIpRights?.let { entity.companyIpRights = it }
-            user.distributionUserId?.let { entity.distributionUserId = it }
+            user.distributionUserId?.let { entity.distributionUserId = it.orNull() }
             user.distributionArtistId?.let { entity.distributionArtistId = it }
             user.distributionParticipantId?.let { entity.distributionParticipantId = it }
             user.distributionSubscriptionId?.let { entity.distributionSubscriptionId = it }
             user.distributionLabelId?.let { entity.distributionLabelId = it }
-            user.distributionIsni?.let { entity.distributionIsni = it }
-            user.distributionIpn?.let { entity.distributionIpn = it }
+            user.distributionIsni?.let { entity.distributionIsni = it.orNull() }
+            user.distributionIpn?.let { entity.distributionIpn = it.orNull() }
         }
     }
 
@@ -223,32 +226,32 @@ internal class UserRepositoryImpl(
     override fun updateUserData(userId: UUID, user: User) {
         transaction {
             val entity = UserEntity[userId]
-            user.firstName?.let { entity.firstName = it }
-            user.lastName?.let { entity.lastName = it }
-            user.nickname?.let { entity.nickname = it }
-            user.pictureUrl?.let { entity.pictureUrl = it.asValidUrl() }
+            user.firstName?.let { entity.firstName = it.orNull() }
+            user.lastName?.let { entity.lastName = it.orNull() }
+            user.nickname?.let { entity.nickname = it.orNull() }
+            user.pictureUrl?.let { entity.pictureUrl = it.orNull()?.asValidUrl() }
             user.bannerUrl?.let { entity.bannerUrl = it.asValidUrl() }
             user.websiteUrl?.let { entity.websiteUrl = it.asValidUrl() }
             user.twitterUrl?.let { entity.twitterUrl = it.asValidUrl() }
             user.instagramUrl?.let { entity.instagramUrl = it.asValidUrl() }
-            user.spotifyProfile?.let { entity.spotifyProfile = it }
-            user.soundCloudProfile?.let { entity.soundCloudProfile = it }
-            user.appleMusicProfile?.let { entity.appleMusicProfile = it }
+            user.spotifyProfile?.let { entity.spotifyProfile = it.orNull() }
+            user.soundCloudProfile?.let { entity.soundCloudProfile = it.orNull() }
+            user.appleMusicProfile?.let { entity.appleMusicProfile = it.orNull() }
             user.location?.let { entity.location = it }
             user.role?.let { entity.role = it }
             user.genre?.let { entity.genre = it }
             user.biography?.let { entity.biography = it }
             user.walletAddress?.let { entity.walletAddress = it }
             user.companyName?.let { entity.companyName = it }
-            user.companyLogoUrl?.let { entity.companyLogoUrl = it.asValidUrl() }
+            user.companyLogoUrl?.let { entity.companyLogoUrl = it.orNull()?.asValidUrl() }
             user.companyIpRights?.let { entity.companyIpRights = it }
             user.distributionUserId?.let { entity.distributionUserId = it }
             user.distributionArtistId?.let { entity.distributionArtistId = it }
             user.distributionParticipantId?.let { entity.distributionParticipantId = it }
             user.distributionSubscriptionId?.let { entity.distributionSubscriptionId = it }
             user.distributionLabelId?.let { entity.distributionLabelId = it }
-            user.distributionIsni?.let { entity.distributionIsni = it }
-            user.distributionIpn?.let { entity.distributionIpn = it }
+            user.distributionIsni?.let { entity.distributionIsni = it.orNull() }
+            user.distributionIpn?.let { entity.distributionIpn = it.orNull() }
         }
     }
 
