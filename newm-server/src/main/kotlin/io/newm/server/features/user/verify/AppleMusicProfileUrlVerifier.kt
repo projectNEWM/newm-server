@@ -10,6 +10,7 @@ import io.ktor.client.plugins.auth.providers.bearer
 import io.ktor.client.request.accept
 import io.ktor.client.request.get
 import io.ktor.http.ContentType
+import io.ktor.http.isSuccess
 import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.util.logging.Logger
 import io.newm.server.ktx.getSecureConfigString
@@ -38,17 +39,21 @@ class AppleMusicProfileUrlVerifier(
     override suspend fun verify(outletProfileUrl: String, stageOrFullName: String) {
         authorizeClient()
         val appleProfileId = outletProfileUrl.substringAfterLast("/")
-        val response: AppleMusicArtistResponse = authorizedHttpClient.get(
+        val response = authorizedHttpClient.get(
             "https://api.music.apple.com/v1/catalog/us/artists/$appleProfileId"
         ) {
             accept(ContentType.Application.Json)
-        }.body()
-        logger.info { "Apple Music profile response for $appleProfileId : $response" }
-        if (response.data.isEmpty()) {
+        }
+        if (!response.status.isSuccess()) {
             throw IllegalArgumentException("Apple Music profile not found for $appleProfileId")
         }
-        if (response.data[0].attributes.name != stageOrFullName) {
-            throw IllegalArgumentException("Apple Music profile name (${response.data[0].attributes.name}) does not match stageOrFullName ($stageOrFullName) for $appleProfileId")
+        val appleMusicArtistResponse: AppleMusicArtistResponse = response.body()
+        if (appleMusicArtistResponse.data.isEmpty()) {
+            throw IllegalArgumentException("Apple Music profile not found for $appleProfileId")
+        }
+        logger.info { "Apple Music profile response for $appleProfileId : $response" }
+        if (appleMusicArtistResponse.data[0].attributes.name != stageOrFullName) {
+            throw IllegalArgumentException("Apple Music profile name (${appleMusicArtistResponse.data[0].attributes.name}) does not match stageOrFullName ($stageOrFullName) for $appleProfileId")
         }
     }
 

@@ -10,6 +10,7 @@ import io.ktor.client.request.basicAuth
 import io.ktor.client.request.forms.submitForm
 import io.ktor.client.request.get
 import io.ktor.http.ContentType
+import io.ktor.http.isSuccess
 import io.ktor.http.parameters
 import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.util.logging.Logger
@@ -34,14 +35,18 @@ class SpotifyProfileUrlVerifier(
     override suspend fun verify(outletProfileUrl: String, stageOrFullName: String) {
         authorizeClient()
         val spotifyProfileId = outletProfileUrl.substringAfterLast("/")
-        val response: SpotifyArtistResponse = authorizedHttpClient.get(
+        val response = authorizedHttpClient.get(
             "https://api.spotify.com/v1/artists/$spotifyProfileId"
         ) {
             accept(ContentType.Application.Json)
-        }.body()
+        }
+        if (!response.status.isSuccess()) {
+            throw IllegalArgumentException("Spotify profile not found for $spotifyProfileId")
+        }
+        val spotifyArtistResponse: SpotifyArtistResponse = response.body()
         logger.info { "Spotify profile response for $spotifyProfileId : $response" }
-        if (response.name != stageOrFullName) {
-            throw IllegalArgumentException("Spotify profile name (${response.name}) does not match stageOrFullName ($stageOrFullName) for $spotifyProfileId")
+        if (spotifyArtistResponse.name != stageOrFullName) {
+            throw IllegalArgumentException("Spotify profile name (${spotifyArtistResponse.name}) does not match stageOrFullName ($stageOrFullName) for $spotifyProfileId")
         }
     }
 
