@@ -61,6 +61,7 @@ import org.jetbrains.exposed.sql.innerJoin
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.max
+import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.sum
@@ -527,6 +528,25 @@ class LedgerRepositoryImpl : LedgerRepository {
                 policy = row[LedgerAssetsTable.policy],
                 name = row[LedgerAssetsTable.name],
                 supply = row[LedgerAssetsTable.supply].toBigInteger()
+            )
+        }
+    }
+
+    override fun queryLedgerAssets(ledgerAssetList: List<LedgerAsset>): List<LedgerAsset> {
+        return LedgerAssetsTable.select {
+            ledgerAssetList.map { ledgerAsset ->
+                (LedgerAssetsTable.policy eq ledgerAsset.policy) and
+                    (LedgerAssetsTable.name eq ledgerAsset.name)
+            }.reduce { acc, expression -> acc or expression }
+        }.map { row ->
+            val policy = row[LedgerAssetsTable.policy]
+            val name = row[LedgerAssetsTable.name]
+            LedgerAsset(
+                id = row[LedgerAssetsTable.id].value,
+                policy = policy,
+                name = name,
+                supply = row[LedgerAssetsTable.supply].toBigInteger(),
+                txId = ledgerAssetList.first { it.policy == policy && it.name == name }.txId,
             )
         }
     }

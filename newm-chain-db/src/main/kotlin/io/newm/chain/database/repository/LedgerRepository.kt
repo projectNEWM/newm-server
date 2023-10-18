@@ -21,6 +21,8 @@ interface LedgerRepository {
 
     fun queryLedgerAsset(policyId: String, hexName: String): LedgerAsset?
 
+    fun queryLedgerAssets(ledgerAssetList: List<LedgerAsset>): List<LedgerAsset>
+
     fun upcertLedgerAssets(ledgerAssets: List<LedgerAsset>): List<LedgerAsset>
 
     fun insertLedgerAssetMetadataList(assetMetadataList: List<LedgerAssetMetadata>)

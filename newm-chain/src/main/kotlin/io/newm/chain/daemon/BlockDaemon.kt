@@ -299,13 +299,16 @@ class BlockDaemon(
 //                    if (block.header.blockHeight <= 60) {
 //                        log.warn("block: $block")
 //                    }
+                    val createdUtxos = block.toCreatedUtxoSet()
+                    val ledgerAssets = block.toLedgerAssets()
+
                     // Mark same block number as rolled back
                     rollbackTime += measureTimeMillis {
                         // Handle re-submitting any of our own transactions that got rolled back
                         val tip = isTip && block == lastBlock
                         if (tip || blockRollbackCache.getIfPresent(block.header.blockHeight) != null) {
                             val ourTransactionIdsInBlock =
-                                block.toCreatedUtxoSet().map { createdUtxo -> createdUtxo.hash }.toSet()
+                                createdUtxos.map { createdUtxo -> createdUtxo.hash }.toSet()
                                     .filter { transactionId ->
                                         submittedTransactionCache.get(transactionId)?.also {
                                             log.debug { "Our transaction $transactionId was seen in a block!" }
@@ -323,15 +326,13 @@ class BlockDaemon(
                     val mintedLedgerAssets: List<LedgerAsset>
                     nativeAssetTime += measureTimeMillis {
                         // Handle any assets minted or burned
-                        mintedLedgerAssets = ledgerRepository.upcertLedgerAssets(block.toLedgerAssets())
+                        mintedLedgerAssets = ledgerRepository.upcertLedgerAssets(ledgerAssets)
                     }
 
                     // Insert unspent utxos and stake delegations/de-registrations
-                    val createdUtxos: Set<CreatedUtxo>
                     createTime += measureTimeMillis {
                         val slotNumber = block.header.slot
                         val blockNumber = block.header.blockHeight
-                        createdUtxos = block.toCreatedUtxoSet()
                         ledgerRepository.createUtxos(slotNumber, blockNumber, createdUtxos)
                         val stakeRegistrations = block.toStakeRegistrationList()
                         ledgerRepository.createStakeRegistrations(stakeRegistrations)
@@ -386,7 +387,9 @@ class BlockDaemon(
                     }
                     // Insert any native asset log responses
                     nativeAssetTime += measureTimeMillis {
-                        commitNativeAssetLogTransactions(block)
+                        if (ledgerAssets.isNotEmpty()) {
+                            commitNativeAssetLogTransactions(block, ledgerAssets, createdUtxos)
+                        }
                     }
                 }
 
@@ -671,11 +674,8 @@ class BlockDaemon(
         }
     }
 
-    private fun commitNativeAssetLogTransactions(block: Block) {
-        val ledgerAssets = block.toLedgerAssets().map { ledgerAsset ->
-            ledgerRepository.queryLedgerAsset(ledgerAsset.policy, ledgerAsset.name)!!
-                .copy(txId = ledgerAsset.txId)
-        }
+    private fun commitNativeAssetLogTransactions(block: Block, ledgerAssetList: List<LedgerAsset>, createdUtxos: Set<CreatedUtxo>) {
+        val ledgerAssets = ledgerRepository.queryLedgerAssets(ledgerAssetList)
         // handle supply changes
         val batch = mutableListOf<ByteArray>()
         batch.addAll(
@@ -727,7 +727,7 @@ class BlockDaemon(
 
         // handle metadata updates for CIP-68
         batch.addAll(
-            block.toCreatedUtxoSet().mapNotNull { createdUtxo ->
+            createdUtxos.mapNotNull { createdUtxo ->
                 createdUtxo.datum?.let {
                     createdUtxo.nativeAssets.filter { nativeAsset ->
                         nativeAsset.name.matches(CIP68_REFERENCE_TOKEN_REGEX)
