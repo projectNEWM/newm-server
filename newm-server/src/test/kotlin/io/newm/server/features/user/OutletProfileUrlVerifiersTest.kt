@@ -10,6 +10,7 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
 import io.newm.server.BaseApplicationTests
 import io.newm.server.features.user.verify.AppleMusicProfileUrlVerifier
+import io.newm.server.features.user.verify.SoundCloudProfileUrlVerifier
 import io.newm.server.features.user.verify.SpotifyProfileUrlVerifier
 import io.newm.server.security.KeyParser
 import io.newm.shared.serialization.BigDecimalSerializer
@@ -17,6 +18,7 @@ import io.newm.shared.serialization.BigIntegerSerializer
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
+import org.jsoup.Jsoup
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -90,6 +92,23 @@ class OutletProfileUrlVerifiersTest : BaseApplicationTests() {
     }
 
     @Test
+    @Disabled("This test is disabled because it requires a valid SoundCloud API token")
+    fun testSoundCloudProfileUrlVerifierSuccess() = runBlocking {
+        val verifier = SoundCloudProfileUrlVerifier(GlobalContext.get().get(), httpClient)
+        verifier.verify("https://soundcloud.com/miraimusics", "Mirai")
+    }
+
+    @Test
+    @Disabled("This test is disabled because it requires a valid SoundCloud API token")
+    fun testSoundCloudProfileUrlVerifierFailure() = runBlocking {
+        val verifier = SoundCloudProfileUrlVerifier(GlobalContext.get().get(), httpClient)
+        val exception = assertThrows<IllegalArgumentException> {
+            verifier.verify("https://soundcloud.com/bogusprofile123", "Cringe Noize")
+        }
+        assertThat(exception.message).isEqualTo("SoundCloud profile not found for https://soundcloud.com/bogusprofile123")
+    }
+
+    @Test
     @Disabled("This test is disabled because it requires a valid AppleMusicKit private key")
     fun testCreateAppleMusicKitJWT() = runBlocking {
         val appleTeamId = "<apple_team_id>"
@@ -118,5 +137,13 @@ class OutletProfileUrlVerifiersTest : BaseApplicationTests() {
         } else {
             println("more than 1 day to expiry.")
         }
+    }
+
+    @Test
+    @Disabled
+    fun testJSoupSoundCloudUserId() = runBlocking {
+        val doc = Jsoup.connect("https://soundcloud.com/miraimusics").get()
+        val userId = doc.select("meta[property='twitter:app:url:iphone']").attr("content").substringAfterLast(':')
+        assertThat(userId).isEqualTo("49651945")
     }
 }

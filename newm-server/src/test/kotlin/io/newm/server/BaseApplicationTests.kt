@@ -145,6 +145,9 @@ open class BaseApplicationTests {
                 single<OutletProfileUrlVerifier>(named("appleMusicProfileUrlVerifier")) {
                     mockk<OutletProfileUrlVerifier>(relaxed = true)
                 }
+                single<OutletProfileUrlVerifier>(named("soundCloudProfileUrlVerifier")) {
+                    mockk<OutletProfileUrlVerifier>(relaxed = true)
+                }
             }
         )
     }

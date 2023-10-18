@@ -44,6 +44,7 @@ internal class UserRepositoryImpl(
     private val configRepository: ConfigRepository,
     private val spotifyProfileUrlVerifier: OutletProfileUrlVerifier,
     private val appleMusicProfileUrlVerifier: OutletProfileUrlVerifier,
+    private val soundCloudProfileUrlVerifier: OutletProfileUrlVerifier,
 ) : UserRepository {
 
     private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
@@ -60,6 +61,9 @@ internal class UserRepositoryImpl(
         }
         user.appleMusicProfile?.let {
             appleMusicProfileUrlVerifier.verify(it, user.stageOrFullName)
+        }
+        user.soundCloudProfile?.let {
+            soundCloudProfileUrlVerifier.verify(it, user.stageOrFullName)
         }
 
         return transaction {
@@ -186,7 +190,11 @@ internal class UserRepositoryImpl(
                     spotifyProfileUrlVerifier.verify(profile, entity.stageOrFullName)
                 }
             }
-            user.soundCloudProfile?.let { entity.soundCloudProfile = it.orNull() }
+            user.soundCloudProfile?.let {
+                entity.soundCloudProfile = it.orNull()?.also { profile ->
+                    soundCloudProfileUrlVerifier.verify(profile, entity.stageOrFullName)
+                }
+            }
             user.appleMusicProfile?.let {
                 entity.appleMusicProfile = it.orNull()?.also { profile ->
                     appleMusicProfileUrlVerifier.verify(profile, entity.stageOrFullName)

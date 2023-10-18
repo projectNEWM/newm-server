@@ -6,7 +6,6 @@ import io.ktor.client.plugins.auth.Auth
 import io.ktor.client.plugins.auth.providers.BearerTokens
 import io.ktor.client.plugins.auth.providers.bearer
 import io.ktor.client.request.accept
-import io.ktor.client.request.basicAuth
 import io.ktor.client.request.forms.submitForm
 import io.ktor.client.request.get
 import io.ktor.http.ContentType
@@ -19,11 +18,15 @@ import io.newm.server.ktx.getSecureConfigString
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.getConfigString
 import io.newm.shared.ktx.info
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.jsoup.HttpStatusException
+import org.jsoup.Jsoup
 import org.koin.core.parameter.parametersOf
 
-class SpotifyProfileUrlVerifier(
+class SoundCloudProfileUrlVerifier(
     private val applicationEnvironment: ApplicationEnvironment,
     private val httpClient: HttpClient,
 ) : OutletProfileUrlVerifier {
@@ -34,20 +37,25 @@ class SpotifyProfileUrlVerifier(
 
     override suspend fun verify(outletProfileUrl: String, stageOrFullName: String) {
         authorizeClient()
-        val spotifyProfileId = outletProfileUrl.substringAfterLast("/")
+        val doc = withContext(Dispatchers.IO) {
+            try {
+                Jsoup.connect(outletProfileUrl).get()
+            } catch (e: HttpStatusException) {
+                throw IllegalArgumentException("SoundCloud profile not found for $outletProfileUrl")
+            }
+        }
+        val userId = doc.select("meta[property='twitter:app:url:iphone']").attr("content").substringAfterLast(':')
         val response = authorizedHttpClient.get(
-            "https://api.spotify.com/v1/artists/$spotifyProfileId"
+            "https://api.soundcloud.com/users/$userId"
         ) {
             accept(ContentType.Application.Json)
         }
         if (!response.status.isSuccess()) {
-            throw IllegalArgumentException("Spotify profile not found for $spotifyProfileId")
+            throw IllegalArgumentException("SoundCloud profile not found for $userId")
         }
-        val spotifyArtistResponse: SpotifyArtistResponse = response.body()
-        logger.info { "Spotify profile response for $spotifyProfileId : $spotifyArtistResponse" }
-        if (spotifyArtistResponse.name != stageOrFullName) {
-            throw IllegalArgumentException("Spotify profile name (${spotifyArtistResponse.name}) does not match stageOrFullName ($stageOrFullName) for $spotifyProfileId")
-        }
+        val soundCloudArtistResponse: SoundCloudArtistResponse = response.body()
+        logger.info { "SoundCloud profile response for $userId : $soundCloudArtistResponse" }
+        // NOTE: Name matching not required for SoundCloud in Eveara
     }
 
     private suspend fun authorizeClient() {
@@ -58,7 +66,7 @@ class SpotifyProfileUrlVerifier(
                         bearer {
                             // Load and refresh tokens without waiting for a 401 first if the host matches
                             sendWithoutRequest { request ->
-                                request.url.host == "api.spotify.com"
+                                request.url.host == "api.soundcloud.com"
                             }
                             loadTokens {
                                 bearerTokens ?: refreshBearerTokens()
@@ -73,16 +81,17 @@ class SpotifyProfileUrlVerifier(
     }
 
     private suspend fun refreshBearerTokens(): BearerTokens {
-        val clientId = applicationEnvironment.getSecureConfigString("oauth.spotify.clientId")
-        val clientSecret = applicationEnvironment.getSecureConfigString("oauth.spotify.clientSecret")
-        val accessTokenUrl = applicationEnvironment.getConfigString("oauth.spotify.accessTokenUrl")
+        val clientId = applicationEnvironment.getSecureConfigString("oauth.soundcloud.clientId")
+        val clientSecret = applicationEnvironment.getSecureConfigString("oauth.soundcloud.clientSecret")
+        val accessTokenUrl = applicationEnvironment.getConfigString("oauth.soundcloud.accessTokenUrl")
         val tokenInfo: TokenInfo = httpClient.submitForm(
             url = accessTokenUrl,
             formParameters = parameters {
                 append("grant_type", "client_credentials")
+                append("client_id", clientId)
+                append("client_secret", clientSecret)
             }
         ) {
-            basicAuth(clientId, clientSecret)
             accept(ContentType.Application.Json)
         }.body()
         bearerTokens = BearerTokens(tokenInfo.accessToken, tokenInfo.accessToken)
@@ -90,10 +99,14 @@ class SpotifyProfileUrlVerifier(
     }
 
     @Serializable
-    private data class SpotifyArtistResponse(
-        @SerialName("id")
-        val id: String,
-        @SerialName("name")
-        val name: String,
+    private data class SoundCloudArtistResponse(
+        @SerialName("username")
+        val username: String,
+        @SerialName("first_name")
+        val firstName: String,
+        @SerialName("last_name")
+        val lastName: String,
+        @SerialName("full_name")
+        val fullName: String,
     )
 }

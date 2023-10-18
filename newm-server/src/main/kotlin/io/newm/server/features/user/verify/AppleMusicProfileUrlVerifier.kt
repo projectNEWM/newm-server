@@ -51,7 +51,7 @@ class AppleMusicProfileUrlVerifier(
         if (appleMusicArtistResponse.data.isEmpty()) {
             throw IllegalArgumentException("Apple Music profile not found for $appleProfileId")
         }
-        logger.info { "Apple Music profile response for $appleProfileId : $response" }
+        logger.info { "Apple Music profile response for $appleProfileId : $appleMusicArtistResponse" }
         if (appleMusicArtistResponse.data[0].attributes.name != stageOrFullName) {
             throw IllegalArgumentException("Apple Music profile name (${appleMusicArtistResponse.data[0].attributes.name}) does not match stageOrFullName ($stageOrFullName) for $appleProfileId")
         }
