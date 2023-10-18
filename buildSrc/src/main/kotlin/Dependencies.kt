@@ -66,7 +66,7 @@ object Dependencies {
     }
 
     object Ktor {
-        private const val VERSION = "2.3.4"
+        private const val VERSION = "2.3.5"
 
         const val SERVER_CORE = "io.ktor:ktor-server-core:$VERSION"
         const val SERVER_CIO = "io.ktor:ktor-server-cio:$VERSION"
@@ -108,7 +108,7 @@ object Dependencies {
     }
 
     object Exposed {
-        private const val VERSION = "0.43.0"
+        private const val VERSION = "0.44.0"
 
         const val CORE = "org.jetbrains.exposed:exposed-core:$VERSION"
         const val DAO = "org.jetbrains.exposed:exposed-dao:$VERSION"
@@ -135,7 +135,7 @@ object Dependencies {
     }
 
     object FlywayDB {
-        private const val VERSION = "9.22.1"
+        private const val VERSION = "9.22.3"
 
         const val ALL = "org.flywaydb:flyway-core:$VERSION"
     }
@@ -178,6 +178,12 @@ object Dependencies {
         const val ALL = "net.jthink:jaudiotagger:$VERSION"
     }
 
+    object JSoup {
+        private const val VERSION = "1.16.1"
+
+        const val ALL = "org.jsoup:jsoup:$VERSION"
+    }
+
     object BouncyCastle {
         private const val VERSION = "1.70"
 
@@ -185,21 +191,21 @@ object Dependencies {
     }
 
     object SpringSecurity {
-        private const val VERSION = "6.1.3"
+        private const val VERSION = "6.1.5"
 
         const val CORE = "org.springframework.security:spring-security-core:$VERSION"
     }
 
     // https://github.com/cloudinary/cloudinary_java
     object Cloudinary {
-        private const val VERSION = "1.34.0"
+        private const val VERSION = "1.35.0"
 
         const val ALL = "com.cloudinary:cloudinary-http44:$VERSION"
     }
 
     object Aws {
-        private const val VERSION = "1.12.550"
-        private const val VERSION2 = "2.20.147"
+        private const val VERSION = "1.12.567"
+        private const val VERSION2 = "2.21.1"
         private const val JAXB_VERSION = "2.3.1"
 
         const val BOM = "com.amazonaws:aws-java-sdk-bom:$VERSION"
@@ -239,7 +245,7 @@ object Dependencies {
     }
 
     object Mockk {
-        private const val VERSION = "1.13.7"
+        private const val VERSION = "1.13.8"
 
         const val MOCKK = "io.mockk:mockk:$VERSION"
     }
@@ -251,7 +257,7 @@ object Dependencies {
     }
 
     object Sentry {
-        private const val VERSION = "6.29.0"
+        private const val VERSION = "6.31.0"
 
         const val CORE = "io.sentry:sentry:$VERSION"
         const val LOGBACK = "io.sentry:sentry-logback:$VERSION"
@@ -274,14 +280,14 @@ object Dependencies {
     }
 
     object GrpcKotlin {
-        private const val VERSION = "1.3.1"
+        private const val VERSION = "1.4.0"
 
         const val STUB = "io.grpc:grpc-kotlin-stub:$VERSION"
         const val GRPCKT = "io.grpc:protoc-gen-grpc-kotlin:$VERSION:jdk8@jar"
     }
 
     object Protobuf {
-        private const val VERSION = "3.24.3"
+        private const val VERSION = "3.24.4"
 
         const val JAVA_UTIL = "com.google.protobuf:protobuf-java-util:$VERSION"
         const val KOTLIN = "com.google.protobuf:protobuf-kotlin:$VERSION"
@@ -295,14 +301,14 @@ object Dependencies {
     }
 
     object SSLKickstart {
-        private const val VERSION = "8.1.6"
+        private const val VERSION = "8.1.7"
 
         const val PEM = "io.github.hakky54:sslcontext-kickstart-for-pem:$VERSION"
         const val NETTY = "io.github.hakky54:sslcontext-kickstart-for-netty:$VERSION"
     }
 
     object TestContainers {
-        private const val VERSION = "1.19.0"
+        private const val VERSION = "1.19.1"
 
         const val CORE = "org.testcontainers:testcontainers:$VERSION"
         const val JUINT = "org.testcontainers:junit-jupiter:$VERSION"
@@ -310,7 +316,7 @@ object Dependencies {
     }
 
     object Typesafe {
-        private const val VERSION = "1.4.2"
+        private const val VERSION = "1.4.3"
         const val CONFIG = "com.typesafe:config:$VERSION"
     }
 }
