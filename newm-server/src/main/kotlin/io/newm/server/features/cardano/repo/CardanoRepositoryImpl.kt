@@ -10,7 +10,6 @@ import com.github.benmanes.caffeine.cache.Caffeine
 import com.google.protobuf.ByteString
 import io.ktor.network.util.DefaultByteBufferPool
 import io.newm.chain.grpc.IsMainnetRequest
-import io.newm.chain.grpc.LedgerAssetMetadataItem
 import io.newm.chain.grpc.MonitorPaymentAddressRequest
 import io.newm.chain.grpc.NewmChainGrpcKt.NewmChainCoroutineStub
 import io.newm.chain.grpc.SubmitTransactionResponse
@@ -43,11 +42,13 @@ import io.newm.server.features.cardano.database.KeyTable
 import io.newm.server.features.cardano.model.EncryptionRequest
 import io.newm.server.features.cardano.model.GetWalletSongsResponse
 import io.newm.server.features.cardano.model.Key
+import io.newm.server.features.cardano.model.LedgerAssetMetadata
 import io.newm.server.features.cardano.model.WalletSong
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongFilters
 import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.ktx.cborHexToUtxo
+import io.newm.server.ktx.toLedgerAssetMetadata
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.debug
 import io.newm.shared.ktx.isValidHex
@@ -304,7 +305,7 @@ internal class CardanoRepositoryImpl(
         )
     }
 
-    override suspend fun getWalletMusicNFTs(xpubKey: String): List<List<LedgerAssetMetadataItem>> {
+    override suspend fun getWalletMusicNFTs(xpubKey: String): List<List<LedgerAssetMetadata>> {
         val queryWalletControlledLiveUtxosResponse = client.queryWalletControlledLiveUtxos(
             walletRequest {
                 this.accountXpubKey = xpubKey
@@ -329,7 +330,9 @@ internal class CardanoRepositoryImpl(
                         true
                     )
                 }
-            }?.ledgerAssetMetadataList.orEmpty()
+            }?.ledgerAssetMetadataList?.map { ledgerAssetMetadataItem ->
+                ledgerAssetMetadataItem.toLedgerAssetMetadata()
+            }.orEmpty()
         }
     }
 
