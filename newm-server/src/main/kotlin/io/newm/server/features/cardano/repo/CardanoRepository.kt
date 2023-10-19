@@ -1,7 +1,6 @@
 package io.newm.server.features.cardano.repo
 
 import com.google.protobuf.ByteString
-import io.newm.chain.grpc.LedgerAssetMetadataItem
 import io.newm.chain.grpc.MonitorPaymentAddressRequest
 import io.newm.chain.grpc.MonitorPaymentAddressResponse
 import io.newm.chain.grpc.SubmitTransactionResponse
@@ -11,6 +10,7 @@ import io.newm.chain.grpc.Utxo
 import io.newm.server.features.cardano.model.EncryptionRequest
 import io.newm.server.features.cardano.model.GetWalletSongsResponse
 import io.newm.server.features.cardano.model.Key
+import io.newm.server.features.cardano.model.LedgerAssetMetadata
 import java.util.UUID
 
 interface CardanoRepository {
@@ -28,5 +28,5 @@ interface CardanoRepository {
     suspend fun queryAdaUSDPrice(): Long
     suspend fun <T> withLock(block: suspend () -> T): T
     suspend fun getWalletSongs(request: List<String>, offset: Int, limit: Int): GetWalletSongsResponse
-    suspend fun getWalletMusicNFTs(xpubKey: String): List<List<LedgerAssetMetadataItem>>
+    suspend fun getWalletMusicNFTs(xpubKey: String): List<List<LedgerAssetMetadata>>
 }
