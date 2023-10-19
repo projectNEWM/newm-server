@@ -207,24 +207,32 @@ internal class CardanoRepositoryImpl(
      */
     override suspend fun queryAdaUSDPrice(): Long {
         val now = System.currentTimeMillis()
-        val oracleUtxoStartTimestamp =
-            oracleUtxoCached?.datumOrNull?.listOrNull?.getListItem(0)?.mapOrNull?.getMapItem(1)?.mapItemValueOrNull?.int
-                ?: Long.MAX_VALUE
-        val oracleUtxoEndTimestamp =
-            oracleUtxoCached?.datumOrNull?.listOrNull?.getListItem(0)?.mapOrNull?.getMapItem(2)?.mapItemValueOrNull?.int
-                ?: Long.MIN_VALUE
+        val oracleUtxoStartTimestamp = oracleUtxoCached?.datumOrNull
+            ?.listOrNull?.getListItem(0)
+            ?.listOrNull?.getListItem(0)
+            ?.mapOrNull?.getMapItem(1)
+            ?.mapItemValueOrNull?.int
+            ?: Long.MAX_VALUE
+        val oracleUtxoEndTimestamp = oracleUtxoCached?.datumOrNull
+            ?.listOrNull?.getListItem(0)
+            ?.listOrNull?.getListItem(0)
+            ?.mapOrNull?.getMapItem(2)
+            ?.mapItemValueOrNull?.int
+            ?: Long.MIN_VALUE
         if (now < oracleUtxoStartTimestamp || now > oracleUtxoEndTimestamp) {
             // Outside of range. Get a new oracle utxo
             oracleUtxoCached = client.queryUtxoByNativeAsset(
                 queryByNativeAssetRequest {
-                    // Charli3 ADA/USD OracleFeed token
-                    policy = "3d0d75aad1eb32f0ce78fb1ebc101b6b51de5d8f13c12daa88017624"
-                    name = "4f7261636c6546656564"
+                    policy = CHARLI3_ADA_USD_POLICY
+                    name = CHARLI3_ADA_USD_NAME
                 }
             )
         }
-        val usdPrice =
-            oracleUtxoCached?.datumOrNull?.listOrNull?.getListItem(0)?.mapOrNull?.getMapItem(0)?.mapItemValueOrNull?.int
+        val usdPrice = oracleUtxoCached?.datumOrNull
+            ?.listOrNull?.getListItem(0)
+            ?.listOrNull?.getListItem(0)
+            ?.mapOrNull?.getMapItem(0)
+            ?.mapItemValueOrNull?.int
         return usdPrice ?: run {
             if (isMainnet()) {
                 throw IllegalStateException("Oracle Utxo does not contain a USD price!")
@@ -423,5 +431,9 @@ internal class CardanoRepositoryImpl(
 
     companion object {
         const val MUTEX_NAME = "newm-server"
+
+        // Charli3 ADA/USD OracleFeed token
+        private const val CHARLI3_ADA_USD_POLICY = "3d0d75aad1eb32f0ce78fb1ebc101b6b51de5d8f13c12daa88017624"
+        private const val CHARLI3_ADA_USD_NAME = "4f7261636c6546656564"
     }
 }
