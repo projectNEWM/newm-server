@@ -9,6 +9,7 @@ import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_EMAIL_WH
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.model.User
 import io.newm.server.features.user.model.UserFilters
+import io.newm.server.features.user.model.UserVerificationStatus
 import io.newm.server.features.user.oauth.OAuthUser
 import io.newm.server.features.user.oauth.providers.AppleUserProvider
 import io.newm.server.features.user.oauth.providers.FacebookUserProvider
@@ -177,8 +178,14 @@ internal class UserRepositoryImpl(
 
         newSuspendedTransaction {
             val entity = UserEntity[userId]
-            user.firstName?.let { entity.firstName = it.orNull() }
-            user.lastName?.let { entity.lastName = it.orNull() }
+            user.firstName?.let {
+                entity.checkNameModifiable(it, entity.firstName)
+                entity.firstName = it.orNull()
+            }
+            user.lastName?.let {
+                entity.checkNameModifiable(it, entity.lastName)
+                entity.lastName = it.orNull()
+            }
             user.nickname?.let { entity.nickname = it.orNull() }
             user.pictureUrl?.let { entity.pictureUrl = it.orNull()?.asValidUrl() }
             user.bannerUrl?.let { entity.bannerUrl = it.orNull()?.asValidUrl() }
@@ -301,6 +308,12 @@ internal class UserRepositoryImpl(
     private fun String.checkEmailUnique(currentEmail: String? = null) {
         if (!equals(currentEmail, ignoreCase = true) && UserEntity.existsByEmail(this)) {
             throw HttpConflictException("Already exists: $this")
+        }
+    }
+
+    private fun UserEntity.checkNameModifiable(newName: String, currentName: String?) {
+        if (verificationStatus != UserVerificationStatus.Unverified && !newName.equals(currentName, true)) {
+            throw HttpForbiddenException("Name modification not allowed after KYC verification")
         }
     }
 

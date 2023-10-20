@@ -13,6 +13,7 @@ import io.newm.server.features.idenfy.model.IdenfyCreateSessionResponse
 import io.newm.server.features.idenfy.model.IdenfySessionResult
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.model.UserVerificationStatus
+import io.newm.server.features.user.repo.UserRepository
 import io.newm.server.ktx.checkedBody
 import io.newm.server.ktx.getSecureString
 import io.newm.shared.koin.inject
@@ -30,7 +31,8 @@ import java.util.UUID
 class IdenfyRepositoryImpl(
     private val environment: ApplicationEnvironment,
     private val httpClient: HttpClient,
-    private val emailRepository: EmailRepository
+    private val emailRepository: EmailRepository,
+    private val userRepository: UserRepository,
 ) : IdenfyRepository {
 
     private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
@@ -41,6 +43,7 @@ class IdenfyRepositoryImpl(
     override suspend fun createSession(userId: UUID): IdenfyCreateSessionResponse {
         logger.debug { "createSession: $userId" }
 
+        val user = userRepository.get(userId)
         return with(environment.getConfigChild("idenfy")) {
             httpClient.post(getString("sessionUrl")) {
                 contentType(ContentType.Application.Json)
@@ -48,7 +51,13 @@ class IdenfyRepositoryImpl(
                     username = getSecureString("apiKey"),
                     password = getSecureString("apiSecret"),
                 )
-                setBody(IdenfyCreateSessionRequest(userId.toString()))
+                setBody(
+                    IdenfyCreateSessionRequest(
+                        clientId = userId.toString(),
+                        firstName = user.firstName!!,
+                        lastName = user.lastName!!
+                    )
+                )
             }.checkedBody()
         }
     }
@@ -72,7 +81,7 @@ class IdenfyRepositoryImpl(
 
         val messageArgs = mutableMapOf<String, Any>()
         if (status == UserVerificationStatus.Unverified) {
-            val codes = mutableListOf<String>()
+            val codes = mutableSetOf<String>()
             with(result.status) {
                 autoDocument?.let { codes += it }
                 autoFace?.let { codes += it }
