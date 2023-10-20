@@ -101,6 +101,8 @@ open class BaseApplicationTests {
         transaction {
             UserEntity.new {
                 email = testUserEmail
+                firstName = "Tester"
+                lastName = "Newm"
             }
         }.id.value
     }

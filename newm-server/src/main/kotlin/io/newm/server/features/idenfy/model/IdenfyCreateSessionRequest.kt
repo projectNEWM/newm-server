@@ -6,5 +6,9 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class IdenfyCreateSessionRequest(
     @SerialName("clientId")
-    val clientId: String
+    val clientId: String,
+    @SerialName("firstName")
+    val firstName: String,
+    @SerialName("lastName")
+    val lastName: String
 )
