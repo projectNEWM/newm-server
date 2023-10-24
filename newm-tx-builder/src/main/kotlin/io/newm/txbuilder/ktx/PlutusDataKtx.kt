@@ -138,3 +138,7 @@ fun String.toPlutusData(): PlutusData {
 fun Number.toPlutusData(): PlutusData {
     return plutusData { int = this@toPlutusData.toLong() }
 }
+
+operator fun PlutusDataMap.get(key: PlutusData): PlutusData? {
+    return this.mapItemList.find { it.mapItemKey == key }?.mapItemValue
+}

@@ -171,32 +171,34 @@ class LedgerRepositoryImpl : LedgerRepository {
             LedgerAssetsTable,
             { LedgerUtxoAssetsTable.ledgerAssetId },
             { LedgerAssetsTable.id },
-        ).select { (LedgerAssetsTable.name eq name) and (LedgerAssetsTable.policy eq policy) }.firstOrNull()
-            ?.let { row ->
-                val ledgerUtxoId = row[LedgerUtxosTable.id].value
-                val nativeAssets = LedgerUtxoAssetsTable.innerJoin(
-                    LedgerAssetsTable,
-                    { ledgerAssetId },
-                    { LedgerAssetsTable.id },
-                    { LedgerUtxoAssetsTable.ledgerUtxoId eq ledgerUtxoId }
-                ).selectAll().map { naRow ->
-                    NativeAsset(
-                        name = naRow[LedgerAssetsTable.name],
-                        policy = naRow[LedgerAssetsTable.policy],
-                        amount = BigInteger(naRow[LedgerUtxoAssetsTable.amount])
-                    )
-                }
-                Utxo(
-                    address = row[LedgerTable.address],
-                    hash = row[LedgerUtxosTable.txId],
-                    ix = row[LedgerUtxosTable.txIx].toLong(),
-                    lovelace = BigInteger(row[LedgerUtxosTable.lovelace]),
-                    nativeAssets = nativeAssets,
-                    datumHash = row[LedgerUtxosTable.datumHash],
-                    datum = row[LedgerUtxosTable.datum],
-                    scriptRef = row[LedgerUtxosTable.scriptRef],
+        ).select {
+            LedgerUtxosTable.blockSpent.isNull() and
+                (LedgerAssetsTable.name eq name) and (LedgerAssetsTable.policy eq policy)
+        }.firstOrNull()?.let { row ->
+            val ledgerUtxoId = row[LedgerUtxosTable.id].value
+            val nativeAssets = LedgerUtxoAssetsTable.innerJoin(
+                LedgerAssetsTable,
+                { ledgerAssetId },
+                { LedgerAssetsTable.id },
+                { LedgerUtxoAssetsTable.ledgerUtxoId eq ledgerUtxoId }
+            ).selectAll().map { naRow ->
+                NativeAsset(
+                    name = naRow[LedgerAssetsTable.name],
+                    policy = naRow[LedgerAssetsTable.policy],
+                    amount = BigInteger(naRow[LedgerUtxoAssetsTable.amount])
                 )
             }
+            Utxo(
+                address = row[LedgerTable.address],
+                hash = row[LedgerUtxosTable.txId],
+                ix = row[LedgerUtxosTable.txIx].toLong(),
+                lovelace = BigInteger(row[LedgerUtxosTable.lovelace]),
+                nativeAssets = nativeAssets,
+                datumHash = row[LedgerUtxosTable.datumHash],
+                datum = row[LedgerUtxosTable.datum],
+                scriptRef = row[LedgerUtxosTable.scriptRef],
+            )
+        }
     }
 
     override fun queryPublicKeyHashByOutputRef(hash: String, ix: Int): String? = transaction {

@@ -6,6 +6,7 @@ import io.ktor.server.config.ApplicationConfig
 import io.newm.server.aws.SqsMessageReceiver
 import io.newm.server.ktx.await
 import io.newm.server.ktx.delete
+import io.newm.server.logging.captureToSentry
 import io.newm.shared.daemon.Daemon
 import io.newm.shared.ktx.debug
 import io.newm.shared.ktx.getConfigChildren
@@ -69,6 +70,7 @@ class AwsSqsDaemon : Daemon {
                                 message.delete(queueUrl)
                             } catch (e: Throwable) {
                                 log.error("Failure processing SQS message: $queueUrl", e)
+                                e.captureToSentry()
                             }
                         }
                     } catch (e: Throwable) {

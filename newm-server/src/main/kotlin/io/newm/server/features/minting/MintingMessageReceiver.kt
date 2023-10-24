@@ -14,6 +14,7 @@ import io.newm.server.features.scheduler.EvearaReleaseStatusJob
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.repo.SongRepository
+import io.newm.server.logging.captureToSentry
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.info
 import kotlinx.serialization.json.Json
@@ -66,12 +67,13 @@ class MintingMessageReceiver : SqsMessageReceiver {
                         )
                     }
                 } catch (e: Throwable) {
-                    log.error("Error while waiting for payment!", e)
+                    val errorMessage = "Error while waiting for payment!"
+                    log.error(errorMessage, e)
                     songRepository.updateSongMintingStatus(
                         songId = mintingStatusSqsMessage.songId,
                         mintingStatus = MintingStatus.MintingPaymentException
                     )
-                    throw e
+                    throw DistributeAndMintException(errorMessage, e).also { it.captureToSentry() }
                 }
             }
 
@@ -101,12 +103,13 @@ class MintingMessageReceiver : SqsMessageReceiver {
                         mintingStatus = MintingStatus.SubmittedForDistribution
                     )
                 } catch (e: Throwable) {
-                    log.error("Error while distributing!", e)
+                    val errorMessage = "Error while distributing!"
+                    log.error(errorMessage, e)
                     songRepository.updateSongMintingStatus(
                         songId = mintingStatusSqsMessage.songId,
                         mintingStatus = MintingStatus.DistributionException
                     )
-                    throw e
+                    throw DistributeAndMintException(errorMessage, e).also { it.captureToSentry() }
                 }
             }
 
@@ -138,12 +141,13 @@ class MintingMessageReceiver : SqsMessageReceiver {
                         songRepository.update(song.id!!, Song(forceDistributed = true))
                     }
                 } catch (e: Throwable) {
-                    log.error("Error while creating distribution check job!", e)
+                    val errorMessage = "Error while creating distribution check job!"
+                    log.error(errorMessage, e)
                     songRepository.updateSongMintingStatus(
                         songId = mintingStatusSqsMessage.songId,
                         mintingStatus = MintingStatus.SubmittedForDistributionException
                     )
-                    throw e
+                    throw DistributeAndMintException(errorMessage, e).also { it.captureToSentry() }
                 }
             }
 
@@ -160,12 +164,13 @@ class MintingMessageReceiver : SqsMessageReceiver {
                         mintingStatus = MintingStatus.Pending
                     )
                 } catch (e: Throwable) {
-                    log.error("Error while uploading song assets to arweave!", e)
+                    val errorMessage = "Error while uploading song assets to arweave!"
+                    log.error(errorMessage, e)
                     songRepository.updateSongMintingStatus(
                         songId = mintingStatusSqsMessage.songId,
                         mintingStatus = MintingStatus.ArweaveUploadException
                     )
-                    throw e
+                    throw DistributeAndMintException(errorMessage, e).also { it.captureToSentry() }
                 }
             }
 
@@ -191,12 +196,13 @@ class MintingMessageReceiver : SqsMessageReceiver {
                         mintingStatus = MintingStatus.Minted
                     )
                 } catch (e: Throwable) {
-                    log.error("Error while minting!", e)
+                    val errorMessage = "Error while minting!"
+                    log.error(errorMessage, e)
                     songRepository.updateSongMintingStatus(
                         songId = mintingStatusSqsMessage.songId,
                         mintingStatus = MintingStatus.MintingException
                     )
-                    throw e
+                    throw DistributeAndMintException(errorMessage, e).also { it.captureToSentry() }
                 }
             }
 
