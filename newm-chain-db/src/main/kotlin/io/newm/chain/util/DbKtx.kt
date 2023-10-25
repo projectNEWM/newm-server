@@ -142,95 +142,96 @@ fun Block.toCreatedUtxoMap(): Map<String, Set<CreatedUtxo>> = when (this) {
     is BlockShelley -> shelley.body.associate { transaction ->
         Pair(
             transaction.id,
-            transaction.body.outputs.toCreatedUtxoList(transaction.id).toSet()
+            transaction.body.outputs.toCreatedUtxoList(transaction.id, transaction.witness?.datums.orEmpty()).toSet()
         )
     }
 
     is BlockAllegra -> allegra.body.associate { transaction ->
         Pair(
             transaction.id,
-            transaction.body.outputs.toCreatedUtxoList(transaction.id).toSet()
+            transaction.body.outputs.toCreatedUtxoList(transaction.id, transaction.witness?.datums.orEmpty()).toSet()
         )
     }
 
     is BlockMary -> mary.body.associate { transaction ->
         Pair(
             transaction.id,
-            transaction.body.outputs.toCreatedUtxoList(transaction.id).toSet()
+            transaction.body.outputs.toCreatedUtxoList(transaction.id, transaction.witness?.datums.orEmpty()).toSet()
         )
     }
 
     is BlockAlonzo -> alonzo.body.associate { transaction ->
         Pair(
             transaction.id,
-            transaction.body.outputs.toCreatedUtxoList(transaction.id).toSet()
+            transaction.body.outputs.toCreatedUtxoList(transaction.id, transaction.witness?.datums.orEmpty()).toSet()
         )
     }
 
     is BlockBabbage -> babbage.body.associate { transaction ->
         Pair(
             transaction.id,
-            transaction.body.outputs.toCreatedUtxoList(transaction.id).toSet()
+            transaction.body.outputs.toCreatedUtxoList(transaction.id, transaction.witness?.datums.orEmpty()).toSet()
         )
     }
 }
 
 fun Block.toCreatedUtxoSet(): Set<CreatedUtxo> = when (this) {
     is BlockShelley -> this.shelley.body.flatMap { txShelley ->
-        txShelley.body.outputs.toCreatedUtxoList(txShelley.id)
+        txShelley.body.outputs.toCreatedUtxoList(txShelley.id, txShelley.witness?.datums.orEmpty())
     }.toSet()
 
     is BlockAllegra -> this.allegra.body.flatMap { txAllegra ->
-        txAllegra.body.outputs.toCreatedUtxoList(txAllegra.id)
+        txAllegra.body.outputs.toCreatedUtxoList(txAllegra.id, txAllegra.witness?.datums.orEmpty())
     }.toSet()
 
     is BlockMary -> this.mary.body.flatMap { txMary ->
-        txMary.body.outputs.toCreatedUtxoList(txMary.id)
+        txMary.body.outputs.toCreatedUtxoList(txMary.id, txMary.witness?.datums.orEmpty())
     }.toSet()
 
     is BlockAlonzo -> this.alonzo.body.flatMap { txAlonzo ->
-        txAlonzo.body.outputs.toCreatedUtxoList(txAlonzo.id)
+        txAlonzo.body.outputs.toCreatedUtxoList(txAlonzo.id, txAlonzo.witness?.datums.orEmpty())
     }.toSet()
 
     is BlockBabbage -> this.babbage.body.flatMap { txBabbage ->
-        txBabbage.body.outputs.toCreatedUtxoList(txBabbage.id)
+        txBabbage.body.outputs.toCreatedUtxoList(txBabbage.id, txBabbage.witness?.datums.orEmpty())
     }.toSet()
 }
 
-fun List<UtxoOutput>.toCreatedUtxoList(txId: String) = this.mapIndexed { index, utxoOutput ->
-    // Save off credential to txid mapping
-    val credentials = if (utxoOutput.address.startsWith("addr")) {
-        try {
-            utxoOutput.address.extractCredentials()
-        } catch (e: Throwable) {
+fun List<UtxoOutput>.toCreatedUtxoList(txId: String, datumsMap: Map<String, String>) =
+    this.mapIndexed { index, utxoOutput ->
+        // Save off credential to txid mapping
+        val credentials = if (utxoOutput.address.startsWith("addr")) {
+            try {
+                utxoOutput.address.extractCredentials()
+            } catch (e: Throwable) {
+                null
+            }
+        } else {
             null
         }
-    } else {
-        null
-    }
 
-    CreatedUtxo(
-        address = utxoOutput.address,
-        addressType = utxoOutput.address.addressType(),
-        stakeAddress = utxoOutput.extractStakeAddressOrNull(),
-        hash = txId,
-        ix = index.toLong(),
-        lovelace = utxoOutput.value.coins,
-        datumHash = utxoOutput.datumHash,
-        datum = utxoOutput.datum,
-        scriptRef = (utxoOutput.script as? ScriptPlutusV2)?.plutusV2, // we only care about plutus v2
-        nativeAssets = utxoOutput.value.assets?.map { entry ->
-            NativeAsset(
-                policy = entry.key.substringBefore('.'),
-                name = entry.key.substringAfter('.', missingDelimiterValue = ""),
-                amount = entry.value,
-            )
-        }.orEmpty(),
-        cbor = null, // TODO: fix if we ever need it
-        paymentCred = credentials?.first,
-        stakeCred = credentials?.second,
-    )
-}
+        CreatedUtxo(
+            address = utxoOutput.address,
+            addressType = utxoOutput.address.addressType(),
+            stakeAddress = utxoOutput.extractStakeAddressOrNull(),
+            hash = txId,
+            ix = index.toLong(),
+            lovelace = utxoOutput.value.coins,
+            datumHash = utxoOutput.datumHash,
+            datum = utxoOutput.datum ?: datumsMap[utxoOutput.datumHash],
+            scriptRef = (utxoOutput.script as? ScriptPlutusV2)?.plutusV2, // we only care about plutus v2
+            nativeAssets = utxoOutput.value.assets?.map { entry ->
+                NativeAsset(
+                    policy = entry.key.substringBefore('.'),
+                    name = entry.key.substringAfter('.', missingDelimiterValue = ""),
+                    amount = entry.value,
+                )
+            }.orEmpty(),
+            cbor = null, // TODO: fix if we ever need it
+            paymentCred = credentials?.first,
+            stakeCred = credentials?.second,
+        )
+    }
 
 fun Block.toSpentUtxoMap(): Map<String, Set<SpentUtxo>> = when (this) {
     is BlockShelley -> shelley.body.associate { transaction ->
