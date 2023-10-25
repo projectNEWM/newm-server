@@ -1545,6 +1545,7 @@ class EvearaDistributionRepositoryImpl(
                     log.info { "Found existing distribution album ${mutableSong.title} with id ${existingAlbum.releaseId}" }
                     val response = deleteAlbum(user, existingAlbum.releaseId)
                     log.info { "Deleted distribution album ${mutableSong.title} with id ${existingAlbum.releaseId}: ${response.message}" }
+                    mutableSong = mutableSong.copy(distributionReleaseId = null)
                     songRepository.set(mutableSong.id!!) {
                         it.distributionReleaseId = null
                     }
@@ -1553,6 +1554,7 @@ class EvearaDistributionRepositoryImpl(
             log.info { "Found existing distribution track ${mutableSong.isrc} with id ${existingTrack.trackId}" }
             val response = deleteTrack(user, existingTrack.trackId)
             log.info { "Deleted distribution track ${mutableSong.isrc} with id ${existingTrack.trackId}: ${response.message}" }
+            mutableSong = mutableSong.copy(distributionTrackId = null)
             songRepository.set(mutableSong.id!!) {
                 it.distributionTrackId = null
             }
