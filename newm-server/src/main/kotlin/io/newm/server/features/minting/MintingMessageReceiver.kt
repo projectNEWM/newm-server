@@ -17,6 +17,7 @@ import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.logging.captureToSentry
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.info
+import io.newm.shared.ktx.warn
 import kotlinx.serialization.json.Json
 import org.koin.core.parameter.parametersOf
 import org.quartz.JobBuilder.newJob
@@ -39,6 +40,13 @@ class MintingMessageReceiver : SqsMessageReceiver {
     override suspend fun onMessageReceived(message: Message) {
         val mintingStatusSqsMessage: MintingStatusSqsMessage = json.decodeFromString(message.body)
         log.info { "received: $mintingStatusSqsMessage" }
+        val dbSong = songRepository.get(mintingStatusSqsMessage.songId)
+        if (dbSong.mintingStatus != mintingStatusSqsMessage.mintingStatus) {
+            // sometimes, we will send an SQS message manually to re-process a given song. This is fine, but we need to
+            // sync the DB with the SQS message.
+            log.warn { "DB MintingStatus: ${dbSong.mintingStatus} does not match SQS MintingStatus: ${mintingStatusSqsMessage.mintingStatus}... updating db" }
+            songRepository.update(mintingStatusSqsMessage.songId, Song(mintingStatus = mintingStatusSqsMessage.mintingStatus))
+        }
 
         when (mintingStatusSqsMessage.mintingStatus) {
             MintingStatus.MintingPaymentSubmitted -> {
