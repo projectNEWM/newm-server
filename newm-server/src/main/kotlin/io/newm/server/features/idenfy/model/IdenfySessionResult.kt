@@ -10,7 +10,9 @@ data class IdenfySessionResult(
     @SerialName("final")
     val isFinal: Boolean,
     @SerialName("status")
-    val status: Status
+    val status: Status,
+    @SerialName("data")
+    val data: Data
 ) {
     val isApproved: Boolean by lazy {
         status.overall == "APPROVED"
@@ -34,5 +36,13 @@ data class IdenfySessionResult(
         val mismatchTags: List<String>?,
         @SerialName("suspicionReasons")
         val suspicionReasons: List<String>?
+    )
+
+    @Serializable
+    data class Data(
+        @SerialName("docFirstName")
+        val docFirstName: String?,
+        @SerialName("docLastName")
+        val docLastName: String?
     )
 }
