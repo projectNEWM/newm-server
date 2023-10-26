@@ -41,6 +41,8 @@ class IdenfyRoutesTests : BaseApplicationTests() {
             UserEntity[testUserId].verificationStatus = UserVerificationStatus.Unverified
         }
 
+        val docFirstName = "DocFirstName"
+        val docLastName = "DocLastName"
         val request = json.encodeToString(
             IdenfySessionResult(
                 clientId = testUserId.toString(),
@@ -54,6 +56,10 @@ class IdenfyRoutesTests : BaseApplicationTests() {
                     manualFace = null,
                     mismatchTags = null,
                     suspicionReasons = null
+                ),
+                data = IdenfySessionResult.Data(
+                    docFirstName = docFirstName,
+                    docLastName = docLastName
                 )
             )
         )
@@ -65,10 +71,10 @@ class IdenfyRoutesTests : BaseApplicationTests() {
         }
         assertThat(response.status).isEqualTo(HttpStatusCode.OK)
 
-        val newStatus = transaction {
-            UserEntity[testUserId].verificationStatus
-        }
-        assertThat(newStatus).isEqualTo(UserVerificationStatus.Verified)
+        val user = transaction { UserEntity[testUserId] }
+        assertThat(user.verificationStatus).isEqualTo(UserVerificationStatus.Verified)
+        assertThat(user.firstName).isEqualTo(docFirstName)
+        assertThat(user.lastName).isEqualTo(docLastName)
     }
 
     @Test
@@ -93,6 +99,10 @@ class IdenfyRoutesTests : BaseApplicationTests() {
                     manualFace = null,
                     mismatchTags = null,
                     suspicionReasons = null
+                ),
+                data = IdenfySessionResult.Data(
+                    docFirstName = null,
+                    docLastName = null
                 )
             )
         )
@@ -132,6 +142,10 @@ class IdenfyRoutesTests : BaseApplicationTests() {
                     manualFace = null,
                     mismatchTags = null,
                     suspicionReasons = null
+                ),
+                data = IdenfySessionResult.Data(
+                    docFirstName = null,
+                    docLastName = null
                 )
             )
         )

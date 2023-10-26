@@ -174,7 +174,7 @@ internal class SongRepositoryImpl(
     }
 
     override fun set(songId: UUID, editor: (SongEntity) -> Unit) {
-        logger.debug { "editFields: songId = $songId" }
+        logger.debug { "set: songId = $songId" }
         transaction {
             val entity = SongEntity[songId]
             editor(entity)

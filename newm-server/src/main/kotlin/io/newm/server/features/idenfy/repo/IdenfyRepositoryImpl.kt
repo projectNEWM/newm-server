@@ -16,6 +16,7 @@ import io.newm.server.features.user.model.UserVerificationStatus
 import io.newm.server.features.user.repo.UserRepository
 import io.newm.server.ktx.checkedBody
 import io.newm.server.ktx.getSecureString
+import io.newm.shared.exception.HttpUnprocessableEntityException
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.debug
 import io.newm.shared.ktx.getConfigChild
@@ -44,6 +45,9 @@ class IdenfyRepositoryImpl(
         logger.debug { "createSession: $userId" }
 
         val user = userRepository.get(userId)
+        if (user.firstName == null || user.lastName == null) {
+            throw HttpUnprocessableEntityException("User first and last name must be set before starting KYC")
+        }
         return with(environment.getConfigChild("idenfy")) {
             httpClient.post(getString("sessionUrl")) {
                 contentType(ContentType.Application.Json)
@@ -54,8 +58,8 @@ class IdenfyRepositoryImpl(
                 setBody(
                     IdenfyCreateSessionRequest(
                         clientId = userId.toString(),
-                        firstName = user.firstName!!,
-                        lastName = user.lastName!!
+                        firstName = user.firstName,
+                        lastName = user.lastName
                     )
                 )
             }.checkedBody()
@@ -75,6 +79,10 @@ class IdenfyRepositoryImpl(
         val email = transaction {
             with(UserEntity[result.clientId.toUUID()]) {
                 verificationStatus = status
+                if (status == UserVerificationStatus.Verified) {
+                    result.data.docFirstName?.let { firstName = it }
+                    result.data.docLastName?.let { lastName = it }
+                }
                 email
             }
         }

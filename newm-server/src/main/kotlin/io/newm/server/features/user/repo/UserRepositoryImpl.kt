@@ -312,7 +312,7 @@ internal class UserRepositoryImpl(
     }
 
     private fun UserEntity.checkNameModifiable(newName: String, currentName: String?) {
-        if (verificationStatus != UserVerificationStatus.Unverified && !newName.equals(currentName, true)) {
+        if (verificationStatus != UserVerificationStatus.Unverified && newName != currentName) {
             throw HttpForbiddenException("Name modification not allowed after KYC verification")
         }
     }
