@@ -6,6 +6,7 @@ import com.github.benmanes.caffeine.cache.Caffeine
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.ServerResponseException
+import io.ktor.client.plugins.retry
 import io.ktor.client.plugins.timeout
 import io.ktor.client.request.accept
 import io.ktor.client.request.bearerAuth
@@ -180,6 +181,10 @@ class EvearaDistributionRepositoryImpl(
                 }
             } ?: run {
                 val response = httpClient.post("$evearaApiBaseUrl/oauth/gettoken") {
+                    retry {
+                        maxRetries = 2
+                        delayMillis { 500L }
+                    }
                     contentType(ContentType.Application.Json)
                     accept(ContentType.Application.Json)
                     setBody(
