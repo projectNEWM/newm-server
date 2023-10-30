@@ -39,6 +39,7 @@ import io.newm.server.ktx.asValidUrl
 import io.newm.server.ktx.await
 import io.newm.server.ktx.checkLength
 import io.newm.server.ktx.getSecureConfigString
+import io.newm.shared.exception.HttpConflictException
 import io.newm.shared.exception.HttpForbiddenException
 import io.newm.shared.exception.HttpUnprocessableEntityException
 import io.newm.shared.koin.inject
@@ -89,6 +90,7 @@ internal class SongRepositoryImpl(
         val genres = song.genres ?: throw HttpUnprocessableEntityException("missing genres")
         song.checkFieldLengths()
         return transaction {
+            title.checkTitleUnique(ownerId)
             SongEntity.new {
                 archived = song.archived ?: false
                 this.ownerId = EntityID(ownerId, UserTable)
@@ -125,7 +127,12 @@ internal class SongRepositoryImpl(
             requesterId?.let { entity.checkRequester(it) }
             with(song) {
                 archived?.let { entity.archived = it }
-                title?.let { entity.title = it }
+                title?.let {
+                    if (!it.equals(entity.title, ignoreCase = true)) {
+                        it.checkTitleUnique(entity.ownerId.value)
+                    }
+                    entity.title = it
+                }
                 genres?.let { entity.genres = it.toTypedArray() }
                 moods?.let { entity.moods = it.toTypedArray() }
                 coverArtUrl?.let { entity.coverArtUrl = it.orNull()?.asValidUrl() }
@@ -521,6 +528,12 @@ internal class SongRepositoryImpl(
         if (ownerId.value != requesterId) throw HttpForbiddenException("operation allowed only by owner")
         if (verified && UserEntity[requesterId].verificationStatus != UserVerificationStatus.Verified) {
             throw HttpUnprocessableEntityException("operation allowed only after owner is KYC verified")
+        }
+    }
+
+    private fun String.checkTitleUnique(ownerId: UUID) {
+        if (SongEntity.exists(ownerId, this)) {
+            throw HttpConflictException("Title already exists: $this")
         }
     }
 
