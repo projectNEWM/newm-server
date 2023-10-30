@@ -8,6 +8,7 @@ import io.newm.server.features.song.model.SongBarcodeType
 import io.newm.server.features.song.model.SongFilters
 import io.newm.shared.exposed.overlaps
 import io.newm.shared.exposed.unnest
+import io.newm.shared.ktx.exists
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
@@ -20,6 +21,7 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.count
 import org.jetbrains.exposed.sql.lowerCase
 import org.jetbrains.exposed.sql.mapLazy
@@ -139,6 +141,10 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             return query.groupBy(genre)
                 .orderBy(SongTable.id.count(), filters.sortOrder ?: SortOrder.DESC)
                 .mapLazy { it[genre] }
+        }
+
+        fun exists(ownerId: UUID, title: String): Boolean = exists {
+            (SongTable.ownerId eq ownerId) and (SongTable.title.lowerCase() eq title.lowercase())
         }
 
         private fun SongFilters.toOps(): List<Op<Boolean>> {
