@@ -12,6 +12,7 @@ import io.newm.server.features.idenfy.model.IdenfySessionResult
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.model.UserVerificationStatus
 import kotlinx.coroutines.runBlocking
+import kotlinx.html.currentTimeMillis
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -41,8 +42,9 @@ class IdenfyRoutesTests : BaseApplicationTests() {
             UserEntity[testUserId].verificationStatus = UserVerificationStatus.Unverified
         }
 
-        val docFirstName = "DocFirstName"
-        val docLastName = "DocLastName"
+        val t = currentTimeMillis()
+        val docFirstName = "DocFirstName@$t"
+        val docLastName = "DocLastName@$t"
         val request = json.encodeToString(
             IdenfySessionResult(
                 clientId = testUserId.toString(),

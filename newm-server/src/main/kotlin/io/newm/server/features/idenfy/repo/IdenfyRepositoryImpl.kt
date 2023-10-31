@@ -13,10 +13,8 @@ import io.newm.server.features.idenfy.model.IdenfyCreateSessionResponse
 import io.newm.server.features.idenfy.model.IdenfySessionResult
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.model.UserVerificationStatus
-import io.newm.server.features.user.repo.UserRepository
 import io.newm.server.ktx.checkedBody
 import io.newm.server.ktx.getSecureString
-import io.newm.shared.exception.HttpUnprocessableEntityException
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.debug
 import io.newm.shared.ktx.getConfigChild
@@ -33,7 +31,6 @@ class IdenfyRepositoryImpl(
     private val environment: ApplicationEnvironment,
     private val httpClient: HttpClient,
     private val emailRepository: EmailRepository,
-    private val userRepository: UserRepository,
 ) : IdenfyRepository {
 
     private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
@@ -44,10 +41,6 @@ class IdenfyRepositoryImpl(
     override suspend fun createSession(userId: UUID): IdenfyCreateSessionResponse {
         logger.debug { "createSession: $userId" }
 
-        val user = userRepository.get(userId)
-        if (user.firstName == null || user.lastName == null) {
-            throw HttpUnprocessableEntityException("User first and last name must be set before starting KYC")
-        }
         return with(environment.getConfigChild("idenfy")) {
             httpClient.post(getString("sessionUrl")) {
                 contentType(ContentType.Application.Json)
@@ -55,13 +48,7 @@ class IdenfyRepositoryImpl(
                     username = getSecureString("apiKey"),
                     password = getSecureString("apiSecret"),
                 )
-                setBody(
-                    IdenfyCreateSessionRequest(
-                        clientId = userId.toString(),
-                        firstName = user.firstName,
-                        lastName = user.lastName
-                    )
-                )
+                setBody(IdenfyCreateSessionRequest(userId.toString()))
             }.checkedBody()
         }
     }
