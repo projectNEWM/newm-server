@@ -144,7 +144,9 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         }
 
         fun exists(ownerId: UUID, title: String): Boolean = exists {
-            (SongTable.ownerId eq ownerId) and (SongTable.title.lowerCase() eq title.lowercase())
+            (SongTable.archived eq false) and
+                (SongTable.ownerId eq ownerId) and
+                (SongTable.title.lowerCase() eq title.lowercase())
         }
 
         private fun SongFilters.toOps(): List<Op<Boolean>> {
