@@ -349,7 +349,7 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                 val limit = 1000
                 var offset = 0L
                 var nativeAssetLogList: List<Pair<Long, ByteArray>>
-                var nextStartAfterId: Long = -1L
+                var nextStartAfterId: Long = startAfterId ?: -1L
                 while (true) {
                     while (true) {
                         // loop through all existing records before we change startAfterId
