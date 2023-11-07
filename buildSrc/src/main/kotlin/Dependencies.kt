@@ -135,7 +135,7 @@ object Dependencies {
     }
 
     object FlywayDB {
-        private const val VERSION = "10.0.0"
+        private const val VERSION = "9.22.3"
 
         const val ALL = "org.flywaydb:flyway-core:$VERSION"
     }
