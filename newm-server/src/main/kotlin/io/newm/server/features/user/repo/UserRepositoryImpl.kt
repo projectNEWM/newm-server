@@ -78,9 +78,9 @@ internal class UserRepositoryImpl(
                 this.websiteUrl = user.websiteUrl?.asValidUrl()
                 this.twitterUrl = user.twitterUrl?.asValidUrl()
                 this.instagramUrl = user.instagramUrl?.asValidUrl()
-                this.spotifyProfile = user.spotifyProfile
-                this.soundCloudProfile = user.soundCloudProfile
-                this.appleMusicProfile = user.appleMusicProfile
+                this.spotifyProfile = user.spotifyProfile?.substringBefore("?")
+                this.soundCloudProfile = user.soundCloudProfile?.substringBefore("?")
+                this.appleMusicProfile = user.appleMusicProfile?.substringBefore("?")
                 this.location = user.location
                 this.role = user.role
                 this.genre = user.genre
