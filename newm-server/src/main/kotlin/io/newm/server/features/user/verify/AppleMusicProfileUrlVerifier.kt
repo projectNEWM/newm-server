@@ -38,7 +38,7 @@ class AppleMusicProfileUrlVerifier(
 
     override suspend fun verify(outletProfileUrl: String, stageOrFullName: String) {
         authorizeClient()
-        val appleProfileId = outletProfileUrl.substringAfterLast("/")
+        val appleProfileId = outletProfileUrl.substringAfterLast("/").substringBefore("?")
         val response = authorizedHttpClient.get(
             "https://api.music.apple.com/v1/catalog/us/artists/$appleProfileId"
         ) {

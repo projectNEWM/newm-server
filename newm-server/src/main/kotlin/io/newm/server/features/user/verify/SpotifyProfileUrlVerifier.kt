@@ -34,7 +34,7 @@ class SpotifyProfileUrlVerifier(
 
     override suspend fun verify(outletProfileUrl: String, stageOrFullName: String) {
         authorizeClient()
-        val spotifyProfileId = outletProfileUrl.substringAfterLast("/")
+        val spotifyProfileId = outletProfileUrl.substringAfterLast("/").substringBefore("?")
         val response = authorizedHttpClient.get(
             "https://api.spotify.com/v1/artists/$spotifyProfileId"
         ) {
