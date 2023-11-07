@@ -1340,8 +1340,6 @@ class EvearaDistributionRepositoryImpl(
                                         )
                                     )
                                 }
-                                // FIXME: support soundcloud after we have a validation API for it.
-                                /*
                                 if (user.soundCloudProfile != null) {
                                     add(
                                         OutletProfile(
@@ -1350,7 +1348,6 @@ class EvearaDistributionRepositoryImpl(
                                         )
                                     )
                                 }
-                                 */
                                 if (user.appleMusicProfile != null) {
                                     add(
                                         OutletProfile(
@@ -1383,8 +1380,6 @@ class EvearaDistributionRepositoryImpl(
                                     )
                                 )
                             }
-                            // FIXME: support soundcloud after we have a validation API for it.
-                            /*
                             if (user.soundCloudProfile != null) {
                                 add(
                                     OutletProfile(
@@ -1393,7 +1388,6 @@ class EvearaDistributionRepositoryImpl(
                                     )
                                 )
                             }
-                             */
                             if (user.appleMusicProfile != null) {
                                 add(
                                     OutletProfile(
@@ -1433,8 +1427,6 @@ class EvearaDistributionRepositoryImpl(
                                     )
                                 )
                             }
-                            // FIXME: support soundcloud after we have a validation API for it.
-                            /*
                             if (user.soundCloudProfile != null) {
                                 add(
                                     OutletProfile(
@@ -1443,7 +1435,6 @@ class EvearaDistributionRepositoryImpl(
                                     )
                                 )
                             }
-                             */
                             if (user.appleMusicProfile != null) {
                                 add(
                                     OutletProfile(
