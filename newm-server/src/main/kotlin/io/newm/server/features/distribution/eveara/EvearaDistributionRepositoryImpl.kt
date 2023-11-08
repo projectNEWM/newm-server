@@ -104,6 +104,7 @@ import io.newm.shared.exception.HttpStatusException.Companion.toException
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.getConfigString
 import io.newm.shared.ktx.info
+import io.newm.shared.ktx.orNull
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -1196,46 +1197,30 @@ class EvearaDistributionRepositoryImpl(
                     )
 
                     val currentOutletsMap =
-                        collabDistributionArtistsMap[distributionArtistId]!!.outlets.associateBy { it.outletName }
-                    if (currentOutletsMap["Spotify"]?.outletId != collabUser.spotifyProfile.takeUnless { it.isNullOrBlank() } ||
-                        currentOutletsMap["SoundCloud"]?.outletId != collabUser.soundCloudProfile.takeUnless { it.isNullOrBlank() } ||
-                        currentOutletsMap["Apple"]?.outletId != collabUser.appleMusicProfile.takeUnless { it.isNullOrBlank() }
+                        collabDistributionArtistsMap[distributionArtistId]!!.outlets.filter { it.profileUrl.isNotBlank() }.associateBy { it.name }
+                    if (currentOutletsMap["Spotify"]?.profileUrl != collabUser.spotifyProfile?.orNull() ||
+                        currentOutletsMap["SoundCloud"]?.profileUrl != collabUser.soundCloudProfile?.orNull() ||
+                        currentOutletsMap["Apple"]?.profileUrl != collabUser.appleMusicProfile?.orNull()
                     ) {
                         val response = updateArtist(
                             distributionArtistId,
                             UpdateArtistRequest(
                                 uuid = user.distributionUserId!!,
                                 name = collabUser.stageOrFullName,
-                                outletProfiles = mutableListOf<OutletProfile>().apply {
-                                    if (collabUser.spotifyProfile != null) {
-                                        add(
-                                            OutletProfile(
-                                                id = collabUserOutletProfileNamesMap["Spotify"]!!,
-                                                profileUrl = collabUser.spotifyProfile,
-                                            )
-                                        )
-                                    }
-                                    // FIXME: support soundcloud after we have a validation API for it.
-                                    /*
-                                    if (collabUser.soundCloudProfile != null) {
-                                        add(
-                                            OutletProfile(
-                                                id = collabUserOutletProfileNamesMap["SoundCloud"]!!,
-                                                profileUrl = collabUser.soundCloudProfile,
-                                            )
-                                        )
-                                    }
-                                     */
-                                    if (collabUser.appleMusicProfile != null) {
-                                        add(
-                                            OutletProfile(
-                                                id = collabUserOutletProfileNamesMap["Apple"]!!,
-                                                profileUrl = collabUser.appleMusicProfile,
-                                            )
-                                        )
-                                    }
-                                }
-
+                                outletProfiles = listOf(
+                                    OutletProfile(
+                                        id = collabUserOutletProfileNamesMap["Spotify"]!!,
+                                        profileUrl = collabUser.spotifyProfile.orEmpty(),
+                                    ),
+                                    OutletProfile(
+                                        id = collabUserOutletProfileNamesMap["SoundCloud"]!!,
+                                        profileUrl = collabUser.soundCloudProfile.orEmpty(),
+                                    ),
+                                    OutletProfile(
+                                        id = collabUserOutletProfileNamesMap["Apple"]!!,
+                                        profileUrl = collabUser.appleMusicProfile.orEmpty(),
+                                    )
+                                ),
                             )
                         ).logRequestJson(log)
                         log.info { "Updated collab distribution artist ${collabUser.email} with id ${response.artistData?.artistId}: ${response.message}" }
@@ -1250,35 +1235,20 @@ class EvearaDistributionRepositoryImpl(
                                 uuid = user.distributionUserId!!,
                                 name = collabUser.stageOrFullName,
                                 country = hardcodedCountry,
-                                outletProfiles = mutableListOf<OutletProfile>().apply {
-                                    if (collabUser.spotifyProfile != null) {
-                                        add(
-                                            OutletProfile(
-                                                id = collabUserOutletProfileNamesMap["Spotify"]!!,
-                                                profileUrl = collabUser.spotifyProfile,
-                                            )
-                                        )
-                                    }
-                                    // FIXME: support soundcloud after we have a validation API for it.
-                                    /*
-                                    if (collabUser.soundCloudProfile != null) {
-                                        add(
-                                            OutletProfile(
-                                                id = collabUserOutletProfileNamesMap["SoundCloud"]!!,
-                                                profileUrl = collabUser.soundCloudProfile,
-                                            )
-                                        )
-                                    }
-                                     */
-                                    if (collabUser.appleMusicProfile != null) {
-                                        add(
-                                            OutletProfile(
-                                                id = collabUserOutletProfileNamesMap["Apple"]!!,
-                                                profileUrl = collabUser.appleMusicProfile,
-                                            )
-                                        )
-                                    }
-                                }
+                                outletProfiles = listOf(
+                                    OutletProfile(
+                                        id = collabUserOutletProfileNamesMap["Spotify"]!!,
+                                        profileUrl = collabUser.spotifyProfile.orEmpty(),
+                                    ),
+                                    OutletProfile(
+                                        id = collabUserOutletProfileNamesMap["SoundCloud"]!!,
+                                        profileUrl = collabUser.soundCloudProfile.orEmpty(),
+                                    ),
+                                    OutletProfile(
+                                        id = collabUserOutletProfileNamesMap["Apple"]!!,
+                                        profileUrl = collabUser.appleMusicProfile.orEmpty(),
+                                    )
+                                ),
                             ).logRequestJson(log)
                         )
                     log.info { "Created collab distribution artist ${collabUser.email} with id ${response.artistId}: ${response.message}" }
@@ -1321,43 +1291,30 @@ class EvearaDistributionRepositoryImpl(
                 userRepository.updateUserData(user.id, user)
 
                 val currentOutletsMap =
-                    collabDistributionArtistsMap[user.distributionArtistId]!!.outlets.associateBy { it.outletName }
-                if (currentOutletsMap["Spotify"]?.outletId != user.spotifyProfile.takeUnless { it.isNullOrBlank() } ||
-                    currentOutletsMap["SoundCloud"]?.outletId != user.soundCloudProfile.takeUnless { it.isNullOrBlank() } ||
-                    currentOutletsMap["Apple"]?.outletId != user.appleMusicProfile.takeUnless { it.isNullOrBlank() }
+                    collabDistributionArtistsMap[user.distributionArtistId]!!.outlets.filter { it.profileUrl.isNotBlank() }.associateBy { it.name }
+                if (currentOutletsMap["Spotify"]?.profileUrl != user.spotifyProfile?.orNull() ||
+                    currentOutletsMap["SoundCloud"]?.profileUrl != user.soundCloudProfile?.orNull() ||
+                    currentOutletsMap["Apple"]?.profileUrl != user.appleMusicProfile?.orNull()
                 ) {
                     val response = updateArtist(
                         user.distributionArtistId!!,
                         UpdateArtistRequest(
                             uuid = user.distributionUserId!!,
                             name = user.stageOrFullName,
-                            outletProfiles = mutableListOf<OutletProfile>().apply {
-                                if (user.spotifyProfile != null) {
-                                    add(
-                                        OutletProfile(
-                                            id = collabUserOutletProfileNamesMap["Spotify"]!!,
-                                            profileUrl = user.spotifyProfile,
-                                        )
-                                    )
-                                }
-                                if (user.soundCloudProfile != null) {
-                                    add(
-                                        OutletProfile(
-                                            id = collabUserOutletProfileNamesMap["SoundCloud"]!!,
-                                            profileUrl = user.soundCloudProfile,
-                                        )
-                                    )
-                                }
-                                if (user.appleMusicProfile != null) {
-                                    add(
-                                        OutletProfile(
-                                            id = collabUserOutletProfileNamesMap["Apple"]!!,
-                                            profileUrl = user.appleMusicProfile,
-                                        )
-                                    )
-                                }
-                            }
-
+                            outletProfiles = listOf(
+                                OutletProfile(
+                                    id = collabUserOutletProfileNamesMap["Spotify"]!!,
+                                    profileUrl = user.spotifyProfile.orEmpty(),
+                                ),
+                                OutletProfile(
+                                    id = collabUserOutletProfileNamesMap["SoundCloud"]!!,
+                                    profileUrl = user.soundCloudProfile.orEmpty(),
+                                ),
+                                OutletProfile(
+                                    id = collabUserOutletProfileNamesMap["Apple"]!!,
+                                    profileUrl = user.appleMusicProfile.orEmpty(),
+                                )
+                            ),
                         )
                     ).logRequestJson(log)
                     log.info { "Updated distribution artist ${user.email} with id ${response.artistData?.artistId}: ${response.message}" }
@@ -1371,32 +1328,20 @@ class EvearaDistributionRepositoryImpl(
                         uuid = user.distributionUserId!!,
                         name = user.stageOrFullName,
                         country = hardcodedCountry,
-                        outletProfiles = mutableListOf<OutletProfile>().apply {
-                            if (user.spotifyProfile != null) {
-                                add(
-                                    OutletProfile(
-                                        id = collabUserOutletProfileNamesMap["Spotify"]!!,
-                                        profileUrl = user.spotifyProfile,
-                                    )
-                                )
-                            }
-                            if (user.soundCloudProfile != null) {
-                                add(
-                                    OutletProfile(
-                                        id = collabUserOutletProfileNamesMap["SoundCloud"]!!,
-                                        profileUrl = user.soundCloudProfile,
-                                    )
-                                )
-                            }
-                            if (user.appleMusicProfile != null) {
-                                add(
-                                    OutletProfile(
-                                        id = collabUserOutletProfileNamesMap["Apple"]!!,
-                                        profileUrl = user.appleMusicProfile,
-                                    )
-                                )
-                            }
-                        }
+                        outletProfiles = listOf(
+                            OutletProfile(
+                                id = collabUserOutletProfileNamesMap["Spotify"]!!,
+                                profileUrl = user.spotifyProfile.orEmpty(),
+                            ),
+                            OutletProfile(
+                                id = collabUserOutletProfileNamesMap["SoundCloud"]!!,
+                                profileUrl = user.soundCloudProfile.orEmpty(),
+                            ),
+                            OutletProfile(
+                                id = collabUserOutletProfileNamesMap["Apple"]!!,
+                                profileUrl = user.appleMusicProfile.orEmpty(),
+                            )
+                        ),
                     )
                 )
                 log.info { "Created distribution artist ${user.email} with id ${response.artistId}: ${response.message}" }
@@ -1408,43 +1353,30 @@ class EvearaDistributionRepositoryImpl(
             log.info { "Found existing distribution artist ${user.email} with id ${artist.artistId}" }
 
             val currentOutletsMap =
-                collabDistributionArtistsMap[user.distributionArtistId]!!.outlets.associateBy { it.outletName }
-            if (currentOutletsMap["Spotify"]?.outletId != user.spotifyProfile.takeUnless { it.isNullOrBlank() } ||
-                currentOutletsMap["SoundCloud"]?.outletId != user.soundCloudProfile.takeUnless { it.isNullOrBlank() } ||
-                currentOutletsMap["Apple"]?.outletId != user.appleMusicProfile.takeUnless { it.isNullOrBlank() }
+                collabDistributionArtistsMap[user.distributionArtistId]!!.outlets.filter { it.profileUrl.isNotBlank() }.associateBy { it.name }
+            if (currentOutletsMap["Spotify"]?.profileUrl != user.spotifyProfile?.orNull() ||
+                currentOutletsMap["SoundCloud"]?.profileUrl != user.soundCloudProfile?.orNull() ||
+                currentOutletsMap["Apple"]?.profileUrl != user.appleMusicProfile?.orNull()
             ) {
                 val response = updateArtist(
                     user.distributionArtistId!!,
                     UpdateArtistRequest(
                         uuid = user.distributionUserId!!,
                         name = user.stageOrFullName,
-                        outletProfiles = mutableListOf<OutletProfile>().apply {
-                            if (user.spotifyProfile != null) {
-                                add(
-                                    OutletProfile(
-                                        id = collabUserOutletProfileNamesMap["Spotify"]!!,
-                                        profileUrl = user.spotifyProfile,
-                                    )
-                                )
-                            }
-                            if (user.soundCloudProfile != null) {
-                                add(
-                                    OutletProfile(
-                                        id = collabUserOutletProfileNamesMap["SoundCloud"]!!,
-                                        profileUrl = user.soundCloudProfile,
-                                    )
-                                )
-                            }
-                            if (user.appleMusicProfile != null) {
-                                add(
-                                    OutletProfile(
-                                        id = collabUserOutletProfileNamesMap["Apple"]!!,
-                                        profileUrl = user.appleMusicProfile,
-                                    )
-                                )
-                            }
-                        }
-
+                        outletProfiles = listOf(
+                            OutletProfile(
+                                id = collabUserOutletProfileNamesMap["Spotify"]!!,
+                                profileUrl = user.spotifyProfile.orEmpty(),
+                            ),
+                            OutletProfile(
+                                id = collabUserOutletProfileNamesMap["SoundCloud"]!!,
+                                profileUrl = user.soundCloudProfile.orEmpty(),
+                            ),
+                            OutletProfile(
+                                id = collabUserOutletProfileNamesMap["Apple"]!!,
+                                profileUrl = user.appleMusicProfile.orEmpty(),
+                            )
+                        ),
                     )
                 ).logRequestJson(log)
                 log.info { "Updated distribution artist ${user.email} with id ${response.artistData?.artistId}: ${response.message}" }
