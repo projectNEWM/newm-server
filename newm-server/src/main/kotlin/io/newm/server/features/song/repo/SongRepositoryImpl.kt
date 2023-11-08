@@ -175,6 +175,7 @@ internal class SongRepositoryImpl(
                     distributionReleaseId?.let { entity.distributionReleaseId = it }
                     mintCostLovelace?.let { entity.mintCostLovelace = it }
                     forceDistributed?.let { entity.forceDistributed = it }
+                    errorMessage?.let { entity.errorMessage = it.orNull() }
                 }
             }
         }
@@ -430,11 +431,14 @@ internal class SongRepositoryImpl(
         return transaction.transactionCbor.toByteArray().toHexString()
     }
 
-    override suspend fun updateSongMintingStatus(songId: UUID, mintingStatus: MintingStatus) {
+    override suspend fun updateSongMintingStatus(songId: UUID, mintingStatus: MintingStatus, errorMessage: String) {
         // Update DB
         update(
             songId,
-            Song(mintingStatus = mintingStatus)
+            Song(
+                mintingStatus = mintingStatus,
+                errorMessage = errorMessage,
+            )
         )
 
         when (mintingStatus) {
