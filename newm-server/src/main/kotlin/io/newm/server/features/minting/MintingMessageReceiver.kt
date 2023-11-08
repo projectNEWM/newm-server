@@ -41,11 +41,24 @@ class MintingMessageReceiver : SqsMessageReceiver {
         val mintingStatusSqsMessage: MintingStatusSqsMessage = json.decodeFromString(message.body)
         log.info { "received: $mintingStatusSqsMessage" }
         val dbSong = songRepository.get(mintingStatusSqsMessage.songId)
+        if (dbSong.mintingStatus == MintingStatus.Minted) {
+            // Sometimes, we will manually reprocess a song. If it is already minted successfully when we do
+            // dead-letter queue reprocessing, we can safely ignore these messages and let them be successfully
+            // consumed.
+            log.info { "DB MintingStatus: ${dbSong.mintingStatus} is already Minted. Ignoring SQS message." }
+            return
+        }
         if (dbSong.mintingStatus != mintingStatusSqsMessage.mintingStatus) {
             // sometimes, we will send an SQS message manually to re-process a given song. This is fine, but we need to
             // sync the DB with the SQS message.
             log.warn { "DB MintingStatus: ${dbSong.mintingStatus} does not match SQS MintingStatus: ${mintingStatusSqsMessage.mintingStatus}... updating db" }
-            songRepository.update(mintingStatusSqsMessage.songId, Song(mintingStatus = mintingStatusSqsMessage.mintingStatus))
+            songRepository.update(
+                mintingStatusSqsMessage.songId,
+                Song(
+                    mintingStatus = mintingStatusSqsMessage.mintingStatus,
+                    errorMessage = "",
+                )
+            )
         }
 
         when (mintingStatusSqsMessage.mintingStatus) {
@@ -69,9 +82,11 @@ class MintingMessageReceiver : SqsMessageReceiver {
                         )
                     } else {
                         // We timed out waiting for payment.
+                        val errorMessage = "Timed out waiting for payment!: ${response.message}"
                         songRepository.updateSongMintingStatus(
                             songId = mintingStatusSqsMessage.songId,
-                            mintingStatus = MintingStatus.MintingPaymentTimeout
+                            mintingStatus = MintingStatus.MintingPaymentTimeout,
+                            errorMessage = errorMessage,
                         )
                     }
                 } catch (e: Throwable) {
@@ -79,7 +94,8 @@ class MintingMessageReceiver : SqsMessageReceiver {
                     log.error(errorMessage, e)
                     songRepository.updateSongMintingStatus(
                         songId = mintingStatusSqsMessage.songId,
-                        mintingStatus = MintingStatus.MintingPaymentException
+                        mintingStatus = MintingStatus.MintingPaymentException,
+                        errorMessage = "$errorMessage: ${e.message}",
                     )
                     throw DistributeAndMintException(errorMessage, e).also { it.captureToSentry() }
                 }
@@ -89,7 +105,7 @@ class MintingMessageReceiver : SqsMessageReceiver {
                 // Payment received. Move -> AwaitingAudioEncoding
                 songRepository.updateSongMintingStatus(
                     songId = mintingStatusSqsMessage.songId,
-                    mintingStatus = MintingStatus.AwaitingAudioEncoding
+                    mintingStatus = MintingStatus.AwaitingAudioEncoding,
                 )
             }
 
@@ -108,14 +124,15 @@ class MintingMessageReceiver : SqsMessageReceiver {
                     // Done submitting distributing. Move -> SubmittedForDistribution
                     songRepository.updateSongMintingStatus(
                         songId = mintingStatusSqsMessage.songId,
-                        mintingStatus = MintingStatus.SubmittedForDistribution
+                        mintingStatus = MintingStatus.SubmittedForDistribution,
                     )
                 } catch (e: Throwable) {
                     val errorMessage = "Error while distributing!"
                     log.error(errorMessage, e)
                     songRepository.updateSongMintingStatus(
                         songId = mintingStatusSqsMessage.songId,
-                        mintingStatus = MintingStatus.DistributionException
+                        mintingStatus = MintingStatus.DistributionException,
+                        errorMessage = "$errorMessage: ${e.message}",
                     )
                     throw DistributeAndMintException(errorMessage, e).also { it.captureToSentry() }
                 }
@@ -153,7 +170,8 @@ class MintingMessageReceiver : SqsMessageReceiver {
                     log.error(errorMessage, e)
                     songRepository.updateSongMintingStatus(
                         songId = mintingStatusSqsMessage.songId,
-                        mintingStatus = MintingStatus.SubmittedForDistributionException
+                        mintingStatus = MintingStatus.SubmittedForDistributionException,
+                        errorMessage = "$errorMessage: ${e.message}",
                     )
                     throw DistributeAndMintException(errorMessage, e).also { it.captureToSentry() }
                 }
@@ -176,7 +194,8 @@ class MintingMessageReceiver : SqsMessageReceiver {
                     log.error(errorMessage, e)
                     songRepository.updateSongMintingStatus(
                         songId = mintingStatusSqsMessage.songId,
-                        mintingStatus = MintingStatus.ArweaveUploadException
+                        mintingStatus = MintingStatus.ArweaveUploadException,
+                        errorMessage = "$errorMessage: ${e.message}",
                     )
                     throw DistributeAndMintException(errorMessage, e).also { it.captureToSentry() }
                 }
@@ -208,7 +227,8 @@ class MintingMessageReceiver : SqsMessageReceiver {
                     log.error(errorMessage, e)
                     songRepository.updateSongMintingStatus(
                         songId = mintingStatusSqsMessage.songId,
-                        mintingStatus = MintingStatus.MintingException
+                        mintingStatus = MintingStatus.MintingException,
+                        errorMessage = "$errorMessage: ${e.message}",
                     )
                     throw DistributeAndMintException(errorMessage, e).also { it.captureToSentry() }
                 }

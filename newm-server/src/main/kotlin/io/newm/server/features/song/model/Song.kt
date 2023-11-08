@@ -70,4 +70,5 @@ data class Song(
     val mintCostLovelace: Long? = null,
     @Transient
     val forceDistributed: Boolean? = null,
+    val errorMessage: String? = null,
 )

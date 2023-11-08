@@ -77,6 +77,7 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var distributionReleaseId: Long? by SongTable.distributionReleaseId
     var mintCostLovelace: Long? by SongTable.mintCostLovelace
     var forceDistributed: Boolean? by SongTable.forceDistributed
+    var errorMessage: String? by SongTable.errorMessage
 
     fun toModel(): Song = Song(
         id = id.value,
@@ -124,6 +125,7 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         distributionReleaseId = distributionReleaseId,
         mintCostLovelace = mintCostLovelace,
         forceDistributed = forceDistributed,
+        errorMessage = errorMessage,
     )
 
     companion object : UUIDEntityClass<SongEntity>(SongTable) {

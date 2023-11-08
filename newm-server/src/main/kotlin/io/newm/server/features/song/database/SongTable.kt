@@ -67,4 +67,5 @@ object SongTable : UUIDTable(name = "songs") {
     val distributionReleaseId: Column<Long?> = long("distribution_release_id").nullable()
     val mintCostLovelace: Column<Long?> = long("mint_cost_lovelace").nullable()
     val forceDistributed: Column<Boolean?> = bool("force_distributed").nullable()
+    val errorMessage: Column<String?> = text("error_message").nullable()
 }

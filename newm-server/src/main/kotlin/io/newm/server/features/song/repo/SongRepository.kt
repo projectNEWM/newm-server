@@ -37,7 +37,7 @@ interface SongRepository {
 
     suspend fun processCollaborations(songId: UUID)
 
-    suspend fun updateSongMintingStatus(songId: UUID, mintingStatus: MintingStatus)
+    suspend fun updateSongMintingStatus(songId: UUID, mintingStatus: MintingStatus, errorMessage: String = "")
 
     suspend fun distribute(songId: UUID)
 
