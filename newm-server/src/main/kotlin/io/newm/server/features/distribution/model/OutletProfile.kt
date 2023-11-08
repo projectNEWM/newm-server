@@ -7,6 +7,8 @@ import kotlinx.serialization.Serializable
 data class OutletProfile(
     @SerialName("id")
     val id: Long,
+    @SerialName("name")
+    val name: String? = null,
     @SerialName("profile_url")
     val profileUrl: String,
     /**
