@@ -391,12 +391,15 @@ internal class SongRepositoryImpl(
         // Save the mint cost to the database
         update(songId, Song(mintCostLovelace = mintCostLovelace))
 
+        // usdPrice does not include the extra changeAmountLovelace that we request the wallet to provide as it
+        // is returned to the user.
         val usdPrice = (
             cardanoRepository.queryAdaUSDPrice()
-                .toBigInteger() * (mintCostLovelace + changeAmountLovelace).toBigInteger()
-            ).div(1000000.toBigInteger())
+                .toBigInteger() * mintCostLovelace.toBigInteger()
+            ) / 1000000.toBigInteger()
 
         return Pair(
+            // we send an extra changeAmountLovelace to ensure we have enough ada to cover a return utxo
             CborInteger.create(mintCostLovelace + changeAmountLovelace).toCborByteArray().toHexString(),
             usdPrice
         )

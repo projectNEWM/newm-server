@@ -19,6 +19,7 @@ import io.newm.chain.grpc.plutusDataMap
 import io.newm.chain.grpc.plutusDataMapItem
 import io.newm.chain.grpc.redeemer
 import io.newm.chain.grpc.signature
+import io.newm.chain.util.Blake2b
 import io.newm.chain.util.Sha3
 import io.newm.chain.util.hexToByteArray
 import io.newm.server.config.repo.ConfigRepository
@@ -254,7 +255,7 @@ class MintingRepositoryImpl(
                             amount = "1"
                         }
                     )
-                    datum = cip68Metadata.toCborObject().toCborByteArray().toHexString()
+                    datumHash = Blake2b.hash256(cip68Metadata.toCborObject().toCborByteArray()).toHexString()
                 }
             )
 
@@ -338,6 +339,10 @@ class MintingRepositoryImpl(
                 // }
             }
         )
+
+        with(datums) {
+            add(cip68Metadata)
+        }
 
         // Add a simple transaction metadata note for NEWM Mint - See: CIP-20
         transactionMetadataCbor = ByteString.copyFrom(
