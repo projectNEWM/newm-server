@@ -44,6 +44,7 @@ import io.newm.shared.exception.HttpForbiddenException
 import io.newm.shared.exception.HttpUnprocessableEntityException
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.debug
+import io.newm.shared.ktx.error
 import io.newm.shared.ktx.getConfigChild
 import io.newm.shared.ktx.getConfigString
 import io.newm.shared.ktx.getInt
@@ -54,6 +55,8 @@ import io.newm.shared.ktx.orNull
 import io.newm.shared.ktx.orZero
 import io.newm.shared.ktx.propertiesFromResource
 import io.newm.shared.ktx.toTempFile
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.apache.tika.Tika
@@ -453,16 +456,26 @@ internal class SongRepositoryImpl(
             MintingStatus.SubmittedForDistribution,
             MintingStatus.Distributed,
             MintingStatus.Pending -> {
-                // Update SQS
-                val messageToSend = MintingStatusSqsMessage(
-                    songId = songId,
-                    mintingStatus = mintingStatus
-                )
-                logger.info { "sending: $messageToSend" }
-                SendMessageRequest()
-                    .withQueueUrl(queueUrl)
-                    .withMessageBody(json.encodeToString(messageToSend))
-                    .await()
+                coroutineScope {
+                    launch {
+                        try {
+                            // Update SQS
+                            val messageToSend = json.encodeToString(
+                                MintingStatusSqsMessage(
+                                    songId = songId,
+                                    mintingStatus = mintingStatus
+                                )
+                            )
+                            logger.info { "sending: $messageToSend" }
+                            SendMessageRequest()
+                                .withQueueUrl(queueUrl)
+                                .withMessageBody(messageToSend)
+                                .await()
+                        } catch (e: Throwable) {
+                            logger.error { "Error sending SQS message: $e" }
+                        }
+                    }
+                }
             }
 
             else -> {}
