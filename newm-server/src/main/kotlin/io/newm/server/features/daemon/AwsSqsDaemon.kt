@@ -53,13 +53,13 @@ class AwsSqsDaemon : Daemon {
                 val delayTimeMs = getLong("delayTimeMs")
                 val receiverClass = Class.forName(getString("receiver"))
                 val receiver = receiverClass.kotlin.primaryConstructor!!.call() as SqsMessageReceiver
-                val request = ReceiveMessageRequest()
-                    .withQueueUrl(queueUrl)
-                    .withWaitTimeSeconds(waitTime)
-                    .withMaxNumberOfMessages(1)
                 log.info { "SQS Listening on $queueUrl -> ${receiverClass.simpleName}" }
                 while (true) {
                     try {
+                        val request = ReceiveMessageRequest()
+                            .withQueueUrl(queueUrl)
+                            .withWaitTimeSeconds(waitTime)
+                            .withMaxNumberOfMessages(1)
                         val result = request.await()
                         log.debug { "$queueUrl -> Received ${result.messages.size} SQS messages" }
                         for (message in result.messages) {
