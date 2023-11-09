@@ -458,11 +458,11 @@ internal class SongRepositoryImpl(
                     songId = songId,
                     mintingStatus = mintingStatus
                 )
+                logger.info { "sending: $messageToSend" }
                 SendMessageRequest()
                     .withQueueUrl(queueUrl)
                     .withMessageBody(json.encodeToString(messageToSend))
                     .await()
-                logger.info { "sent: $messageToSend" }
             }
 
             else -> {}
@@ -475,9 +475,15 @@ internal class SongRepositoryImpl(
                 }
             }
 
-            MintingStatus.Minted -> sendMintingNotification("succeeded", songId)
+            MintingStatus.Minted -> {
+                logger.info { "Minted song $songId SUCCESS!" }
+                sendMintingNotification("succeeded", songId)
+            }
 
-            MintingStatus.Declined -> sendMintingNotification("failed", songId)
+            MintingStatus.Declined -> {
+                logger.info { "Declined song $songId FAILED!" }
+                sendMintingNotification("failed", songId)
+            }
 
             else -> Unit
         }
