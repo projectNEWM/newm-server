@@ -60,16 +60,21 @@ class AwsSqsDaemon : Daemon {
                             .withQueueUrl(queueUrl)
                             .withWaitTimeSeconds(waitTime)
                             .withMaxNumberOfMessages(1)
-                            .withSdkClientExecutionTimeout<ReceiveMessageRequest>(30000)
                         val result = request.await()
-                        log.debug { "$queueUrl -> Received ${result.messages.size} SQS messages" }
+                        if (result.messages.size > 0) {
+                            log.info { "$queueUrl -> Received ${result.messages.size} SQS messages" }
+                        } else {
+                            log.debug { "$queueUrl -> Received ${result.messages.size} SQS messages" }
+                        }
                         for (message in result.messages) {
                             try {
                                 receiver.onMessageReceived(message)
 
                                 // If receiver processing throws, we skip deleting the message
                                 // so it ends up in the dead-letter queue for reprocessing.
+                                log.info { "$queueUrl -> Deleting SQS message: ${message.body}" }
                                 message.delete(queueUrl)
+                                log.info { "$queueUrl -> Deleted SQS message: ${message.body}" }
                             } catch (e: Throwable) {
                                 log.error("Failure processing SQS message: $queueUrl", e)
                                 e.captureToSentry()
