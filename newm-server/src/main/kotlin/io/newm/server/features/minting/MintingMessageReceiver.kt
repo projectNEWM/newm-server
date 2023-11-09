@@ -38,8 +38,8 @@ class MintingMessageReceiver : SqsMessageReceiver {
     private val json: Json by inject()
 
     override suspend fun onMessageReceived(message: Message) {
+        log.info { "received: ${message.body}" }
         val mintingStatusSqsMessage: MintingStatusSqsMessage = json.decodeFromString(message.body)
-        log.info { "received: $mintingStatusSqsMessage" }
         val dbSong = songRepository.get(mintingStatusSqsMessage.songId)
         if (dbSong.mintingStatus == MintingStatus.Minted) {
             // Sometimes, we will manually reprocess a song. If it is already minted successfully when we do
