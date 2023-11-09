@@ -60,6 +60,7 @@ class AwsSqsDaemon : Daemon {
                             .withQueueUrl(queueUrl)
                             .withWaitTimeSeconds(waitTime)
                             .withMaxNumberOfMessages(1)
+                            .withSdkClientExecutionTimeout<ReceiveMessageRequest>(30000)
                         val result = request.await()
                         log.debug { "$queueUrl -> Received ${result.messages.size} SQS messages" }
                         for (message in result.messages) {
