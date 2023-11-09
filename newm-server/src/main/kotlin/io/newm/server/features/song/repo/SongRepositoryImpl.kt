@@ -470,6 +470,7 @@ internal class SongRepositoryImpl(
                             SendMessageRequest()
                                 .withQueueUrl(queueUrl)
                                 .withMessageBody(messageToSend)
+                                .withSdkRequestTimeout<SendMessageRequest>(30000)
                                 .await()
                         } catch (e: Throwable) {
                             logger.error { "Error sending SQS message: $e" }
