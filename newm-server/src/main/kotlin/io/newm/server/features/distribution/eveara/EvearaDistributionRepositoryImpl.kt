@@ -1385,7 +1385,7 @@ class EvearaDistributionRepositoryImpl(
 
         // Create the newm participant if they don't exist yet
         val getParticipantsResponse = getParticipants(user)
-        if (getParticipantsResponse.totalRecords > 0) {
+        if (getParticipantsResponse.totalRecords > 0 && getParticipantsResponse.participantData.any { it.name == "NEWM" }) {
             val existingNewmParticipant = getParticipantsResponse.participantData.first { it.name == "NEWM" }
             log.info { "Found existing distribution participant NEWM with id ${existingNewmParticipant.participantId}" }
             if (user.distributionNewmParticipantId == null) {
@@ -1403,7 +1403,7 @@ class EvearaDistributionRepositoryImpl(
         }
 
         // Create/Update the participant (will pay to newm any royalties)
-        if (getParticipantsResponse.totalRecords > 0) {
+        if (getParticipantsResponse.totalRecords > 0 && getParticipantsResponse.participantData.any { it.name == user.stageOrFullName }) {
             val existingParticipant = getParticipantsResponse.participantData.first { it.name == user.stageOrFullName }
             log.info { "Found existing distribution participant ${user.email} with id ${existingParticipant.participantId}" }
             if (user.distributionParticipantId == null) {
