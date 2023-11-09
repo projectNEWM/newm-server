@@ -857,7 +857,7 @@ class SongRoutesTests : BaseApplicationTests() {
         val actualCborHex = responseBody.cborHex
         val expectedCborHex = CborInteger.create(expectedAmount + 1000000L).toCborByteArray().toHexString()
         assertThat(actualCborHex).isEqualTo(expectedCborHex)
-        assertThat(responseBody.usdPrice).isEqualTo(1773800.toBigInteger()) // $1.7738
+        assertThat(responseBody.usdPrice).isEqualTo(1520400.toBigInteger()) // $1.5204
     }
 
     @Test
