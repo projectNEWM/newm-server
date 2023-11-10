@@ -826,7 +826,7 @@ class EvearaDistributionRepositoryImpl(
             throw ServerResponseException(response, "Error getting track status!: ${response.bodyAsText()}")
         }
 
-        log.info { "Track status: ${getTrackStatusResponse.trackStatus.stereo}" }
+        log.info { "Track status for user ${user.distributionUserId} with trackId $trackId: ${getTrackStatusResponse.trackStatus.stereo}" }
 
         return getTrackStatusResponse.trackStatus.stereo?.equals("Completed", ignoreCase = true) ?: false
     }

@@ -2,6 +2,8 @@ package io.newm.server.ktx
 
 import com.amazonaws.handlers.AsyncHandler
 import com.amazonaws.services.sqs.AmazonSQSAsync
+import com.amazonaws.services.sqs.model.ChangeMessageVisibilityRequest
+import com.amazonaws.services.sqs.model.ChangeMessageVisibilityResult
 import com.amazonaws.services.sqs.model.DeleteMessageRequest
 import com.amazonaws.services.sqs.model.DeleteMessageResult
 import com.amazonaws.services.sqs.model.Message
@@ -56,6 +58,25 @@ suspend fun Message.delete(queueUrl: String): DeleteMessageResult {
             receiptHandle,
             object : AsyncHandler<DeleteMessageRequest, DeleteMessageResult> {
                 override fun onSuccess(request: DeleteMessageRequest, result: DeleteMessageResult) {
+                    continuation.resume(result)
+                }
+
+                override fun onError(exception: Exception) {
+                    continuation.resumeWithException(exception)
+                }
+            }
+        )
+    }
+}
+
+suspend fun Message.markFailed(queueUrl: String): ChangeMessageVisibilityResult {
+    return suspendCoroutine { continuation ->
+        sqs.changeMessageVisibilityAsync(
+            queueUrl,
+            receiptHandle,
+            0,
+            object : AsyncHandler<ChangeMessageVisibilityRequest, ChangeMessageVisibilityResult> {
+                override fun onSuccess(request: ChangeMessageVisibilityRequest, result: ChangeMessageVisibilityResult) {
                     continuation.resume(result)
                 }
 
