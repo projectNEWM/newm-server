@@ -59,13 +59,7 @@ class AwsSqsDaemon : Daemon {
                             .withQueueUrl(queueUrl)
                             .withWaitTimeSeconds(waitTime)
                             .withMaxNumberOfMessages(1)
-                        log.info { "$queueUrl -> Receiving SQS messages..." }
                         val result = request.await()
-//                        if (result.messages.size > 0) {
-                        log.info { "$queueUrl -> Received ${result.messages.size} SQS messages" }
-//                        } else {
-//                            log.debug { "$queueUrl -> Received ${result.messages.size} SQS messages" }
-//                        }
                         for (message in result.messages) {
                             try {
                                 receiver.onMessageReceived(message)

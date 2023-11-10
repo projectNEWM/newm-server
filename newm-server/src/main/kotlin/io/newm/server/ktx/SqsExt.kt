@@ -10,16 +10,14 @@ import com.amazonaws.services.sqs.model.ReceiveMessageResult
 import com.amazonaws.services.sqs.model.SendMessageRequest
 import com.amazonaws.services.sqs.model.SendMessageResult
 import io.newm.shared.koin.inject
-import org.koin.core.qualifier.named
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
-private val sqsSender: AmazonSQSAsync by inject(named("sqsSender"))
-private val sqsReceiver: AmazonSQSAsync by inject(named("sqsReceiver"))
+private val sqs: AmazonSQSAsync by inject()
 suspend fun SendMessageRequest.await(): SendMessageResult {
     return suspendCoroutine { continuation ->
-        sqsSender.sendMessageAsync(
+        sqs.sendMessageAsync(
             this,
             object : AsyncHandler<SendMessageRequest, SendMessageResult> {
                 override fun onSuccess(request: SendMessageRequest, result: SendMessageResult) {
@@ -36,7 +34,7 @@ suspend fun SendMessageRequest.await(): SendMessageResult {
 
 suspend fun ReceiveMessageRequest.await(): ReceiveMessageResult {
     return suspendCoroutine { continuation ->
-        sqsReceiver.receiveMessageAsync(
+        sqs.receiveMessageAsync(
             this,
             object : AsyncHandler<ReceiveMessageRequest, ReceiveMessageResult> {
                 override fun onSuccess(request: ReceiveMessageRequest, result: ReceiveMessageResult) {
@@ -53,7 +51,7 @@ suspend fun ReceiveMessageRequest.await(): ReceiveMessageResult {
 
 suspend fun Message.delete(queueUrl: String): DeleteMessageResult {
     return suspendCoroutine { continuation ->
-        sqsReceiver.deleteMessageAsync(
+        sqs.deleteMessageAsync(
             queueUrl,
             receiptHandle,
             object : AsyncHandler<DeleteMessageRequest, DeleteMessageResult> {
