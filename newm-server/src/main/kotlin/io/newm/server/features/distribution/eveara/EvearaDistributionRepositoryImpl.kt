@@ -1291,7 +1291,8 @@ class EvearaDistributionRepositoryImpl(
                 userRepository.updateUserData(user.id, user)
 
                 val currentOutletsMap =
-                    collabDistributionArtistsMap[user.distributionArtistId]!!.outlets.filter { it.profileUrl.isNotBlank() }.associateBy { it.name }
+                    collabDistributionArtistsMap[user.distributionArtistId]!!.outlets.filter { it.profileUrl.isNotBlank() }
+                        .associateBy { it.name }
                 if (currentOutletsMap["Spotify"]?.profileUrl != user.spotifyProfile?.orNull() ||
                     currentOutletsMap["SoundCloud"]?.profileUrl != user.soundCloudProfile?.orNull() ||
                     currentOutletsMap["Apple"]?.profileUrl != user.appleMusicProfile?.orNull()
@@ -1353,7 +1354,8 @@ class EvearaDistributionRepositoryImpl(
             log.info { "Found existing distribution artist ${user.email} with id ${artist.artistId}" }
 
             val currentOutletsMap =
-                collabDistributionArtistsMap[user.distributionArtistId]!!.outlets.filter { it.profileUrl.isNotBlank() }.associateBy { it.name }
+                collabDistributionArtistsMap[user.distributionArtistId]!!.outlets.filter { it.profileUrl.isNotBlank() }
+                    .associateBy { it.name }
             if (currentOutletsMap["Spotify"]?.profileUrl != user.spotifyProfile?.orNull() ||
                 currentOutletsMap["SoundCloud"]?.profileUrl != user.soundCloudProfile?.orNull() ||
                 currentOutletsMap["Apple"]?.profileUrl != user.appleMusicProfile?.orNull()
@@ -1403,19 +1405,31 @@ class EvearaDistributionRepositoryImpl(
         }
 
         // Create/Update the participant (will pay to newm any royalties)
-        if (getParticipantsResponse.totalRecords > 0 && getParticipantsResponse.participantData.any { it.name == user.stageOrFullName }) {
-            val existingParticipant = getParticipantsResponse.participantData.first { it.name == user.stageOrFullName }
-            log.info { "Found existing distribution participant ${user.email} with id ${existingParticipant.participantId}" }
-            if (user.distributionParticipantId == null) {
-                user.distributionParticipantId = existingParticipant.participantId
-                userRepository.updateUserData(user.id, user)
+        if (getParticipantsResponse.totalRecords > 0) {
+            val existingParticipant =
+                getParticipantsResponse.participantData.firstOrNull { it.participantId == user.distributionParticipantId }
+            if (existingParticipant != null) {
+                log.info { "Found existing distribution participant ${user.email} with id ${existingParticipant.participantId}" }
+                if (existingParticipant.name != user.stageOrFullName) {
+                    log.info { "Updating distribution participant ${user.email} with id ${existingParticipant.participantId}, name ${existingParticipant.name} -> ${user.stageOrFullName}" }
+                    val response = updateParticipant(user)
+                    log.info { "Updated distribution participant ${user.email} with id ${user.distributionUserId}: ${response.message}" }
+                }
             } else {
-                require(user.distributionParticipantId == existingParticipant.participantId) { "User.distributionParticipantId: ${user.distributionParticipantId} does not match existing distribution participant! ${existingParticipant.participantId}" }
-            }
-            if (existingParticipant.name != user.stageOrFullName || existingParticipant.ipn.ifBlank { null } != user.distributionIpn || existingParticipant.isni.ifBlank { null } != user.distributionIsni) {
-                log.info { "Updating distribution participant ${user.email} with id ${existingParticipant.participantId}, name ${existingParticipant.name} -> ${user.stageOrFullName}, ipn ${existingParticipant.ipn} -> ${user.distributionIpn}, isni ${existingParticipant.isni} -> ${user.distributionIsni}" }
-                val response = updateParticipant(user)
-                log.info { "Updated distribution participant ${user.email} with id ${user.distributionUserId}: ${response.message}" }
+                // See if we can find a participant where the name matches and then update the user record
+                val existingParticipantNameMatch =
+                    getParticipantsResponse.participantData.firstOrNull { it.name == user.stageOrFullName }
+                if (existingParticipantNameMatch != null) {
+                    user.distributionParticipantId = existingParticipantNameMatch.participantId
+                    userRepository.updateUserData(user.id, user)
+                    log.info { "Found existing distribution participant ${user.email} with id ${existingParticipantNameMatch.participantId} by name match" }
+                } else {
+                    log.info { "No existing distribution participant ${user.email} found by name match" }
+                    val response = addParticipant(user)
+                    log.info { "Created distribution participant ${user.email} with id ${response.participantId}: ${response.message}" }
+                    user.distributionParticipantId = response.participantId
+                    userRepository.updateUserData(user.id, user)
+                }
             }
         } else {
             require(user.distributionParticipantId == null) { "User.distributionParticipantId: ${user.distributionParticipantId} not found in Eveara!" }

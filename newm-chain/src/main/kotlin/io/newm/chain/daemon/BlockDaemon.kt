@@ -693,7 +693,7 @@ class BlockDaemon(
             }
         )
 
-        // handle metadata updates for CIP-25 or if CIP-68 is minted without reference token
+        // handle metadata updates for CIP-25 or if CIP-68 is minted without/before reference token
         batch.addAll(
             ledgerAssets.filter { it.supply > BigInteger.ZERO }.map { ledgerAsset ->
                 val metadataLedgerAsset = if (ledgerAsset.name.matches(CIP68_USER_TOKEN_REGEX)) {
@@ -742,6 +742,7 @@ class BlockDaemon(
                     val ledgerAssetMetadataList =
                         ledgerRepository.queryLedgerAssetMetadataList(nativeAsset.id!!)
                     val bos = ByteArrayOutputStream()
+                    // Create a response for the cip68 reference token itself
                     monitorNativeAssetsResponse {
                         policy = updatedNativeAsset.policy
                         name = updatedNativeAsset.name
@@ -764,6 +765,7 @@ class BlockDaemon(
                         ledgerRepository.queryLedgerAsset(updatedNativeAsset.policy, name)
                             ?.let { nativeAsset ->
                                 val bos1 = ByteArrayOutputStream()
+                                // Create a response for any cip68 user token based on the reference token
                                 monitorNativeAssetsResponse {
                                     this.policy = nativeAsset.policy
                                     this.name = nativeAsset.name
