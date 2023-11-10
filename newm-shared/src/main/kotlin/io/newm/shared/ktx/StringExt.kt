@@ -40,7 +40,7 @@ private object DummyURLHandler : URLStreamHandler() {
 /**
  * Returns the string if it is not blank, otherwise null.
  */
-fun String.orNull(): String? = takeIf { isNotBlank() }
+fun String.orNull(): String? = takeIf { isNotBlank() }?.trim()
 
 fun String.toUUID(): UUID = UUID.fromString(this)
 
