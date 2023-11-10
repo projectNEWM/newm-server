@@ -6,15 +6,17 @@ import io.ktor.server.config.ApplicationConfig
 import io.newm.server.aws.SqsMessageReceiver
 import io.newm.server.ktx.await
 import io.newm.server.ktx.delete
+import io.newm.server.ktx.markFailed
 import io.newm.server.logging.captureToSentry
 import io.newm.shared.daemon.Daemon
+import io.newm.shared.koin.inject
+import io.newm.shared.ktx.error
 import io.newm.shared.ktx.getConfigChildren
 import io.newm.shared.ktx.getInt
 import io.newm.shared.ktx.getLong
 import io.newm.shared.ktx.getString
 import io.newm.shared.ktx.info
 import io.newm.shared.ktx.warn
-import io.newm.shared.koin.inject
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -72,6 +74,11 @@ class AwsSqsDaemon : Daemon {
                             } catch (e: Throwable) {
                                 log.error("Failure processing SQS message: $queueUrl", e)
                                 e.captureToSentry()
+                                try {
+                                    message.markFailed(queueUrl)
+                                } catch (e: Throwable) {
+                                    log.error { "Failed to set visibility timeout to zero: ${message.body}" }
+                                }
                             }
                         }
                     } catch (e: Throwable) {
