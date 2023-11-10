@@ -8,7 +8,6 @@ import io.newm.server.ktx.await
 import io.newm.server.ktx.delete
 import io.newm.server.logging.captureToSentry
 import io.newm.shared.daemon.Daemon
-import io.newm.shared.ktx.debug
 import io.newm.shared.ktx.getConfigChildren
 import io.newm.shared.ktx.getInt
 import io.newm.shared.ktx.getLong
@@ -60,12 +59,13 @@ class AwsSqsDaemon : Daemon {
                             .withQueueUrl(queueUrl)
                             .withWaitTimeSeconds(waitTime)
                             .withMaxNumberOfMessages(1)
+                        log.info { "$queueUrl -> Receiving SQS messages..." }
                         val result = request.await()
-                        if (result.messages.size > 0) {
-                            log.info { "$queueUrl -> Received ${result.messages.size} SQS messages" }
-                        } else {
-                            log.debug { "$queueUrl -> Received ${result.messages.size} SQS messages" }
-                        }
+//                        if (result.messages.size > 0) {
+                        log.info { "$queueUrl -> Received ${result.messages.size} SQS messages" }
+//                        } else {
+//                            log.debug { "$queueUrl -> Received ${result.messages.size} SQS messages" }
+//                        }
                         for (message in result.messages) {
                             try {
                                 receiver.onMessageReceived(message)
