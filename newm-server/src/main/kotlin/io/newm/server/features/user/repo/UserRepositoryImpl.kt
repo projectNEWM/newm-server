@@ -225,7 +225,7 @@ internal class UserRepositoryImpl(
             user.companyName?.let { entity.companyName = it.orNull() }
             user.companyLogoUrl?.let { entity.companyLogoUrl = it.orNull()?.asValidUrl() }
             user.companyIpRights?.let { entity.companyIpRights = it }
-            user.distributionUserId?.let { entity.distributionUserId = it.orNull() }
+            user.distributionUserId?.let { entity.distributionUserId = it }
             user.distributionArtistId?.let { entity.distributionArtistId = it }
             user.distributionParticipantId?.let { entity.distributionParticipantId = it }
             user.distributionSubscriptionId?.let { entity.distributionSubscriptionId = it }
@@ -257,7 +257,7 @@ internal class UserRepositoryImpl(
             user.genre?.let { entity.genre = it }
             user.biography?.let { entity.biography = it }
             user.walletAddress?.let { entity.walletAddress = it }
-            user.companyName?.let { entity.companyName = it }
+            user.companyName?.let { entity.companyName = it.orNull() }
             user.companyLogoUrl?.let { entity.companyLogoUrl = it.orNull()?.asValidUrl() }
             user.companyIpRights?.let { entity.companyIpRights = it }
             user.distributionUserId?.let { entity.distributionUserId = it }
