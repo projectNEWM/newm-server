@@ -24,6 +24,7 @@ import io.newm.kogmios.protocols.model.Block
 import io.newm.kogmios.protocols.model.QueryCurrentProtocolBabbageParametersResult
 import io.newm.objectpool.useInstance
 import io.newm.shared.koin.inject
+import io.newm.shared.ktx.info
 import io.newm.shared.ktx.warn
 import io.newm.txbuilder.TransactionBuilder
 import io.newm.txbuilder.ktx.cborHexToPlutusData
@@ -338,6 +339,7 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
     }
 
     override fun monitorNativeAssets(request: MonitorNativeAssetsRequest): Flow<MonitorNativeAssetsResponse> {
+        log.info { "monitorNativeAssets request: $request" }
         val responseFlow = MutableSharedFlow<MonitorNativeAssetsResponse>(replay = 1)
         val messageHandlerJob: Job = CoroutineScope(context).launch {
             try {

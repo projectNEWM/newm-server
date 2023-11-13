@@ -29,6 +29,7 @@ import io.newm.chain.grpc.snapshotNativeAssetsRequest
 import io.newm.chain.grpc.submitTransactionRequest
 import io.newm.chain.grpc.walletRequest
 import io.newm.chain.util.Constants
+import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
@@ -40,7 +41,11 @@ class GrpcTests {
 //        private const val TEST_PORT = 3737
 //        private const val TEST_SECURE = false
 
-        private const val TEST_HOST = "newm-chain.cardanostakehouse.com"
+//        private const val TEST_HOST = "newm-chain.cardanostakehouse.com"
+//        private const val TEST_PORT = 3737
+//        private const val TEST_SECURE = true
+
+        private const val TEST_HOST = "newmchain.tokenriot.net"
         private const val TEST_PORT = 3737
         private const val TEST_SECURE = true
 
@@ -278,10 +283,10 @@ class GrpcTests {
         val client = buildClient()
         val flow = client.monitorNativeAssets(
             monitorNativeAssetsRequest {
-                startAfterId = 1763701
+                startAfterId = 24249974
             }
         )
-        flow.collect { monitorNativeAssetsResponse ->
+        flow.take(5).collect { monitorNativeAssetsResponse ->
             println("monitorNativeAssetsResponse: $monitorNativeAssetsResponse")
             println()
         }
