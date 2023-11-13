@@ -211,7 +211,7 @@ internal class UserRepositoryImpl(
             user.role?.let { entity.role = it.orNull() }
             user.genre?.let { entity.genre = it.orNull() }
             user.biography?.let { entity.biography = it.orNull() }
-            user.walletAddress?.let { entity.walletAddress = it.orNull() }
+            user.walletAddress?.takeIf { it.isNotBlank() }?.let { entity.walletAddress = it }
             email?.let {
                 it.checkEmailUnique(entity.email)
                 entity.email = it
@@ -256,7 +256,7 @@ internal class UserRepositoryImpl(
             user.role?.let { entity.role = it }
             user.genre?.let { entity.genre = it }
             user.biography?.let { entity.biography = it }
-            user.walletAddress?.let { entity.walletAddress = it }
+            user.walletAddress?.takeIf { it.isNotBlank() }?.let { entity.walletAddress = it }
             user.companyName?.let { entity.companyName = it.orNull() }
             user.companyLogoUrl?.let { entity.companyLogoUrl = it.orNull()?.asValidUrl() }
             user.companyIpRights?.let { entity.companyIpRights = it }
