@@ -1220,7 +1220,7 @@ class EvearaDistributionRepositoryImpl(
                                         id = collabUserOutletProfileNamesMap["Apple"]!!,
                                         profileUrl = collabUser.appleMusicProfile.orEmpty(),
                                     )
-                                ),
+                                ).filter { it.profileUrl.isNotBlank() }.takeIf { it.isNotEmpty() },
                             )
                         ).logRequestJson(log)
                         log.info { "Updated collab distribution artist ${collabUser.email} with id ${response.artistData?.artistId}: ${response.message}" }
@@ -1248,7 +1248,7 @@ class EvearaDistributionRepositoryImpl(
                                         id = collabUserOutletProfileNamesMap["Apple"]!!,
                                         profileUrl = collabUser.appleMusicProfile.orEmpty(),
                                     )
-                                ),
+                                ).filter { it.profileUrl.isNotBlank() }.takeIf { it.isNotEmpty() },
                             ).logRequestJson(log)
                         )
                     log.info { "Created collab distribution artist ${collabUser.email} with id ${response.artistId}: ${response.message}" }
@@ -1315,7 +1315,7 @@ class EvearaDistributionRepositoryImpl(
                                     id = collabUserOutletProfileNamesMap["Apple"]!!,
                                     profileUrl = user.appleMusicProfile.orEmpty(),
                                 )
-                            ),
+                            ).filter { it.profileUrl.isNotBlank() }.takeIf { it.isNotEmpty() },
                         )
                     ).logRequestJson(log)
                     log.info { "Updated distribution artist ${user.email} with id ${response.artistData?.artistId}: ${response.message}" }
@@ -1342,7 +1342,7 @@ class EvearaDistributionRepositoryImpl(
                                 id = collabUserOutletProfileNamesMap["Apple"]!!,
                                 profileUrl = user.appleMusicProfile.orEmpty(),
                             )
-                        ),
+                        ).filter { it.profileUrl.isNotBlank() }.takeIf { it.isNotEmpty() },
                     )
                 )
                 log.info { "Created distribution artist ${user.email} with id ${response.artistId}: ${response.message}" }
@@ -1378,7 +1378,7 @@ class EvearaDistributionRepositoryImpl(
                                 id = collabUserOutletProfileNamesMap["Apple"]!!,
                                 profileUrl = user.appleMusicProfile.orEmpty(),
                             )
-                        ),
+                        ).filter { it.profileUrl.isNotBlank() }.takeIf { it.isNotEmpty() },
                     )
                 ).logRequestJson(log)
                 log.info { "Updated distribution artist ${user.email} with id ${response.artistData?.artistId}: ${response.message}" }
