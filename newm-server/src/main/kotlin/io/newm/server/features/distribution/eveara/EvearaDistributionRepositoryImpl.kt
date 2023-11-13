@@ -1197,7 +1197,7 @@ class EvearaDistributionRepositoryImpl(
                     )
 
                     val currentOutletsMap =
-                        collabDistributionArtistsMap[distributionArtistId]!!.outlets.filter { it.profileUrl.isNotBlank() }.associateBy { it.name }
+                        collabDistributionArtistsMap[distributionArtistId]?.outlets?.filter { it.profileUrl.isNotBlank() }?.associateBy { it.name }.orEmpty()
                     if (currentOutletsMap["Spotify"]?.profileUrl != collabUser.spotifyProfile?.orNull() ||
                         currentOutletsMap["SoundCloud"]?.profileUrl != collabUser.soundCloudProfile?.orNull() ||
                         currentOutletsMap["Apple"]?.profileUrl != collabUser.appleMusicProfile?.orNull()
@@ -1291,8 +1291,8 @@ class EvearaDistributionRepositoryImpl(
                 userRepository.updateUserData(user.id, user)
 
                 val currentOutletsMap =
-                    collabDistributionArtistsMap[user.distributionArtistId]!!.outlets.filter { it.profileUrl.isNotBlank() }
-                        .associateBy { it.name }
+                    collabDistributionArtistsMap[user.distributionArtistId]?.outlets?.filter { it.profileUrl.isNotBlank() }
+                        ?.associateBy { it.name }.orEmpty()
                 if (currentOutletsMap["Spotify"]?.profileUrl != user.spotifyProfile?.orNull() ||
                     currentOutletsMap["SoundCloud"]?.profileUrl != user.soundCloudProfile?.orNull() ||
                     currentOutletsMap["Apple"]?.profileUrl != user.appleMusicProfile?.orNull()
@@ -1354,8 +1354,8 @@ class EvearaDistributionRepositoryImpl(
             log.info { "Found existing distribution artist ${user.email} with id ${artist.artistId}" }
 
             val currentOutletsMap =
-                collabDistributionArtistsMap[user.distributionArtistId]!!.outlets.filter { it.profileUrl.isNotBlank() }
-                    .associateBy { it.name }
+                collabDistributionArtistsMap[user.distributionArtistId]?.outlets?.filter { it.profileUrl.isNotBlank() }
+                    ?.associateBy { it.name }.orEmpty()
             if (currentOutletsMap["Spotify"]?.profileUrl != user.spotifyProfile?.orNull() ||
                 currentOutletsMap["SoundCloud"]?.profileUrl != user.soundCloudProfile?.orNull() ||
                 currentOutletsMap["Apple"]?.profileUrl != user.appleMusicProfile?.orNull()
