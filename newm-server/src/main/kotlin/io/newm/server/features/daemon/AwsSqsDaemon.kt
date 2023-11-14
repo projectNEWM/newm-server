@@ -1,5 +1,6 @@
 package io.newm.server.features.daemon
 
+import com.amazonaws.services.sqs.AmazonSQSAsync
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest
 import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.server.config.ApplicationConfig
@@ -37,6 +38,8 @@ class AwsSqsDaemon : Daemon {
     override fun shutdown() {
         log.info { "begin shutdown..." }
         coroutineContext.cancelChildren()
+        val sqs: AmazonSQSAsync by inject()
+        sqs.shutdown()
         log.info { "shutdown complete." }
     }
 

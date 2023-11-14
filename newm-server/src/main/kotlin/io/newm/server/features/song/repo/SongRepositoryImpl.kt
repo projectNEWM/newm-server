@@ -370,10 +370,14 @@ internal class SongRepositoryImpl(
     override suspend fun processCollaborations(songId: UUID) {
         logger.debug { "processCollaborations: songId = $songId" }
         if (transaction { SongEntity[songId].mintingStatus } == MintingStatus.AwaitingCollaboratorApproval) {
-            val allDone = collaborationRepository.getAllBySongId(songId)
-                .none { it.royaltyRate.orZero() > BigDecimal.ZERO && it.status != CollaborationStatus.Accepted }
-            if (allDone) {
+            val collaborations = collaborationRepository.getAllBySongId(songId).filter { it.royaltyRate.orZero() > BigDecimal.ZERO }
+            val allAccepted = collaborations.all { it.status == CollaborationStatus.Accepted }
+            if (allAccepted) {
                 updateSongMintingStatus(songId, MintingStatus.ReadyToDistribute)
+            } else {
+                collaborations.filter { it.status != CollaborationStatus.Accepted }.forEach {
+                    logger.info("AwaitingCollaboratorApproval ($songId): ${it.email} - ${it.status}")
+                }
             }
         }
     }
