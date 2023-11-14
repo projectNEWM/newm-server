@@ -28,6 +28,7 @@ import io.newm.shared.exception.HttpUnauthorizedException
 import io.newm.shared.exception.HttpUnprocessableEntityException
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.debug
+import io.newm.shared.ktx.error
 import io.newm.shared.ktx.existsHavingId
 import io.newm.shared.ktx.isValidPassword
 import io.newm.shared.ktx.orNull
@@ -336,6 +337,7 @@ internal class UserRepositoryImpl(
                 Regex(it, RegexOption.IGNORE_CASE)
             }
             if (whitelistRegexList.none { it.matches(email) }) {
+                logger.error { "Email not whitelisted: $email" }
                 throw HttpUnauthorizedException("Email not whitelisted: $email")
             }
         }

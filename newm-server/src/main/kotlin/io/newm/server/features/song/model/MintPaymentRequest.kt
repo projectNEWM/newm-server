@@ -18,10 +18,10 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class MintPaymentRequest(
     val changeAddress: String,
-    val utxoCborHexList: List<String>,
+    val utxoCborHexList: List<String>? = null,
 ) {
     val utxos: List<Utxo>
-        get() = utxoCborHexList.map {
+        get() = utxoCborHexList?.map {
             val cborArray = CborReader.createFromByteArray(it.hexToByteArray()).readDataItem() as CborArray
             val utxoArray = cborArray.elementAt(0) as CborArray
             val amountsArray = cborArray.elementAt(1) as CborArray
@@ -52,5 +52,5 @@ data class MintPaymentRequest(
                     )
                 }
             }
-        }
+        }.orEmpty()
 }
