@@ -179,16 +179,26 @@ class MintingMessageReceiver : SqsMessageReceiver {
 
             MintingStatus.Distributed -> {
                 try {
-                    // Upload 30-second clip, lyrics.txt, streamtokenagreement.pdf, coverArt to arweave and save those URLs
-                    // on the Song record
                     val song = songRepository.get(mintingStatusSqsMessage.songId)
-                    arweaveRepository.uploadSongAssets(song)
+                    if (song.nftPolicyId?.isNotBlank() == true && song.nftName?.isNotBlank() == true) {
+                        // If we already have a policy id and name manually placed in the db, this song has already
+                        // been minted as one of our sample sales. We don't need to do anything else.
+                        // Move -> Minted
+                        songRepository.updateSongMintingStatus(
+                            songId = mintingStatusSqsMessage.songId,
+                            mintingStatus = MintingStatus.Minted
+                        )
+                    } else {
+                        // Upload 30-second clip, lyrics.txt, streamtokenagreement.pdf, coverArt to arweave and save those URLs
+                        // on the Song record
+                        arweaveRepository.uploadSongAssets(song)
 
-                    // Done with arweave. Move -> Pending for minting
-                    songRepository.updateSongMintingStatus(
-                        songId = mintingStatusSqsMessage.songId,
-                        mintingStatus = MintingStatus.Pending
-                    )
+                        // Done with arweave. Move -> Pending for minting
+                        songRepository.updateSongMintingStatus(
+                            songId = mintingStatusSqsMessage.songId,
+                            mintingStatus = MintingStatus.Pending
+                        )
+                    }
                 } catch (e: Throwable) {
                     val errorMessage = "Error while uploading song assets to arweave!"
                     log.error(errorMessage, e)

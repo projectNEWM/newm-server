@@ -96,16 +96,21 @@ fun Routing.createSongRoutes() {
                     }
                     post {
                         val request = receive<MintPaymentRequest>()
-                        respond(
-                            MintPaymentResponse(
-                                cborHex = songRepository.generateMintingPaymentTransaction(
-                                    songId = songId,
-                                    requesterId = myUserId,
-                                    sourceUtxos = request.utxos,
-                                    changeAddress = request.changeAddress
+                        val utxos = request.utxos
+                        if (utxos.isEmpty()) {
+                            respond(HttpStatusCode.PaymentRequired, "No UTXOs provided!")
+                        } else {
+                            respond(
+                                MintPaymentResponse(
+                                    cborHex = songRepository.generateMintingPaymentTransaction(
+                                        songId = songId,
+                                        requesterId = myUserId,
+                                        sourceUtxos = utxos,
+                                        changeAddress = request.changeAddress
+                                    )
                                 )
                             )
-                        )
+                        }
                     }
                 }
                 put("agreement") {
