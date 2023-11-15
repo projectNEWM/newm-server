@@ -38,8 +38,6 @@ class AwsSqsDaemon : Daemon {
     override fun shutdown() {
         log.info { "begin shutdown..." }
         coroutineContext.cancelChildren()
-        val sqs: AmazonSQSAsync by inject()
-        sqs.shutdown()
         log.info { "shutdown complete." }
     }
 
