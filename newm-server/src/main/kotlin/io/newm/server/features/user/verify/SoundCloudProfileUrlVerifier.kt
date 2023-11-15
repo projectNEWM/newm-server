@@ -101,12 +101,12 @@ class SoundCloudProfileUrlVerifier(
     @Serializable
     private data class SoundCloudArtistResponse(
         @SerialName("username")
-        val username: String,
+        val username: String? = null,
         @SerialName("first_name")
-        val firstName: String,
+        val firstName: String? = null,
         @SerialName("last_name")
-        val lastName: String,
+        val lastName: String? = null,
         @SerialName("full_name")
-        val fullName: String,
+        val fullName: String? = null,
     )
 }
