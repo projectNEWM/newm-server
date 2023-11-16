@@ -12,18 +12,21 @@ class SongRepositoryTest : BaseApplicationTests() {
     fun `test calculateMintPaymentResponse`() {
         val songRepository = SongRepositoryImpl(mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk())
         val response = songRepository.calculateMintPaymentResponse(
-            dspPriceUsd = "14990000".toLong(),
+
+            dspPriceUsd = 14990000L,
             usdAdaExchangeRate = "250000".toBigInteger(),
-            mintCostLovelace = "2000000".toLong(),
-            sendTokenFee = "1288690".toLong(),
+            minUtxo = 1288690L,
+            numberOfCollaborators = 3,
+            mintCostBase = 2000000L,
         )
-        assertThat(response.cborHex).isEqualTo("1a03c0b180")
-        assertThat(response.adaPrice).isEqualTo("61.960000")
-        assertThat(response.usdPrice).isEqualTo("15.490000")
+        println(response)
+        assertThat(response.cborHex).isEqualTo("1a03fbaf56")
+        assertThat(response.adaPrice).isEqualTo("65.826070")
+        assertThat(response.usdPrice).isEqualTo("16.456517")
         assertThat(response.dspPriceAda).isEqualTo("59.960000")
         assertThat(response.dspPriceUsd).isEqualTo("14.990000")
-        assertThat(response.sendTokenFeeAda).isEqualTo("1.288690")
-        assertThat(response.sendTokenFeeUsd).isEqualTo("0.322172")
+        assertThat(response.sendTokenFeeAda).isEqualTo("3.866070")
+        assertThat(response.sendTokenFeeUsd).isEqualTo("0.966517")
         assertThat(response.usdAdaExchangeRate).isEqualTo("0.250000")
     }
 }
