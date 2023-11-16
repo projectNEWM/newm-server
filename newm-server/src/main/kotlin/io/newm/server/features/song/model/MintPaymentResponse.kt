@@ -15,6 +15,10 @@ data class MintPaymentResponse(
     val dspPriceAda: String? = null,
     @SerialName("dspPriceUsd")
     val dspPriceUsd: String? = null,
+    @SerialName("mintPriceAda")
+    val mintPriceAda: String? = null,
+    @SerialName("mintPriceUsd")
+    val mintPriceUsd: String? = null,
     @SerialName("sendTokenFeeAda")
     val sendTokenFeeAda: String? = null,
     @SerialName("sendTokenFeeUsd")

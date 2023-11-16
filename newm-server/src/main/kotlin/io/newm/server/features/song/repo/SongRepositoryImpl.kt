@@ -399,14 +399,12 @@ internal class SongRepositoryImpl(
         val minUtxo: Long = cardanoRepository.queryStreamTokenMinUtxo()
         val usdAdaExchangeRate = cardanoRepository.queryAdaUSDPrice().toBigInteger()
 
-        val sendTokenFee = (numberOfCollaborators * minUtxo)
-        val mintCostLovelace = mintCostBase + sendTokenFee
-
         return calculateMintPaymentResponse(
+            minUtxo,
+            numberOfCollaborators,
             dspPriceUsd,
             usdAdaExchangeRate,
-            mintCostLovelace,
-            sendTokenFee,
+            mintCostBase,
         ).also {
             // Save the total cost to distribute and mint to the database
             val totalCostLovelace = BigDecimal(it.adaPrice!!).movePointRight(6).toLong()
@@ -416,21 +414,26 @@ internal class SongRepositoryImpl(
 
     @VisibleForTesting
     internal fun calculateMintPaymentResponse(
+        minUtxo: Long,
+        numberOfCollaborators: Int,
         dspPriceUsd: Long,
         usdAdaExchangeRate: BigInteger,
-        mintCostLovelace: Long,
-        sendTokenFee: Long,
+        mintCostBase: Long,
     ): MintPaymentResponse {
         val changeAmountLovelace = 1000000L // 1 ada
         val dspPriceLovelace =
             dspPriceUsd.toBigDecimal().divide(usdAdaExchangeRate.toBigDecimal(), 6, RoundingMode.CEILING)
                 .times(1000000.toBigDecimal()).toBigInteger()
 
+        val sendTokenFee = (numberOfCollaborators * minUtxo)
+        val mintCostLovelace = mintCostBase + sendTokenFee
+
         // usdPrice does not include the extra changeAmountLovelace that we request the wallet to provide as it
         // is returned to the user.
         val usdPrice =
             usdAdaExchangeRate * (mintCostLovelace.toBigInteger() + dspPriceLovelace) / 1000000.toBigInteger()
 
+        val mintPriceUsd = usdAdaExchangeRate * mintCostBase.toBigInteger() / 1000000.toBigInteger()
         val sendTokenFeeUsd = usdAdaExchangeRate * sendTokenFee.toBigInteger() / 1000000.toBigInteger()
 
         return MintPaymentResponse(
@@ -441,6 +444,8 @@ internal class SongRepositoryImpl(
             usdPrice = usdPrice.toAdaString(),
             dspPriceAda = dspPriceLovelace.toAdaString(),
             dspPriceUsd = dspPriceUsd.toBigInteger().toAdaString(),
+            mintPriceAda = mintCostBase.toBigInteger().toAdaString(),
+            mintPriceUsd = mintPriceUsd.toAdaString(),
             sendTokenFeeAda = sendTokenFee.toBigInteger().toAdaString(),
             sendTokenFeeUsd = sendTokenFeeUsd.toAdaString(),
             usdAdaExchangeRate = usdAdaExchangeRate.toAdaString(),
