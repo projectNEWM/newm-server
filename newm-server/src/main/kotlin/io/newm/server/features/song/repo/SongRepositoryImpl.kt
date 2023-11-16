@@ -11,10 +11,12 @@ import io.ktor.util.logging.Logger
 import io.ktor.utils.io.ByteReadChannel
 import io.newm.chain.grpc.Utxo
 import io.newm.chain.grpc.outputUtxo
+import io.newm.chain.util.toAdaString
 import io.newm.chain.util.toHexString
 import io.newm.server.aws.cloudfront.cloudfrontAudioStreamData
 import io.newm.server.aws.s3.s3UrlStringOf
 import io.newm.server.config.repo.ConfigRepository
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_DISTRIBUTION_PRICE_USD
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_PRICE
 import io.newm.server.features.cardano.database.KeyTable
 import io.newm.server.features.cardano.model.Key
@@ -29,6 +31,7 @@ import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.model.AudioEncodingStatus
 import io.newm.server.features.song.model.AudioStreamData
 import io.newm.server.features.song.model.AudioUploadReport
+import io.newm.server.features.song.model.MintPaymentResponse
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongFilters
@@ -58,11 +61,13 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.apache.tika.Tika
 import org.jaudiotagger.audio.AudioFileIO
+import org.jetbrains.annotations.VisibleForTesting
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf
 import java.math.BigDecimal
 import java.math.BigInteger
+import java.math.RoundingMode
 import java.net.URL
 import java.util.Properties
 import java.util.UUID
@@ -370,7 +375,8 @@ internal class SongRepositoryImpl(
     override suspend fun processCollaborations(songId: UUID) {
         logger.debug { "processCollaborations: songId = $songId" }
         if (transaction { SongEntity[songId].mintingStatus } == MintingStatus.AwaitingCollaboratorApproval) {
-            val collaborations = collaborationRepository.getAllBySongId(songId).filter { it.royaltyRate.orZero() > BigDecimal.ZERO }
+            val collaborations =
+                collaborationRepository.getAllBySongId(songId).filter { it.royaltyRate.orZero() > BigDecimal.ZERO }
             val allAccepted = collaborations.all { it.status == CollaborationStatus.Accepted }
             if (allAccepted) {
                 updateSongMintingStatus(songId, MintingStatus.ReadyToDistribute)
@@ -382,30 +388,62 @@ internal class SongRepositoryImpl(
         }
     }
 
-    override suspend fun getMintingPaymentAmount(songId: UUID, requesterId: UUID): Pair<String, BigInteger> {
+    override suspend fun getMintingPaymentAmount(songId: UUID, requesterId: UUID): MintPaymentResponse {
         logger.debug { "getMintingPaymentAmount: songId = $songId" }
         // TODO: We might need to change this code in the future if we're charging NEWM tokens in addition to ada
         val numberOfCollaborators = collaborationRepository.getAllBySongId(songId)
             .count { it.royaltyRate.orZero() > BigDecimal.ZERO }
         val mintCostBase = configRepository.getLong(CONFIG_KEY_MINT_PRICE)
-        val changeAmountLovelace = 1000000L // 1 ada
+        // defined in whole usd cents with 6 decimals
+        val dspPriceUsd = configRepository.getLong(CONFIG_KEY_DISTRIBUTION_PRICE_USD)
         val minUtxo: Long = cardanoRepository.queryStreamTokenMinUtxo()
-        val mintCostLovelace = mintCostBase + (numberOfCollaborators * minUtxo)
+        val usdAdaExchangeRate = cardanoRepository.queryAdaUSDPrice().toBigInteger()
 
-        // Save the mint cost to the database
-        update(songId, Song(mintCostLovelace = mintCostLovelace))
+        val sendTokenFee = (numberOfCollaborators * minUtxo)
+        val mintCostLovelace = mintCostBase + sendTokenFee
+
+        return calculateMintPaymentResponse(
+            dspPriceUsd,
+            usdAdaExchangeRate,
+            mintCostLovelace,
+            sendTokenFee,
+        ).also {
+            // Save the total cost to distribute and mint to the database
+            val totalCostLovelace = BigDecimal(it.adaPrice!!).movePointRight(6).toLong()
+            update(songId, Song(mintCostLovelace = totalCostLovelace))
+        }
+    }
+
+    @VisibleForTesting
+    internal fun calculateMintPaymentResponse(
+        dspPriceUsd: Long,
+        usdAdaExchangeRate: BigInteger,
+        mintCostLovelace: Long,
+        sendTokenFee: Long,
+    ): MintPaymentResponse {
+        val changeAmountLovelace = 1000000L // 1 ada
+        val dspPriceLovelace =
+            dspPriceUsd.toBigDecimal().divide(usdAdaExchangeRate.toBigDecimal(), 6, RoundingMode.CEILING)
+                .times(1000000.toBigDecimal()).toBigInteger()
 
         // usdPrice does not include the extra changeAmountLovelace that we request the wallet to provide as it
         // is returned to the user.
-        val usdPrice = (
-            cardanoRepository.queryAdaUSDPrice()
-                .toBigInteger() * mintCostLovelace.toBigInteger()
-            ) / 1000000.toBigInteger()
+        val usdPrice =
+            usdAdaExchangeRate * (mintCostLovelace.toBigInteger() + dspPriceLovelace) / 1000000.toBigInteger()
 
-        return Pair(
-            // we send an extra changeAmountLovelace to ensure we have enough ada to cover a return utxo
-            CborInteger.create(mintCostLovelace + changeAmountLovelace).toCborByteArray().toHexString(),
-            usdPrice
+        val sendTokenFeeUsd = usdAdaExchangeRate * sendTokenFee.toBigInteger() / 1000000.toBigInteger()
+
+        return MintPaymentResponse(
+            cborHex = // we send an extra changeAmountLovelace to ensure we have enough ada to cover a return utxo
+            CborInteger.create(mintCostLovelace + dspPriceLovelace.toLong() + changeAmountLovelace).toCborByteArray()
+                .toHexString(),
+            adaPrice = (mintCostLovelace.toBigInteger() + dspPriceLovelace).toAdaString(),
+            usdPrice = usdPrice.toAdaString(),
+            dspPriceAda = dspPriceLovelace.toAdaString(),
+            dspPriceUsd = dspPriceUsd.toBigInteger().toAdaString(),
+            sendTokenFeeAda = sendTokenFee.toBigInteger().toAdaString(),
+            sendTokenFeeUsd = sendTokenFeeUsd.toAdaString(),
+            usdAdaExchangeRate = usdAdaExchangeRate.toAdaString(),
         )
     }
 

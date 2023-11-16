@@ -5,10 +5,10 @@ import io.newm.chain.grpc.Utxo
 import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.model.AudioStreamData
 import io.newm.server.features.song.model.AudioUploadReport
+import io.newm.server.features.song.model.MintPaymentResponse
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongFilters
-import java.math.BigInteger
 import java.util.UUID
 
 interface SongRepository {
@@ -26,7 +26,7 @@ interface SongRepository {
 
     suspend fun processAudioEncoding(songId: UUID)
 
-    suspend fun getMintingPaymentAmount(songId: UUID, requesterId: UUID): Pair<String, BigInteger>
+    suspend fun getMintingPaymentAmount(songId: UUID, requesterId: UUID): MintPaymentResponse
 
     suspend fun generateMintingPaymentTransaction(
         songId: UUID,

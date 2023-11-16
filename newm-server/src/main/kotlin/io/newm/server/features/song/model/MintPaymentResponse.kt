@@ -1,15 +1,24 @@
 package io.newm.server.features.song.model
 
-import kotlinx.serialization.Contextual
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import java.math.BigInteger
 
 @Serializable
 data class MintPaymentResponse(
     @SerialName("cborHex")
     val cborHex: String,
-    @Contextual
+    @SerialName("adaPrice")
+    val adaPrice: String? = null,
     @SerialName("usdPrice")
-    val usdPrice: BigInteger? = null,
+    val usdPrice: String? = null,
+    @SerialName("dspPriceAda")
+    val dspPriceAda: String? = null,
+    @SerialName("dspPriceUsd")
+    val dspPriceUsd: String? = null,
+    @SerialName("sendTokenFeeAda")
+    val sendTokenFeeAda: String? = null,
+    @SerialName("sendTokenFeeUsd")
+    val sendTokenFeeUsd: String? = null,
+    @SerialName("usdAdaExchangeRate")
+    val usdAdaExchangeRate: String? = null,
 )

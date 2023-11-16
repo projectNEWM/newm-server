@@ -1,7 +1,6 @@
 package io.newm.server.features.song
 
 import com.google.common.truth.Truth.assertThat
-import com.google.iot.cbor.CborInteger
 import io.ktor.client.call.body
 import io.ktor.client.request.accept
 import io.ktor.client.request.bearerAuth
@@ -19,7 +18,6 @@ import io.ktor.http.setCookie
 import io.ktor.server.application.ApplicationEnvironment
 import io.mockk.coEvery
 import io.mockk.mockk
-import io.newm.chain.util.toHexString
 import io.newm.server.BaseApplicationTests
 import io.newm.server.features.cardano.database.KeyEntity
 import io.newm.server.features.cardano.database.KeyTable
@@ -840,9 +838,10 @@ class SongRoutesTests : BaseApplicationTests() {
     @Test
     fun testGetMintingPaymentAmount() = runBlocking {
         // Add mint price value to database directly
-        val expectedAmount = 6000000
+        val expectedAmount = 2000000
         transaction {
             exec("INSERT INTO config VALUES ('mint.price','$expectedAmount')")
+            exec("INSERT INTO config VALUES ('distribution.price.usd','14990000')")
         }
 
         // Add Song directly into database
@@ -855,9 +854,9 @@ class SongRoutesTests : BaseApplicationTests() {
         assertThat(response.status).isEqualTo(HttpStatusCode.OK)
         val responseBody: MintPaymentResponse = response.body()
         val actualCborHex = responseBody.cborHex
-        val expectedCborHex = CborInteger.create(expectedAmount + 1000000L).toCborByteArray().toHexString()
+        val expectedCborHex = "1a03b46ade"
         assertThat(actualCborHex).isEqualTo(expectedCborHex)
-        assertThat(responseBody.usdPrice).isEqualTo(1520400.toBigInteger()) // $1.5204
+        assertThat(responseBody.usdPrice).isEqualTo("15.496800") // $15.4968
     }
 
     @Test

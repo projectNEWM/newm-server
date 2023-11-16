@@ -87,6 +87,8 @@ fun Long.toHexString(): String = java.lang.Long.toHexString(this)
 
 fun BigInteger.toAda(): BigDecimal = this.toBigDecimal(6)
 
+fun BigInteger.toAdaString() = toAda().toPlainString()
+
 private val MAX_ULONG = BigInteger("ffffffffffffffff", 16)
 fun BigInteger.toULong(): ULong = (this and MAX_ULONG).toString(16).toULong(16)
 
