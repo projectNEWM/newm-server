@@ -83,14 +83,10 @@ fun Routing.createSongRoutes() {
                 }
                 route("mint/payment") {
                     get {
-                        val (cborHex, usdPrice) = songRepository.getMintingPaymentAmount(
-                            songId = songId,
-                            requesterId = myUserId
-                        )
                         respond(
-                            MintPaymentResponse(
-                                cborHex = cborHex,
-                                usdPrice = usdPrice,
+                            songRepository.getMintingPaymentAmount(
+                                songId = songId,
+                                requesterId = myUserId
                             )
                         )
                     }
