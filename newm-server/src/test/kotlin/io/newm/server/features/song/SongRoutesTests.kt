@@ -115,6 +115,7 @@ class SongRoutesTests : BaseApplicationTests() {
         assertThat(song.album).isEqualTo(testSong1.album)
         assertThat(song.track).isEqualTo(testSong1.track)
         assertThat(song.language).isEqualTo(testSong1.language)
+        assertThat(song.coverRemixSample).isEqualTo(testSong1.coverRemixSample)
         assertThat(song.compositionCopyrightOwner).isEqualTo(testSong1.compositionCopyrightOwner)
         assertThat(song.compositionCopyrightYear).isEqualTo(testSong1.compositionCopyrightYear)
         assertThat(song.phonographicCopyrightOwner).isEqualTo(testSong1.phonographicCopyrightOwner)
@@ -620,6 +621,7 @@ class SongRoutesTests : BaseApplicationTests() {
         assertThat(song2.album).isEqualTo(testSong2.album)
         assertThat(song2.track).isEqualTo(testSong2.track)
         assertThat(song2.language).isEqualTo(testSong2.language)
+        assertThat(song2.coverRemixSample).isEqualTo(testSong2.coverRemixSample)
         assertThat(song2.compositionCopyrightOwner).isEqualTo(testSong2.compositionCopyrightOwner)
         assertThat(song2.compositionCopyrightYear).isEqualTo(testSong2.compositionCopyrightYear)
         assertThat(song2.phonographicCopyrightOwner).isEqualTo(testSong2.phonographicCopyrightOwner)
@@ -960,6 +962,7 @@ fun addSongToDatabase(
             coverArtUrl = "https://newm.io/cover$offset"
             track = offset
             language = "language$offset"
+            coverRemixSample = offset % 2 == 0
             compositionCopyrightOwner = "compositionCopyrightOwner$offset"
             compositionCopyrightYear = offset
             phonographicCopyrightOwner = "copyright$phonographicCopyrightOwner"
