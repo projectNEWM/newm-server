@@ -26,6 +26,7 @@ data class Song(
     val album: String? = null,
     val track: Int? = null,
     val language: String? = null,
+    val coverRemixSample: Boolean? = null,
     val compositionCopyrightOwner: String? = null,
     val compositionCopyrightYear: Int? = null,
     val phonographicCopyrightOwner: String? = null,

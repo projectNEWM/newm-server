@@ -30,6 +30,7 @@ object SongTable : UUIDTable(name = "songs") {
     val album: Column<String?> = text("album").nullable()
     val track: Column<Int?> = integer("track").nullable()
     val language: Column<String?> = text("language").nullable()
+    val coverRemixSample: Column<Boolean> = bool("cover_remix_sample").default(false)
     val compositionCopyrightOwner: Column<String?> = text("comp_copyright_owner").nullable()
     val compositionCopyrightYear: Column<Int?> = integer("comp_copyright_year").nullable()
     val phonographicCopyrightOwner: Column<String?> = text("phono_copyright_owner").nullable()

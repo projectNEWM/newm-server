@@ -107,6 +107,7 @@ internal class SongRepositoryImpl(
                 album = song.album
                 track = song.track
                 language = song.language
+                coverRemixSample = song.coverRemixSample ?: false
                 compositionCopyrightOwner = song.compositionCopyrightOwner
                 compositionCopyrightYear = song.compositionCopyrightYear
                 phonographicCopyrightOwner = song.phonographicCopyrightOwner
@@ -145,6 +146,7 @@ internal class SongRepositoryImpl(
                 album?.let { entity.album = it.orNull() }
                 track?.let { entity.track = it }
                 language?.let { entity.language = it.orNull() }
+                coverRemixSample?.let { entity.coverRemixSample = it }
                 compositionCopyrightOwner?.let { entity.compositionCopyrightOwner = it.orNull() }
                 compositionCopyrightYear?.let { entity.compositionCopyrightYear = it }
                 phonographicCopyrightOwner?.let { entity.phonographicCopyrightOwner = it.orNull() }

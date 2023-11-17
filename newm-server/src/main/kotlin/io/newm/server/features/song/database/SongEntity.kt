@@ -44,6 +44,7 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var album: String? by SongTable.album
     var track: Int? by SongTable.track
     var language: String? by SongTable.language
+    var coverRemixSample: Boolean by SongTable.coverRemixSample
     var compositionCopyrightOwner: String? by SongTable.compositionCopyrightOwner
     var compositionCopyrightYear: Int? by SongTable.compositionCopyrightYear
     var phonographicCopyrightOwner: String? by SongTable.phonographicCopyrightOwner
@@ -92,6 +93,7 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         album = album,
         track = track,
         language = language,
+        coverRemixSample = coverRemixSample,
         compositionCopyrightOwner = compositionCopyrightOwner,
         compositionCopyrightYear = compositionCopyrightYear,
         phonographicCopyrightOwner = phonographicCopyrightOwner,
