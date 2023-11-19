@@ -24,6 +24,7 @@ import io.newm.server.features.cardano.database.KeyTable
 import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.model.CountResponse
 import io.newm.server.features.song.database.SongEntity
+import io.newm.server.features.song.database.SongReceiptTable
 import io.newm.server.features.song.database.SongTable
 import io.newm.server.features.song.model.AudioEncodingStatus
 import io.newm.server.features.song.model.AudioStreamResponse
@@ -84,6 +85,7 @@ class SongRoutesTests : BaseApplicationTests() {
     fun beforeEach() {
         transaction {
             SongTable.deleteAll()
+            SongReceiptTable.deleteAll()
             KeyTable.deleteAll()
             UserTable.deleteWhere { id neq testUserId }
         }
