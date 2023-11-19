@@ -19,10 +19,14 @@ data class MintPaymentResponse(
     val mintPriceAda: String? = null,
     @SerialName("mintPriceUsd")
     val mintPriceUsd: String? = null,
-    @SerialName("sendTokenFeeAda")
-    val sendTokenFeeAda: String? = null,
-    @SerialName("sendTokenFeeUsd")
-    val sendTokenFeeUsd: String? = null,
+    @SerialName("collabPriceAda")
+    val collabPriceAda: String? = null,
+    @SerialName("collabPriceUsd")
+    val collabPriceUsd: String? = null,
+    @SerialName("collabPerArtistPriceAda")
+    val collabPerArtistPriceAda: String? = null,
+    @SerialName("collabPerArtistPriceUsd")
+    val collabPerArtistPriceUsd: String? = null,
     @SerialName("usdAdaExchangeRate")
     val usdAdaExchangeRate: String? = null,
 )

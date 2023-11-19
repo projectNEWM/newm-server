@@ -28,6 +28,8 @@ interface SongRepository {
 
     suspend fun getMintingPaymentAmount(songId: UUID, requesterId: UUID): MintPaymentResponse
 
+    suspend fun getMintingPaymentEstimate(collaborators: Int): MintPaymentResponse
+
     suspend fun generateMintingPaymentTransaction(
         songId: UUID,
         requesterId: UUID,
@@ -42,4 +44,6 @@ interface SongRepository {
     suspend fun distribute(songId: UUID)
 
     fun set(songId: UUID, editor: (SongEntity) -> Unit)
+
+    fun saveOrUpdateReceipt(songId: UUID, mintPaymentResponse: MintPaymentResponse)
 }

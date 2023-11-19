@@ -48,6 +48,9 @@ val ApplicationCall.playlistId: UUID
 val ApplicationCall.collaborationId: UUID
     get() = parameters["collaborationId"]!!.toUUID()
 
+val ApplicationCall.collaborators: Int
+    get() = parameters["collaborators"]?.toInt() ?: 1
+
 val ApplicationCall.offset: Int
     get() = parameters["offset"]?.toInt().orZero()
 

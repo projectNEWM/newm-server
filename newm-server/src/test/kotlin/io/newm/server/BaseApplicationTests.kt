@@ -21,6 +21,7 @@ import io.newm.server.features.collaboration.model.CollaborationStatus
 import io.newm.server.features.playlist.database.PlaylistTable
 import io.newm.server.features.playlist.database.SongsInPlaylistsTable
 import io.newm.server.features.song.database.SongEntity
+import io.newm.server.features.song.database.SongReceiptTable
 import io.newm.server.features.song.database.SongTable
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.user.database.UserEntity
@@ -131,6 +132,7 @@ open class BaseApplicationTests {
                 CollaborationTable,
                 PlaylistTable,
                 SongsInPlaylistsTable,
+                SongReceiptTable,
             )
         }
         application.start()

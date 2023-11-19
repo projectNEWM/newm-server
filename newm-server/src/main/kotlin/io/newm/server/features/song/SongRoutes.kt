@@ -15,6 +15,7 @@ import io.newm.server.features.song.model.SongIdBody
 import io.newm.server.features.song.model.StreamTokenAgreementRequest
 import io.newm.server.features.song.model.songFilters
 import io.newm.server.features.song.repo.SongRepository
+import io.newm.server.ktx.collaborators
 import io.newm.server.ktx.limit
 import io.newm.server.ktx.myUserId
 import io.newm.server.ktx.offset
@@ -49,6 +50,15 @@ fun Routing.createSongRoutes() {
                 }
                 get("count") {
                     respond(CountResponse(songRepository.getGenreCount(songFilters)))
+                }
+            }
+            route("mint/estimate") {
+                get {
+                    respond(
+                        songRepository.getMintingPaymentEstimate(
+                            collaborators = collaborators
+                        )
+                    )
                 }
             }
             route("{songId}") {

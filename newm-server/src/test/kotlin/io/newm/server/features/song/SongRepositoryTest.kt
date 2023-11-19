@@ -25,8 +25,8 @@ class SongRepositoryTest : BaseApplicationTests() {
         assertThat(response.usdPrice).isEqualTo("16.456517")
         assertThat(response.dspPriceAda).isEqualTo("59.960000")
         assertThat(response.dspPriceUsd).isEqualTo("14.990000")
-        assertThat(response.sendTokenFeeAda).isEqualTo("3.866070")
-        assertThat(response.sendTokenFeeUsd).isEqualTo("0.966517")
+        assertThat(response.collabPriceAda).isEqualTo("3.866070")
+        assertThat(response.collabPriceUsd).isEqualTo("0.966517")
         assertThat(response.usdAdaExchangeRate).isEqualTo("0.250000")
     }
 }
