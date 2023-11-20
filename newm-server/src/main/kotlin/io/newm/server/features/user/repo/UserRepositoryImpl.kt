@@ -194,17 +194,17 @@ internal class UserRepositoryImpl(
             user.twitterUrl?.let { entity.twitterUrl = it.orNull()?.asValidUrl() }
             user.instagramUrl?.let { entity.instagramUrl = it.orNull()?.asValidUrl() }
             user.spotifyProfile?.let {
-                entity.spotifyProfile = it.orNull()?.also { profile ->
+                entity.spotifyProfile = it.substringBefore("?").orNull()?.also { profile ->
                     spotifyProfileUrlVerifier.verify(profile, entity.stageOrFullName)
                 }
             }
             user.soundCloudProfile?.let {
-                entity.soundCloudProfile = it.orNull()?.also { profile ->
+                entity.soundCloudProfile = it.substringBefore("?").orNull()?.also { profile ->
                     soundCloudProfileUrlVerifier.verify(profile, entity.stageOrFullName)
                 }
             }
             user.appleMusicProfile?.let {
-                entity.appleMusicProfile = it.orNull()?.also { profile ->
+                entity.appleMusicProfile = it.substringBefore("?").orNull()?.also { profile ->
                     appleMusicProfileUrlVerifier.verify(profile, entity.stageOrFullName)
                 }
             }
@@ -250,9 +250,9 @@ internal class UserRepositoryImpl(
             user.websiteUrl?.let { entity.websiteUrl = it.asValidUrl() }
             user.twitterUrl?.let { entity.twitterUrl = it.asValidUrl() }
             user.instagramUrl?.let { entity.instagramUrl = it.asValidUrl() }
-            user.spotifyProfile?.let { entity.spotifyProfile = it.orNull() }
-            user.soundCloudProfile?.let { entity.soundCloudProfile = it.orNull() }
-            user.appleMusicProfile?.let { entity.appleMusicProfile = it.orNull() }
+            user.spotifyProfile?.let { entity.spotifyProfile = it.substringBefore("?").orNull() }
+            user.soundCloudProfile?.let { entity.soundCloudProfile = it.substringBefore("?").orNull() }
+            user.appleMusicProfile?.let { entity.appleMusicProfile = it.substringBefore("?").orNull() }
             user.location?.let { entity.location = it }
             user.role?.let { entity.role = it }
             user.genre?.let { entity.genre = it }
