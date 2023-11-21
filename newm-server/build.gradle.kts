@@ -98,6 +98,7 @@ dependencies {
     implementation(Dependencies.Aws.SECRETS_MANAGER)
     implementation(Dependencies.Aws.LAMBDA)
     implementation(Dependencies.Aws.JAXB)
+    implementation(Dependencies.Aws.KOTLIN_SQS)
 
     implementation(platform(Dependencies.Aws.BOM2))
     implementation(Dependencies.Aws.CLOUDFRONT)
