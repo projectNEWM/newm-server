@@ -207,7 +207,6 @@ object Dependencies {
         private const val VERSION = "1.12.593"
         private const val VERSION2 = "2.21.27"
         private const val JAXB_VERSION = "2.3.1"
-        private const val KOTLIN_SQS_VERSION = "0.35.1-beta"
 
         const val BOM = "com.amazonaws:aws-java-sdk-bom:$VERSION"
         const val S3 = "com.amazonaws:aws-java-sdk-s3"
@@ -219,8 +218,6 @@ object Dependencies {
 
         const val BOM2 = "software.amazon.awssdk:bom:$VERSION2"
         const val CLOUDFRONT = "software.amazon.awssdk:cloudfront"
-
-        const val KOTLIN_SQS = "aws.sdk.kotlin:sqs:$KOTLIN_SQS_VERSION"
     }
 
     object Zensum {
