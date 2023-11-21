@@ -1,6 +1,6 @@
 package io.newm.server.features.song
 
-import aws.sdk.kotlin.services.sqs.model.Message
+import com.amazonaws.services.sqs.model.Message
 import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.util.logging.Logger
 import io.newm.server.aws.SqsMessageReceiver
@@ -21,7 +21,7 @@ class AudioMessageReceiver : SqsMessageReceiver {
     private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
 
     override suspend fun onMessageReceived(message: Message) {
-        val msg: AudioMessage = json.decodeFromString(message.body.orEmpty())
+        val msg: AudioMessage = json.decodeFromString(message.body)
         logger.debug { "Audio ${msg.transcodingType} job status: ${msg.status}" }
 
         if (msg.status != "COMPLETE") return

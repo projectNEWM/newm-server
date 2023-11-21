@@ -1,6 +1,6 @@
 package io.newm.server.features.minting
 
-import aws.sdk.kotlin.services.sqs.model.Message
+import com.amazonaws.services.sqs.model.Message
 import io.newm.chain.grpc.monitorPaymentAddressRequest
 import io.newm.server.aws.SqsMessageReceiver
 import io.newm.server.config.repo.ConfigRepository
@@ -39,7 +39,7 @@ class MintingMessageReceiver : SqsMessageReceiver {
 
     override suspend fun onMessageReceived(message: Message) {
         log.info { "received: ${message.body}" }
-        val mintingStatusSqsMessage: MintingStatusSqsMessage = json.decodeFromString(message.body.orEmpty())
+        val mintingStatusSqsMessage: MintingStatusSqsMessage = json.decodeFromString(message.body)
         val dbSong = songRepository.get(mintingStatusSqsMessage.songId)
         if (dbSong.mintingStatus == MintingStatus.Minted) {
             // Sometimes, we will manually reprocess a song. If it is already minted successfully when we do
