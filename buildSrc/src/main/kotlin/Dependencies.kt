@@ -42,7 +42,7 @@ object Dependencies {
     }
 
     object KotlinXSerialization {
-        private const val VERSION = "1.6.0"
+        private const val VERSION = "1.6.1"
 
         const val JSON = "org.jetbrains.kotlinx:kotlinx-serialization-json:$VERSION"
     }
@@ -123,7 +123,7 @@ object Dependencies {
     }
 
     object PostgreSQL {
-        private const val VERSION = "42.6.0"
+        private const val VERSION = "42.7.0"
 
         const val ALL = "org.postgresql:postgresql:$VERSION"
     }
@@ -191,7 +191,7 @@ object Dependencies {
     }
 
     object SpringSecurity {
-        private const val VERSION = "6.1.5"
+        private const val VERSION = "6.2.0"
 
         const val CORE = "org.springframework.security:spring-security-core:$VERSION"
     }
@@ -204,9 +204,10 @@ object Dependencies {
     }
 
     object Aws {
-        private const val VERSION = "1.12.582"
-        private const val VERSION2 = "2.21.16"
+        private const val VERSION = "1.12.593"
+        private const val VERSION2 = "2.21.27"
         private const val JAXB_VERSION = "2.3.1"
+        private const val KOTLIN_SQS_VERSION = "0.35.1-beta"
 
         const val BOM = "com.amazonaws:aws-java-sdk-bom:$VERSION"
         const val S3 = "com.amazonaws:aws-java-sdk-s3"
@@ -218,6 +219,8 @@ object Dependencies {
 
         const val BOM2 = "software.amazon.awssdk:bom:$VERSION2"
         const val CLOUDFRONT = "software.amazon.awssdk:cloudfront"
+
+        const val KOTLIN_SQS = "aws.sdk.kotlin:sqs:$KOTLIN_SQS_VERSION"
     }
 
     object Zensum {
@@ -257,7 +260,7 @@ object Dependencies {
     }
 
     object Sentry {
-        private const val VERSION = "6.33.1"
+        private const val VERSION = "6.34.0"
 
         const val CORE = "io.sentry:sentry:$VERSION"
         const val LOGBACK = "io.sentry:sentry-logback:$VERSION"
@@ -308,7 +311,7 @@ object Dependencies {
     }
 
     object TestContainers {
-        private const val VERSION = "1.19.1"
+        private const val VERSION = "1.19.3"
 
         const val CORE = "org.testcontainers:testcontainers:$VERSION"
         const val JUINT = "org.testcontainers:junit-jupiter:$VERSION"
