@@ -3,14 +3,19 @@ package io.newm.chain.database.repository
 import com.github.benmanes.caffeine.cache.Caffeine
 import io.newm.chain.config.Config
 import io.newm.chain.database.entity.ChainBlock
+import io.newm.chain.database.entity.MonitoredAddressChain
 import io.newm.chain.database.table.ChainTable
+import io.newm.chain.database.table.MonitoredAddressChainTable
 import io.newm.chain.database.table.PaymentStakeAddressTable
 import io.newm.chain.util.Blake2b
 import io.newm.chain.util.hexToByteArray
 import io.newm.chain.util.toHexString
 import io.newm.kogmios.protocols.model.PointDetail
 import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.greaterEq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.batchInsert
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insertAndGetId
@@ -23,13 +28,6 @@ import org.slf4j.LoggerFactory
 
 class ChainRepositoryImpl : ChainRepository {
     private val log: Logger by lazy { LoggerFactory.getLogger("ChainRepository") }
-
-    companion object {
-        /**
-         * How many blocks behind tip do we feel is safe?
-         */
-        private const val STABILITY_WINDOW = 3L
-    }
 
     override fun getFindIntersectPairs(): List<PointDetail> {
         return transaction {
@@ -186,6 +184,50 @@ class ChainRepositoryImpl : ChainRepository {
 
     override fun rollback(blockNumber: Long) = transaction {
         ChainTable.deleteWhere { ChainTable.blockNumber greaterEq blockNumber }
+    }
+
+    override fun rollbackMonitoredAddressChain(address: String, blockNumber: Long): Int = transaction {
+        MonitoredAddressChainTable.deleteWhere { MonitoredAddressChainTable.address eq address and (height greaterEq blockNumber) }
+    }
+
+    override fun pruneMonitoredAddressChainHistory(address: String, currentBlockNumber: Long): Int = transaction {
+        MonitoredAddressChainTable.deleteWhere { MonitoredAddressChainTable.address eq address and (height less currentBlockNumber - 1000) }
+    }
+
+    override fun getFindIntersectPairsAddressChain(address: String): List<PointDetail> = transaction {
+        MonitoredAddressChainTable.slice(
+            MonitoredAddressChainTable.slot,
+            MonitoredAddressChainTable.hash
+        ).select { MonitoredAddressChainTable.address eq address }
+            .orderBy(MonitoredAddressChainTable.slot, SortOrder.DESC)
+            .limit(33).filterIndexed { index, _ ->
+                // all powers of 2 including 0th element 0, 2, 4, 8, 16, 32
+                (index == 0) || ((index > 1) && (index and (index - 1) == 0))
+            }.map { row ->
+                PointDetail(
+                    slot = row[MonitoredAddressChainTable.slot],
+                    hash = row[MonitoredAddressChainTable.hash],
+                )
+            }
+    }
+
+    override fun insertMonitoredAddressChain(monitoredAddressChain: MonitoredAddressChain): Long = transaction {
+        MonitoredAddressChainTable.insertAndGetId { row ->
+            row[address] = monitoredAddressChain.address
+            row[height] = monitoredAddressChain.height
+            row[slot] = monitoredAddressChain.slot
+            row[hash] = monitoredAddressChain.hash
+        }.value
+    }
+
+    override fun markTipMonitoredAddressChain(address: String): Long = transaction {
+        MonitoredAddressChainTable.deleteWhere { MonitoredAddressChainTable.address eq address }
+        MonitoredAddressChainTable.insertAndGetId { row ->
+            row[MonitoredAddressChainTable.address] = address
+            row[height] = -1
+            row[slot] = -1
+            row[hash] = ""
+        }.value
     }
 
     private fun nodeVKeyToPoolId(nodeVKey: String): String {
