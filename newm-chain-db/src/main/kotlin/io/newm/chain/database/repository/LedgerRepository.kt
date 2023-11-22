@@ -10,6 +10,12 @@ import io.newm.chain.model.SpentUtxo
 import io.newm.chain.model.Utxo
 
 interface LedgerRepository {
+    companion object {
+        /**
+         * How many blocks behind tip do we feel is safe?
+         */
+        const val STABILITY_WINDOW = 3L
+    }
 
     fun queryUtxos(address: String): Set<Utxo>
 

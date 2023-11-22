@@ -13,6 +13,7 @@ import io.newm.chain.database.entity.LedgerUtxoHistory
 import io.newm.chain.database.entity.RawTransaction
 import io.newm.chain.database.entity.StakeDelegation
 import io.newm.chain.database.entity.StakeRegistration
+import io.newm.chain.database.repository.LedgerRepository.Companion.STABILITY_WINDOW
 import io.newm.chain.database.table.AddressTxLogTable
 import io.newm.chain.database.table.ChainTable
 import io.newm.chain.database.table.LedgerAssetMetadataTable
@@ -949,7 +950,7 @@ class LedgerRepositoryImpl : LedgerRepository {
             ChainTable.slice(maxBlockNumberExpression).selectAll().firstOrNull()?.let {
                 it[maxBlockNumberExpression]
             } ?: 0L
-            ) - 3L
+            ) - STABILITY_WINDOW
 
         AddressTxLogTable.select {
             (AddressTxLogTable.address eq address) and
@@ -973,7 +974,7 @@ class LedgerRepositoryImpl : LedgerRepository {
                 ChainTable.slice(maxBlockNumberExpression).selectAll().firstOrNull()?.let {
                     it[maxBlockNumberExpression]
                 } ?: 0L
-                ) - 3L
+                ) - STABILITY_WINDOW
 
             NativeAssetMonitorLogTable.select {
                 (NativeAssetMonitorLogTable.id greater afterId) and

@@ -34,5 +34,6 @@ interface Daemon : CoroutineScope {
 
     companion object {
         private val coroutineContexts = ConcurrentHashMap<String, CoroutineContext>()
+        const val RETRY_DELAY_MILLIS = 10_000L
     }
 }

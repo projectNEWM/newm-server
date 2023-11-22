@@ -2,7 +2,6 @@ package io.newm.chain.daemon
 
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
-import com.google.iot.cbor.CborReader
 import com.google.protobuf.kotlin.toByteString
 import io.ktor.server.application.ApplicationEnvironment
 import io.newm.chain.cardano.getEpochForSlot
@@ -14,27 +13,18 @@ import io.newm.chain.database.repository.ChainRepository
 import io.newm.chain.database.repository.LedgerRepository
 import io.newm.chain.database.table.AddressTxLogTable
 import io.newm.chain.database.table.NativeAssetMonitorLogTable
-import io.newm.chain.grpc.ExUnits
-import io.newm.chain.grpc.MonitorAddressResponse
-import io.newm.chain.grpc.NativeAsset
 import io.newm.chain.grpc.NewmChainService
-import io.newm.chain.grpc.Redeemer
-import io.newm.chain.grpc.RedeemerTag
 import io.newm.chain.grpc.SubmitTransactionRequest
-import io.newm.chain.grpc.Utxo
 import io.newm.chain.grpc.monitorNativeAssetsResponse
 import io.newm.chain.ledger.SubmittedTransactionCache
 import io.newm.chain.logging.captureToSentry
 import io.newm.chain.model.CreatedUtxo
 import io.newm.chain.util.extractAssetMetadata
-import io.newm.chain.util.hexToByteArray
 import io.newm.chain.util.toAssetMetadataList
 import io.newm.chain.util.toChainBlock
-import io.newm.chain.util.toCreatedUtxoMap
 import io.newm.chain.util.toCreatedUtxoSet
 import io.newm.chain.util.toLedgerAssets
 import io.newm.chain.util.toRawTransactionList
-import io.newm.chain.util.toSpentUtxoMap
 import io.newm.chain.util.toSpentUtxoSet
 import io.newm.chain.util.toStakeDelegationList
 import io.newm.chain.util.toStakeRegistrationList
@@ -48,26 +38,24 @@ import io.newm.kogmios.createStateQueryClient
 import io.newm.kogmios.protocols.messages.IntersectionFound
 import io.newm.kogmios.protocols.messages.RollBackward
 import io.newm.kogmios.protocols.messages.RollForward
+import io.newm.kogmios.protocols.messages.RollForwardData
 import io.newm.kogmios.protocols.model.Block
-import io.newm.kogmios.protocols.model.BlockAlonzo
-import io.newm.kogmios.protocols.model.BlockBabbage
 import io.newm.kogmios.protocols.model.CompactGenesis
 import io.newm.kogmios.protocols.model.MetadataMap
-import io.newm.kogmios.protocols.model.MetadataString
 import io.newm.kogmios.protocols.model.OriginString
 import io.newm.kogmios.protocols.model.PointDetail
 import io.newm.kogmios.protocols.model.PointDetailOrOrigin
 import io.newm.shared.daemon.Daemon
+import io.newm.shared.daemon.Daemon.Companion.RETRY_DELAY_MILLIS
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.debug
 import io.newm.shared.ktx.getConfigBoolean
 import io.newm.shared.ktx.getConfigInt
-import io.newm.shared.ktx.getConfigSplitStrings
 import io.newm.shared.ktx.getConfigString
 import io.newm.txbuilder.ktx.cborHexToPlutusData
-import io.newm.txbuilder.ktx.toPlutusData
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
@@ -83,6 +71,7 @@ import java.io.IOException
 import java.math.BigInteger
 import java.time.Duration
 import java.time.Instant
+import kotlin.math.floor
 import kotlin.math.max
 import kotlin.system.measureTimeMillis
 
@@ -99,9 +88,12 @@ class BlockDaemon(
     private val port by lazy { environment.getConfigInt("ogmios.port") }
     private val secure by lazy { environment.getConfigBoolean("ogmios.secure") }
     private val syncRawTxns by lazy { environment.getConfigBoolean("newmchain.syncRawTxns") }
-    private val monitorAddresses by lazy {
-        environment.getConfigSplitStrings("newmchain.monitorAddresses")
-    }
+
+    val rollForwardFlow = MutableSharedFlow<RollForwardData>(
+        replay = 0,
+        extraBufferCapacity = 0,
+        onBufferOverflow = BufferOverflow.SUSPEND
+    )
 
     private var blockBufferSize = 1
     private val blockBuffer: MutableList<Block> = mutableListOf()
@@ -122,6 +114,7 @@ class BlockDaemon(
 
     override fun start() {
         log.info("starting...")
+        startProcessBlock()
         startChainSync()
         log.info("startup complete.")
     }
@@ -132,6 +125,9 @@ class BlockDaemon(
 
     private fun startChainSync() {
         launch {
+            // Allow other daemons time starting up to connect to our rollForwardFlow
+            delay(1000L)
+
             // Fetch network genesis information
             while (true) {
                 try {
@@ -243,19 +239,30 @@ class BlockDaemon(
 
                 is RollForward -> {
                     (response.result as RollForward).rollForward.let { rollForward ->
+                        rollForwardFlow.emit(rollForward)
                         val blockHeight = rollForward.block.header.blockHeight
                         tipBlockHeight = max(blockHeight, rollForward.tip.blockNo)
                         isTip = blockHeight == tipBlockHeight
-                        processBlock(rollForward.block, isTip)
                         val now = Instant.now()
                         val tenSecondsAgo = now.minusSeconds(10L)
                         if (isTip || tenSecondsAgo.isAfter(lastLogged)) {
-                            val percent = blockHeight.toDouble() / tipBlockHeight.toDouble() * 100.0
+                            val percent = floor(blockHeight.toDouble() / tipBlockHeight.toDouble() * 10000.0) / 100.0
                             log.info("RollForward: block $blockHeight of $tipBlockHeight: %.2f%% sync'd".format(percent))
                             lastLogged = now
                         }
                     }
                 }
+            }
+        }
+    }
+
+    private fun startProcessBlock() {
+        launch {
+            rollForwardFlow.collect { rollForward ->
+                val blockHeight = rollForward.block.header.blockHeight
+                tipBlockHeight = max(blockHeight, rollForward.tip.blockNo)
+                val isTip = blockHeight == tipBlockHeight
+                processBlock(rollForward.block, isTip)
             }
         }
     }
@@ -381,10 +388,6 @@ class BlockDaemon(
                         }
                     }
 
-                    // Insert any monitor address tx log responses
-                    createTime += measureTimeMillis {
-                        commitMonitorAddressTransactions(block)
-                    }
                     // Insert any native asset log responses
                     nativeAssetTime += measureTimeMillis {
                         if (ledgerAssets.isNotEmpty()) {
@@ -410,7 +413,7 @@ class BlockDaemon(
             val tenSecondsAgo = now.minusSeconds(10L)
             if (isTip || tenSecondsAgo.isAfter(lastLoggedCommit)) {
                 val blockHeight = blocksToCommit.last().header.blockHeight
-                val percent = blockHeight.toDouble() / tipBlockHeight.toDouble() * 100.0
+                val percent = floor(blockHeight.toDouble() / tipBlockHeight.toDouble() * 10000.0) / 100.0
                 log.info("commitBlock: block $blockHeight of $tipBlockHeight: %.2f%% committed".format(percent))
                 lastLoggedCommit = now
             }
@@ -517,164 +520,11 @@ class BlockDaemon(
         }
     }
 
-    private fun commitMonitorAddressTransactions(block: Block) {
-        val spentUtxoMap = block.toSpentUtxoMap()
-        val createdUtxoMap = block.toCreatedUtxoMap()
-        val transactionIds = spentUtxoMap.keys + createdUtxoMap.keys
-        val monitorAddressResponsesMap = mutableMapOf<String, MutableList<MonitorAddressResponse>>()
-
-        transactionIds.forEach { transactionId ->
-            monitorAddresses.forEach { monitorAddress ->
-                val spentAddressUtxos: List<Utxo> =
-                    spentUtxoMap[transactionId]?.mapNotNull { spentUtxo ->
-                        ledgerRepository.queryUtxoHavingAddress(
-                            monitorAddress,
-                            spentUtxo.hash,
-                            spentUtxo.ix.toInt()
-                        )
-                    }?.map { utxo ->
-                        Utxo.newBuilder().apply {
-                            hash = utxo.hash
-                            ix = utxo.ix
-                            lovelace = utxo.lovelace.toString()
-                            utxo.datumHash?.let { datumHash = it }
-                            utxo.datum?.let {
-                                datum = it.cborHexToPlutusData()
-                            }
-                            utxo.nativeAssets.forEach { nativeAsset ->
-                                addNativeAssets(
-                                    NativeAsset.newBuilder().apply {
-                                        policy = nativeAsset.policy
-                                        name = nativeAsset.name
-                                        amount = nativeAsset.amount.toString()
-                                    }
-                                )
-                            }
-                        }.build()
-                    }.orEmpty()
-
-                val createdAddressUtxos = createdUtxoMap[transactionId]?.filter { createdUtxo ->
-                    createdUtxo.address == monitorAddress
-                }?.map { utxo ->
-                    Utxo.newBuilder().apply {
-                        hash = utxo.hash
-                        ix = utxo.ix
-                        lovelace = utxo.lovelace.toString()
-                        utxo.datumHash?.let { datumHash = it }
-                        utxo.datum?.let {
-                            datum = it.cborHexToPlutusData()
-                        }
-                        utxo.nativeAssets.forEach { nativeAsset ->
-                            addNativeAssets(
-                                NativeAsset.newBuilder().apply {
-                                    policy = nativeAsset.policy
-                                    name = nativeAsset.name
-                                    amount = nativeAsset.amount.toString()
-                                }
-                            )
-                        }
-                    }.build()
-                }.orEmpty()
-
-                if (spentAddressUtxos.isNotEmpty() || createdAddressUtxos.isNotEmpty()) {
-                    val monitorAddressResponses = monitorAddressResponsesMap[monitorAddress]
-                        ?: mutableListOf<MonitorAddressResponse>().also {
-                            monitorAddressResponsesMap[monitorAddress] = it
-                        }
-                    monitorAddressResponses.add(
-                        MonitorAddressResponse
-                            .newBuilder()
-                            .setBlock(block.header.blockHeight)
-                            .setSlot(block.header.slot)
-                            .setTxId(transactionId)
-                            .addAllSpentUtxos(spentAddressUtxos)
-                            .addAllCreatedUtxos(createdAddressUtxos)
-                            .apply {
-                                when (block) {
-                                    is BlockAlonzo -> block.alonzo.body.first { it.id == transactionId }.witness
-                                    is BlockBabbage -> block.babbage.body.first { it.id == transactionId }.witness
-                                    else -> null
-                                }?.let { witness ->
-                                    witness.datums?.let { datums ->
-                                        putAllDatums(
-                                            datums.entries.associate { entry ->
-                                                Pair(
-                                                    entry.key,
-                                                    entry.value.cborHexToPlutusData(),
-                                                )
-                                            }
-                                        )
-                                    }
-                                    witness.redeemers?.let { redeemers ->
-                                        putAllRedeemers(
-                                            redeemers.entries.associate { (key, txRedeemer) ->
-                                                // log.debug("key, txRedeemer.redeemer: $key, ${txRedeemer.redeemer}")
-                                                val txRedeemerCbor = CborReader
-                                                    .createFromByteArray(txRedeemer.redeemer.hexToByteArray())
-                                                    .readDataItem()
-                                                val (redeemerTag, redeemerIndex) = key.split(":")
-                                                    .let {
-                                                        Pair(
-                                                            when (it[0]) {
-                                                                "spend" -> RedeemerTag.SPEND
-                                                                "mint" -> RedeemerTag.MINT
-                                                                "certificate" -> RedeemerTag.CERT
-                                                                "withdrawal" -> RedeemerTag.REWARD
-                                                                else -> throw IllegalArgumentException(
-                                                                    "Unknown redeemer tag"
-                                                                )
-                                                            },
-                                                            it[1].toLong()
-                                                        )
-                                                    }
-
-                                                val plutusData =
-                                                    txRedeemerCbor.toPlutusData(txRedeemer.redeemer)
-                                                val exUnits = ExUnits.newBuilder()
-                                                    .setMem(txRedeemer.executionUnits.memory.toLong())
-                                                    .setSteps(txRedeemer.executionUnits.steps.toLong())
-                                                    .build()
-
-                                                Pair(
-                                                    key,
-                                                    Redeemer.newBuilder()
-                                                        .setTag(redeemerTag)
-                                                        .setIndex(redeemerIndex)
-                                                        .setData(plutusData)
-                                                        .setExUnits(exUnits)
-                                                        .build()
-                                                )
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                            .build()
-                    )
-                }
-            }
-        }
-        val batch =
-            monitorAddressResponsesMap.flatMap { (monitorAddress, monitorAddressResponsesList) ->
-                monitorAddressResponsesList.map {
-                    Pair(monitorAddress, it)
-                }
-            }
-
-        AddressTxLogTable.batchInsert(
-            batch,
-            shouldReturnGeneratedValues = false
-        ) { (monitorAddress, monitorAddressResponse) ->
-            this[AddressTxLogTable.blockNumber] = block.header.blockHeight
-            this[AddressTxLogTable.address] = monitorAddress
-            this[AddressTxLogTable.txId] = monitorAddressResponse.txId
-            val bos = ByteArrayOutputStream()
-            monitorAddressResponse.writeTo(bos)
-            this[AddressTxLogTable.monitorAddressResponseBytes] = bos.toByteArray()
-        }
-    }
-
-    private fun commitNativeAssetLogTransactions(block: Block, ledgerAssetList: List<LedgerAsset>, createdUtxos: Set<CreatedUtxo>) {
+    private fun commitNativeAssetLogTransactions(
+        block: Block,
+        ledgerAssetList: List<LedgerAsset>,
+        createdUtxos: Set<CreatedUtxo>
+    ) {
         val ledgerAssets = ledgerRepository.queryLedgerAssets(ledgerAssetList)
         // handle supply changes
         val batch = mutableListOf<ByteArray>()
@@ -795,13 +645,8 @@ class BlockDaemon(
     }
 
     companion object {
-        private const val RETRY_DELAY_MILLIS = 10_000L
         private const val COMMIT_BLOCKS_WARN_LEVEL_MILLIS = 1_000L
         private const val COMMIT_BLOCKS_ERROR_LEVEL_MILLIS = 5_000L
-        private val NATIVE_ASSET_METADATA_TAG = 721.toBigInteger()
-        private val ASSET_NAME_METADATA_TAG = MetadataString("name")
-        private val ASSET_IMAGE_METADATA_TAG = MetadataString("image")
-        private val ASSET_DESCRIPTION_METADATA_TAG = MetadataString("description")
         private const val CIP68_REFERENCE_TOKEN_PREFIX = "000643b0"
         private val CIP68_REFERENCE_TOKEN_REGEX = Regex("^000643b0.*$") // (100)TokenName
         private val CIP68_USER_TOKEN_REGEX =
