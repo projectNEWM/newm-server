@@ -65,7 +65,7 @@ fun CborObject.toPlutusData(cborHex: String? = null): PlutusData {
                 else -> throw IllegalArgumentException(
                     "plutus_data fields must be int, bytes, array, or map!: ${
                         fields.toCborByteArray().toHexString()
-                    }"
+                    }, type: ${fields.javaClass.name}, cborHex: $cborHex"
                 )
             }
         }

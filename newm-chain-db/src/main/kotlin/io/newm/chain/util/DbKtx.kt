@@ -31,6 +31,7 @@ import io.newm.kogmios.protocols.model.MetadataValue
 import io.newm.kogmios.protocols.model.ScriptPlutusV2
 import io.newm.kogmios.protocols.model.StakeKeyRegistrationCertificate
 import io.newm.kogmios.protocols.model.UtxoOutput
+import org.slf4j.LoggerFactory
 
 fun Block.toChainBlock() = ChainBlock(
     blockNumber = this.header.blockHeight,
@@ -210,6 +211,20 @@ fun List<UtxoOutput>.toCreatedUtxoList(txId: String, datumsMap: Map<String, Stri
             null
         }
 
+        val datumHash = utxoOutput.datumHash ?: utxoOutput.datum?.let { datum ->
+            Blake2b.hash256(datum.hexToByteArray()).toHexString()
+        }
+        val datum = datumsMap[datumHash] ?: if (datumHash != utxoOutput.datum) {
+            utxoOutput.datum
+        } else {
+            null
+        }
+
+        if (datum != null && datum == datumHash) {
+            LoggerFactory.getLogger("DbKtx")
+                .warn("Datum hash is the same as the datum itself: utxoOutput: $utxoOutput, datumsMap: $datumsMap")
+        }
+
         CreatedUtxo(
             address = utxoOutput.address,
             addressType = utxoOutput.address.addressType(),
@@ -217,8 +232,8 @@ fun List<UtxoOutput>.toCreatedUtxoList(txId: String, datumsMap: Map<String, Stri
             hash = txId,
             ix = index.toLong(),
             lovelace = utxoOutput.value.coins,
-            datumHash = utxoOutput.datumHash,
-            datum = utxoOutput.datum ?: datumsMap[utxoOutput.datumHash],
+            datumHash = datumHash,
+            datum = datum,
             scriptRef = (utxoOutput.script as? ScriptPlutusV2)?.plutusV2, // we only care about plutus v2
             nativeAssets = utxoOutput.value.assets?.map { entry ->
                 NativeAsset(
