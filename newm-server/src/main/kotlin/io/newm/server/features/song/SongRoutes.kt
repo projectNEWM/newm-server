@@ -15,6 +15,8 @@ import io.newm.server.features.song.model.SongIdBody
 import io.newm.server.features.song.model.StreamTokenAgreementRequest
 import io.newm.server.features.song.model.songFilters
 import io.newm.server.features.song.repo.SongRepository
+import io.newm.server.features.user.model.User
+import io.newm.server.features.user.repo.UserRepository
 import io.newm.server.ktx.collaborators
 import io.newm.server.ktx.limit
 import io.newm.server.ktx.myUserId
@@ -32,6 +34,7 @@ private const val SONGS_PATH = "v1/songs"
 @Suppress("unused")
 fun Routing.createSongRoutes() {
     val songRepository: SongRepository by inject()
+    val userRepository: UserRepository by inject()
 
     authenticate(AUTH_JWT) {
         route(SONGS_PATH) {
@@ -106,6 +109,11 @@ fun Routing.createSongRoutes() {
                         if (utxos.isEmpty()) {
                             respond(HttpStatusCode.PaymentRequired, "No UTXOs provided!")
                         } else {
+                            val user = userRepository.get(myUserId)
+                            if (user.walletAddress.isNullOrBlank()) {
+                                // We need to update the user's wallet address since it wasn't set properly at this point.
+                                userRepository.updateUserData(myUserId, User(walletAddress = request.changeAddress))
+                            }
                             respond(
                                 MintPaymentResponse(
                                     cborHex = songRepository.generateMintingPaymentTransaction(
