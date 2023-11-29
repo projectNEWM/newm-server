@@ -92,6 +92,7 @@ internal class UserRepositoryImpl(
                 this.companyName = user.companyName
                 this.companyLogoUrl = user.companyLogoUrl?.asValidUrl()
                 this.companyIpRights = user.companyIpRights
+                this.dspPlanSubscribed = user.dspPlanSubscribed ?: false
             }.id.value
         }
     }
@@ -226,6 +227,7 @@ internal class UserRepositoryImpl(
             user.companyName?.let { entity.companyName = it.orNull() }
             user.companyLogoUrl?.let { entity.companyLogoUrl = it.orNull()?.asValidUrl() }
             user.companyIpRights?.let { entity.companyIpRights = it }
+            user.dspPlanSubscribed?.let { entity.dspPlanSubscribed = it }
             user.distributionUserId?.let { entity.distributionUserId = it }
             user.distributionArtistId?.let { entity.distributionArtistId = it }
             user.distributionParticipantId?.let { entity.distributionParticipantId = it }
@@ -261,6 +263,7 @@ internal class UserRepositoryImpl(
             user.companyName?.let { entity.companyName = it.orNull() }
             user.companyLogoUrl?.let { entity.companyLogoUrl = it.orNull()?.asValidUrl() }
             user.companyIpRights?.let { entity.companyIpRights = it }
+            user.dspPlanSubscribed?.let { entity.dspPlanSubscribed = it }
             user.distributionUserId?.let { entity.distributionUserId = it }
             user.distributionArtistId?.let { entity.distributionArtistId = it }
             user.distributionParticipantId?.let { entity.distributionParticipantId = it }
