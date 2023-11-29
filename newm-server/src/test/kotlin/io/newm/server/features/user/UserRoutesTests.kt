@@ -96,6 +96,7 @@ class UserRoutesTests : BaseApplicationTests() {
         assertThat(user.companyName).isEqualTo(testUser1.companyName)
         assertThat(user.companyLogoUrl).isEqualTo(testUser1.companyLogoUrl)
         assertThat(user.companyIpRights).isEqualTo(testUser1.companyIpRights)
+        assertThat(user.dspPlanSubscribed).isEqualTo(testUser1.dspPlanSubscribed)
     }
 
     @Test
@@ -169,6 +170,7 @@ class UserRoutesTests : BaseApplicationTests() {
         assertThat(user.companyName).isEqualTo(testUser1.companyName)
         assertThat(user.companyLogoUrl).isEqualTo(testUser1.companyLogoUrl)
         assertThat(user.companyIpRights).isEqualTo(testUser1.companyIpRights)
+        assertThat(user.dspPlanSubscribed).isEqualTo(testUser1.dspPlanSubscribed)
     }
 
     @Test
@@ -206,6 +208,7 @@ class UserRoutesTests : BaseApplicationTests() {
         assertThat(user.companyName).isEqualTo(testUser1.companyName)
         assertThat(user.companyLogoUrl).isEqualTo(testUser1.companyLogoUrl)
         assertThat(user.companyIpRights).isEqualTo(testUser1.companyIpRights)
+        assertThat(user.dspPlanSubscribed).isEqualTo(testUser1.dspPlanSubscribed)
     }
 
     @Test
@@ -256,6 +259,7 @@ class UserRoutesTests : BaseApplicationTests() {
         assertThat(user.companyName).isEqualTo(testUser2.companyName)
         assertThat(user.companyLogoUrl).isEqualTo(testUser2.companyLogoUrl)
         assertThat(user.companyIpRights).isEqualTo(testUser2.companyIpRights)
+        assertThat(user.dspPlanSubscribed).isEqualTo(testUser2.dspPlanSubscribed)
     }
 
     @Test
@@ -362,6 +366,7 @@ class UserRoutesTests : BaseApplicationTests() {
             assertThat(actualUser.companyName).isEqualTo(expectedUser.companyName)
             assertThat(actualUser.companyLogoUrl).isEqualTo(expectedUser.companyLogoUrl)
             assertThat(actualUser.companyIpRights).isEqualTo(expectedUser.companyIpRights)
+            assertThat(actualUser.dspPlanSubscribed).isEqualTo(expectedUser.dspPlanSubscribed)
         }
     }
 
@@ -417,6 +422,7 @@ class UserRoutesTests : BaseApplicationTests() {
             assertThat(actualUser.companyName).isEqualTo(expectedUser.companyName)
             assertThat(actualUser.companyLogoUrl).isEqualTo(expectedUser.companyLogoUrl)
             assertThat(actualUser.companyIpRights).isEqualTo(expectedUser.companyIpRights)
+            assertThat(actualUser.dspPlanSubscribed).isEqualTo(expectedUser.dspPlanSubscribed)
         }
     }
 
@@ -475,6 +481,7 @@ class UserRoutesTests : BaseApplicationTests() {
             assertThat(actualUser.companyName).isEqualTo(expectedUser.companyName)
             assertThat(actualUser.companyLogoUrl).isEqualTo(expectedUser.companyLogoUrl)
             assertThat(actualUser.companyIpRights).isEqualTo(expectedUser.companyIpRights)
+            assertThat(actualUser.dspPlanSubscribed).isEqualTo(expectedUser.dspPlanSubscribed)
         }
     }
 
@@ -533,6 +540,7 @@ class UserRoutesTests : BaseApplicationTests() {
             assertThat(actualUser.companyName).isEqualTo(expectedUser.companyName)
             assertThat(actualUser.companyLogoUrl).isEqualTo(expectedUser.companyLogoUrl)
             assertThat(actualUser.companyIpRights).isEqualTo(expectedUser.companyIpRights)
+            assertThat(actualUser.dspPlanSubscribed).isEqualTo(expectedUser.dspPlanSubscribed)
         }
     }
 
@@ -591,6 +599,7 @@ class UserRoutesTests : BaseApplicationTests() {
             assertThat(actualUser.companyName).isEqualTo(expectedUser.companyName)
             assertThat(actualUser.companyLogoUrl).isEqualTo(expectedUser.companyLogoUrl)
             assertThat(actualUser.companyIpRights).isEqualTo(expectedUser.companyIpRights)
+            assertThat(actualUser.dspPlanSubscribed).isEqualTo(expectedUser.dspPlanSubscribed)
         }
     }
 
@@ -649,6 +658,7 @@ class UserRoutesTests : BaseApplicationTests() {
             assertThat(actualUser.companyName).isEqualTo(expectedUser.companyName)
             assertThat(actualUser.companyLogoUrl).isEqualTo(expectedUser.companyLogoUrl)
             assertThat(actualUser.companyIpRights).isEqualTo(expectedUser.companyIpRights)
+            assertThat(actualUser.dspPlanSubscribed).isEqualTo(expectedUser.dspPlanSubscribed)
         }
     }
 
@@ -707,6 +717,7 @@ class UserRoutesTests : BaseApplicationTests() {
             assertThat(actualUser.companyName).isEqualTo(expectedUser.companyName)
             assertThat(actualUser.companyLogoUrl).isEqualTo(expectedUser.companyLogoUrl)
             assertThat(actualUser.companyIpRights).isEqualTo(expectedUser.companyIpRights)
+            assertThat(actualUser.dspPlanSubscribed).isEqualTo(expectedUser.dspPlanSubscribed)
         }
     }
 
@@ -753,5 +764,6 @@ private fun addUserToDatabase(offset: Int): User = transaction {
         companyName = "companyName$offset"
         companyLogoUrl = "https://companylogo/$offset"
         companyIpRights = offset % 2 == 0
+        dspPlanSubscribed = offset % 2 == 0
     }
 }.toModel(includeAll = false)

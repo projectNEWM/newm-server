@@ -27,7 +27,8 @@ val testUser1 = User(
     authCode = "123456",
     companyName = "Company1",
     companyLogoUrl = "https://projectnewm.io/logo1.jpg",
-    companyIpRights = true
+    companyIpRights = true,
+    dspPlanSubscribed = false,
 )
 
 val testUser2 = User(
@@ -54,5 +55,6 @@ val testUser2 = User(
     authCode = "123456",
     companyName = "Company2",
     companyLogoUrl = "https://projectnewm.io/logo2.jpg",
-    companyIpRights = false
+    companyIpRights = false,
+    dspPlanSubscribed = true,
 )

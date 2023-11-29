@@ -36,6 +36,7 @@ object UserTable : UUIDTable(name = "users") {
     val companyName: Column<String?> = text("company_name").nullable()
     val companyLogoUrl: Column<String?> = text("company_logo_url").nullable()
     val companyIpRights: Column<Boolean?> = bool("company_ip_rights").nullable()
+    val dspPlanSubscribed: Column<Boolean> = bool("dsp_plan_subscribed").default(false)
     val admin: Column<Boolean> = bool("admin").default(false)
     val distributionUserId: Column<String?> = text("distribution_user_id").nullable()
     val distributionArtistId: Column<Long?> = long("distribution_artist_id").nullable()
