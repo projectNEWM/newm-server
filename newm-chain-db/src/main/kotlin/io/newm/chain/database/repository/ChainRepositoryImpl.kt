@@ -13,6 +13,7 @@ import io.newm.chain.util.toHexString
 import io.newm.kogmios.protocols.model.PointDetail
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.greaterEq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import org.jetbrains.exposed.sql.and
@@ -187,11 +188,18 @@ class ChainRepositoryImpl : ChainRepository {
     }
 
     override fun rollbackMonitoredAddressChain(address: String, blockNumber: Long): Int = transaction {
-        MonitoredAddressChainTable.deleteWhere { MonitoredAddressChainTable.address eq address and (height greaterEq blockNumber) }
+        MonitoredAddressChainTable.deleteWhere {
+            (MonitoredAddressChainTable.address eq address) and
+                (height greaterEq blockNumber)
+        }
     }
 
     override fun pruneMonitoredAddressChainHistory(address: String, currentBlockNumber: Long): Int = transaction {
-        MonitoredAddressChainTable.deleteWhere { MonitoredAddressChainTable.address eq address and (height less currentBlockNumber - 1000) }
+        MonitoredAddressChainTable.deleteWhere {
+            (MonitoredAddressChainTable.address eq address) and
+                (height less currentBlockNumber - 1000) and
+                (height greater 0)
+        }
     }
 
     override fun getFindIntersectPairsAddressChain(address: String): List<PointDetail> = transaction {

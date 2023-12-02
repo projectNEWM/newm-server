@@ -1,5 +1,6 @@
 package io.newm.server.features.cardano
 
+import io.grpc.Deadline
 import io.grpc.ManagedChannelBuilder
 import io.grpc.Metadata
 import io.grpc.stub.MetadataUtils
@@ -49,6 +50,6 @@ val cardanoKoinModule = module {
                     )
                 }
             )
-        )
+        ).withWaitForReady().withDeadline(Deadline.after(30L, TimeUnit.SECONDS))
     }
 }

@@ -45,6 +45,9 @@ object GrpcConfig {
                 // 20 seconds to respond to a keepAlive ping
                 keepAliveTimeout(20L, TimeUnit.SECONDS)
 
+                maxConnectionAge(1L, TimeUnit.HOURS)
+                maxConnectionAgeGrace(5L, TimeUnit.MINUTES)
+
                 // Enable JWT authorization
                 intercept(JwtAuthorizationServerInterceptor(appConfig.config("jwt")))
 
