@@ -88,6 +88,8 @@ internal class UserRepositoryImpl(
                 this.biography = user.biography
                 this.walletAddress = user.walletAddress
                 this.email = email
+                this.isni = user.isni
+                this.ipi = user.ipi
                 this.passwordHash = passwordHash
                 this.companyName = user.companyName
                 this.companyLogoUrl = user.companyLogoUrl?.asValidUrl()
@@ -227,6 +229,8 @@ internal class UserRepositoryImpl(
             user.companyName?.let { entity.companyName = it.orNull() }
             user.companyLogoUrl?.let { entity.companyLogoUrl = it.orNull()?.asValidUrl() }
             user.companyIpRights?.let { entity.companyIpRights = it }
+            user.isni?.let { entity.isni = it }
+            user.ipi?.let { entity.ipi = it }
             user.dspPlanSubscribed?.let { entity.dspPlanSubscribed = it }
             user.distributionUserId?.let { entity.distributionUserId = it }
             user.distributionArtistId?.let { entity.distributionArtistId = it }
@@ -263,6 +267,8 @@ internal class UserRepositoryImpl(
             user.companyName?.let { entity.companyName = it.orNull() }
             user.companyLogoUrl?.let { entity.companyLogoUrl = it.orNull()?.asValidUrl() }
             user.companyIpRights?.let { entity.companyIpRights = it }
+            user.isni?.let { entity.isni = it }
+            user.ipi?.let { entity.ipi = it }
             user.dspPlanSubscribed?.let { entity.dspPlanSubscribed = it }
             user.distributionUserId?.let { entity.distributionUserId = it }
             user.distributionArtistId?.let { entity.distributionArtistId = it }

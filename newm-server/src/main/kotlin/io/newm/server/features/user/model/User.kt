@@ -44,6 +44,8 @@ data class User(
     val companyName: String? = null,
     val companyLogoUrl: String? = null,
     val companyIpRights: Boolean? = null,
+    val isni: String? = null,
+    val ipi: String? = null,
     val dspPlanSubscribed: Boolean? = null,
     @Transient
     var distributionUserId: String? = null,
