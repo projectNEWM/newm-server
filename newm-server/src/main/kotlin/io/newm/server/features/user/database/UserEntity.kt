@@ -45,6 +45,8 @@ class UserEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var companyName: String? by UserTable.companyName
     var companyLogoUrl: String? by UserTable.companyLogoUrl
     var companyIpRights: Boolean? by UserTable.companyIpRights
+    var isni: String? by UserTable.isni
+    var ipi: String? by UserTable.ipi
     var dspPlanSubscribed: Boolean by UserTable.dspPlanSubscribed
     var admin: Boolean by UserTable.admin
     var distributionUserId: String? by UserTable.distributionUserId
@@ -82,6 +84,8 @@ class UserEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         companyName = companyName,
         companyLogoUrl = companyLogoUrl,
         companyIpRights = companyIpRights,
+        isni = isni,
+        ipi = ipi,
         dspPlanSubscribed = dspPlanSubscribed,
         distributionUserId = distributionUserId,
         distributionArtistId = distributionArtistId,

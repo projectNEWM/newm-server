@@ -181,6 +181,8 @@ open class BaseApplicationTests {
             walletAddress = user.walletAddress
             email = user.email!!
             passwordHash = (user.newPassword ?: Password("dummyPassword")).toHash()
+            isni = user.isni
+            ipi = user.ipi
             companyName = user.companyName
             companyLogoUrl = user.companyLogoUrl
             companyIpRights = user.companyIpRights
