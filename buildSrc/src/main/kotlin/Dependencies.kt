@@ -42,13 +42,13 @@ object Dependencies {
     }
 
     object KotlinXSerialization {
-        private const val VERSION = "1.6.1"
+        private const val VERSION = "1.6.2"
 
         const val JSON = "org.jetbrains.kotlinx:kotlinx-serialization-json:$VERSION"
     }
 
     object KotlinXDateTime {
-        private const val VERSION = "0.4.1"
+        private const val VERSION = "0.5.0"
 
         const val DATETIME = "org.jetbrains.kotlinx:kotlinx-datetime:$VERSION"
     }
@@ -92,7 +92,7 @@ object Dependencies {
     }
 
     object LogBack {
-        private const val VERSION = "1.4.11"
+        private const val VERSION = "1.4.14"
 
         const val CLASSIC = "ch.qos.logback:logback-classic:$VERSION"
     }
@@ -108,7 +108,7 @@ object Dependencies {
     }
 
     object Exposed {
-        private const val VERSION = "0.44.1"
+        private const val VERSION = "0.45.0"
 
         const val CORE = "org.jetbrains.exposed:exposed-core:$VERSION"
         const val DAO = "org.jetbrains.exposed:exposed-dao:$VERSION"
@@ -135,9 +135,10 @@ object Dependencies {
     }
 
     object FlywayDB {
-        private const val VERSION = "9.22.3"
+        private const val VERSION = "10.1.0"
 
-        const val ALL = "org.flywaydb:flyway-core:$VERSION"
+        const val CORE = "org.flywaydb:flyway-core:$VERSION"
+        const val POSTGRES = "org.flywaydb:flyway-database-postgresql:$VERSION"
     }
 
     object Caffeine {
@@ -179,7 +180,7 @@ object Dependencies {
     }
 
     object JSoup {
-        private const val VERSION = "1.16.2"
+        private const val VERSION = "1.17.1"
 
         const val ALL = "org.jsoup:jsoup:$VERSION"
     }
@@ -204,8 +205,8 @@ object Dependencies {
     }
 
     object Aws {
-        private const val VERSION = "1.12.593"
-        private const val VERSION2 = "2.21.27"
+        private const val VERSION = "1.12.604"
+        private const val VERSION2 = "2.21.37"
         private const val JAXB_VERSION = "2.3.1"
 
         const val BOM = "com.amazonaws:aws-java-sdk-bom:$VERSION"
@@ -257,7 +258,7 @@ object Dependencies {
     }
 
     object Sentry {
-        private const val VERSION = "6.34.0"
+        private const val VERSION = "7.0.0"
 
         const val CORE = "io.sentry:sentry:$VERSION"
         const val LOGBACK = "io.sentry:sentry-logback:$VERSION"
@@ -270,7 +271,7 @@ object Dependencies {
     }
 
     object Grpc {
-        private const val VERSION = "1.59.0"
+        private const val VERSION = "1.59.1"
 
         const val STUB = "io.grpc:grpc-stub:$VERSION"
         const val API = "io.grpc:grpc-api:$VERSION"
@@ -280,14 +281,14 @@ object Dependencies {
     }
 
     object GrpcKotlin {
-        private const val VERSION = "1.4.0"
+        private const val VERSION = "1.4.1"
 
         const val STUB = "io.grpc:grpc-kotlin-stub:$VERSION"
         const val GRPCKT = "io.grpc:protoc-gen-grpc-kotlin:$VERSION:jdk8@jar"
     }
 
     object Protobuf {
-        private const val VERSION = "3.25.0"
+        private const val VERSION = "3.25.1"
 
         const val JAVA_UTIL = "com.google.protobuf:protobuf-java-util:$VERSION"
         const val KOTLIN = "com.google.protobuf:protobuf-kotlin:$VERSION"

@@ -156,8 +156,13 @@ class MintingRepositoryImpl(
                     requiredSigners = signingKeys,
                     starterTokenUtxoReference = starterTokenUtxoReference,
                     mintScriptUtxoReference = scriptUtxoReference,
-                    signatures = signTransactionDummy(signingKeys.size)
+                    signatures = signTransactionDummy(signingKeys)
                 )
+
+            // check for errors in tx building
+            if (transactionBuilderResponse.hasErrorMessage()) {
+                throw IllegalStateException("TransactionBuilder Error!: ${transactionBuilderResponse.errorMessage}")
+            }
 
             val transactionIdBytes = transactionBuilderResponse.transactionId.hexToByteArray()
 
@@ -183,6 +188,12 @@ class MintingRepositoryImpl(
                     mintScriptUtxoReference = scriptUtxoReference,
                     signatures = signTransaction(transactionIdBytes, signingKeys),
                 )
+
+            // check for errors in tx building
+            if (transactionBuilderResponse.hasErrorMessage()) {
+                throw IllegalStateException("TransactionBuilder Error!: ${transactionBuilderResponse.errorMessage}")
+            }
+
             val submitTransactionResponse =
                 cardanoRepository.submitTransaction(transactionBuilderResponse.transactionCbor)
             return@withLock if (submitTransactionResponse.result == "MsgAcceptTx") {
@@ -209,9 +220,9 @@ class MintingRepositoryImpl(
     }
 
     @VisibleForTesting
-    internal fun signTransactionDummy(signatureCount: Int) = List(signatureCount) {
+    internal fun signTransactionDummy(signingKeys: List<Key>) = signingKeys.map { key ->
         signature {
-            vkey = ByteArray(32).toByteString()
+            vkey = key.vkey.toByteString()
             sig = ByteArray(64).toByteString()
         }
     }

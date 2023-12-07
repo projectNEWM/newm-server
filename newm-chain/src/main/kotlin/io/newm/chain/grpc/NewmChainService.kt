@@ -290,8 +290,8 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
     }
 
     override suspend fun transactionBuilder(request: TransactionBuilderRequest): TransactionBuilderResponse {
-        try {
-            return txSubmitClientPool.useInstance { txSubmitClient ->
+        return try {
+            txSubmitClientPool.useInstance { txSubmitClient ->
                 val stateQueryClient = txSubmitClient as StateQueryClient
                 val protocolParams =
                     stateQueryClient.currentProtocolParameters().result as QueryCurrentProtocolBabbageParametersResult
@@ -334,7 +334,11 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
         } catch (e: Throwable) {
             Sentry.addBreadcrumb(request.toString(), "NewmChainService")
             log.error("TransactionBuilder error!", e)
-            throw e
+            transactionBuilderResponse {
+                transactionId = ""
+                transactionCbor = ByteArray(0).toByteString()
+                errorMessage = e.message ?: "TransactionBuilder error!: $e"
+            }
         }
     }
 

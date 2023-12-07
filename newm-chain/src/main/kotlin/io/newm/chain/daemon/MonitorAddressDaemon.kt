@@ -175,7 +175,7 @@ class MonitorAddressDaemon(
         var blockDaemonHeight = Long.MAX_VALUE
         launch {
             // Collect from blockDaemon
-            blockDaemon.rollForwardFlow.collect { rollForward ->
+            blockDaemon.committedRollForwardFlow.collect { rollForward ->
                 blockDaemonHeight = rollForward.block.header.blockHeight
                 if (!isTipReached) {
                     return@collect
