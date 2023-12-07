@@ -45,16 +45,19 @@ fun Routing.createCardanoRoutes() {
             }
         }
 
-        get("/v1/cardano/key") {
-            try {
-                val keyName = parameters["name"] ?: throw IllegalArgumentException("name is required!")
-                val key = requireNotNull(cardanoRepository.getKeyByName(keyName)) { "Key with name '$keyName' not found!" }
-                respond(key.toCliKeyPair(keyName))
-            } catch (e: Exception) {
-                log.error("Failed to get key!", e)
-                throw e
-            }
-        }
+        /**
+         * Only temporarily uncomment if there's some legal emergency where we need a key to perform a manual transaction.
+         */
+//        get("/v1/cardano/key") {
+//            try {
+//                val keyName = request.requiredQueryParam("name")
+//                val key = requireNotNull(cardanoRepository.getKeyByName(keyName)) { "Key with name '$keyName' not found!" }
+//                respond(key.toCliKeyPair(keyName))
+//            } catch (e: Exception) {
+//                log.error("Failed to get key!", e)
+//                throw e
+//            }
+//        }
 
         post("/v1/cardano/encryption") {
             try {
