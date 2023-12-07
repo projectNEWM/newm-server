@@ -266,6 +266,7 @@ message TransactionBuilderRequest {
 message TransactionBuilderResponse {
   string transaction_id = 1;
   bytes transaction_cbor = 2;
+  optional string error_message = 3;
 }
 
 enum NetworkId {

@@ -474,7 +474,7 @@ class MintingRepositoryTest : BaseApplicationTests() {
             requiredSigners = signingKeys,
             starterTokenUtxoReference = starterTokenUtxoReference,
             mintScriptUtxoReference = mintScriptUtxoReference,
-            signatures = mintingRepository.signTransactionDummy(signingKeys.size)
+            signatures = mintingRepository.signTransactionDummy(signingKeys)
         )
 
         println("transactionId: ${response.transactionId}")

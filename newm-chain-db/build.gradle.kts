@@ -42,7 +42,7 @@ dependencies {
 
     implementation(Dependencies.HikariCP.ALL)
     implementation(Dependencies.PostgreSQL.ALL)
-    implementation(Dependencies.FlywayDB.ALL)
+    implementation(Dependencies.FlywayDB.CORE)
     implementation(Dependencies.Caffeine.ALL)
 
     implementation(Dependencies.Cbor.CBOR)

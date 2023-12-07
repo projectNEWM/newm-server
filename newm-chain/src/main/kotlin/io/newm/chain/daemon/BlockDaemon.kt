@@ -88,15 +88,22 @@ class BlockDaemon(
     private val port by lazy { environment.getConfigInt("ogmios.port") }
     private val secure by lazy { environment.getConfigBoolean("ogmios.secure") }
     private val syncRawTxns by lazy { environment.getConfigBoolean("newmchain.syncRawTxns") }
+    private val pruneUtxos by lazy { environment.getConfigBoolean("newmchain.pruneUtxos") }
 
-    val rollForwardFlow = MutableSharedFlow<RollForwardData>(
+    private val rollForwardFlow = MutableSharedFlow<RollForwardData>(
         replay = 0,
         extraBufferCapacity = 0,
         onBufferOverflow = BufferOverflow.SUSPEND
     )
 
+    val committedRollForwardFlow = MutableSharedFlow<RollForwardData>(
+        replay = 0,
+        extraBufferCapacity = 20_000,
+        onBufferOverflow = BufferOverflow.SUSPEND
+    )
+
     private var blockBufferSize = 1
-    private val blockBuffer: MutableList<Block> = mutableListOf()
+    private val blockBuffer: MutableList<RollForwardData> = mutableListOf()
 
     private var tipBlockHeight = 0L
 
@@ -262,13 +269,13 @@ class BlockDaemon(
                 val blockHeight = rollForward.block.header.blockHeight
                 tipBlockHeight = max(blockHeight, rollForward.tip.blockNo)
                 val isTip = blockHeight == tipBlockHeight
-                processBlock(rollForward.block, isTip)
+                processBlock(rollForward, isTip)
             }
         }
     }
 
-    private suspend fun processBlock(block: Block, isTip: Boolean) {
-        blockBuffer.add(block)
+    private suspend fun processBlock(rollForwardData: RollForwardData, isTip: Boolean) {
+        blockBuffer.add(rollForwardData)
         if (blockBuffer.size == blockBufferSize || isTip) {
             // Create a copy of the list
             val blocksToCommit = blockBuffer.toMutableList()
@@ -280,7 +287,7 @@ class BlockDaemon(
     }
 
     private var lastLoggedCommit = Instant.EPOCH
-    private suspend fun commitBlocks(blocksToCommit: List<Block>, isTip: Boolean) {
+    private suspend fun commitBlocks(blocksToCommit: List<RollForwardData>, isTip: Boolean) {
 //        if (!isTip) {
 //            log.warn("starting commitBlocks()...")
 //        }
@@ -293,8 +300,8 @@ class BlockDaemon(
         measureTimeMillis {
             newSuspendedTransaction {
                 warnLongQueriesDuration = 1000L
-                val firstBlock = blocksToCommit.first()
-                val lastBlock = blocksToCommit.last()
+                val firstBlock = blocksToCommit.first().block
+                val lastBlock = blocksToCommit.last().block
                 rollbackTime += measureTimeMillis {
                     chainRepository.rollback(firstBlock.header.blockHeight)
                     ledgerRepository.doRollback(firstBlock.header.blockHeight)
@@ -302,7 +309,8 @@ class BlockDaemon(
                     NativeAssetMonitorLogTable.deleteWhere { blockNumber greaterEq firstBlock.header.blockHeight }
                 }
 
-                blocksToCommit.forEach { block ->
+                blocksToCommit.forEach { rollForwardData ->
+                    val block = rollForwardData.block
 //                    if (block.header.blockHeight <= 60) {
 //                        log.warn("block: $block")
 //                    }
@@ -396,23 +404,24 @@ class BlockDaemon(
                     }
                 }
 
-                val latestBlock = blocksToCommit.last()
                 // Prune any old spent utxos we don't need any longer
-                pruneTime = measureTimeMillis {
-                    // only prune every 10000 blocks
-                    if (latestBlock.header.blockHeight % 10_000L == 0L) {
-                        ledgerRepository.pruneSpent(latestBlock.header.slot)
+                if (pruneUtxos) {
+                    pruneTime = measureTimeMillis {
+                        // only prune every 10000 blocks
+                        if (lastBlock.header.blockHeight % 10_000L == 0L) {
+                            ledgerRepository.pruneSpent(lastBlock.header.slot)
+                        }
                     }
                 }
             }
-
-            // Emit the blocks to the flow
-            blocksToCommit.forEach { confirmedBlockFlow.emit(it) }
+            // Emit the blocks to the flows
+            blocksToCommit.forEach { committedRollForwardFlow.emit(it) }
+            blocksToCommit.forEach { confirmedBlockFlow.emit(it.block) }
         }.also { totalTime ->
             val now = Instant.now()
             val tenSecondsAgo = now.minusSeconds(10L)
             if (isTip || tenSecondsAgo.isAfter(lastLoggedCommit)) {
-                val blockHeight = blocksToCommit.last().header.blockHeight
+                val blockHeight = blocksToCommit.last().block.header.blockHeight
                 val percent = floor(blockHeight.toDouble() / tipBlockHeight.toDouble() * 10000.0) / 100.0
                 log.info("commitBlock: block $blockHeight of $tipBlockHeight: %.2f%% committed".format(percent))
                 lastLoggedCommit = now
