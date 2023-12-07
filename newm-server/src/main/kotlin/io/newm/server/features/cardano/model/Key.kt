@@ -1,5 +1,6 @@
 package io.newm.server.features.cardano.model
 
+import com.firehose.model.CliKey
 import com.firehose.model.CliKeyPair
 import com.google.iot.cbor.CborArray
 import com.google.iot.cbor.CborByteString
@@ -67,6 +68,23 @@ data class Key(
 
     fun requiredSigner(): ByteArray {
         return Bech32.decode(address).bytes.copyOfRange(1, 29)
+    }
+
+    fun toCliKeyPair(name: String): CliKeyPair {
+        return CliKeyPair(
+            name = name,
+            skey = CliKey(
+                type = "PaymentSigningKeyShelley_ed25519",
+                description = "Payment Signing Key",
+                cborHex = CborByteString.create(skey).toCborByteArray().toHexString(),
+            ),
+            vkey = CliKey(
+                type = "PaymentVerificationKeyShelley_ed25519",
+                description = "Payment Verification Key",
+                cborHex = CborByteString.create(vkey).toCborByteArray().toHexString(),
+            )
+
+        )
     }
 
     companion object {
