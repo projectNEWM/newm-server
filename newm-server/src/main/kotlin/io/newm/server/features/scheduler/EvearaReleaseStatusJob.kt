@@ -97,10 +97,12 @@ class EvearaReleaseStatusJob : Job {
                     }
                 }
             } catch (e: Exception) {
-                log.error("Error in EvearaReleaseStatusJob: ${context.mergedJobDataMap}", e)
+                val errorMessage = "Error in EvearaReleaseStatusJob: ${context.mergedJobDataMap}"
+                log.error(errorMessage, e)
                 songRepository.updateSongMintingStatus(
                     songId = songId,
-                    mintingStatus = MintingStatus.SubmittedForDistributionException
+                    mintingStatus = MintingStatus.SubmittedForDistributionException,
+                    errorMessage = "$errorMessage: ${e.message}",
                 )
 
                 // Cancel this job's future executions
