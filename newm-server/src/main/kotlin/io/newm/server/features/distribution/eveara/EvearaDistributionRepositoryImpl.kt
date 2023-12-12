@@ -1453,7 +1453,7 @@ class EvearaDistributionRepositoryImpl(
         val desiredLabelName = song.phonographicCopyrightOwner ?: user.companyOrStageOrFullName
         val getUserLabelsResponse = getUserLabel(user)
         if (getUserLabelsResponse.totalRecords > 1) {
-            val existingLabel = getUserLabelsResponse.userLabelData!!.first { it.name != "NEWM" } // TODO: FIX hardcoding
+            val existingLabel = getUserLabelsResponse.userLabelData.first { it.name != "NEWM" } // TODO: FIX hardcoding
             log.info { "Found existing distribution label ${user.email} with id ${existingLabel.labelId}, name ${existingLabel.name}" }
             if (user.distributionLabelId == null) {
                 user.distributionLabelId = existingLabel.labelId
