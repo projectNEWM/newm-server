@@ -134,7 +134,16 @@ class EvearaDistributionRepositoryImpl(
     private val amazonS3: AmazonS3 by inject()
     private val applicationEnvironment: ApplicationEnvironment by inject()
     private val evearaServer by lazy { applicationEnvironment.getConfigString(CONFIG_KEY_EVEARA_SERVER) }
-    private val evearaApiBaseUrl by lazy { "https://$evearaServer/api/v2.1" }
+    private val evearaApiBaseUrl by lazy {
+        if (evearaServer == "api.eveara.com") {
+            // mainnet
+            "https://$evearaServer/v2.1"
+        } else {
+            // staging
+            "https://$evearaServer/api/v2.1"
+        }
+    }
+
     private suspend fun evearaClientId() =
         applicationEnvironment.getSecureConfigString(CONFIG_KEY_EVEARA_CLIENT_ID)
 
@@ -1197,7 +1206,8 @@ class EvearaDistributionRepositoryImpl(
                     )
 
                     val currentOutletsMap =
-                        collabDistributionArtistsMap[distributionArtistId]?.outlets?.filter { it.profileUrl.isNotBlank() }?.associateBy { it.name }.orEmpty()
+                        collabDistributionArtistsMap[distributionArtistId]?.outlets?.filter { it.profileUrl.isNotBlank() }
+                            ?.associateBy { it.name }.orEmpty()
                     if (currentOutletsMap["Spotify"]?.profileUrl != collabUser.spotifyProfile?.orNull() ||
                         currentOutletsMap["SoundCloud"]?.profileUrl != collabUser.soundCloudProfile?.orNull() ||
                         currentOutletsMap["Apple"]?.profileUrl != collabUser.appleMusicProfile?.orNull()
