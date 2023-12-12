@@ -12,5 +12,5 @@ data class GetUserLabelResponse(
     @SerialName("total_records")
     val totalRecords: Long,
     @SerialName("data")
-    val userLabelData: List<UserLabelData>? = null
+    val userLabelData: List<UserLabelData>
 )
