@@ -18,6 +18,8 @@ import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.ktx.limit
 import io.newm.server.ktx.offset
+import io.newm.server.ktx.requiredQueryParam
+import io.newm.shared.ktx.error
 import io.newm.shared.ktx.get
 import io.newm.shared.ktx.post
 import org.koin.core.parameter.parametersOf
@@ -94,6 +96,7 @@ fun Routing.createCardanoRoutes() {
             }
         }
 
+        // TODO: Remove next route after Mobile App migration
         get("/v1/cardano/nfts") {
             try {
                 val xpubKey = parameters["xpub"] ?: throw IllegalArgumentException("xpub is required!")
@@ -101,6 +104,20 @@ fun Routing.createCardanoRoutes() {
                 respond(response)
             } catch (e: Exception) {
                 log.error("Failed to get wallet NFTs: ${e.message}")
+                throw e
+            }
+        }
+
+        get("/v1/cardano/nft/songs") {
+            try {
+                respond(
+                    cardanoRepository.getWalletNFTSongs(
+                        xpubKey = request.requiredQueryParam("xpub"),
+                        includeLegacy = parameters["legacy"]?.toBoolean() ?: false
+                    )
+                )
+            } catch (e: Exception) {
+                log.error(e) { "Failed to get NFT Songs" }
                 throw e
             }
         }

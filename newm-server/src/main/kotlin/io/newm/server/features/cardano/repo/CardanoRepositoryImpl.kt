@@ -43,7 +43,9 @@ import io.newm.server.features.cardano.model.EncryptionRequest
 import io.newm.server.features.cardano.model.GetWalletSongsResponse
 import io.newm.server.features.cardano.model.Key
 import io.newm.server.features.cardano.model.LedgerAssetMetadata
+import io.newm.server.features.cardano.model.NFTSong
 import io.newm.server.features.cardano.model.WalletSong
+import io.newm.server.features.cardano.parser.toNFTSongs
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongFilters
 import io.newm.server.features.song.repo.SongRepository
@@ -313,6 +315,7 @@ internal class CardanoRepositoryImpl(
         )
     }
 
+    // TODO: Remove next function after Mobile App migration
     override suspend fun getWalletMusicNFTs(xpubKey: String): List<List<LedgerAssetMetadata>> {
         val queryWalletControlledLiveUtxosResponse = client.queryWalletControlledLiveUtxos(
             walletRequest {
@@ -342,6 +345,32 @@ internal class CardanoRepositoryImpl(
                 ledgerAssetMetadataItem.toLedgerAssetMetadata()
             }.orEmpty()
         }
+    }
+
+    override suspend fun getWalletNFTSongs(xpubKey: String, includeLegacy: Boolean): List<NFTSong> {
+        val queryWalletControlledLiveUtxosResponse = client.queryWalletControlledLiveUtxos(
+            walletRequest {
+                this.accountXpubKey = xpubKey
+            }
+        )
+
+        val assets = queryWalletControlledLiveUtxosResponse.addressUtxosList.flatMap { addressUtxos ->
+            addressUtxos.utxosList.flatMap { utxo -> utxo.nativeAssetsList }
+        }.toSet()
+
+        val nftSongs = mutableListOf<NFTSong>()
+        for (asset in assets) {
+            val metadata = client.queryLedgerAssetMetadataListByNativeAsset(
+                queryByNativeAssetRequest {
+                    policy = asset.policy
+                    name = asset.name
+                }
+            ).ledgerAssetMetadataList
+            if (includeLegacy || metadata.any { it.key.equals("music_metadata_version", true) }) {
+                nftSongs += metadata.toNFTSongs(asset)
+            }
+        }
+        return nftSongs
     }
 
     private suspend fun encryptKmsBytes(bytes: ByteArray): String {
