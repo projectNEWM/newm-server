@@ -11,6 +11,7 @@ import io.newm.server.features.cardano.model.EncryptionRequest
 import io.newm.server.features.cardano.model.GetWalletSongsResponse
 import io.newm.server.features.cardano.model.Key
 import io.newm.server.features.cardano.model.LedgerAssetMetadata
+import io.newm.server.features.cardano.model.NFTSong
 import java.util.UUID
 
 interface CardanoRepository {
@@ -28,5 +29,6 @@ interface CardanoRepository {
     suspend fun queryAdaUSDPrice(): Long
     suspend fun <T> withLock(block: suspend () -> T): T
     suspend fun getWalletSongs(request: List<String>, offset: Int, limit: Int): GetWalletSongsResponse
-    suspend fun getWalletMusicNFTs(xpubKey: String): List<List<LedgerAssetMetadata>>
+    suspend fun getWalletMusicNFTs(xpubKey: String): List<List<LedgerAssetMetadata>> // TODO: Remove after Mobile App migration
+    suspend fun getWalletNFTSongs(xpubKey: String, includeLegacy: Boolean): List<NFTSong>
 }
