@@ -3,6 +3,7 @@ package io.newm.server.features.cardano.parser
 import io.ktor.utils.io.core.toByteArray
 import io.newm.chain.grpc.LedgerAssetMetadataItem
 import io.newm.chain.grpc.NativeAsset
+import io.newm.chain.util.hexStringToAssetName
 import io.newm.server.features.cardano.model.NFTSong
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.debug
@@ -15,7 +16,8 @@ import kotlin.time.Duration
 private val logger: Logger by inject { parametersOf("NFTSongParser") }
 
 fun List<LedgerAssetMetadataItem>.toNFTSongs(asset: NativeAsset): List<NFTSong> {
-    logger.debug { "Parsing PolicyID: ${asset.policy}, assetName: ${asset.name}" }
+    val assetName = asset.name.hexStringToAssetName()
+    logger.debug { "Parsing PolicyID: ${asset.policy}, assetName: $assetName" }
 
     var image: String? = null
     var songTitle: String? = null
@@ -76,7 +78,7 @@ fun List<LedgerAssetMetadataItem>.toNFTSongs(asset: NativeAsset): List<NFTSong> 
             NFTSong(
                 id = UUID.nameUUIDFromBytes(file.src.toByteArray()),
                 policyId = asset.policy,
-                assetName = asset.name,
+                assetName = assetName,
                 amount = asset.amount.toLong(),
                 title = title,
                 audioUrl = file.src.toResourceUrl(),
