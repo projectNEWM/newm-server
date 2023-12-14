@@ -4,7 +4,9 @@ import com.google.iot.cbor.CborByteString
 import com.google.iot.cbor.CborInteger
 import com.google.iot.cbor.CborMap
 import io.newm.chain.grpc.NativeAsset
+import io.newm.chain.grpc.copy
 import io.newm.chain.util.hexToByteArray
+import java.math.BigInteger
 import java.util.*
 
 /**
@@ -36,6 +38,29 @@ fun List<NativeAsset>.toNativeAssetCborMap(): CborMap? {
             )
         }
     )
+}
+
+/**
+ * Convert into a List where amounts of the same asset type are summed.
+ */
+fun List<NativeAsset>.mergeAmounts(): List<NativeAsset> {
+    val map = mutableMapOf<String, Pair<NativeAsset, BigInteger>>()
+    for (asset in this) {
+        val key = asset.policy + asset.name
+        var amount = asset.amount.toBigInteger()
+        map[key]?.second?.let { amount += it }
+        map[key] = asset to amount
+    }
+    return map.values.map {
+        val amount = it.second.toString()
+        if (amount == it.first.amount) {
+            it.first
+        } else {
+            it.first.copy {
+                this.amount = amount
+            }
+        }
+    }
 }
 
 /**
