@@ -8,6 +8,7 @@ import io.newm.chain.grpc.NativeAsset
 import io.newm.chain.grpc.NewmChainGrpcKt.NewmChainCoroutineStub
 import io.newm.chain.grpc.copy
 import io.newm.chain.grpc.queryByNativeAssetRequest
+import io.newm.chain.util.assetNameToHexString
 import io.newm.server.BaseApplicationTests
 import io.newm.server.features.cardano.model.NFTSong
 import kotlinx.coroutines.runBlocking
@@ -30,7 +31,7 @@ class NFTSongParserTests : BaseApplicationTests() {
         val expectedSong = NFTSong(
             id = "ar://P141o0RDAjSYlVQgTDgHNAORQTkMYIVCprmD_dKMVss".toId(),
             policyId = "46e607b3046a34c95e7c29e47047618dbf5e10de777ba56c590cfd5c",
-            assetName = "4e45574d5f30",
+            assetName = "NEWM_0",
             amount = 1,
             title = "Bigger Dreams",
             imageUrl = "https://arweave.net/CuPFY2Ln7yUUhJX09G530kdPf93eGhAVlhjrtR7Jh5w",
@@ -50,7 +51,7 @@ class NFTSongParserTests : BaseApplicationTests() {
         val expectedSong = NFTSong(
             id = "ar://QpgjmWmAHNeRVgx_Ylwvh16i3aWd8BBgyq7f16gaUu0".toId(),
             policyId = "46e607b3046a34c95e7c29e47047618dbf5e10de777ba56c590cfd5c",
-            assetName = "4e45574d5f35",
+            assetName = "NEWM_5",
             amount = 1,
             title = "Daisuke",
             imageUrl = "https://arweave.net/GlMlqHIPjwUtlPUfQxDdX1jWSjlKK1BCTBIekXgA66A",
@@ -70,7 +71,7 @@ class NFTSongParserTests : BaseApplicationTests() {
         val expectedSong = NFTSong(
             id = "ipfs://QmaiQ2mHc2LhkApA5cXPk8WfV6923ndgVDQoAtdHsSkXWE".toId(),
             policyId = "7ad9d1ddb00adee7939f8027e5258a561878fff8761993afb311e56f",
-            assetName = "4f5353445245414d4c4f4649",
+            assetName = "OSSDREAMLOFI",
             amount = 1,
             title = "Smoke and Fire - Dream Lofi",
             imageUrl = "https://ipfs.io/ipfs/QmUa8NEsbSRTsdsKSqkHb8ZgEWcoBppwA3RfecDhFGkG6f",
@@ -90,7 +91,7 @@ class NFTSongParserTests : BaseApplicationTests() {
         val expectedSong = NFTSong(
             id = "ipfs://QmNPg1BTnyouUL1uiHyWc4tQZXH5anEz4jmua7iidwEbiE".toId(),
             policyId = "123da5e4ef337161779c6729d2acd765f7a33a833b2a21a063ef65a5",
-            assetName = "5369636b43697479343432",
+            assetName = "SickCity442",
             amount = 1,
             title = "Paper Route",
             imageUrl = "https://ipfs.io/ipfs/QmNNuBTgPwqoWyNMtSwtQtb8ycVF1TrkrsUCGaFWqXvjkr",
@@ -108,7 +109,7 @@ class NFTSongParserTests : BaseApplicationTests() {
     @Test
     fun `Jamison Daniel-Studio Life, Legacy, Multiple`() = runBlocking {
         val policyId = "fb818dd32539209755211ab01cde517b044a742f1bc52e5cc57b25d9"
-        val assetName = "4a616d69736f6e44616e69656c53747564696f4c696665323138"
+        val assetName = "JamisonDanielStudioLife218"
         val expectedSongs = listOf(
             NFTSong(
                 id = "ipfs://QmduC7pkR14K3mhmvEazoyzGsMWVF4ji45HZ1XfEracKLv".toId(),
@@ -240,15 +241,16 @@ class NFTSongParserTests : BaseApplicationTests() {
         policyId: String,
         assetName: String
     ): List<NFTSong> {
+        val assetNameHex = assetName.assetNameToHexString()
         val asset = NativeAsset.getDefaultInstance().copy {
             policy = policyId
-            name = assetName
+            name = assetNameHex
             amount = "1"
         }
         return queryLedgerAssetMetadataListByNativeAsset(
             queryByNativeAssetRequest {
                 policy = policyId
-                name = assetName
+                name = assetNameHex
             }
         ).ledgerAssetMetadataList.toNFTSongs(asset)
     }

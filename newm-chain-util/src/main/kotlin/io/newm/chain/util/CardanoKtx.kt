@@ -82,6 +82,16 @@ fun String.assetNameToHexString(): String {
     }
 }
 
+fun String.hexStringToAssetName(): String {
+    return if (hexRegex.matches(this)) {
+        // convert it
+        String(this.hexToByteArray())
+    } else {
+        // it's already assetName
+        this
+    }
+}
+
 fun Int.toHexString(): String = Integer.toHexString(this)
 fun Long.toHexString(): String = java.lang.Long.toHexString(this)
 
