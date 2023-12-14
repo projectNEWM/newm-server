@@ -15,6 +15,9 @@ import kotlin.time.Duration
 
 private val logger: Logger by inject { parametersOf("NFTSongParser") }
 
+// Used to remove numeric prefixes on legacy SickCity NFT fields ( e.g., "1. Artist Name" and "02. Song Title")
+private val legacyPrefixRegex = "^\\d+\\.\\s*".toRegex()
+
 fun List<LedgerAssetMetadataItem>.toNFTSongs(asset: NativeAsset): List<NFTSong> {
     val assetName = asset.name.hexStringToAssetName()
     logger.debug { "Parsing PolicyID: ${asset.policy}, assetName: $assetName" }
@@ -52,7 +55,7 @@ fun List<LedgerAssetMetadataItem>.toNFTSongs(asset: NativeAsset): List<NFTSong> 
     }
 
     for (item in this) {
-        when (item.key) {
+        when (item.key.replace(legacyPrefixRegex, "")) {
             "image" -> {
                 image = item.value
             }
@@ -66,13 +69,28 @@ fun List<LedgerAssetMetadataItem>.toNFTSongs(asset: NativeAsset): List<NFTSong> 
                 item.childrenList.forEach(parseSongItem)
             }
 
+            "Artist", "Artist Name" -> {
+                // SickCity Legacy
+                artists += listOf(item.value)
+            }
+
+            "Song Title" -> {
+                // SickCity Legacy
+                songTitle = item.value
+            }
+
+            "Genre", "Sub-Genre" -> {
+                // SickCity Legacy
+                genres += item.value
+            }
+
             else -> parseSongItem(item)
         }
     }
     return files.mapNotNull { file ->
         val title = file.songTitle ?: songTitle ?: file.name
         if (title == null || file.src == null || image == null) {
-            logger.warn { "Skipped invalid PolicyID: ${asset.policy}, assetName: ${asset.name}, title = $title, src: ${file.src}, image = $image" }
+            logger.warn { "Skipped invalid PolicyID: ${asset.policy}, assetName: $assetName, title: $title, src: ${file.src}, image: $image" }
             null
         } else {
             NFTSong(

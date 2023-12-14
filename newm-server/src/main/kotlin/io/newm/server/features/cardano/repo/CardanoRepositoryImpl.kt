@@ -55,6 +55,7 @@ import io.newm.shared.koin.inject
 import io.newm.shared.ktx.debug
 import io.newm.shared.ktx.isValidHex
 import io.newm.shared.ktx.isValidPassword
+import io.newm.txbuilder.ktx.mergeAmounts
 import io.newm.txbuilder.ktx.toNativeAssetMap
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -356,7 +357,7 @@ internal class CardanoRepositoryImpl(
 
         val assets = queryWalletControlledLiveUtxosResponse.addressUtxosList.flatMap { addressUtxos ->
             addressUtxos.utxosList.flatMap { utxo -> utxo.nativeAssetsList }
-        }.toSet()
+        }.mergeAmounts()
 
         val nftSongs = mutableListOf<NFTSong>()
         for (asset in assets) {

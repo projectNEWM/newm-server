@@ -107,6 +107,66 @@ class NFTSongParserTests : BaseApplicationTests() {
     }
 
     @Test
+    fun `SickCity343, Legacy, Single`() = runBlocking {
+        val expectedSong = NFTSong(
+            id = "ipfs://QmcBtkxaKsFK3wvNHxULhuRhzaabqoX6Ryor4PvnaqcUSb".toId(),
+            policyId = "123da5e4ef337161779c6729d2acd765f7a33a833b2a21a063ef65a5",
+            assetName = "SickCity343",
+            amount = 1,
+            title = "It Gets Better",
+            imageUrl = "https://ipfs.io/ipfs/QmY6mAm1L6G4XSDtUKiNdYPkGXAKXXU4HXzEthxbMhzr8U",
+            audioUrl = "https://ipfs.io/ipfs/QmcBtkxaKsFK3wvNHxULhuRhzaabqoX6Ryor4PvnaqcUSb",
+            duration = -1L,
+            artists = listOf("Memellionaires"),
+            genres = listOf("Pop-Rock", "Alternative"),
+            moods = emptyList()
+        )
+        val actualSongs = buildClient().queryNFTSongs(expectedSong.policyId, expectedSong.assetName)
+        assertThat(actualSongs.size).isEqualTo(1)
+        assertThat(actualSongs.first()).isEqualTo(expectedSong)
+    }
+
+    @Test
+    fun `SickCity344, Legacy, Single`() = runBlocking {
+        val expectedSong = NFTSong(
+            id = "ipfs://QmY9LRJoKMgPbEc2hvvREWP7UBzYuZaqaWacAkp3HKFUzb".toId(),
+            policyId = "123da5e4ef337161779c6729d2acd765f7a33a833b2a21a063ef65a5",
+            assetName = "SickCity344",
+            amount = 1,
+            title = "4EVR",
+            imageUrl = "https://ipfs.io/ipfs/QmSXPyRe9KzmY18R64pdzMyvMiacu1C8eosZWepw1Eexme",
+            audioUrl = "https://ipfs.io/ipfs/QmY9LRJoKMgPbEc2hvvREWP7UBzYuZaqaWacAkp3HKFUzb",
+            duration = -1L,
+            artists = listOf("Irie Reyna"),
+            genres = listOf("R&B", "Soul"),
+            moods = emptyList()
+        )
+        val actualSongs = buildClient().queryNFTSongs(expectedSong.policyId, expectedSong.assetName)
+        assertThat(actualSongs.size).isEqualTo(1)
+        assertThat(actualSongs.first()).isEqualTo(expectedSong)
+    }
+
+    @Test
+    fun `SickCity349, Legacy, Single`() = runBlocking {
+        val expectedSong = NFTSong(
+            id = "ipfs://QmczfeP54gZgjMVnbe2mLrBjQbkQu3zuA1zYKpgSVzzKBr".toId(),
+            policyId = "123da5e4ef337161779c6729d2acd765f7a33a833b2a21a063ef65a5",
+            assetName = "SickCity349",
+            amount = 1,
+            title = "You, I, and The Ocean",
+            imageUrl = "https://ipfs.io/ipfs/QmdZtxeKLGTXGkpcWkWznCZW7qsyiGA78dFcDwy9cA4D1d",
+            audioUrl = "https://ipfs.io/ipfs/QmczfeP54gZgjMVnbe2mLrBjQbkQu3zuA1zYKpgSVzzKBr",
+            duration = -1L,
+            artists = listOf("Sam Katman"),
+            genres = listOf("Singer-Songwriter", "Folk Pop"),
+            moods = emptyList()
+        )
+        val actualSongs = buildClient().queryNFTSongs(expectedSong.policyId, expectedSong.assetName)
+        assertThat(actualSongs.size).isEqualTo(1)
+        assertThat(actualSongs.first()).isEqualTo(expectedSong)
+    }
+
+    @Test
     fun `Jamison Daniel-Studio Life, Legacy, Multiple`() = runBlocking {
         val policyId = "fb818dd32539209755211ab01cde517b044a742f1bc52e5cc57b25d9"
         val assetName = "JamisonDanielStudioLife218"
