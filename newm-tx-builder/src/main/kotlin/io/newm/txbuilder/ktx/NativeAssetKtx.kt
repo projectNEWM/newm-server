@@ -71,11 +71,12 @@ private fun List<NativeAsset>.toSortedNativeAssetMap(): SortedMap<String, List<N
     this.forEach { nativeAsset ->
         val updatedNativeAssets: List<NativeAsset> = nativeAssetMap[nativeAsset.policy]?.let { nativeAssets ->
             nativeAssets.find { it.name == nativeAsset.name }?.let { na ->
-                val prevAmount = na.amount
                 val mutableList = nativeAssets.toMutableList()
                 mutableList.remove(na)
                 mutableList.add(
-                    na.toBuilder().setAmount(na.amount + prevAmount).build()
+                    na.toBuilder()
+                        .setAmount((na.amount.toBigInteger() + nativeAsset.amount.toBigInteger()).toString())
+                        .build()
                 )
                 mutableList
             } ?: (nativeAssets + nativeAsset)
