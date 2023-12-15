@@ -48,7 +48,13 @@ class IdenfyRepositoryImpl(
                     username = getSecureString("apiKey"),
                     password = getSecureString("apiSecret"),
                 )
-                setBody(IdenfyCreateSessionRequest(userId.toString()))
+                setBody(
+                    IdenfyCreateSessionRequest(
+                        clientId = userId.toString(),
+                        successUrl = getString("successUrl"),
+                        errorUrl = getString("errorUrl")
+                    )
+                )
             }.checkedBody()
         }
     }

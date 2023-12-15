@@ -13,6 +13,7 @@ import io.newm.server.BaseApplicationTests
 import io.newm.server.features.cardano.model.NFTSong
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Disabled
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import java.util.UUID
 
@@ -25,6 +26,13 @@ private const val JWT_TOKEN = "<JWT_TOKEN_HERE_DO_NOT_COMMIT>"
 
 @Disabled("Disabled - require JWT Token")
 class NFTSongParserTests : BaseApplicationTests() {
+
+    private lateinit var newmChainClient: NewmChainCoroutineStub
+
+    @BeforeAll
+    fun init() {
+        newmChainClient = buildClient()
+    }
 
     @Test
     fun `NEWM_0 - MURS Bigger Dreams, CIP-60 V1, Single`() = runBlocking {
@@ -41,7 +49,7 @@ class NFTSongParserTests : BaseApplicationTests() {
             genres = listOf("Hip Hop", "Rap"),
             moods = listOf("Feel Good")
         )
-        val actualSongs = buildClient().queryNFTSongs(expectedSong.policyId, expectedSong.assetName)
+        val actualSongs = newmChainClient.queryNFTSongs(expectedSong.policyId, expectedSong.assetName)
         assertThat(actualSongs.size).isEqualTo(1)
         assertThat(actualSongs.first()).isEqualTo(expectedSong)
     }
@@ -61,7 +69,7 @@ class NFTSongParserTests : BaseApplicationTests() {
             genres = listOf("Pop", "House", "Tribal"),
             moods = listOf("Spiritual")
         )
-        val actualSongs = buildClient().queryNFTSongs(expectedSong.policyId, expectedSong.assetName)
+        val actualSongs = newmChainClient.queryNFTSongs(expectedSong.policyId, expectedSong.assetName)
         assertThat(actualSongs.size).isEqualTo(1)
         assertThat(actualSongs.first()).isEqualTo(expectedSong)
     }
@@ -81,7 +89,7 @@ class NFTSongParserTests : BaseApplicationTests() {
             genres = listOf("lofi", "electronic"),
             moods = emptyList()
         )
-        val actualSongs = buildClient().queryNFTSongs(expectedSong.policyId, expectedSong.assetName)
+        val actualSongs = newmChainClient.queryNFTSongs(expectedSong.policyId, expectedSong.assetName)
         assertThat(actualSongs.size).isEqualTo(1)
         assertThat(actualSongs.first()).isEqualTo(expectedSong)
     }
@@ -101,7 +109,7 @@ class NFTSongParserTests : BaseApplicationTests() {
             genres = listOf("rap", "hip hop"),
             moods = emptyList()
         )
-        val actualSongs = buildClient().queryNFTSongs(expectedSong.policyId, expectedSong.assetName)
+        val actualSongs = newmChainClient.queryNFTSongs(expectedSong.policyId, expectedSong.assetName)
         assertThat(actualSongs.size).isEqualTo(1)
         assertThat(actualSongs.first()).isEqualTo(expectedSong)
     }
@@ -121,7 +129,7 @@ class NFTSongParserTests : BaseApplicationTests() {
             genres = listOf("Pop-Rock", "Alternative"),
             moods = emptyList()
         )
-        val actualSongs = buildClient().queryNFTSongs(expectedSong.policyId, expectedSong.assetName)
+        val actualSongs = newmChainClient.queryNFTSongs(expectedSong.policyId, expectedSong.assetName)
         assertThat(actualSongs.size).isEqualTo(1)
         assertThat(actualSongs.first()).isEqualTo(expectedSong)
     }
@@ -141,7 +149,7 @@ class NFTSongParserTests : BaseApplicationTests() {
             genres = listOf("R&B", "Soul"),
             moods = emptyList()
         )
-        val actualSongs = buildClient().queryNFTSongs(expectedSong.policyId, expectedSong.assetName)
+        val actualSongs = newmChainClient.queryNFTSongs(expectedSong.policyId, expectedSong.assetName)
         assertThat(actualSongs.size).isEqualTo(1)
         assertThat(actualSongs.first()).isEqualTo(expectedSong)
     }
@@ -161,7 +169,7 @@ class NFTSongParserTests : BaseApplicationTests() {
             genres = listOf("Singer-Songwriter", "Folk Pop"),
             moods = emptyList()
         )
-        val actualSongs = buildClient().queryNFTSongs(expectedSong.policyId, expectedSong.assetName)
+        val actualSongs = newmChainClient.queryNFTSongs(expectedSong.policyId, expectedSong.assetName)
         assertThat(actualSongs.size).isEqualTo(1)
         assertThat(actualSongs.first()).isEqualTo(expectedSong)
     }
@@ -290,7 +298,7 @@ class NFTSongParserTests : BaseApplicationTests() {
             ),
         )
 
-        val actualSongs = buildClient().queryNFTSongs(policyId, assetName)
+        val actualSongs = newmChainClient.queryNFTSongs(policyId, assetName)
         assertThat(actualSongs.size).isEqualTo(9)
         assertThat(actualSongs).isEqualTo(expectedSongs)
     }

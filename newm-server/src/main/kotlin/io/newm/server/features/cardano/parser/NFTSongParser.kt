@@ -55,7 +55,7 @@ fun List<LedgerAssetMetadataItem>.toNFTSongs(asset: NativeAsset): List<NFTSong> 
     }
 
     for (item in this) {
-        when (item.key.replace(legacyPrefixRegex, "")) {
+        when (item.key.replaceFirst(legacyPrefixRegex, "")) {
             "image" -> {
                 image = item.value
             }
@@ -104,7 +104,7 @@ fun List<LedgerAssetMetadataItem>.toNFTSongs(asset: NativeAsset): List<NFTSong> 
                 duration = (file.songDuration ?: songDuration)?.let { Duration.parse(it).inWholeSeconds } ?: -1L,
                 artists = file.artists ?: artists.toList(),
                 genres = file.genres ?: genres.toList(),
-                moods = file.mood?.let { listOf(it) } ?: moods.toList()
+                moods = file.mood?.let(::listOf) ?: moods.toList()
             )
         }
     }
