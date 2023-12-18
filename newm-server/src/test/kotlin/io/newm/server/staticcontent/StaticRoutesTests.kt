@@ -22,4 +22,14 @@ class StaticRoutesTests : BaseApplicationTests() {
         val content = javaClass.getResource("/static/predefined-moods.json").readText()
         assertThat(response.body<String>()).isEqualTo(content)
     }
+
+    @Test
+    fun testGetStreamTokenPolicyIds() = runBlocking {
+        val response = client.get("contents/stream-token-policy-ids.json")
+        assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+        assertThat(response.contentType()).isEqualTo(ContentType.Application.Json)
+
+        val content = javaClass.getResource("/static/stream-token-policy-ids.json").readText()
+        assertThat(response.body<String>()).isEqualTo(content)
+    }
 }
