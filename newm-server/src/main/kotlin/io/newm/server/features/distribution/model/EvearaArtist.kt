@@ -10,7 +10,7 @@ data class EvearaArtist(
     @SerialName("is_active")
     val isActive: Int, // 1 == active, 0 == inactive
     @SerialName("featureArtist")
-    val featureArtist: Int,
+    val featureArtist: Int? = null,
     @SerialName("outlets")
     val outlets: List<OutletProfile>,
     @SerialName("removable")
@@ -18,9 +18,9 @@ data class EvearaArtist(
     @SerialName("name")
     val name: String,
     @SerialName("tracks")
-    val tracks: Int,
+    val tracks: Int? = null,
     @SerialName("releases")
-    val releases: Int,
+    val releases: Int? = null,
     @SerialName("country")
     val country: String,
 )
