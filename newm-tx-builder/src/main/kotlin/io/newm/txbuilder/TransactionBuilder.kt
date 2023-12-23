@@ -32,6 +32,7 @@ import io.newm.txbuilder.ktx.toNativeAssetMap
 import io.newm.txbuilder.ktx.toRedeemerTagAndIndex
 import io.newm.txbuilder.ktx.withMinUtxo
 import java.math.BigDecimal
+import java.math.BigInteger
 import java.security.SecureRandom
 import kotlin.math.ceil
 
@@ -439,10 +440,10 @@ class TransactionBuilder(
             outputUtxo.nativeAssetsList.forEach { nativeAsset ->
                 val changePolicyNativeAssets = changeNativeAssetMap[nativeAsset.policy]?.toMutableList()
                 changePolicyNativeAssets?.find { it.name == nativeAsset.name }?.let { changeNativeAsset ->
-                    val amountRemaining = changeNativeAsset.amount.toLong() - nativeAsset.amount.toLong()
-                    if (amountRemaining < 0) {
+                    val amountRemaining = changeNativeAsset.amount.toBigInteger() - nativeAsset.amount.toBigInteger()
+                    if (amountRemaining < BigInteger.ZERO) {
                         throw IllegalStateException("amountRemaining for ${nativeAsset.policy}.${nativeAsset.name} == $amountRemaining")
-                    } else if (amountRemaining == 0L) {
+                    } else if (amountRemaining == BigInteger.ZERO) {
                         changePolicyNativeAssets.remove(changeNativeAsset)
                         if (changePolicyNativeAssets.isEmpty()) {
                             changeNativeAssetMap.remove(nativeAsset.policy)
