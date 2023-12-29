@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test
 class HealthTest {
     @Test
     fun `healthcheck request`() = runBlocking {
-        val response = TestContext.client.get("${TestContext.baseUrl}/contents/predefined-genres.json")
+        val response = TestContext.client.get("${TestContext.baseUrl}/healthz")
         assertThat(response.status).isEqualTo(HttpStatusCode.OK)
     }
 }
