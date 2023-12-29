@@ -26,6 +26,4 @@ object ChainTable : LongIdTable(name = "chain") {
     val sigmaSignature: Column<String> = text("sigma_signature")
     val protocolMajorVersion: Column<Int> = integer("protocol_major_version")
     val protocolMinorVersion: Column<Int> = integer("protocol_minor_version")
-    val created: Column<Long> = long("created").index()
-    val processed: Column<Boolean> = bool("processed").index()
 }

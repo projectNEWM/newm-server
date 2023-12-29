@@ -27,9 +27,7 @@ object LedgerUtxosTable : LongIdTable(name = "ledger_utxos") {
 
     // when this utxo was created or spent
     val blockCreated: Column<Long> = long("block_created")
-    val slotCreated: Column<Long> = long("slot_created")
     val blockSpent: Column<Long?> = long("block_spent").nullable()
-    val slotSpent: Column<Long?> = long("slot_spent").nullable()
     val transactionSpent: Column<String?> = text("transaction_spent").nullable()
 
     // the raw cbor of this utxo entry

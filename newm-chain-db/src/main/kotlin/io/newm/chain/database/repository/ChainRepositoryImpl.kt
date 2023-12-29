@@ -110,8 +110,6 @@ class ChainRepositoryImpl : ChainRepository {
                     row[sigmaSignature] = block.sigmaSignature
                     row[protocolMajorVersion] = block.protocolMajorVersion
                     row[protocolMinorVersion] = block.protocolMinorVersion
-                    row[created] = System.currentTimeMillis()
-                    row[processed] = false
                 }.value
 
                 if (block.stakeDestAddresses.isNotEmpty()) {
@@ -162,8 +160,6 @@ class ChainRepositoryImpl : ChainRepository {
                 row[sigmaSignature] = block.sigmaSignature
                 row[protocolMajorVersion] = block.protocolMajorVersion
                 row[protocolMinorVersion] = block.protocolMinorVersion
-                row[created] = System.currentTimeMillis()
-                row[processed] = false
             }.value
             prevEtaVCache.put(block.blockNumber, newEtaV)
 

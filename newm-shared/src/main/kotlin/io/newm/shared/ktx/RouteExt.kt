@@ -23,7 +23,7 @@ inline fun Route.post(path: String, crossinline body: suspend ApplicationCall.()
 
 inline fun Route.post(crossinline body: suspend ApplicationCall.() -> Unit) = post { body(call) }
 
-inline fun Route.path(path: String, crossinline body: suspend ApplicationCall.() -> Unit) = patch(path) { body(call) }
+inline fun Route.patch(path: String, crossinline body: suspend ApplicationCall.() -> Unit) = patch(path) { body(call) }
 
 inline fun Route.patch(crossinline body: suspend ApplicationCall.() -> Unit) = patch { body(call) }
 

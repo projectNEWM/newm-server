@@ -92,7 +92,7 @@ class LedgerRepositoryImpl : LedgerRepository {
     override fun queryUtxos(address: String): Set<Utxo> = transaction {
         LedgerUtxosTable.innerJoin(LedgerTable, { ledgerId }, { LedgerTable.id }, { LedgerTable.address eq address })
             .select {
-                LedgerUtxosTable.blockSpent.isNull() and LedgerUtxosTable.slotSpent.isNull()
+                LedgerUtxosTable.blockSpent.isNull()
             }.map { row ->
                 val ledgerUtxoId = row[LedgerUtxosTable.id].value
 
@@ -129,7 +129,7 @@ class LedgerRepositoryImpl : LedgerRepository {
             { LedgerTable.id },
             { LedgerTable.stakeAddress eq address }
         ).select {
-            LedgerUtxosTable.blockSpent.isNull() and LedgerUtxosTable.slotSpent.isNull()
+            LedgerUtxosTable.blockSpent.isNull()
         }.map { row ->
             val ledgerUtxoId = row[LedgerUtxosTable.id].value
 
@@ -207,8 +207,7 @@ class LedgerRepositoryImpl : LedgerRepository {
             .select {
                 (LedgerUtxosTable.txId eq hash) and
                     (LedgerUtxosTable.txIx eq ix) and
-                    LedgerUtxosTable.blockSpent.isNull() and
-                    LedgerUtxosTable.slotSpent.isNull()
+                    LedgerUtxosTable.blockSpent.isNull()
             }.map { row ->
                 val address = row[LedgerTable.address]
                 if (address.startsWith("addr")) {
@@ -223,8 +222,7 @@ class LedgerRepositoryImpl : LedgerRepository {
         LedgerUtxosTable.innerJoin(LedgerTable, { ledgerId }, { LedgerTable.id }).select {
             (LedgerUtxosTable.txId eq hash) and
                 (LedgerUtxosTable.txIx eq ix) and
-                LedgerUtxosTable.blockSpent.isNull() and
-                LedgerUtxosTable.slotSpent.isNull()
+                LedgerUtxosTable.blockSpent.isNull()
         }.map { row ->
             val ledgerUtxoId = row[LedgerUtxosTable.id].value
 
@@ -514,7 +512,6 @@ class LedgerRepositoryImpl : LedgerRepository {
         LedgerUtxosTable.deleteWhere { blockCreated greaterEq blockNumber }
         LedgerUtxosTable.update({ LedgerUtxosTable.blockSpent greaterEq blockNumber }) {
             it[blockSpent] = null
-            it[slotSpent] = null
             it[transactionSpent] = null
         }
         StakeDelegationsTable.deleteWhere { StakeDelegationsTable.blockNumber greaterEq blockNumber }
@@ -647,14 +644,14 @@ class LedgerRepositoryImpl : LedgerRepository {
         }
     }
 
-    override fun pruneSpent(slotNumber: Long) {
-        LedgerUtxosTable.deleteWhere { slotSpent less (slotNumber - 172800L) } // 48 hours
+    override fun pruneSpent(blockNumber: Long) {
+        LedgerUtxosTable.deleteWhere { blockSpent less (blockNumber - 10_000L) } // older than 10k blocks ago
 
         // TODO: this takes forever to complete
         // LedgerTable.deleteWhere { notExists(LedgerUtxosTable.slice(LedgerUtxosTable.id).select { LedgerUtxosTable.ledgerId eq LedgerTable.id })  }
     }
 
-    override fun spendUtxos(slotNumber: Long, blockNumber: Long, spentUtxos: Set<SpentUtxo>) {
+    override fun spendUtxos(blockNumber: Long, spentUtxos: Set<SpentUtxo>) {
         var count = 0
         spentUtxos.forEach { spentUtxo ->
             count += LedgerUtxosTable.update({
@@ -662,7 +659,6 @@ class LedgerRepositoryImpl : LedgerRepository {
                     (LedgerUtxosTable.txIx eq spentUtxo.ix.toInt())
             }) { row ->
                 row[blockSpent] = blockNumber
-                row[slotSpent] = slotNumber
                 row[transactionSpent] = spentUtxo.transactionSpent
             }
         }
@@ -671,7 +667,7 @@ class LedgerRepositoryImpl : LedgerRepository {
         }
     }
 
-    override fun createUtxos(slotNumber: Long, blockNumber: Long, createdUtxos: Set<CreatedUtxo>) {
+    override fun createUtxos(blockNumber: Long, createdUtxos: Set<CreatedUtxo>) {
         createdUtxos.forEach { createdUtxo ->
             val ledgerTableId =
                 LedgerTable.slice(LedgerTable.id).select {
@@ -695,9 +691,7 @@ class LedgerRepositoryImpl : LedgerRepository {
                 row[scriptRef] = createdUtxo.scriptRef
                 row[lovelace] = createdUtxo.lovelace.toString()
                 row[blockCreated] = blockNumber
-                row[slotCreated] = slotNumber
                 row[blockSpent] = null
-                row[slotSpent] = null
                 row[transactionSpent] = null
                 row[cbor] = createdUtxo.cbor
                 row[paymentCred] = createdUtxo.paymentCred
