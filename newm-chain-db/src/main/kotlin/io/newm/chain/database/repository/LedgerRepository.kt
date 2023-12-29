@@ -33,11 +33,11 @@ interface LedgerRepository {
 
     fun insertLedgerAssetMetadataList(assetMetadataList: List<LedgerAssetMetadata>)
 
-    fun pruneSpent(slotNumber: Long)
+    fun pruneSpent(blockNumber: Long)
 
-    fun spendUtxos(slotNumber: Long, blockNumber: Long, spentUtxos: Set<SpentUtxo>)
+    fun spendUtxos(blockNumber: Long, spentUtxos: Set<SpentUtxo>)
 
-    fun createUtxos(slotNumber: Long, blockNumber: Long, createdUtxos: Set<CreatedUtxo>)
+    fun createUtxos(blockNumber: Long, createdUtxos: Set<CreatedUtxo>)
 
     fun createStakeRegistrations(stakeRegistrations: List<StakeRegistration>)
 

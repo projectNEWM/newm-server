@@ -66,7 +66,7 @@ object Dependencies {
     }
 
     object Ktor {
-        private const val VERSION = "2.3.6"
+        private const val VERSION = "2.3.7"
 
         const val SERVER_CORE = "io.ktor:ktor-server-core:$VERSION"
         const val SERVER_CIO = "io.ktor:ktor-server-cio:$VERSION"
@@ -123,7 +123,7 @@ object Dependencies {
     }
 
     object PostgreSQL {
-        private const val VERSION = "42.7.0"
+        private const val VERSION = "42.7.1"
 
         const val ALL = "org.postgresql:postgresql:$VERSION"
     }
@@ -135,7 +135,7 @@ object Dependencies {
     }
 
     object FlywayDB {
-        private const val VERSION = "10.1.0"
+        private const val VERSION = "10.4.1"
 
         const val CORE = "org.flywaydb:flyway-core:$VERSION"
         const val POSTGRES = "org.flywaydb:flyway-database-postgresql:$VERSION"
@@ -156,7 +156,7 @@ object Dependencies {
 
     // https://commons.apache.org/proper/commons-email/
     object ApacheCommonsEmail {
-        private const val VERSION = "1.5"
+        private const val VERSION = "1.6.0"
 
         const val ALL = "org.apache.commons:commons-email:$VERSION"
     }
@@ -180,7 +180,7 @@ object Dependencies {
     }
 
     object JSoup {
-        private const val VERSION = "1.17.1"
+        private const val VERSION = "1.17.2"
 
         const val ALL = "org.jsoup:jsoup:$VERSION"
     }
@@ -192,21 +192,21 @@ object Dependencies {
     }
 
     object SpringSecurity {
-        private const val VERSION = "6.2.0"
+        private const val VERSION = "6.2.1"
 
         const val CORE = "org.springframework.security:spring-security-core:$VERSION"
     }
 
     // https://github.com/cloudinary/cloudinary_java
     object Cloudinary {
-        private const val VERSION = "1.35.0"
+        private const val VERSION = "1.36.0"
 
         const val ALL = "com.cloudinary:cloudinary-http44:$VERSION"
     }
 
     object Aws {
-        private const val VERSION = "1.12.604"
-        private const val VERSION2 = "2.21.37"
+        private const val VERSION = "1.12.628"
+        private const val VERSION2 = "2.22.8"
         private const val JAXB_VERSION = "2.3.1"
 
         const val BOM = "com.amazonaws:aws-java-sdk-bom:$VERSION"
@@ -240,7 +240,7 @@ object Dependencies {
     }
 
     object Cbor {
-        private const val VERSION = "0.01.06-NEWM"
+        private const val VERSION = "0.01.07-NEWM"
 
         const val CBOR = "io.newm:com.google.iot.cbor:$VERSION"
     }
@@ -252,13 +252,13 @@ object Dependencies {
     }
 
     object GoogleTruth {
-        private const val VERSION = "1.1.5"
+        private const val VERSION = "1.2.0"
 
         const val TRUTH = "com.google.truth:truth:$VERSION"
     }
 
     object Sentry {
-        private const val VERSION = "7.0.0"
+        private const val VERSION = "7.1.0"
 
         const val CORE = "io.sentry:sentry:$VERSION"
         const val LOGBACK = "io.sentry:sentry-logback:$VERSION"
@@ -271,7 +271,7 @@ object Dependencies {
     }
 
     object Grpc {
-        private const val VERSION = "1.59.1"
+        private const val VERSION = "1.60.1"
 
         const val STUB = "io.grpc:grpc-stub:$VERSION"
         const val API = "io.grpc:grpc-api:$VERSION"

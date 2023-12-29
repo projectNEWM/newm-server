@@ -346,9 +346,8 @@ class BlockDaemon(
 
                     // Insert unspent utxos and stake delegations/de-registrations
                     createTime += measureTimeMillis {
-                        val slotNumber = block.header.slot
                         val blockNumber = block.header.blockHeight
-                        ledgerRepository.createUtxos(slotNumber, blockNumber, createdUtxos)
+                        ledgerRepository.createUtxos(blockNumber, createdUtxos)
                         val stakeRegistrations = block.toStakeRegistrationList()
                         ledgerRepository.createStakeRegistrations(stakeRegistrations)
                         val epoch = getEpochForSlot(block.header.slot)
@@ -364,7 +363,6 @@ class BlockDaemon(
                     // Mark spent utxos as spent
                     spendTime += measureTimeMillis {
                         ledgerRepository.spendUtxos(
-                            slotNumber = block.header.slot,
                             blockNumber = block.header.blockHeight,
                             spentUtxos = block.toSpentUtxoSet()
                         )
@@ -409,7 +407,7 @@ class BlockDaemon(
                     pruneTime = measureTimeMillis {
                         // only prune every 10000 blocks
                         if (lastBlock.header.blockHeight % 10_000L == 0L) {
-                            ledgerRepository.pruneSpent(lastBlock.header.slot)
+                            ledgerRepository.pruneSpent(lastBlock.header.blockHeight)
                         }
                     }
                 }
