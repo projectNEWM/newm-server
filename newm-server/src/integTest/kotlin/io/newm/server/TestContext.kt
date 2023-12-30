@@ -13,6 +13,7 @@ import io.newm.server.auth.password.LoginRequest
 import io.newm.server.auth.password.LoginResponse
 import io.newm.shared.auth.Password
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
 
 object TestContext {
     val config = ConfigFactory.load("${System.getProperty("newm.env")}.conf")
@@ -22,7 +23,11 @@ object TestContext {
     var loginResponse: LoginResponse
     val client: HttpClient = HttpClient() {
         install(ContentNegotiation) {
-            json()
+            json(
+                Json {
+                    ignoreUnknownKeys = true
+                }
+            )
         }
     }
 
