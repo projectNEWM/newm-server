@@ -162,6 +162,7 @@ sourceSets {
 fun Test.configTest(instance: String) {
     // integration.time ensures that tests are run on teach invocation per https://blog.gradle.org/stop-rerunning-tests
     inputs.property("integration.time", Instant.now().toEpochMilli())
+    testLogging.showStandardStreams = true
     description = "Runs integration tests against the $instance newm instance"
     group = "verification"
     testClassesDirs = sourceSets["integTest"].output.classesDirs
