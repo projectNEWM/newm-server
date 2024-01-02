@@ -1,3 +1,4 @@
+import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.jetbrains.kotlin.util.capitalizeDecapitalize.toLowerCaseAsciiOnly
 import java.time.Instant
 
@@ -21,9 +22,9 @@ application {
     mainClass.set("io.newm.server.ApplicationKt")
 }
 
-val integTestImplementation by configurations.creating {
-    extendsFrom(configurations.testImplementation.get())
-}
+val integTest by sourceSets.creating
+configurations[integTest.implementationConfigurationName].extendsFrom(configurations.testImplementation.get())
+configurations[integTest.runtimeOnlyConfigurationName].extendsFrom(configurations.testRuntimeOnly.get())
 
 dependencies {
     implementation(project(":newm-shared"))
@@ -122,7 +123,10 @@ dependencies {
     testImplementation(Dependencies.TestContainers.JUINT)
     testImplementation(Dependencies.TestContainers.POSTGRESQL)
 
-    integTestImplementation(Dependencies.Typesafe.CONFIG)
+    "integTestImplementation"(project)
+    "integTestImplementation"(Dependencies.JUnit.JUPITER)
+    "integTestRuntimeOnly"("org.junit.platform:junit-platform-launcher")
+    "integTestImplementation"(Dependencies.Typesafe.CONFIG)
 }
 
 tasks {
@@ -152,21 +156,23 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
     }
 }
 
-sourceSets {
-    create("integTest") {
-        compileClasspath += sourceSets.main.get().output
-        runtimeClasspath += sourceSets.main.get().output
-    }
-}
-
 fun Test.configTest(instance: String) {
+    useJUnitPlatform()
     // integration.time ensures that tests are run on teach invocation per https://blog.gradle.org/stop-rerunning-tests
     inputs.property("integration.time", Instant.now().toEpochMilli())
-    testLogging.showStandardStreams = true
+    this.testLogging {
+        events = setOf(
+            TestLogEvent.PASSED,
+            TestLogEvent.SKIPPED,
+            TestLogEvent.FAILED,
+            TestLogEvent.STANDARD_OUT,
+            TestLogEvent.STANDARD_ERROR,
+        )
+    }
     description = "Runs integration tests against the $instance newm instance"
     group = "verification"
-    testClassesDirs = sourceSets["integTest"].output.classesDirs
-    classpath = sourceSets["integTest"].runtimeClasspath
+    testClassesDirs = integTest.output.classesDirs
+    classpath = configurations[integTest.runtimeClasspathConfigurationName] + integTest.output
     // Gradle makes us explicitly pass environment variables :-(
     // https://docs.gradle.org/current/userguide/common_caching_problems.html
     if ("NEWM_EMAIL" in System.getenv()) {
@@ -180,10 +186,10 @@ fun Test.configTest(instance: String) {
     }
     systemProperty("newm.env", instance.toLowerCaseAsciiOnly())
 }
-task<Test>("integTestGarage") {
+tasks.register<Test>("integTestGarage") {
     configTest("Garage")
 }
 
-task<Test>("integTestStudio") {
+tasks.register<Test>("integTestStudio") {
     configTest("Studio")
 }
