@@ -939,6 +939,10 @@ class LedgerRepositoryImpl : LedgerRepository {
             }.firstOrNull()?.let { row -> row[AddressTxLogTable.id].value } ?: -1L
         } ?: -1L
 
+        if (afterId == -1L && afterTxId != null) {
+            log.warn("Unable to find txId: $afterTxId for address: $address. afterId: $afterId, limit: $limit, offset: $offset")
+        }
+
         val maxBlockNumberExpression = ChainTable.blockNumber.max()
         val maxBlockNumber = (
             ChainTable.slice(maxBlockNumberExpression).selectAll().firstOrNull()?.let {
