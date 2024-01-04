@@ -163,9 +163,10 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
             }
         } catch (e: Throwable) {
             Sentry.addBreadcrumb(request.toString(), "NewmChainService")
-            log.error("submitTransaction($request) failed.", e)
+            log.error("submitTransaction(${request.cbor.toByteArray().toHexString()}) failed.", e)
             submitTransactionResponse {
-                result = "submitTransaction($request) failed. Exception: ${e.message}"
+                result =
+                    "submitTransaction(${request.cbor.toByteArray().toHexString()}) failed. Exception: ${e.message}"
             }
         }
     }
@@ -176,7 +177,7 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
         val messageHandlerJob: Job = CoroutineScope(context).launch {
             try {
                 var startAfterTxId: String? = if (request.hasStartAfterTxId()) {
-                    request.startAfterTxId
+                    request.startAfterTxId.trim()
                 } else {
                     null
                 }
@@ -186,7 +187,7 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                 while (true) {
                     while (true) {
                         val monitorAddressResponseList = ledgerRepository.queryAddressTxLogsAfter(
-                            request.address,
+                            request.address.trim(),
                             startAfterTxId,
                             limit,
                             offset,
