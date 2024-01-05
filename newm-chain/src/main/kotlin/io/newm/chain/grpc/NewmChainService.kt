@@ -183,7 +183,7 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                 }
                 val limit = 1000
                 var offset = 0L
-                var nextStartAfterTxId: String? = null
+                var nextStartAfterTxId: String? = startAfterTxId
                 while (true) {
                     while (true) {
                         val monitorAddressResponseList = ledgerRepository.queryAddressTxLogsAfter(

@@ -225,12 +225,10 @@ class MonitorAddressDaemon(
         measureTimeMillis {
             newSuspendedTransaction {
                 warnLongQueriesDuration = 1000L
-                if (!isTip) {
-                    rollbackTime += measureTimeMillis {
-                        chainRepository.rollbackMonitoredAddressChain(monitorAddress, firstBlock.header.blockHeight)
-                        AddressTxLogTable.deleteWhere {
-                            (address eq monitorAddress) and (blockNumber greaterEq firstBlock.header.blockHeight)
-                        }
+                rollbackTime += measureTimeMillis {
+                    chainRepository.rollbackMonitoredAddressChain(monitorAddress, firstBlock.header.blockHeight)
+                    AddressTxLogTable.deleteWhere {
+                        (address eq monitorAddress) and (blockNumber greaterEq firstBlock.header.blockHeight)
                     }
                 }
 
