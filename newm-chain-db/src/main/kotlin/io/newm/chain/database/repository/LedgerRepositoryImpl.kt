@@ -597,7 +597,7 @@ class LedgerRepositoryImpl : LedgerRepository {
         val id = LedgerAssetMetadataTable.insertAndGetId {
             it[assetId] = ledgerAssetMetadata.assetId
             it[keyType] = ledgerAssetMetadata.keyType
-            it[key] = ledgerAssetMetadata.key
+            it[key] = ledgerAssetMetadata.key.replace("\u0000", "\\u0000")
             it[valueType] = ledgerAssetMetadata.valueType
             it[value] = ledgerAssetMetadata.value.replace("\u0000", "\\u0000")
             it[nestLevel] = ledgerAssetMetadata.nestLevel
