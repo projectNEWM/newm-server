@@ -96,18 +96,6 @@ fun Routing.createCardanoRoutes() {
             }
         }
 
-        // TODO: Remove next route after Mobile App migration
-        get("/v1/cardano/nfts") {
-            try {
-                val xpubKey = parameters["xpub"] ?: throw IllegalArgumentException("xpub is required!")
-                val response = cardanoRepository.getWalletMusicNFTs(xpubKey)
-                respond(response)
-            } catch (e: Exception) {
-                log.error("Failed to get wallet NFTs: ${e.message}")
-                throw e
-            }
-        }
-
         get("/v1/cardano/nft/songs") {
             try {
                 respond(
@@ -118,6 +106,19 @@ fun Routing.createCardanoRoutes() {
                 )
             } catch (e: Exception) {
                 log.error(e) { "Failed to get NFT Songs" }
+                throw e
+            }
+        }
+
+        get("/v1/cardano/images") {
+            try {
+                respond(
+                    cardanoRepository.getWalletImages(
+                        xpubKey = request.requiredQueryParam("xpub")
+                    )
+                )
+            } catch (e: Exception) {
+                log.error(e) { "Failed to get images" }
                 throw e
             }
         }

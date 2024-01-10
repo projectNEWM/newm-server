@@ -152,7 +152,7 @@ private fun List<LedgerAssetMetadataItem>.toFile(): File {
     )
 }
 
-private fun String.toResourceUrl(): String = when {
+internal fun String.toResourceUrl(): String = when {
     startsWith("ipfs://") -> "https://ipfs.io/ipfs/${substring(7)}"
     startsWith("ar://") -> "https://arweave.net/${substring(5)}"
     else -> {
