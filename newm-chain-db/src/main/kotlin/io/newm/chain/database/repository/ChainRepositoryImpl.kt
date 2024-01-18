@@ -21,8 +21,6 @@ import org.jetbrains.exposed.sql.batchInsert
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.max
-import org.jetbrains.exposed.sql.select
-import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -32,11 +30,10 @@ class ChainRepositoryImpl : ChainRepository {
 
     override fun getFindIntersectPairs(): List<PointDetail> {
         return transaction {
-            ChainTable.slice(
+            ChainTable.select(
                 ChainTable.slotNumber,
                 ChainTable.hash
-            ).selectAll()
-                .orderBy(ChainTable.slotNumber, SortOrder.DESC)
+            ).orderBy(ChainTable.slotNumber, SortOrder.DESC)
                 .limit(33).filterIndexed { index, _ ->
                     // all powers of 2 including 0th element 0, 2, 4, 8, 16, 32
                     (index == 0) || ((index > 1) && (index and (index - 1) == 0))
@@ -51,10 +48,10 @@ class ChainRepositoryImpl : ChainRepository {
 
     override fun getPointAfterSlot(slot: Long): PointDetail? {
         return transaction {
-            ChainTable.slice(
+            ChainTable.select(
                 ChainTable.slotNumber,
                 ChainTable.hash
-            ).select { ChainTable.slotNumber greater slot }
+            ).where { ChainTable.slotNumber greater slot }
                 .orderBy(ChainTable.slotNumber, SortOrder.ASC)
                 .limit(1).firstOrNull()?.let { row ->
                     PointDetail(
@@ -67,8 +64,8 @@ class ChainRepositoryImpl : ChainRepository {
 
     override fun getVrfByPoolId(poolId: String): String? {
         return transaction {
-            ChainTable.slice(ChainTable.nodeVrfVkey)
-                .select { ChainTable.poolId eq poolId }
+            ChainTable.select(ChainTable.nodeVrfVkey)
+                .where { ChainTable.poolId eq poolId }
                 .orderBy(ChainTable.id, SortOrder.DESC)
                 .limit(1)
                 .firstOrNull()?.let { row ->
@@ -81,9 +78,9 @@ class ChainRepositoryImpl : ChainRepository {
         transaction {
             blocks.forEach { block ->
                 ChainTable.deleteWhere { blockNumber greaterEq block.blockNumber }
-                val prevEtaV: String = ChainTable.slice(
+                val prevEtaV: String = ChainTable.select(
                     ChainTable.etaV
-                ).select { ChainTable.slotNumber eqSubQuery ChainTable.slice(ChainTable.slotNumber.max()).selectAll() }
+                ).where { ChainTable.slotNumber eqSubQuery ChainTable.select(ChainTable.slotNumber.max()) }
                     .singleOrNull()?.get(ChainTable.etaV)
                     ?: Config.shelleyGenesisHash
 
@@ -131,9 +128,9 @@ class ChainRepositoryImpl : ChainRepository {
 
     override fun insert(block: ChainBlock): Long {
         return transaction {
-            val prevEtaV: String = prevEtaVCache.getIfPresent(block.blockNumber - 1) ?: ChainTable.slice(
+            val prevEtaV: String = prevEtaVCache.getIfPresent(block.blockNumber - 1) ?: ChainTable.select(
                 ChainTable.etaV
-            ).select { ChainTable.blockNumber eq (block.blockNumber - 1) }.singleOrNull()?.get(ChainTable.etaV)
+            ).where { ChainTable.blockNumber eq (block.blockNumber - 1) }.singleOrNull()?.get(ChainTable.etaV)
                 ?: Config.shelleyGenesisHash
 
             val newEtaV = calculateEtaV(prevEtaV, block.etaVrf0)
@@ -199,10 +196,10 @@ class ChainRepositoryImpl : ChainRepository {
     }
 
     override fun getFindIntersectPairsAddressChain(address: String): List<PointDetail> = transaction {
-        MonitoredAddressChainTable.slice(
+        MonitoredAddressChainTable.select(
             MonitoredAddressChainTable.slot,
             MonitoredAddressChainTable.hash
-        ).select { MonitoredAddressChainTable.address eq address }
+        ).where { MonitoredAddressChainTable.address eq address }
             .orderBy(MonitoredAddressChainTable.slot, SortOrder.DESC)
             .limit(33).filterIndexed { index, _ ->
                 // all powers of 2 including 0th element 0, 2, 4, 8, 16, 32

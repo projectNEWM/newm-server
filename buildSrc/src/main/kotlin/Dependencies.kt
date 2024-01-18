@@ -108,7 +108,7 @@ object Dependencies {
     }
 
     object Exposed {
-        private const val VERSION = "0.45.0"
+        private const val VERSION = "0.46.0"
 
         const val CORE = "org.jetbrains.exposed:exposed-core:$VERSION"
         const val DAO = "org.jetbrains.exposed:exposed-dao:$VERSION"
@@ -135,7 +135,7 @@ object Dependencies {
     }
 
     object FlywayDB {
-        private const val VERSION = "10.4.1"
+        private const val VERSION = "10.6.0"
 
         const val CORE = "org.flywaydb:flyway-core:$VERSION"
         const val POSTGRES = "org.flywaydb:flyway-database-postgresql:$VERSION"
@@ -199,14 +199,14 @@ object Dependencies {
 
     // https://github.com/cloudinary/cloudinary_java
     object Cloudinary {
-        private const val VERSION = "1.36.0"
+        private const val VERSION = "1.37.0"
 
         const val ALL = "com.cloudinary:cloudinary-http44:$VERSION"
     }
 
     object Aws {
-        private const val VERSION = "1.12.628"
-        private const val VERSION2 = "2.22.8"
+        private const val VERSION = "1.12.639"
+        private const val VERSION2 = "2.23.5"
         private const val JAXB_VERSION = "2.3.1"
 
         const val BOM = "com.amazonaws:aws-java-sdk-bom:$VERSION"
@@ -246,7 +246,7 @@ object Dependencies {
     }
 
     object Mockk {
-        private const val VERSION = "1.13.8"
+        private const val VERSION = "1.13.9"
 
         const val MOCKK = "io.mockk:mockk:$VERSION"
     }
@@ -258,7 +258,7 @@ object Dependencies {
     }
 
     object Sentry {
-        private const val VERSION = "7.1.0"
+        private const val VERSION = "7.2.0"
 
         const val CORE = "io.sentry:sentry:$VERSION"
         const val LOGBACK = "io.sentry:sentry-logback:$VERSION"
@@ -271,7 +271,7 @@ object Dependencies {
     }
 
     object Grpc {
-        private const val VERSION = "1.60.1"
+        private const val VERSION = "1.61.0"
 
         const val STUB = "io.grpc:grpc-stub:$VERSION"
         const val API = "io.grpc:grpc-api:$VERSION"
@@ -288,7 +288,7 @@ object Dependencies {
     }
 
     object Protobuf {
-        private const val VERSION = "3.25.1"
+        private const val VERSION = "3.25.2"
 
         const val JAVA_UTIL = "com.google.protobuf:protobuf-java-util:$VERSION"
         const val KOTLIN = "com.google.protobuf:protobuf-kotlin:$VERSION"
@@ -302,7 +302,7 @@ object Dependencies {
     }
 
     object SSLKickstart {
-        private const val VERSION = "8.2.0"
+        private const val VERSION = "8.3.0"
 
         const val PEM = "io.github.hakky54:sslcontext-kickstart-for-pem:$VERSION"
         const val NETTY = "io.github.hakky54:sslcontext-kickstart-for-netty:$VERSION"
