@@ -32,4 +32,14 @@ class StaticRoutesTests : BaseApplicationTests() {
         val content = javaClass.getResource("/static/stream-token-policy-ids.json").readText()
         assertThat(response.body<String>()).isEqualTo(content)
     }
+
+    @Test
+    fun testGetIsrcCountryCodes() = runBlocking {
+        val response = client.get("contents/isrc-country-codes.json")
+        assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+        assertThat(response.contentType()).isEqualTo(ContentType.Application.Json)
+
+        val content = javaClass.getResource("/static/isrc-country-codes.json").readText()
+        assertThat(response.body<String>()).isEqualTo(content)
+    }
 }
