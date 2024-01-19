@@ -12,12 +12,12 @@ import io.newm.chain.util.toCreatedUtxoSet
 import io.newm.kogmios.Client
 import io.newm.kogmios.StateQueryClient
 import io.newm.kogmios.createChainSyncClient
-import io.newm.kogmios.protocols.messages.IntersectionFound
-import io.newm.kogmios.protocols.messages.RollBackward
-import io.newm.kogmios.protocols.messages.RollForward
-import io.newm.kogmios.protocols.model.CompactGenesis
+import io.newm.kogmios.protocols.model.GenesisEra
 import io.newm.kogmios.protocols.model.MetadataMap
 import io.newm.kogmios.protocols.model.PointDetail
+import io.newm.kogmios.protocols.model.result.RollBackward
+import io.newm.kogmios.protocols.model.result.RollForward
+import io.newm.kogmios.protocols.model.result.ShelleyGenesisConfigResult
 import io.newm.txbuilder.ktx.cborHexToPlutusData
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Disabled
@@ -78,8 +78,8 @@ class Cip68DatumTest {
             if (!client.isConnected) {
                 throw IOException("client.isConnected was false!")
             }
-            (client as StateQueryClient).genesisConfig().let { genesisConfig ->
-                Config.genesis = genesisConfig.result as CompactGenesis
+            (client as StateQueryClient).genesisConfig(GenesisEra.SHELLEY).let { genesisConfig ->
+                Config.genesis = genesisConfig.result as ShelleyGenesisConfigResult
             }
 
             val msgFindIntersectResponse = client.findIntersect(
@@ -90,37 +90,33 @@ class Cip68DatumTest {
                     )
                 )
             )
-            if (msgFindIntersectResponse.result !is IntersectionFound) {
-                throw IllegalStateException("Error finding blockchain intersect!")
-            }
 
             var shouldContinue = true
             while (shouldContinue) {
-                val response = client.requestNext(timeoutMs = Client.DEFAULT_REQUEST_TIMEOUT_MS)
+                val response = client.nextBlock(timeoutMs = Client.DEFAULT_REQUEST_TIMEOUT_MS)
                 when (response.result) {
                     is RollBackward -> {
-                        println("RollBackward: ${(response.result as RollBackward).rollBackward.point}")
+                        println("RollBackward: ${(response.result as RollBackward).point}")
                     }
 
                     is RollForward -> {
-                        (response.result as RollForward).rollForward.let { rollForward ->
-                            val block = rollForward.block
-                            val createdUtxos = block.toCreatedUtxoSet()
-                            require(createdUtxos.isNotEmpty()) { "createdUtxos is empty!" }
-                            // Save metadata for CIP-68 reference metadata appearing on createdUtxos datum values
-                            val nativeAssetMetadataList = cip68UtxoOutputsTo721MetadataMap(createdUtxos)
-                            require(nativeAssetMetadataList.isNotEmpty()) { "nativeAssetMetadataList is empty!" }
-                            nativeAssetMetadataList.forEach { (metadataMap, assetList) ->
-                                try {
-                                    val assetMetadatas = metadataMap.extractAssetMetadata(assetList)
-                                    println(assetMetadatas)
-                                } catch (e: Throwable) {
-                                    println("metadataError at block ${block.header.blockHeight}, metadataMap: $metadataMap, assetList: $assetList")
-                                    throw e
-                                }
+                        val rollForward = response.result as RollForward
+                        val block = rollForward.block
+                        val createdUtxos = block.toCreatedUtxoSet()
+                        require(createdUtxos.isNotEmpty()) { "createdUtxos is empty!" }
+                        // Save metadata for CIP-68 reference metadata appearing on createdUtxos datum values
+                        val nativeAssetMetadataList = cip68UtxoOutputsTo721MetadataMap(createdUtxos)
+                        require(nativeAssetMetadataList.isNotEmpty()) { "nativeAssetMetadataList is empty!" }
+                        nativeAssetMetadataList.forEach { (metadataMap, assetList) ->
+                            try {
+                                val assetMetadatas = metadataMap.extractAssetMetadata(assetList)
+                                println(assetMetadatas)
+                            } catch (e: Throwable) {
+                                println("metadataError at block ${block.height}, metadataMap: $metadataMap, assetList: $assetList")
+                                throw e
                             }
-                            shouldContinue = false
                         }
+                        shouldContinue = false
                     }
                 }
             }

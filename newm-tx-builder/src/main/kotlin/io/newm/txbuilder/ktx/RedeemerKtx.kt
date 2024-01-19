@@ -5,6 +5,7 @@ import com.google.iot.cbor.CborInteger
 import com.google.iot.cbor.CborObject
 import io.newm.chain.grpc.Redeemer
 import io.newm.chain.grpc.RedeemerTag
+import io.newm.kogmios.protocols.model.Validator
 
 /**
  * Convert a redeemer object into cbor so it can be included in a transaction.
@@ -44,10 +45,9 @@ fun Redeemer.toCborObject(dummyExUnitsMemory: Long, dummyExUnitsSteps: Long): Cb
 /**
  * Convert the redeemer keys coming from Kogmios such as "spend:1" into a Tag and index value.
  */
-fun String.toRedeemerTagAndIndex(): Pair<RedeemerTag, Long> {
-    val key = this.split(':')
+fun Validator.toRedeemerTagAndIndex(): Pair<RedeemerTag, Long> {
     return Pair(
-        when (key[0]) {
+        when (this.purpose) {
             "spend" -> RedeemerTag.SPEND
             "mint" -> RedeemerTag.MINT
             "certificate" -> RedeemerTag.CERT
@@ -56,6 +56,6 @@ fun String.toRedeemerTagAndIndex(): Pair<RedeemerTag, Long> {
                 "Unknown redeemer tag"
             )
         },
-        key[1].toLong()
+        this.index.toLong()
     )
 }

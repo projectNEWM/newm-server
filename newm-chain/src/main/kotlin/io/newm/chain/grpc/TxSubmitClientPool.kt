@@ -4,7 +4,6 @@ import io.ktor.server.application.ApplicationEnvironment
 import io.newm.kogmios.StateQueryClient
 import io.newm.kogmios.TxSubmitClient
 import io.newm.kogmios.createTxSubmitClient
-import io.newm.kogmios.protocols.model.InstantQueryResult
 import io.newm.objectpool.DefaultPool
 import io.newm.shared.koin.inject
 import org.koin.core.parameter.parametersOf
@@ -45,8 +44,7 @@ class TxSubmitClientPool(
             require(instance.isConnected) { "Ogmios not connected!" }
 
             // Query the SystemStart value to validate the instance
-            val result = (instance as StateQueryClient).systemStart().result as? InstantQueryResult
-            requireNotNull(result) { "Could not validate systemStart!" }
+            (instance as StateQueryClient).networkStartTime()
         } catch (e: Throwable) {
             log.error("Could not validateInstance()!", e)
             throw e

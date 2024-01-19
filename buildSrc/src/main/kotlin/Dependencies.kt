@@ -1,7 +1,7 @@
 object Dependencies {
 
     object VersionsPlugin {
-        const val VERSION = "0.47.0"
+        const val VERSION = "0.51.0"
         const val ID = "com.github.ben-manes.versions"
     }
 
@@ -16,7 +16,7 @@ object Dependencies {
     }
 
     object KotlinPlugin {
-        const val VERSION = "1.9.21"
+        const val VERSION = "1.9.22"
         const val JVM_ID = "jvm"
         const val SERIALIZATION_ID = "plugin.serialization"
     }
@@ -167,6 +167,12 @@ object Dependencies {
         const val ALL = "commons-codec:commons-codec:$VERSION"
     }
 
+    object ApacheCommonsNumbers {
+        private const val VERSION = "1.1"
+
+        const val FRACTION = "org.apache.commons:commons-numbers-fraction:$VERSION"
+    }
+
     object ApacheTika {
         private const val VERSION = "2.9.1"
 
@@ -240,7 +246,7 @@ object Dependencies {
     }
 
     object Cbor {
-        private const val VERSION = "0.01.07-NEWM"
+        private const val VERSION = "0.01.08-NEWM"
 
         const val CBOR = "io.newm:com.google.iot.cbor:$VERSION"
     }
@@ -252,7 +258,7 @@ object Dependencies {
     }
 
     object GoogleTruth {
-        private const val VERSION = "1.2.0"
+        private const val VERSION = "1.3.0"
 
         const val TRUTH = "com.google.truth:truth:$VERSION"
     }
@@ -265,7 +271,7 @@ object Dependencies {
     }
 
     object Newm {
-        private const val VERSION = "1.0.3"
+        private const val VERSION = "2.0.0"
 
         const val KOGMIOS = "io.newm:kogmios:$VERSION"
     }

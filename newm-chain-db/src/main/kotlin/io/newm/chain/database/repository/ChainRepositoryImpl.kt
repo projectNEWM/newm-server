@@ -40,7 +40,7 @@ class ChainRepositoryImpl : ChainRepository {
                 }.map { row ->
                     PointDetail(
                         slot = row[ChainTable.slotNumber],
-                        hash = row[ChainTable.hash],
+                        id = row[ChainTable.hash],
                     )
                 }
         }
@@ -56,7 +56,7 @@ class ChainRepositoryImpl : ChainRepository {
                 .limit(1).firstOrNull()?.let { row ->
                     PointDetail(
                         slot = row[ChainTable.slotNumber],
-                        hash = row[ChainTable.hash],
+                        id = row[ChainTable.hash],
                     )
                 }
         }
@@ -207,7 +207,7 @@ class ChainRepositoryImpl : ChainRepository {
             }.map { row ->
                 PointDetail(
                     slot = row[MonitoredAddressChainTable.slot],
-                    hash = row[MonitoredAddressChainTable.hash],
+                    id = row[MonitoredAddressChainTable.hash],
                 )
             }
     }

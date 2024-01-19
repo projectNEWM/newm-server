@@ -80,7 +80,7 @@ object Constants {
     val STAKE_DELEGATION_CERT_INDEX: BigInteger = BigInteger.valueOf(2L)
     val POOL_REGISTRATION_CERT_INDEX: BigInteger = BigInteger.valueOf(3L)
 
-    val NFT_METADATA_KEY: BigInteger = 721.toBigInteger()
+    const val NFT_METADATA_KEY = "721"
     val NFT_METADATA_KEY_NAME: CborTextString = CborTextString.create("name")
     val NFT_METADATA_KEY_IMAGE: CborTextString = CborTextString.create("image")
     val NFT_METADATA_KEY_DESC: CborTextString = CborTextString.create("description")
