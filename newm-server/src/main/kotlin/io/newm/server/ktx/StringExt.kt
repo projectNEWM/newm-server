@@ -106,48 +106,55 @@ fun String.toReferenceUtxo(): Utxo {
  * ]
  */
 fun String.cborHexToUtxo(): Utxo {
-    CborObject.createFromCborByteArray(hexToByteArray()).let { cborObject ->
-        return when (cborObject) {
-            is CborArray -> {
-                val hashIxArray = cborObject.elementAt(0) as CborArray
-                val value = cborObject.elementAt(1) as CborArray
-                utxo {
-                    hash = hashIxArray.elementToHexString(0)
-                    ix = hashIxArray.elementToInt(1).toLong()
-                    address = value.elementToByteArray(0).let { bytes ->
-                        if (bytes[0] in PAYMENT_ADDRESS_PREFIXES_MAINNET) {
-                            Bech32.encode("addr", bytes)
-                        } else {
-                            Bech32.encode("addr_test", bytes)
+    try {
+        CborObject.createFromCborByteArray(hexToByteArray()).let { cborObject ->
+            return when (cborObject) {
+                is CborArray -> {
+                    val hashIxArray = cborObject.elementAt(0) as CborArray
+                    val value = cborObject.elementAt(1) as CborArray
+                    utxo {
+                        hash = hashIxArray.elementToHexString(0)
+                        ix = hashIxArray.elementToInt(1).toLong()
+                        address = value.elementToByteArray(0).let { bytes ->
+                            if (bytes[0] in PAYMENT_ADDRESS_PREFIXES_MAINNET) {
+                                Bech32.encode("addr", bytes)
+                            } else {
+                                Bech32.encode("addr_test", bytes)
+                            }
+                        }
+                        val valueAmount = value.elementAt(1)
+                        lovelace = when (valueAmount) {
+                            is CborInteger -> valueAmount.bigIntegerValue().toString()
+                            is CborArray -> valueAmount.elementToBigInteger(0).toString()
+                            else -> throw IllegalArgumentException("Invalid CBOR type: ${valueAmount.javaClass.name}, expected CborInteger or CborArray for lovelace!")
+                        }
+                        if (valueAmount is CborArray) {
+                            nativeAssets.addAll(
+                                (valueAmount.elementAt(1) as CborMap).mapValue()
+                                    .flatMap { (policyCborObject, valueCborObject) ->
+                                        val policy =
+                                            (policyCborObject as CborByteString).byteArrayValue()[0].toHexString()
+                                        val namesCborMap = (valueCborObject as CborMap).mapValue()
+                                        namesCborMap.map { (nameCborObject, amountCborObject) ->
+                                            val name =
+                                                (nameCborObject as CborByteString).byteArrayValue()[0].toHexString()
+                                            val amount = (amountCborObject as CborInteger).bigIntegerValue().toString()
+                                            nativeAsset {
+                                                this.policy = policy
+                                                this.name = name
+                                                this.amount = amount
+                                            }
+                                        }
+                                    }.toNativeAssetMap().values.flatten()
+                            )
                         }
                     }
-                    val valueAmount = value.elementAt(1)
-                    lovelace = when (valueAmount) {
-                        is CborInteger -> valueAmount.bigIntegerValue().toString()
-                        is CborArray -> valueAmount.elementToBigInteger(0).toString()
-                        else -> throw IllegalArgumentException("Invalid CBOR type: ${valueAmount.javaClass.name}, expected CborInteger or CborArray for lovelace!")
-                    }
-                    if (valueAmount is CborArray) {
-                        nativeAssets.addAll(
-                            (valueAmount.elementAt(1) as CborMap).mapValue().flatMap { (policyCborObject, valueCborObject) ->
-                                val policy = (policyCborObject as CborByteString).byteArrayValue()[0].toHexString()
-                                val namesCborMap = (valueCborObject as CborMap).mapValue()
-                                namesCborMap.map { (nameCborObject, amountCborObject) ->
-                                    val name = (nameCborObject as CborByteString).byteArrayValue()[0].toHexString()
-                                    val amount = (amountCborObject as CborInteger).bigIntegerValue().toString()
-                                    nativeAsset {
-                                        this.policy = policy
-                                        this.name = name
-                                        this.amount = amount
-                                    }
-                                }
-                            }.toNativeAssetMap().values.flatten()
-                        )
-                    }
                 }
-            }
 
-            else -> throw IllegalArgumentException("Invalid CBOR type: ${cborObject.javaClass.name}, expected CborArray!")
+                else -> throw IllegalArgumentException("Invalid CBOR type: ${cborObject.javaClass.name}, expected CborArray!")
+            }
         }
+    } catch (e: Exception) {
+        throw IllegalArgumentException("Unable to parse cbor utxo: $this", e)
     }
 }

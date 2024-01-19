@@ -17,11 +17,8 @@ import io.newm.chain.util.hexToByteArray
 import io.newm.chain.util.toCreatedUtxoMap
 import io.newm.chain.util.toHexString
 import io.newm.kogmios.StateQueryClient
-import io.newm.kogmios.protocols.messages.EvaluationResult
-import io.newm.kogmios.protocols.messages.SubmitFail
-import io.newm.kogmios.protocols.messages.SubmitSuccess
 import io.newm.kogmios.protocols.model.Block
-import io.newm.kogmios.protocols.model.QueryCurrentProtocolBabbageParametersResult
+import io.newm.kogmios.protocols.model.result.EvaluateTxResult
 import io.newm.objectpool.useInstance
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.info
@@ -131,34 +128,18 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
             val cbor = request.cbor.toByteArray()
             txSubmitClientPool.useInstance { client ->
                 val response = client.submit(cbor.toHexString())
-                when (response.result) {
-                    is SubmitSuccess -> {
-                        val transactionId = (response.result as SubmitSuccess).txId
-                        if (submittedTransactionCache.get(transactionId) == null) {
-                            submittedTransactionCache.put(transactionId, cbor)
-                        }
+                val transactionId = response.result.transaction.id
+                if (submittedTransactionCache.get(transactionId) == null) {
+                    submittedTransactionCache.put(transactionId, cbor)
+                }
 
-                        ledgerRepository.updateLiveLedgerState(transactionId, cbor)
+                ledgerRepository.updateLiveLedgerState(transactionId, cbor)
 
-                        submitTransactionResponse {
-                            result = "MsgAcceptTx"
-                            txId = transactionId
-                        }.also {
-                            log.warn { "submitTransaction SUCCESS. txId: ${it.txId}" }
-                        }
-                    }
-
-                    is SubmitFail -> {
-                        submitTransactionResponse {
-                            result = response.result.toString()
-                        }.also {
-                            log.warn {
-                                "submitTransaction(cbor: ${
-                                    request.cbor.toByteArray().toHexString()
-                                }) FAILED. result: ${it.result}"
-                            }
-                        }
-                    }
+                submitTransactionResponse {
+                    result = "MsgAcceptTx"
+                    txId = transactionId
+                }.also {
+                    log.warn { "submitTransaction SUCCESS. txId: ${it.txId}" }
                 }
             }
         } catch (e: Throwable) {
@@ -294,15 +275,9 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
         return try {
             txSubmitClientPool.useInstance { txSubmitClient ->
                 val stateQueryClient = txSubmitClient as StateQueryClient
-                val protocolParams =
-                    stateQueryClient.currentProtocolParameters().result as QueryCurrentProtocolBabbageParametersResult
-                val calculateTxExecutionUnits: suspend (ByteArray) -> EvaluationResult = { cborBytes ->
-                    val evaluateResponse = txSubmitClient.evaluate(cborBytes.toHexString())
-                    if (evaluateResponse.result !is EvaluationResult) {
-                        log.warn { "evaluate failed, cbor: ${cborBytes.toHexString()}" }
-                        throw IllegalStateException(evaluateResponse.result.toString())
-                    }
-                    (evaluateResponse.result as EvaluationResult)
+                val protocolParams = stateQueryClient.protocolParameters().result
+                val calculateTxExecutionUnits: suspend (ByteArray) -> EvaluateTxResult = { cborBytes ->
+                    txSubmitClient.evaluate(cborBytes.toHexString()).result
                 }
 
                 val updatedRequest =
@@ -400,9 +375,8 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
         try {
             return txSubmitClientPool.useInstance { txSubmitClient ->
                 val stateQueryClient = txSubmitClient as StateQueryClient
-                val protocolParams =
-                    stateQueryClient.currentProtocolParameters().result as QueryCurrentProtocolBabbageParametersResult
-                request.withMinUtxo(protocolParams.coinsPerUtxoByte.toLong())
+                val protocolParams = stateQueryClient.protocolParameters().result
+                request.withMinUtxo(protocolParams.minUtxoDepositCoefficient.toLong())
             }
         } catch (e: Throwable) {
             Sentry.addBreadcrumb(request.toString(), "NewmChainService")

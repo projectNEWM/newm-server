@@ -71,7 +71,7 @@ val shelleyGenesis by lazy {
 }
 
 private val genesisStartTimeSec by lazy {
-    shelleyGenesis.systemStart.epochSeconds
+    shelleyGenesis.startTime.epochSeconds
 }
 
 val byronToShelleyEpochs by lazy {
@@ -93,8 +93,8 @@ fun getEpochForSlot(slot: Long): Long {
     val byronEpochLength = 10 * byronGenesis.protocolConsts.k
     val byronSlots = byronEpochLength * shelleyTransitionEpoch
     val shelleySlots = slot - byronSlots
-    val byronSecs = (byronGenesis.blockVersionData.slotDuration * byronSlots) / 1000
-    val shelleySecs = shelleySlots * shelleyGenesis.slotLength
+    val byronSecs = (byronGenesis.blockVersionData.slotDuration * byronSlots) / 1000L
+    val shelleySecs = shelleySlots * (shelleyGenesis.slotLength.milliseconds.toLong() / 1000L)
     val timeAtSlot = networkStartTime + byronSecs + shelleySecs
     return (timeAtSlot - networkStartTime) / shelleyGenesis.epochLength
 }
@@ -106,7 +106,7 @@ fun getSlotAtInstant(now: Instant): Long {
     val byronSlots = (genesisStartTimeSec - byronGenesis.startTime) / 20L
     val transSlots = (byronToShelleyEpochs * shelleyGenesis.epochLength) / 20L
     val currentTimeSec = now.epochSecond
-    return byronSlots + transSlots + ((currentTimeSec - transTimeEnd) / shelleyGenesis.slotLength)
+    return byronSlots + transSlots + ((currentTimeSec - transTimeEnd) / (shelleyGenesis.slotLength.milliseconds.toLong() / 1000L))
 }
 
 fun getLastSlotOfYear(): Long {
@@ -118,7 +118,7 @@ fun getLastSlotOfYear(): Long {
         .withMinute(59)
         .withSecond(59)
         .toEpochSecond(ZoneOffset.UTC)
-    return transSlots + ((lastSecondOfYear - transTimeEnd) / shelleyGenesis.slotLength)
+    return transSlots + ((lastSecondOfYear - transTimeEnd) / (shelleyGenesis.slotLength.milliseconds.toLong() / 1000L))
 }
 
 fun getFirstSlotOfEpoch(absoluteSlot: Long): Long {
@@ -165,7 +165,7 @@ fun getTimeUntilNextEpoch(): Long =
 fun getInstantAtSlot(absoluteSlot: Long): Instant {
     val transTimeEnd = genesisStartTimeSec + byronToShelleyEpochs * shelleyGenesis.epochLength
     val transSlots = byronToShelleyEpochs * shelleyGenesis.epochLength / 20
-    val epochSecond = transTimeEnd + ((absoluteSlot - transSlots) * shelleyGenesis.slotLength)
+    val epochSecond = transTimeEnd + ((absoluteSlot - transSlots) * (shelleyGenesis.slotLength.milliseconds.toLong() / 1000L))
     return Instant.ofEpochSecond(epochSecond)
 }
 

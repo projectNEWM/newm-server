@@ -35,16 +35,16 @@ import io.newm.kogmios.Client.Companion.INFINITE_REQUEST_TIMEOUT_MS
 import io.newm.kogmios.StateQueryClient
 import io.newm.kogmios.createChainSyncClient
 import io.newm.kogmios.createStateQueryClient
-import io.newm.kogmios.protocols.messages.IntersectionFound
-import io.newm.kogmios.protocols.messages.RollBackward
-import io.newm.kogmios.protocols.messages.RollForward
-import io.newm.kogmios.protocols.messages.RollForwardData
 import io.newm.kogmios.protocols.model.Block
-import io.newm.kogmios.protocols.model.CompactGenesis
+import io.newm.kogmios.protocols.model.BlockPraos
+import io.newm.kogmios.protocols.model.GenesisEra
 import io.newm.kogmios.protocols.model.MetadataMap
 import io.newm.kogmios.protocols.model.OriginString
 import io.newm.kogmios.protocols.model.PointDetail
 import io.newm.kogmios.protocols.model.PointDetailOrOrigin
+import io.newm.kogmios.protocols.model.result.RollBackward
+import io.newm.kogmios.protocols.model.result.RollForward
+import io.newm.kogmios.protocols.model.result.ShelleyGenesisConfigResult
 import io.newm.shared.daemon.Daemon
 import io.newm.shared.daemon.Daemon.Companion.RETRY_DELAY_MILLIS
 import io.newm.shared.koin.inject
@@ -90,20 +90,20 @@ class BlockDaemon(
     private val syncRawTxns by lazy { environment.getConfigBoolean("newmchain.syncRawTxns") }
     private val pruneUtxos by lazy { environment.getConfigBoolean("newmchain.pruneUtxos") }
 
-    private val rollForwardFlow = MutableSharedFlow<RollForwardData>(
+    private val rollForwardFlow = MutableSharedFlow<RollForward>(
         replay = 0,
         extraBufferCapacity = 0,
         onBufferOverflow = BufferOverflow.SUSPEND
     )
 
-    val committedRollForwardFlow = MutableSharedFlow<RollForwardData>(
+    val committedRollForwardFlow = MutableSharedFlow<RollForward>(
         replay = 0,
         extraBufferCapacity = 20_000,
         onBufferOverflow = BufferOverflow.SUSPEND
     )
 
     private var blockBufferSize = 1
-    private val blockBuffer: MutableList<RollForwardData> = mutableListOf()
+    private val blockBuffer: MutableList<RollForward> = mutableListOf()
 
     private var tipBlockHeight = 0L
 
@@ -187,7 +187,7 @@ class BlockDaemon(
     }
 
     private suspend fun fetchNetworkInfo(client: StateQueryClient) {
-        val genesis = client.genesisConfig().result as CompactGenesis
+        val genesis = client.genesisConfig(GenesisEra.SHELLEY).result as ShelleyGenesisConfigResult
         Config.genesis = genesis
     }
 
@@ -213,7 +213,7 @@ class BlockDaemon(
             intersectPoints.add(
                 PointDetail(
                     slot = startSlot,
-                    hash = environment.config.property("ogmios.startHash").getString()
+                    id = environment.config.property("ogmios.startHash").getString()
                 )
             )
         } else {
@@ -221,18 +221,14 @@ class BlockDaemon(
                 OriginString()
             )
         }
-        val msgFindIntersectResponse = client.findIntersect(intersectPoints)
-
-        if (msgFindIntersectResponse.result !is IntersectionFound) {
-            throw IllegalStateException("Error finding blockchain intersect!")
-        }
+        client.findIntersect(intersectPoints)
     }
 
     private suspend fun requestBlocks(client: ChainSyncClient) {
         var lastLogged = Instant.EPOCH
         var isTip = true
         while (true) {
-            val response = client.requestNext(
+            val response = client.nextBlock(
                 timeoutMs = if (isTip) {
                     INFINITE_REQUEST_TIMEOUT_MS
                 } else {
@@ -241,21 +237,30 @@ class BlockDaemon(
             )
             when (response.result) {
                 is RollBackward -> {
-                    log.info("RollBackward: ${(response.result as RollBackward).rollBackward.point}")
+                    log.info("RollBackward: ${(response.result as RollBackward).point}")
                 }
 
                 is RollForward -> {
-                    (response.result as RollForward).rollForward.let { rollForward ->
-                        rollForwardFlow.emit(rollForward)
-                        val blockHeight = rollForward.block.header.blockHeight
-                        tipBlockHeight = max(blockHeight, rollForward.tip.blockNo)
-                        isTip = blockHeight == tipBlockHeight
-                        val now = Instant.now()
-                        val tenSecondsAgo = now.minusSeconds(10L)
-                        if (isTip || tenSecondsAgo.isAfter(lastLogged)) {
-                            val percent = floor(blockHeight.toDouble() / tipBlockHeight.toDouble() * 10000.0) / 100.0
-                            log.info("RollForward: block $blockHeight of $tipBlockHeight: %.2f%% sync'd".format(percent))
-                            lastLogged = now
+                    (response.result as RollForward).let { rollForward ->
+                        (rollForward.block as? BlockPraos)?.let { block ->
+                            rollForwardFlow.emit(rollForward)
+                            val blockHeight = block.height
+                            tipBlockHeight = max(blockHeight, rollForward.tip.height)
+                            isTip = blockHeight == tipBlockHeight
+                            val now = Instant.now()
+                            val tenSecondsAgo = now.minusSeconds(10L)
+                            if (isTip || tenSecondsAgo.isAfter(lastLogged)) {
+                                val percent =
+                                    floor(blockHeight.toDouble() / tipBlockHeight.toDouble() * 10000.0) / 100.0
+                                log.info(
+                                    "RollForward: block $blockHeight of $tipBlockHeight: %.2f%% sync'd".format(
+                                        percent
+                                    )
+                                )
+                                lastLogged = now
+                            }
+                        } ?: run {
+                            log.warn("RollForward: block is not BlockPraos: ${rollForward.block.javaClass.simpleName}")
                         }
                     }
                 }
@@ -266,15 +271,15 @@ class BlockDaemon(
     private fun startProcessBlock() {
         launch {
             rollForwardFlow.collect { rollForward ->
-                val blockHeight = rollForward.block.header.blockHeight
-                tipBlockHeight = max(blockHeight, rollForward.tip.blockNo)
+                val blockHeight = (rollForward.block as BlockPraos).height
+                tipBlockHeight = max(blockHeight, rollForward.tip.height)
                 val isTip = blockHeight == tipBlockHeight
                 processBlock(rollForward, isTip)
             }
         }
     }
 
-    private suspend fun processBlock(rollForwardData: RollForwardData, isTip: Boolean) {
+    private suspend fun processBlock(rollForwardData: RollForward, isTip: Boolean) {
         blockBuffer.add(rollForwardData)
         if (blockBuffer.size == blockBufferSize || isTip) {
             // Create a copy of the list
@@ -287,7 +292,7 @@ class BlockDaemon(
     }
 
     private var lastLoggedCommit = Instant.EPOCH
-    private suspend fun commitBlocks(blocksToCommit: List<RollForwardData>, isTip: Boolean) {
+    private suspend fun commitBlocks(blocksToCommit: List<RollForward>, isTip: Boolean) {
 //        if (!isTip) {
 //            log.warn("starting commitBlocks()...")
 //        }
@@ -300,18 +305,18 @@ class BlockDaemon(
         measureTimeMillis {
             newSuspendedTransaction {
                 warnLongQueriesDuration = 1000L
-                val firstBlock = blocksToCommit.first().block
-                val lastBlock = blocksToCommit.last().block
+                val firstBlock = blocksToCommit.first().block as BlockPraos
+                val lastBlock = blocksToCommit.last().block as BlockPraos
                 rollbackTime += measureTimeMillis {
-                    chainRepository.rollback(firstBlock.header.blockHeight)
-                    ledgerRepository.doRollback(firstBlock.header.blockHeight)
-                    AddressTxLogTable.deleteWhere { blockNumber greaterEq firstBlock.header.blockHeight }
-                    NativeAssetMonitorLogTable.deleteWhere { blockNumber greaterEq firstBlock.header.blockHeight }
+                    chainRepository.rollback(firstBlock.height)
+                    ledgerRepository.doRollback(firstBlock.height)
+                    AddressTxLogTable.deleteWhere { blockNumber greaterEq firstBlock.height }
+                    NativeAssetMonitorLogTable.deleteWhere { blockNumber greaterEq firstBlock.height }
                 }
 
                 blocksToCommit.forEach { rollForwardData ->
-                    val block = rollForwardData.block
-//                    if (block.header.blockHeight <= 60) {
+                    val block = rollForwardData.block as BlockPraos
+//                    if (block.height <= 60) {
 //                        log.warn("block: $block")
 //                    }
                     val createdUtxos = block.toCreatedUtxoSet()
@@ -321,7 +326,7 @@ class BlockDaemon(
                     rollbackTime += measureTimeMillis {
                         // Handle re-submitting any of our own transactions that got rolled back
                         val tip = isTip && block == lastBlock
-                        if (tip || blockRollbackCache.getIfPresent(block.header.blockHeight) != null) {
+                        if (tip || blockRollbackCache.getIfPresent(block.height) != null) {
                             val ourTransactionIdsInBlock =
                                 createdUtxos.map { createdUtxo -> createdUtxo.hash }.toSet()
                                     .filter { transactionId ->
@@ -329,7 +334,7 @@ class BlockDaemon(
                                             log.debug { "Our transaction $transactionId was seen in a block!" }
                                         } != null
                                     }.toSet()
-                            checkBlockRollbacks(block.header.blockHeight, ourTransactionIdsInBlock)
+                            checkBlockRollbacks(block.height, ourTransactionIdsInBlock)
                         }
                     }
 
@@ -346,11 +351,11 @@ class BlockDaemon(
 
                     // Insert unspent utxos and stake delegations/de-registrations
                     createTime += measureTimeMillis {
-                        val blockNumber = block.header.blockHeight
+                        val blockNumber = block.height
                         ledgerRepository.createUtxos(blockNumber, createdUtxos)
                         val stakeRegistrations = block.toStakeRegistrationList()
                         ledgerRepository.createStakeRegistrations(stakeRegistrations)
-                        val epoch = getEpochForSlot(block.header.slot)
+                        val epoch = getEpochForSlot(block.slot)
                         val stakeDelegations = block.toStakeDelegationList(epoch)
                         ledgerRepository.createStakeDelegations(stakeDelegations)
                         if (syncRawTxns) {
@@ -363,7 +368,7 @@ class BlockDaemon(
                     // Mark spent utxos as spent
                     spendTime += measureTimeMillis {
                         ledgerRepository.spendUtxos(
-                            blockNumber = block.header.blockHeight,
+                            blockNumber = block.height,
                             spentUtxos = block.toSpentUtxoSet()
                         )
                     }
@@ -378,7 +383,7 @@ class BlockDaemon(
                                     metadataMap.extractAssetMetadata(assetList)
                                 )
                             } catch (e: Throwable) {
-                                log.error("metadataError at block ${block.header.blockHeight}, metadataMap: $metadataMap, assetList: $assetList")
+                                log.error("metadataError at block ${block.height}, metadataMap: $metadataMap, assetList: $assetList")
                                 throw e
                             }
                         }
@@ -389,7 +394,7 @@ class BlockDaemon(
                                 block.toAssetMetadataList(mintedLedgerAssets)
                             )
                         } catch (e: Throwable) {
-                            log.error("metadataError at block ${block.header.blockHeight}, mintedLedgerAssets: $mintedLedgerAssets")
+                            log.error("metadataError at block ${block.height}, mintedLedgerAssets: $mintedLedgerAssets")
                             throw e
                         }
                     }
@@ -406,8 +411,8 @@ class BlockDaemon(
                 if (pruneUtxos) {
                     pruneTime = measureTimeMillis {
                         // only prune every 10000 blocks
-                        if (lastBlock.header.blockHeight % 10_000L == 0L) {
-                            ledgerRepository.pruneSpent(lastBlock.header.blockHeight)
+                        if (lastBlock.height % 10_000L == 0L) {
+                            ledgerRepository.pruneSpent(lastBlock.height)
                         }
                     }
                 }
@@ -419,7 +424,7 @@ class BlockDaemon(
             val now = Instant.now()
             val tenSecondsAgo = now.minusSeconds(10L)
             if (isTip || tenSecondsAgo.isAfter(lastLoggedCommit)) {
-                val blockHeight = blocksToCommit.last().block.header.blockHeight
+                val blockHeight = (blocksToCommit.last().block as BlockPraos).height
                 val percent = floor(blockHeight.toDouble() / tipBlockHeight.toDouble() * 10000.0) / 100.0
                 log.info("commitBlock: block $blockHeight of $tipBlockHeight: %.2f%% committed".format(percent))
                 lastLoggedCommit = now
@@ -528,7 +533,7 @@ class BlockDaemon(
     }
 
     private fun commitNativeAssetLogTransactions(
-        block: Block,
+        block: BlockPraos,
         ledgerAssetList: List<LedgerAsset>,
         createdUtxos: Set<CreatedUtxo>
     ) {
@@ -542,8 +547,8 @@ class BlockDaemon(
                     policy = ledgerAsset.policy
                     name = ledgerAsset.name
                     nativeAssetSupplyChange = ledgerAsset.supply.toString()
-                    slot = block.header.slot
-                    this.block = block.header.blockHeight
+                    slot = block.slot
+                    this.block = block.height
                     txHash = ledgerAsset.txId
                 }.writeTo(bos)
                 bos.toByteArray()
@@ -574,8 +579,8 @@ class BlockDaemon(
                         ledgerAsset.policy,
                         ledgerAsset.name,
                     )
-                    slot = block.header.slot
-                    this.block = block.header.blockHeight
+                    slot = block.slot
+                    this.block = block.height
                     txHash = ledgerAsset.txId
                 }.writeTo(bos)
                 bos.toByteArray()
@@ -607,8 +612,8 @@ class BlockDaemon(
                             updatedNativeAsset.policy,
                             updatedNativeAsset.name
                         )
-                        slot = block.header.slot
-                        this.block = block.header.blockHeight
+                        slot = block.slot
+                        this.block = block.height
                         txHash = ledgerAssets.firstOrNull {
                             it.name == updatedNativeAsset.name && it.policy == updatedNativeAsset.policy
                         }?.txId ?: ""
@@ -630,8 +635,8 @@ class BlockDaemon(
                                         nativeAsset.policy,
                                         nativeAsset.name
                                     )
-                                    slot = block.header.slot
-                                    this.block = block.header.blockHeight
+                                    slot = block.slot
+                                    this.block = block.height
                                     txHash = ledgerAssets.firstOrNull {
                                         it.name == nativeAsset.name && it.policy == nativeAsset.policy
                                     }?.txId ?: ""
@@ -647,7 +652,7 @@ class BlockDaemon(
         // Update the db for native asset changes
         NativeAssetMonitorLogTable.batchInsert(batch, shouldReturnGeneratedValues = false) {
             this[NativeAssetMonitorLogTable.monitorNativeAssetsResponseBytes] = it
-            this[NativeAssetMonitorLogTable.blockNumber] = block.header.blockHeight
+            this[NativeAssetMonitorLogTable.blockNumber] = block.height
         }
     }
 

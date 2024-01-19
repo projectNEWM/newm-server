@@ -23,15 +23,14 @@ import io.newm.chain.grpc.outputUtxo
 import io.newm.chain.grpc.redeemer
 import io.newm.chain.util.Blake2b
 import io.newm.chain.util.toHexString
-import io.newm.kogmios.protocols.messages.EvaluationResult
-import io.newm.kogmios.protocols.model.QueryCurrentProtocolBabbageParametersResult
+import io.newm.kogmios.protocols.model.result.EvaluateTxResult
+import io.newm.kogmios.protocols.model.result.ProtocolParametersResult
 import io.newm.txbuilder.ktx.sign
 import io.newm.txbuilder.ktx.toCborObject
 import io.newm.txbuilder.ktx.toNativeAssetCborMap
 import io.newm.txbuilder.ktx.toNativeAssetMap
 import io.newm.txbuilder.ktx.toRedeemerTagAndIndex
 import io.newm.txbuilder.ktx.withMinUtxo
-import java.math.BigDecimal
 import java.math.BigInteger
 import java.security.SecureRandom
 import kotlin.math.ceil
@@ -41,16 +40,16 @@ import kotlin.math.ceil
  * reference: https://github.com/input-output-hk/cardano-ledger/blob/master/eras/babbage/test-suite/cddl-files/babbage.cddl
  */
 class TransactionBuilder(
-    private val protocolParameters: QueryCurrentProtocolBabbageParametersResult,
-    private val calculateTxExecutionUnits: (suspend (ByteArray) -> EvaluationResult)? = null,
+    private val protocolParameters: ProtocolParametersResult,
+    private val calculateTxExecutionUnits: (suspend (ByteArray) -> EvaluateTxResult)? = null,
 ) {
     private val secureRandom by lazy { SecureRandom() }
 
-    private val txFeeFixed by lazy { protocolParameters.minFeeConstant.toLong() }
+    private val txFeeFixed by lazy { protocolParameters.minFeeConstant.ada.lovelace.toLong() }
     private val txFeePerByte by lazy { protocolParameters.minFeeCoefficient.toLong() }
-    private val utxoCostPerByte by lazy { protocolParameters.coinsPerUtxoByte.toLong() }
+    private val utxoCostPerByte by lazy { protocolParameters.minUtxoDepositCoefficient.toLong() }
     private val maxTxExecutionMemory by lazy { protocolParameters.maxExecutionUnitsPerTransaction.memory.toLong() }
-    private val maxTxExecutionSteps by lazy { protocolParameters.maxExecutionUnitsPerTransaction.steps.toLong() }
+    private val maxTxExecutionSteps by lazy { protocolParameters.maxExecutionUnitsPerTransaction.cpu.toLong() }
 
     private var sourceUtxos: MutableList<Utxo>? = null
     private var outputUtxos: MutableList<OutputUtxo>? = null
@@ -296,7 +295,7 @@ class TransactionBuilder(
             val redeemerBytes = createRedeemerWitnesses()?.toCborByteArray() ?: ByteArray(1) { 0x80.toByte() }
             val datumBytes = createDatumWitnesses()?.toCborByteArray() ?: ByteArray(0)
             val languageViewMap = if (!redeemers.isNullOrEmpty()) {
-                protocolParameters.costModels.plutusV2!!.toCborObject().toCborByteArray()
+                protocolParameters.plutusCostModels.plutusV2!!.toCborObject().toCborByteArray()
             } else {
                 // empty cbor map
                 ByteArray(1) { 0xa0.toByte() }
@@ -339,7 +338,12 @@ class TransactionBuilder(
 
             // Calculate minimum transaction fee
             val maxComputationalFee = if (totalCollateral != null) {
-                ceil((protocolParameters.prices.memory * protocolParameters.maxExecutionUnitsPerTransaction.memory + protocolParameters.prices.steps * protocolParameters.maxExecutionUnitsPerTransaction.steps).toDouble()).toLong()
+                ceil(
+                    (
+                        protocolParameters.scriptExecutionPrices.memory.multiply(protocolParameters.maxExecutionUnitsPerTransaction.memory)
+                            .add(protocolParameters.scriptExecutionPrices.cpu.multiply(protocolParameters.maxExecutionUnitsPerTransaction.cpu))
+                        ).toDouble()
+                ).toLong()
             } else {
                 null
             }
@@ -349,11 +353,11 @@ class TransactionBuilder(
                 // calculate actual totalCollateral
                 val evaluationResult = calculateTxExecutionUnits.invoke(dummyTxCbor)
 
-                var totalMemory = BigDecimal.ZERO
-                var totalSteps = BigDecimal.ZERO
+                var totalMemory = BigInteger.ZERO
+                var totalSteps = BigInteger.ZERO
                 evaluationResult.forEach { (redeemerAction, executionUnits) ->
                     totalMemory += executionUnits.memory
-                    totalSteps += executionUnits.steps
+                    totalSteps += executionUnits.cpu
                     val (redeemerTag, idx) = redeemerAction.toRedeemerTagAndIndex()
                     redeemers?.replaceAll {
                         if (it.tag == redeemerTag && it.index == idx) {
@@ -364,7 +368,7 @@ class TransactionBuilder(
                                 data = it.data
                                 exUnits = exUnits {
                                     mem = executionUnits.memory.toLong()
-                                    steps = executionUnits.steps.toLong()
+                                    steps = executionUnits.cpu.toLong()
                                 }
                             }
                         } else {
@@ -375,7 +379,12 @@ class TransactionBuilder(
                 }
 
                 val computationalFee: Long =
-                    ceil((protocolParameters.prices.memory * totalMemory + protocolParameters.prices.steps * totalSteps).toDouble()).toLong()
+                    ceil(
+                        (
+                            protocolParameters.scriptExecutionPrices.memory.multiply(totalMemory)
+                                .add(protocolParameters.scriptExecutionPrices.cpu.multiply(totalSteps))
+                            ).toDouble()
+                    ).toLong()
                 updateFeesAndCollateral(dummyTxCbor.size, computationalFee)
 
                 txBody = createTxBody()
@@ -683,8 +692,8 @@ class TransactionBuilder(
 
     companion object {
         suspend fun transactionBuilder(
-            protocolParameters: QueryCurrentProtocolBabbageParametersResult,
-            calculateTxExecutionUnits: (suspend (ByteArray) -> EvaluationResult)? = null,
+            protocolParameters: ProtocolParametersResult,
+            calculateTxExecutionUnits: (suspend (ByteArray) -> EvaluateTxResult)? = null,
             block: TransactionBuilder.() -> Unit
         ): Pair<String, ByteArray> {
             val transactionBuilder = TransactionBuilder(protocolParameters, calculateTxExecutionUnits)

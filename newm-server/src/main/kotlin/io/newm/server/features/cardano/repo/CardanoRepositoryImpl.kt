@@ -35,7 +35,6 @@ import io.newm.chain.util.Constants
 import io.newm.chain.util.b64ToByteArray
 import io.newm.chain.util.toB64String
 import io.newm.chain.util.toHexString
-import io.newm.kogmios.protocols.model.QueryCurrentProtocolBabbageParametersResult
 import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_ENCRYPTION_PASSWORD
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_ENCRYPTION_SALT
@@ -126,15 +125,6 @@ internal class CardanoRepositoryImpl(
 
         return _isMainnet!!
     }
-
-    private val currentEpochCache = Caffeine
-        .newBuilder()
-        .expireAfterWrite(Duration.ofMinutes(1))
-        .build<Int, Long>()
-    private val protocolParametersCache = Caffeine
-        .newBuilder()
-        .expireAfterWrite(Duration.ofHours(1))
-        .build<Long, QueryCurrentProtocolBabbageParametersResult>()
 
     override suspend fun queryLiveUtxos(address: String): List<Utxo> {
         val response = client.queryLiveUtxos(

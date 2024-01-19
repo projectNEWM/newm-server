@@ -1,20 +1,18 @@
 package io.newm.chain.daemon
 
-import com.google.iot.cbor.CborReader
 import io.ktor.server.application.ApplicationEnvironment
 import io.newm.chain.config.Config
 import io.newm.chain.database.entity.MonitoredAddressChain
 import io.newm.chain.database.repository.ChainRepository
 import io.newm.chain.database.repository.LedgerRepository
 import io.newm.chain.database.table.AddressTxLogTable
-import io.newm.chain.grpc.ExUnits
 import io.newm.chain.grpc.MonitorAddressResponse
 import io.newm.chain.grpc.NativeAsset
-import io.newm.chain.grpc.Redeemer
 import io.newm.chain.grpc.RedeemerTag
 import io.newm.chain.grpc.Utxo
+import io.newm.chain.grpc.exUnits
+import io.newm.chain.grpc.redeemer
 import io.newm.chain.logging.captureToSentry
-import io.newm.chain.util.hexToByteArray
 import io.newm.chain.util.toCreatedUtxoMap
 import io.newm.chain.util.toSpentUtxoMap
 import io.newm.kogmios.ChainSyncClient
@@ -22,20 +20,14 @@ import io.newm.kogmios.Client
 import io.newm.kogmios.StateQueryClient
 import io.newm.kogmios.createChainSyncClient
 import io.newm.kogmios.createStateQueryClient
-import io.newm.kogmios.protocols.messages.IntersectionFound
-import io.newm.kogmios.protocols.messages.RollBackward
-import io.newm.kogmios.protocols.messages.RollForward
-import io.newm.kogmios.protocols.messages.RollForwardData
-import io.newm.kogmios.protocols.model.Block
-import io.newm.kogmios.protocols.model.BlockAllegra
-import io.newm.kogmios.protocols.model.BlockAlonzo
-import io.newm.kogmios.protocols.model.BlockBabbage
-import io.newm.kogmios.protocols.model.BlockMary
-import io.newm.kogmios.protocols.model.BlockShelley
-import io.newm.kogmios.protocols.model.CompactGenesis
+import io.newm.kogmios.protocols.model.BlockPraos
+import io.newm.kogmios.protocols.model.GenesisEra
 import io.newm.kogmios.protocols.model.OriginString
 import io.newm.kogmios.protocols.model.PointDetail
 import io.newm.kogmios.protocols.model.PointDetailOrOrigin
+import io.newm.kogmios.protocols.model.result.RollBackward
+import io.newm.kogmios.protocols.model.result.RollForward
+import io.newm.kogmios.protocols.model.result.ShelleyGenesisConfigResult
 import io.newm.shared.daemon.Daemon
 import io.newm.shared.daemon.Daemon.Companion.RETRY_DELAY_MILLIS
 import io.newm.shared.koin.inject
@@ -43,7 +35,6 @@ import io.newm.shared.ktx.getConfigBoolean
 import io.newm.shared.ktx.getConfigInt
 import io.newm.shared.ktx.getConfigString
 import io.newm.txbuilder.ktx.cborHexToPlutusData
-import io.newm.txbuilder.ktx.toPlutusData
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.channels.BufferOverflow
@@ -78,13 +69,13 @@ class MonitorAddressDaemon(
     private val port by lazy { environment.getConfigInt("ogmios.port") }
     private val secure by lazy { environment.getConfigBoolean("ogmios.secure") }
     private val blockDaemon by inject<BlockDaemon>()
-    private val rollForwardFlow = MutableSharedFlow<RollForwardData>(
+    private val rollForwardFlow = MutableSharedFlow<RollForward>(
         replay = 0,
         extraBufferCapacity = 0,
         onBufferOverflow = BufferOverflow.SUSPEND
     )
     private var blockBufferSize = 1
-    private val blockBuffer: MutableList<Block> = mutableListOf()
+    private val blockBuffer: MutableList<BlockPraos> = mutableListOf()
 
     private var tipBlockHeight = 0L
 
@@ -176,13 +167,13 @@ class MonitorAddressDaemon(
         launch {
             // Collect from blockDaemon
             blockDaemon.committedRollForwardFlow.collect { rollForward ->
-                blockDaemonHeight = rollForward.block.header.blockHeight
+                blockDaemonHeight = (rollForward.block as BlockPraos).height
                 if (!isTipReached) {
                     return@collect
                 }
-                tipBlockHeight = max(blockDaemonHeight, rollForward.tip.blockNo)
+                tipBlockHeight = max(blockDaemonHeight, rollForward.tip.height)
                 val isTip = blockDaemonHeight == tipBlockHeight
-                processBlock(rollForward.block, isTip)
+                processBlock(rollForward.block as BlockPraos, isTip)
             }
         }
         if (isTipReached) {
@@ -191,16 +182,16 @@ class MonitorAddressDaemon(
         launch {
             // Collect from local sync until we reach the tip
             rollForwardFlow.takeWhile { !isTipReached }.collect { rollForward ->
-                val blockHeight = rollForward.block.header.blockHeight
-                tipBlockHeight = max(blockHeight, rollForward.tip.blockNo)
+                val blockHeight = (rollForward.block as BlockPraos).height
+                tipBlockHeight = max(blockHeight, rollForward.tip.height)
                 val isTip = blockHeight == tipBlockHeight
                 isTipReached = isTip || blockHeight >= blockDaemonHeight
-                processBlock(rollForward.block, isTip)
+                processBlock(rollForward.block as BlockPraos, isTip)
             }
         }
     }
 
-    private suspend fun processBlock(block: Block, isTip: Boolean) {
+    private suspend fun processBlock(block: BlockPraos, isTip: Boolean) {
         blockBuffer.add(block)
         if (blockBuffer.size == blockBufferSize || isTip) {
             // Create a copy of the list
@@ -213,7 +204,7 @@ class MonitorAddressDaemon(
     }
 
     private var lastLoggedCommit = Instant.EPOCH
-    private suspend fun commitBlocks(blocksToCommit: List<Block>, isTip: Boolean) {
+    private suspend fun commitBlocks(blocksToCommit: List<BlockPraos>, isTip: Boolean) {
 //        if (!isTip) {
 //            log.warn("starting commitBlocks()...")
 //        }
@@ -226,9 +217,9 @@ class MonitorAddressDaemon(
             newSuspendedTransaction {
                 warnLongQueriesDuration = 1000L
                 rollbackTime += measureTimeMillis {
-                    chainRepository.rollbackMonitoredAddressChain(monitorAddress, firstBlock.header.blockHeight)
+                    chainRepository.rollbackMonitoredAddressChain(monitorAddress, firstBlock.height)
                     AddressTxLogTable.deleteWhere {
-                        (address eq monitorAddress) and (blockNumber greaterEq firstBlock.header.blockHeight)
+                        (address eq monitorAddress) and (blockNumber greaterEq firstBlock.height)
                     }
                 }
 
@@ -245,15 +236,9 @@ class MonitorAddressDaemon(
                         chainRepository.insertMonitoredAddressChain(
                             MonitoredAddressChain(
                                 address = monitorAddress,
-                                height = latestBlock.header.blockHeight,
-                                slot = latestBlock.header.slot,
-                                hash = when (latestBlock) {
-                                    is BlockShelley -> latestBlock.shelley.headerHash
-                                    is BlockAllegra -> latestBlock.allegra.headerHash
-                                    is BlockMary -> latestBlock.mary.headerHash
-                                    is BlockAlonzo -> latestBlock.alonzo.headerHash
-                                    is BlockBabbage -> latestBlock.babbage.headerHash
-                                },
+                                height = latestBlock.height,
+                                slot = latestBlock.slot,
+                                hash = latestBlock.id,
                             )
                         )
                     }
@@ -262,10 +247,10 @@ class MonitorAddressDaemon(
                 // Prune any old stuff we don't need any longer
                 pruneTime = measureTimeMillis {
                     // only prune every 10000 blocks
-                    if (latestBlock.header.blockHeight % 10_000L == 0L) {
+                    if (latestBlock.height % 10_000L == 0L) {
                         chainRepository.pruneMonitoredAddressChainHistory(
                             monitorAddress,
-                            latestBlock.header.blockHeight
+                            latestBlock.height
                         )
                     }
                 }
@@ -274,7 +259,7 @@ class MonitorAddressDaemon(
             val now = Instant.now()
             val tenSecondsAgo = now.minusSeconds(10L)
             if (isTip || tenSecondsAgo.isAfter(lastLoggedCommit)) {
-                val blockHeight = latestBlock.header.blockHeight
+                val blockHeight = latestBlock.height
                 val percent = floor(blockHeight.toDouble() / tipBlockHeight.toDouble() * 10000.0) / 100.0
                 if (percent < 100.0) {
                     log.info("commitBlock: block $blockHeight of $tipBlockHeight: %.2f%% committed".format(percent))
@@ -296,7 +281,7 @@ class MonitorAddressDaemon(
         }
     }
 
-    private fun commitMonitorAddressTransactions(block: Block) {
+    private fun commitMonitorAddressTransactions(block: BlockPraos) {
         val spentUtxoMap = block.toSpentUtxoMap()
         val createdUtxoMap = block.toCreatedUtxoMap()
         val transactionIds = spentUtxoMap.keys + createdUtxoMap.keys
@@ -362,69 +347,48 @@ class MonitorAddressDaemon(
                 monitorAddressResponses.add(
                     MonitorAddressResponse
                         .newBuilder()
-                        .setBlock(block.header.blockHeight)
-                        .setSlot(block.header.slot)
+                        .setBlock(block.height)
+                        .setSlot(block.slot)
                         .setTxId(transactionId)
                         .addAllSpentUtxos(spentAddressUtxos)
                         .addAllCreatedUtxos(createdAddressUtxos)
                         .apply {
-                            when (block) {
-                                is BlockAlonzo -> block.alonzo.body.first { it.id == transactionId }.witness
-                                is BlockBabbage -> block.babbage.body.first { it.id == transactionId }.witness
-                                else -> null
-                            }?.let { witness ->
-                                witness.datums?.let { datums ->
-                                    putAllDatums(
-                                        datums.entries.associate { entry ->
-                                            Pair(
-                                                entry.key,
-                                                entry.value.cborHexToPlutusData(),
-                                            )
+                            val transaction = block.transactions.first { it.id == transactionId }
+                            transaction.datums?.let { datums ->
+                                putAllDatums(
+                                    datums.entries.associate { entry ->
+                                        Pair(
+                                            entry.key,
+                                            entry.value.cborHexToPlutusData(),
+                                        )
+                                    }
+                                )
+                            }
+                            transaction.redeemers?.let { redeemers ->
+                                putAllRedeemers(
+                                    redeemers.associate { redeemer ->
+                                        val key =
+                                            "${redeemer.validator.purpose.lowercase()}:${redeemer.validator.index}"
+                                        val plutusData = redeemer.redeemer.cborHexToPlutusData()
+                                        key to redeemer {
+                                            tag = when (redeemer.validator.purpose) {
+                                                "spend" -> RedeemerTag.SPEND
+                                                "mint" -> RedeemerTag.MINT
+                                                "certificate" -> RedeemerTag.CERT
+                                                "withdrawal" -> RedeemerTag.REWARD
+                                                else -> throw IllegalArgumentException(
+                                                    "Unknown redeemer tag"
+                                                )
+                                            }
+                                            index = redeemer.validator.index.toLong()
+                                            data = plutusData
+                                            exUnits = exUnits {
+                                                mem = redeemer.executionUnits.memory.toLong()
+                                                steps = redeemer.executionUnits.cpu.toLong()
+                                            }
                                         }
-                                    )
-                                }
-                                witness.redeemers?.let { redeemers ->
-                                    putAllRedeemers(
-                                        redeemers.entries.associate { (key, txRedeemer) ->
-                                            // log.debug("key, txRedeemer.redeemer: $key, ${txRedeemer.redeemer}")
-                                            val txRedeemerCbor = CborReader
-                                                .createFromByteArray(txRedeemer.redeemer.hexToByteArray())
-                                                .readDataItem()
-                                            val (redeemerTag, redeemerIndex) = key.split(":")
-                                                .let {
-                                                    Pair(
-                                                        when (it[0]) {
-                                                            "spend" -> RedeemerTag.SPEND
-                                                            "mint" -> RedeemerTag.MINT
-                                                            "certificate" -> RedeemerTag.CERT
-                                                            "withdrawal" -> RedeemerTag.REWARD
-                                                            else -> throw IllegalArgumentException(
-                                                                "Unknown redeemer tag"
-                                                            )
-                                                        },
-                                                        it[1].toLong()
-                                                    )
-                                                }
-
-                                            val plutusData =
-                                                txRedeemerCbor.toPlutusData(txRedeemer.redeemer)
-                                            val exUnits = ExUnits.newBuilder()
-                                                .setMem(txRedeemer.executionUnits.memory.toLong())
-                                                .setSteps(txRedeemer.executionUnits.steps.toLong())
-                                                .build()
-
-                                            Pair(
-                                                key,
-                                                Redeemer.newBuilder()
-                                                    .setTag(redeemerTag)
-                                                    .setIndex(redeemerIndex)
-                                                    .setData(plutusData)
-                                                    .setExUnits(exUnits)
-                                                    .build()
-                                            )
-                                        }
-                                    )
-                                }
+                                    }
+                                )
                             }
                         }
                         .build()
@@ -442,7 +406,7 @@ class MonitorAddressDaemon(
             batch,
             shouldReturnGeneratedValues = false
         ) { (monitorAddress, monitorAddressResponse) ->
-            this[AddressTxLogTable.blockNumber] = block.header.blockHeight
+            this[AddressTxLogTable.blockNumber] = block.height
             this[AddressTxLogTable.address] = monitorAddress
             this[AddressTxLogTable.txId] = monitorAddressResponse.txId
             val bos = ByteArrayOutputStream()
@@ -452,7 +416,7 @@ class MonitorAddressDaemon(
     }
 
     private suspend fun fetchNetworkInfo(client: StateQueryClient) {
-        val genesis = client.genesisConfig().result as CompactGenesis
+        val genesis = client.genesisConfig(GenesisEra.SHELLEY).result as ShelleyGenesisConfigResult
         Config.genesis = genesis
     }
 
@@ -479,7 +443,7 @@ class MonitorAddressDaemon(
             intersectPoints.add(
                 PointDetail(
                     slot = startSlot,
-                    hash = environment.config.property("ogmios.startHash").getString()
+                    id = environment.config.property("ogmios.startHash").getString()
                 )
             )
         } else {
@@ -487,37 +451,42 @@ class MonitorAddressDaemon(
                 OriginString()
             )
         }
-        val msgFindIntersectResponse = client.findIntersect(intersectPoints)
-
-        if (msgFindIntersectResponse.result !is IntersectionFound) {
-            throw IllegalStateException("Error finding blockchain intersect!")
-        }
+        client.findIntersect(intersectPoints)
     }
 
     private suspend fun requestBlocks(client: ChainSyncClient) {
         var lastLogged = Instant.EPOCH
         var isTip: Boolean
         do {
-            val response = client.requestNext(
+            val response = client.nextBlock(
                 timeoutMs = Client.DEFAULT_REQUEST_TIMEOUT_MS
             )
             when (response.result) {
                 is RollBackward -> {
-                    log.info("RollBackward: ${(response.result as RollBackward).rollBackward.point}")
+                    log.info("RollBackward: ${(response.result as RollBackward).point}")
                 }
 
                 is RollForward -> {
-                    (response.result as RollForward).rollForward.let { rollForward ->
-                        rollForwardFlow.emit(rollForward)
-                        val blockHeight = rollForward.block.header.blockHeight
-                        tipBlockHeight = max(blockHeight, rollForward.tip.blockNo)
-                        isTip = blockHeight == tipBlockHeight
-                        val now = Instant.now()
-                        val tenSecondsAgo = now.minusSeconds(10L)
-                        if (isTip || tenSecondsAgo.isAfter(lastLogged)) {
-                            val percent = floor(blockHeight.toDouble() / tipBlockHeight.toDouble() * 10000.0) / 100.0
-                            log.info("RollForward: block $blockHeight of $tipBlockHeight: %.2f%% sync'd".format(percent))
-                            lastLogged = now
+                    (response.result as RollForward).let { rollForward ->
+                        (rollForward.block as? BlockPraos)?.let { block ->
+                            rollForwardFlow.emit(rollForward)
+                            val blockHeight = block.height
+                            tipBlockHeight = max(blockHeight, rollForward.tip.height)
+                            isTip = blockHeight == tipBlockHeight
+                            val now = Instant.now()
+                            val tenSecondsAgo = now.minusSeconds(10L)
+                            if (isTip || tenSecondsAgo.isAfter(lastLogged)) {
+                                val percent =
+                                    floor(blockHeight.toDouble() / tipBlockHeight.toDouble() * 10000.0) / 100.0
+                                log.info(
+                                    "RollForward: block $blockHeight of $tipBlockHeight: %.2f%% sync'd".format(
+                                        percent
+                                    )
+                                )
+                                lastLogged = now
+                            }
+                        } ?: run {
+                            log.warn("RollForward: block is not BlockPraos: ${rollForward.block.javaClass.simpleName}")
                         }
                     }
                 }

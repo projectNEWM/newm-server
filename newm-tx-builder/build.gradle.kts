@@ -46,6 +46,8 @@ dependencies {
     implementation(Dependencies.Cbor.CBOR)
     implementation(Dependencies.BouncyCastle.BCPROV)
 
+    implementation(Dependencies.ApacheCommonsNumbers.FRACTION)
+
     testImplementation(Dependencies.JUnit.JUPITER)
     testImplementation(Dependencies.Mockk.MOCKK)
     testImplementation(Dependencies.GoogleTruth.TRUTH)

@@ -6,6 +6,7 @@ import io.newm.chain.database.entity.LedgerAsset
 import io.newm.chain.database.entity.LedgerAssetMetadata
 import io.newm.chain.database.entity.PaymentStakeAddress
 import io.newm.chain.database.entity.RawTransaction
+import io.newm.chain.database.entity.StakeDelegation
 import io.newm.chain.database.entity.StakeRegistration
 import io.newm.chain.model.CreatedUtxo
 import io.newm.chain.model.NativeAsset
@@ -15,13 +16,8 @@ import io.newm.chain.util.Constants.NFT_METADATA_KEY
 import io.newm.chain.util.Constants.NONCE_VRF_HEADER
 import io.newm.chain.util.Constants.receiveAddressRegex
 import io.newm.kogmios.protocols.model.Block
-import io.newm.kogmios.protocols.model.BlockAllegra
-import io.newm.kogmios.protocols.model.BlockAlonzo
-import io.newm.kogmios.protocols.model.BlockBabbage
-import io.newm.kogmios.protocols.model.BlockMary
-import io.newm.kogmios.protocols.model.BlockShelley
+import io.newm.kogmios.protocols.model.BlockPraos
 import io.newm.kogmios.protocols.model.Certificate
-import io.newm.kogmios.protocols.model.DelegationCertificate
 import io.newm.kogmios.protocols.model.MetadataBytes
 import io.newm.kogmios.protocols.model.MetadataInteger
 import io.newm.kogmios.protocols.model.MetadataList
@@ -29,101 +25,65 @@ import io.newm.kogmios.protocols.model.MetadataMap
 import io.newm.kogmios.protocols.model.MetadataString
 import io.newm.kogmios.protocols.model.MetadataValue
 import io.newm.kogmios.protocols.model.ScriptPlutusV2
-import io.newm.kogmios.protocols.model.StakeKeyRegistrationCertificate
+import io.newm.kogmios.protocols.model.StakeCredentialRegistrationCertificate
+import io.newm.kogmios.protocols.model.StakeDelegationCertificate
 import io.newm.kogmios.protocols.model.UtxoOutput
 import org.slf4j.LoggerFactory
 
-fun Block.toChainBlock() = ChainBlock(
-    blockNumber = this.header.blockHeight,
-    slotNumber = this.header.slot,
-    hash = when (this) {
-        is BlockShelley -> this.shelley.headerHash
-        is BlockAllegra -> this.allegra.headerHash
-        is BlockMary -> this.mary.headerHash
-        is BlockAlonzo -> this.alonzo.headerHash
-        is BlockBabbage -> this.babbage.headerHash
-    },
-    prevHash = this.header.prevHash,
-    nodeVkey = this.header.issuerVk,
-    nodeVrfVkey = this.header.issuerVrf.b64ToByteArray().toHexString(),
-    blockVrf = this.header.vrfInput?.output ?: "",
-    blockVrfProof = this.header.vrfInput?.proof ?: "",
-    etaVrf0 = this.header.vrfInput?.output?.let {
-        Blake2b.hash256(NONCE_VRF_HEADER + it.b64ToByteArray()).toHexString()
-    } ?: this.header.nonce?.output?.b64ToByteArray()?.toHexString() ?: "",
-    etaVrf1 = this.header.nonce?.proof?.b64ToByteArray()?.toHexString() ?: "",
-    leaderVrf0 = this.header.vrfInput?.output?.let {
-        Blake2b.hash256(LEADER_VRF_HEADER + it.b64ToByteArray()).toHexString()
-    } ?: this.header.leaderValue?.output?.b64ToByteArray()?.toHexString() ?: "",
-    leaderVrf1 = this.header.leaderValue?.proof?.b64ToByteArray()?.toHexString() ?: "",
-    blockSize = this.header.blockSize.toInt(),
-    blockBodyHash = this.header.blockHash,
-    poolOpcert = this.header.opCert?.hotVk?.b64ToByteArray()?.toHexString() ?: "",
-    sequenceNumber = this.header.opCert?.count ?: 0,
-    kesPeriod = this.header.opCert?.kesPeriod ?: 0,
-    sigmaSignature = this.header.opCert?.sigma?.b64ToByteArray()?.toHexString() ?: "",
-    protocolMajorVersion = this.header.protocolVersion?.major ?: 0,
-    protocolMinorVersion = this.header.protocolVersion?.minor ?: 0,
-    transactionDestAddresses = this.toTransactionDestAddressSet(),
-    stakeDestAddresses = this.toPaymentStakeAddressSet(),
-)
+private val log by lazy { LoggerFactory.getLogger("DbKtx") }
 
-private fun Block.toTransactionDestAddressSet() = when (this) {
-    is BlockShelley -> this.shelley.body.flatMap { txShelley ->
-        txShelley.body.outputs.map { utxoOutput ->
-            utxoOutput.address
-        }
-    }.toSet()
+fun Block.toChainBlock(): ChainBlock {
+    require(this is BlockPraos) { "Block is not a Praos block" }
+    return ChainBlock(
+        blockNumber = this.height,
+        slotNumber = this.slot,
+        hash = this.id,
+        prevHash = this.ancestor,
+        nodeVkey = this.issuer.verificationKey,
+        nodeVrfVkey = this.issuer.vrfVerificationKey,
+        blockVrf = if (this.nonce == null) this.issuer.leaderValue.output else "",
+        blockVrfProof = if (this.nonce == null) this.issuer.leaderValue.proof else "",
+        etaVrf0 = this.nonce?.output
+            ?: Blake2b.hash256(NONCE_VRF_HEADER + this.issuer.leaderValue.output.hexToByteArray()).toHexString(),
+        etaVrf1 = this.nonce?.proof ?: "",
+        leaderVrf0 = if (this.nonce != null) {
+            this.issuer.leaderValue.output
+        } else {
+            Blake2b.hash256(LEADER_VRF_HEADER + this.issuer.leaderValue.output.hexToByteArray())
+                .toHexString()
+        },
+        leaderVrf1 = if (this.nonce != null) this.issuer.leaderValue.proof else "",
+        blockSize = this.size.bytes.toInt(),
+        blockBodyHash = "", // this value is no longer sent by Ogmios 6
+        poolOpcert = this.issuer.operationalCertificate.kes.verificationKey,
+        sequenceNumber = this.issuer.operationalCertificate.count.toInt(),
+        kesPeriod = this.issuer.operationalCertificate.kes.period.toInt(),
+        sigmaSignature = "", // this value is no longer sent by Ogmios 6
+        protocolMajorVersion = this.protocol.version.major,
+        protocolMinorVersion = this.protocol.version.minor,
+        transactionDestAddresses = this.toTransactionDestAddressSet(),
+        stakeDestAddresses = this.toPaymentStakeAddressSet(),
+    )
+}
 
-    is BlockAllegra -> this.allegra.body.flatMap { txShelley ->
-        txShelley.body.outputs.map { utxoOutput ->
-            utxoOutput.address
-        }
-    }.toSet()
-
-    is BlockMary -> this.mary.body.flatMap { txShelley ->
-        txShelley.body.outputs.map { utxoOutput ->
-            utxoOutput.address
-        }
-    }.toSet()
-
-    is BlockAlonzo -> this.alonzo.body.flatMap { txShelley ->
-        txShelley.body.outputs.map { utxoOutput ->
-            utxoOutput.address
-        }
-    }.toSet()
-
-    is BlockBabbage -> this.babbage.body.flatMap { txShelley ->
-        txShelley.body.outputs.map { utxoOutput ->
+private fun Block.toTransactionDestAddressSet(): Set<String> {
+    require(this is BlockPraos) { "Block is not a Praos block" }
+    return this.transactions.flatMap { tx ->
+        tx.outputs.map { utxoOutput ->
             utxoOutput.address
         }
     }.toSet()
 }
 
-private fun Block.toPaymentStakeAddressSet(): Set<PaymentStakeAddress> = when (this) {
-    is BlockShelley -> this.shelley.body.flatMap { txShelley ->
-        txShelley.body.outputs.toPaymentStakeAddressList()
-    }.toSet()
-
-    is BlockAllegra -> this.allegra.body.flatMap { txAllegra ->
-        txAllegra.body.outputs.toPaymentStakeAddressList()
-    }.toSet()
-
-    is BlockMary -> this.mary.body.flatMap { txMary ->
-        txMary.body.outputs.toPaymentStakeAddressList()
-    }.toSet()
-
-    is BlockAlonzo -> this.alonzo.body.flatMap { txAlonzo ->
-        txAlonzo.body.outputs.toPaymentStakeAddressList()
-    }.toSet()
-
-    is BlockBabbage -> this.babbage.body.flatMap { txBabbage ->
-        txBabbage.body.outputs.toPaymentStakeAddressList()
+private fun Block.toPaymentStakeAddressSet(): Set<PaymentStakeAddress> {
+    require(this is BlockPraos) { "Block is not a Praos block" }
+    return this.transactions.flatMap { tx ->
+        tx.outputs.toPaymentStakeAddressList()
     }.toSet()
 }
 
 private fun List<UtxoOutput>.toPaymentStakeAddressList() = this.mapNotNull { utxoOutput ->
-    if (Constants.receiveAddressRegex.matches(utxoOutput.address)) {
+    if (receiveAddressRegex.matches(utxoOutput.address)) {
         PaymentStakeAddress(
             receivingAddress = utxoOutput.address,
             stakeAddress = utxoOutput.address.extractStakeAddress(Config.isMainnet),
@@ -139,62 +99,18 @@ private fun UtxoOutput.extractStakeAddressOrNull() = if (receiveAddressRegex.mat
     null
 }
 
-fun Block.toCreatedUtxoMap(): Map<String, Set<CreatedUtxo>> = when (this) {
-    is BlockShelley -> shelley.body.associate { transaction ->
-        Pair(
-            transaction.id,
-            transaction.body.outputs.toCreatedUtxoList(transaction.id, transaction.witness?.datums.orEmpty()).toSet()
-        )
-    }
-
-    is BlockAllegra -> allegra.body.associate { transaction ->
-        Pair(
-            transaction.id,
-            transaction.body.outputs.toCreatedUtxoList(transaction.id, transaction.witness?.datums.orEmpty()).toSet()
-        )
-    }
-
-    is BlockMary -> mary.body.associate { transaction ->
-        Pair(
-            transaction.id,
-            transaction.body.outputs.toCreatedUtxoList(transaction.id, transaction.witness?.datums.orEmpty()).toSet()
-        )
-    }
-
-    is BlockAlonzo -> alonzo.body.associate { transaction ->
-        Pair(
-            transaction.id,
-            transaction.body.outputs.toCreatedUtxoList(transaction.id, transaction.witness?.datums.orEmpty()).toSet()
-        )
-    }
-
-    is BlockBabbage -> babbage.body.associate { transaction ->
-        Pair(
-            transaction.id,
-            transaction.body.outputs.toCreatedUtxoList(transaction.id, transaction.witness?.datums.orEmpty()).toSet()
-        )
+fun Block.toCreatedUtxoMap(): Map<String, Set<CreatedUtxo>> {
+    require(this is BlockPraos) { "Block is not a Praos block" }
+    return this.transactions.associate { transaction ->
+        transaction.id to
+            transaction.outputs.toCreatedUtxoList(transaction.id, transaction.datums.orEmpty()).toSet()
     }
 }
 
-fun Block.toCreatedUtxoSet(): Set<CreatedUtxo> = when (this) {
-    is BlockShelley -> this.shelley.body.flatMap { txShelley ->
-        txShelley.body.outputs.toCreatedUtxoList(txShelley.id, txShelley.witness?.datums.orEmpty())
-    }.toSet()
-
-    is BlockAllegra -> this.allegra.body.flatMap { txAllegra ->
-        txAllegra.body.outputs.toCreatedUtxoList(txAllegra.id, txAllegra.witness?.datums.orEmpty())
-    }.toSet()
-
-    is BlockMary -> this.mary.body.flatMap { txMary ->
-        txMary.body.outputs.toCreatedUtxoList(txMary.id, txMary.witness?.datums.orEmpty())
-    }.toSet()
-
-    is BlockAlonzo -> this.alonzo.body.flatMap { txAlonzo ->
-        txAlonzo.body.outputs.toCreatedUtxoList(txAlonzo.id, txAlonzo.witness?.datums.orEmpty())
-    }.toSet()
-
-    is BlockBabbage -> this.babbage.body.flatMap { txBabbage ->
-        txBabbage.body.outputs.toCreatedUtxoList(txBabbage.id, txBabbage.witness?.datums.orEmpty())
+fun Block.toCreatedUtxoSet(): Set<CreatedUtxo> {
+    require(this is BlockPraos) { "Block is not a Praos block" }
+    return this.transactions.flatMap { tx ->
+        tx.outputs.toCreatedUtxoList(tx.id, tx.datums.orEmpty())
     }.toSet()
 }
 
@@ -221,8 +137,7 @@ fun List<UtxoOutput>.toCreatedUtxoList(txId: String, datumsMap: Map<String, Stri
         }
 
         if (datum != null && datum == datumHash) {
-            LoggerFactory.getLogger("DbKtx")
-                .warn("Datum hash is the same as the datum itself: utxoOutput: $utxoOutput, datumsMap: $datumsMap")
+            log.warn("Datum hash is the same as the datum itself: utxoOutput: $utxoOutput, datumsMap: $datumsMap")
         }
 
         CreatedUtxo(
@@ -231,15 +146,15 @@ fun List<UtxoOutput>.toCreatedUtxoList(txId: String, datumsMap: Map<String, Stri
             stakeAddress = utxoOutput.extractStakeAddressOrNull(),
             hash = txId,
             ix = index.toLong(),
-            lovelace = utxoOutput.value.coins,
+            lovelace = utxoOutput.value.ada.ada.lovelace,
             datumHash = datumHash,
             datum = datum,
-            scriptRef = (utxoOutput.script as? ScriptPlutusV2)?.plutusV2, // we only care about plutus v2
-            nativeAssets = utxoOutput.value.assets?.map { entry ->
+            scriptRef = (utxoOutput.script as? ScriptPlutusV2)?.cbor, // we only care about plutus v2
+            nativeAssets = utxoOutput.value.assets?.map { asset ->
                 NativeAsset(
-                    policy = entry.key.substringBefore('.'),
-                    name = entry.key.substringAfter('.', missingDelimiterValue = ""),
-                    amount = entry.value,
+                    policy = asset.policyId,
+                    name = asset.name,
+                    amount = asset.quantity,
                 )
             }.orEmpty(),
             cbor = null, // TODO: fix if we ever need it
@@ -248,279 +163,99 @@ fun List<UtxoOutput>.toCreatedUtxoList(txId: String, datumsMap: Map<String, Stri
         )
     }
 
-fun Block.toSpentUtxoMap(): Map<String, Set<SpentUtxo>> = when (this) {
-    is BlockShelley -> shelley.body.associate { transaction ->
-        Pair(
-            transaction.id,
-            transaction.body.inputs.map { utxoInput ->
+fun Block.toSpentUtxoMap(): Map<String, Set<SpentUtxo>> {
+    require(this is BlockPraos) { "Block is not a Praos block" }
+    return this.transactions.associate { transaction ->
+        transaction.id to
+            transaction.inputs.map { utxoInput ->
                 SpentUtxo(
                     transactionSpent = transaction.id,
-                    hash = utxoInput.txId,
+                    hash = utxoInput.transaction.id,
                     ix = utxoInput.index,
                 )
             }.toSet()
-        )
-    }
-
-    is BlockAllegra -> allegra.body.associate { transaction ->
-        Pair(
-            transaction.id,
-            transaction.body.inputs.map { utxoInput ->
-                SpentUtxo(
-                    transactionSpent = transaction.id,
-                    hash = utxoInput.txId,
-                    ix = utxoInput.index,
-                )
-            }.toSet()
-        )
-    }
-
-    is BlockMary -> mary.body.associate { transaction ->
-        Pair(
-            transaction.id,
-            transaction.body.inputs.map { utxoInput ->
-                SpentUtxo(
-                    transactionSpent = transaction.id,
-                    hash = utxoInput.txId,
-                    ix = utxoInput.index,
-                )
-            }.toSet()
-        )
-    }
-
-    is BlockAlonzo -> alonzo.body.associate { transaction ->
-        Pair(
-            transaction.id,
-            if (transaction.inputSource == "inputs") {
-                transaction.body.inputs
-            } else {
-                // tx failed. take the collaterals
-                transaction.body.collaterals
-            }.map { utxoInput ->
-                SpentUtxo(
-                    transactionSpent = transaction.id,
-                    hash = utxoInput.txId,
-                    ix = utxoInput.index,
-                )
-            }.toSet()
-        )
-    }
-
-    is BlockBabbage -> babbage.body.associate { transaction ->
-        Pair(
-            transaction.id,
-            if (transaction.inputSource == "inputs") {
-                transaction.body.inputs
-            } else {
-                // tx failed. take the collaterals
-                transaction.body.collaterals
-            }.map { utxoInput ->
-                SpentUtxo(
-                    transactionSpent = transaction.id,
-                    hash = utxoInput.txId,
-                    ix = utxoInput.index,
-                )
-            }.toSet()
-        )
     }
 }
 
-fun Block.toSpentUtxoSet(): Set<SpentUtxo> = when (this) {
-    is BlockShelley -> shelley.body.flatMap { transaction ->
-        transaction.body.inputs.map { utxoInput ->
+fun Block.toSpentUtxoSet(): Set<SpentUtxo> {
+    require(this is BlockPraos) { "Block is not a Praos block" }
+    return this.transactions.flatMap { tx ->
+        tx.inputs.map { utxoInput ->
             SpentUtxo(
-                transactionSpent = transaction.id,
-                hash = utxoInput.txId,
-                ix = utxoInput.index,
-            )
-        }
-    }.toSet()
-
-    is BlockAllegra -> allegra.body.flatMap { transaction ->
-        transaction.body.inputs.map { utxoInput ->
-            SpentUtxo(
-                transactionSpent = transaction.id,
-                hash = utxoInput.txId,
-                ix = utxoInput.index,
-            )
-        }
-    }.toSet()
-
-    is BlockMary -> mary.body.flatMap { transaction ->
-        transaction.body.inputs.map { utxoInput ->
-            SpentUtxo(
-                transactionSpent = transaction.id,
-                hash = utxoInput.txId,
-                ix = utxoInput.index,
-            )
-        }
-    }.toSet()
-
-    is BlockAlonzo -> alonzo.body.flatMap { transaction ->
-        if (transaction.inputSource == "inputs") {
-            transaction.body.inputs
-        } else {
-            // tx failed. take the collaterals
-            transaction.body.collaterals
-        }.map { utxoInput ->
-            SpentUtxo(
-                transactionSpent = transaction.id,
-                hash = utxoInput.txId,
-                ix = utxoInput.index,
-            )
-        }
-    }.toSet()
-
-    is BlockBabbage -> babbage.body.flatMap { transaction ->
-        if (transaction.inputSource == "inputs") {
-            transaction.body.inputs
-        } else {
-            // tx failed. take the collaterals
-            transaction.body.collaterals
-        }.map { utxoInput ->
-            SpentUtxo(
-                transactionSpent = transaction.id,
-                hash = utxoInput.txId,
+                transactionSpent = tx.id,
+                hash = utxoInput.transaction.id,
                 ix = utxoInput.index,
             )
         }
     }.toSet()
 }
 
-fun Block.toStakeRegistrationList(): List<StakeRegistration> = when (this) {
-    is BlockShelley -> this.shelley.body.flatMapIndexed { txIndex, txShelley ->
-        txShelley.body.certificates.mapIndexedNotNull { certIndex, certificate ->
-            certificate.toStakeRegistrationOrNull(this.header.slot, txIndex, certIndex)
-        }
-    }
-
-    is BlockAllegra -> this.allegra.body.flatMapIndexed { txIndex, txShelley ->
-        txShelley.body.certificates.mapIndexedNotNull { certIndex, certificate ->
-            certificate.toStakeRegistrationOrNull(this.header.slot, txIndex, certIndex)
-        }
-    }
-
-    is BlockMary -> this.mary.body.flatMapIndexed { txIndex, txShelley ->
-        txShelley.body.certificates.mapIndexedNotNull { certIndex, certificate ->
-            certificate.toStakeRegistrationOrNull(this.header.slot, txIndex, certIndex)
-        }
-    }
-
-    is BlockAlonzo -> this.alonzo.body.flatMapIndexed { txIndex, txShelley ->
-        txShelley.body.certificates.mapIndexedNotNull { certIndex, certificate ->
-            certificate.toStakeRegistrationOrNull(this.header.slot, txIndex, certIndex)
-        }
-    }
-
-    is BlockBabbage -> this.babbage.body.flatMapIndexed { txIndex, txShelley ->
-        txShelley.body.certificates.mapIndexedNotNull { certIndex, certificate ->
-            certificate.toStakeRegistrationOrNull(this.header.slot, txIndex, certIndex)
+fun Block.toStakeRegistrationList(): List<StakeRegistration> {
+    require(this is BlockPraos) { "Block is not a Praos block" }
+    return this.transactions.flatMapIndexed { txIndex, transaction ->
+        transaction.certificates.orEmpty().mapIndexedNotNull { certIndex, certificate ->
+            certificate.toStakeRegistrationOrNull(this.slot, txIndex, certIndex)
         }
     }
 }
 
-private fun Certificate.toStakeRegistrationOrNull(slot: Long, txIndex: Int, certIndex: Int) = when (this) {
-    is StakeKeyRegistrationCertificate -> {
-        StakeRegistration(
-            stakeAddress = this.stakeKeyRegistration,
+private fun Certificate.toStakeRegistrationOrNull(slot: Long, txIndex: Int, certIndex: Int): StakeRegistration? {
+    return when (this) {
+        is StakeCredentialRegistrationCertificate -> StakeRegistration(
             slot = slot,
             txIndex = txIndex,
             certIndex = certIndex,
+            stakeAddress = credential.credentialToStakeAddress(),
         )
-    }
 
-    else -> null
+        else -> null
+    }
 }
 
-fun Block.toStakeDelegationList(epoch: Long) = when (this) {
-    is BlockShelley -> this.shelley.body.flatMap { txShelley ->
-        txShelley.body.certificates.mapNotNull { certificate ->
-            certificate.toStakeDelegationOrNull(this.header.blockHeight, epoch)
-        }
-    }
+private fun String.credentialToStakeAddress(): String = if (Config.isMainnet) {
+    Bech32.encode(
+        "stake",
+        ByteArray(1) { Constants.STAKE_ADDRESS_KEY_PREFIX_MAINNET } + this.hexToByteArray()
+    )
+} else {
+    Bech32.encode(
+        "stake_test",
+        ByteArray(1) { Constants.STAKE_ADDRESS_KEY_PREFIX_TESTNET } + this.hexToByteArray()
+    )
+}
 
-    is BlockAllegra -> this.allegra.body.flatMap { txShelley ->
-        txShelley.body.certificates.mapNotNull { certificate ->
-            certificate.toStakeDelegationOrNull(this.header.blockHeight, epoch)
-        }
-    }
-
-    is BlockMary -> this.mary.body.flatMap { txShelley ->
-        txShelley.body.certificates.mapNotNull { certificate ->
-            certificate.toStakeDelegationOrNull(this.header.blockHeight, epoch)
-        }
-    }
-
-    is BlockAlonzo -> this.alonzo.body.flatMap { txShelley ->
-        txShelley.body.certificates.mapNotNull { certificate ->
-            certificate.toStakeDelegationOrNull(this.header.blockHeight, epoch)
-        }
-    }
-
-    is BlockBabbage -> this.babbage.body.flatMap { txShelley ->
-        txShelley.body.certificates.mapNotNull { certificate ->
-            certificate.toStakeDelegationOrNull(this.header.blockHeight, epoch)
+fun Block.toStakeDelegationList(epoch: Long): List<StakeDelegation> {
+    require(this is BlockPraos) { "Block is not a Praos block" }
+    return this.transactions.flatMap { transaction ->
+        transaction.certificates.orEmpty().mapNotNull { certificate ->
+            certificate.toStakeDelegationOrNull(this.height, epoch)
         }
     }
 }
 
-fun Block.toLedgerAssets(): List<LedgerAsset> =
-    when (this) {
-        is BlockShelley -> emptyList()
-        is BlockAllegra -> emptyList()
-        is BlockMary -> mary.body.flatMap { txMary ->
-            txMary.body.mint.assets.map { asset ->
+fun Block.toLedgerAssets(): List<LedgerAsset> {
+    require(this is BlockPraos) { "Block is not a Praos block" }
+    return this.transactions.flatMap { transaction ->
+        transaction.mint?.map { (policyId, nameAndAmountMap) ->
+            nameAndAmountMap.map { (name, amount) ->
                 LedgerAsset(
-                    policy = asset.policyId,
-                    name = asset.name,
-                    supply = asset.quantity,
-                    txId = txMary.id,
+                    policy = policyId,
+                    name = name,
+                    supply = amount,
+                    txId = transaction.id,
                 )
             }
-        }
-
-        is BlockAlonzo -> alonzo.body.flatMap { txAlonzo ->
-            txAlonzo.body.mint.assets.map { asset ->
-                LedgerAsset(
-                    policy = asset.policyId,
-                    name = asset.name,
-                    supply = asset.quantity,
-                    txId = txAlonzo.id,
-                )
-            }
-        }
-
-        is BlockBabbage -> babbage.body.flatMap { txBabbage ->
-            txBabbage.body.mint.assets.map { asset ->
-                LedgerAsset(
-                    policy = asset.policyId,
-                    name = asset.name,
-                    supply = asset.quantity,
-                    txId = txBabbage.id,
-                )
-            }
-        }
+        }.orEmpty().flatten()
     }
+}
 
-fun Block.toAssetMetadataList(ledgerAssets: List<LedgerAsset>): List<LedgerAssetMetadata> =
-    when (this) {
-        is BlockShelley -> emptyList()
-        is BlockAllegra -> emptyList()
-        is BlockMary -> mary.body.flatMap { transaction ->
-            val assetMetadatas = transaction.metadata?.body?.blob?.get(NFT_METADATA_KEY) as? MetadataMap
-            assetMetadatas.extractAssetMetadata(ledgerAssets)
-        }
-
-        is BlockAlonzo -> alonzo.body.flatMap { transaction ->
-            val assetMetadatas = transaction.metadata?.body?.blob?.get(NFT_METADATA_KEY) as? MetadataMap
-            assetMetadatas.extractAssetMetadata(ledgerAssets)
-        }
-
-        is BlockBabbage -> babbage.body.flatMap { transaction ->
-            val assetMetadatas = transaction.metadata?.body?.blob?.get(NFT_METADATA_KEY) as? MetadataMap
-            assetMetadatas.extractAssetMetadata(ledgerAssets)
-        }
+fun Block.toAssetMetadataList(ledgerAssets: List<LedgerAsset>): List<LedgerAssetMetadata> {
+    require(this is BlockPraos) { "Block is not a Praos block" }
+    return this.transactions.flatMap { transaction ->
+        val assetMetadatas = transaction.metadata?.labels?.get(NFT_METADATA_KEY)?.json as? MetadataMap
+        assetMetadatas.extractAssetMetadata(ledgerAssets)
     }
+}
 
 fun MetadataMap?.extractAssetMetadata(
     ledgerAssets: List<LedgerAsset>,
@@ -599,146 +334,39 @@ private fun buildAssetMetadata(
     )
 }
 
-fun Block.toRawTransactionList() = when (this) {
-    is BlockShelley -> {
-        with(shelley) {
-            val blockNumber = header.blockHeight
-            val slotNumber = header.slot
-            val blockSize = header.blockSize.toInt()
-            val blockBodyHash = header.blockHash
-            val protocolVersionMajor = header.protocolVersion?.major ?: 0
-            val protocolVersionMinor = header.protocolVersion?.minor ?: 0
+fun Block.toRawTransactionList(): List<RawTransaction> {
+    require(this is BlockPraos) { "Block is not a Praos block" }
+    return this.transactions.map { transaction ->
+        val blockNumber = this.height
+        val slotNumber = this.slot
+        val blockSize = this.size.bytes.toInt()
+        val blockBodyHash = "" // this value is no longer sent by Ogmios 6
+        val protocolVersionMajor = this.protocol.version.major
+        val protocolVersionMinor = this.protocol.version.minor
 
-            body.map { transaction ->
-                val tx = transaction.raw!!.b64ToByteArray()
-
-                RawTransaction(
-                    blockNumber = blockNumber,
-                    slotNumber = slotNumber,
-                    blockSize = blockSize,
-                    blockBodyHash = blockBodyHash,
-                    protocolVersionMajor = protocolVersionMajor,
-                    protocolVersionMinor = protocolVersionMinor,
-                    txId = transaction.id,
-                    tx = tx,
-                )
-            }
-        }
-    }
-
-    is BlockAllegra -> {
-        with(allegra) {
-            val blockNumber = header.blockHeight
-            val slotNumber = header.slot
-            val blockSize = header.blockSize.toInt()
-            val blockBodyHash = header.blockHash
-            val protocolVersionMajor = header.protocolVersion?.major ?: 0
-            val protocolVersionMinor = header.protocolVersion?.minor ?: 0
-
-            body.map { transaction ->
-                val tx = transaction.raw!!.b64ToByteArray()
-
-                RawTransaction(
-                    blockNumber = blockNumber,
-                    slotNumber = slotNumber,
-                    blockSize = blockSize,
-                    blockBodyHash = blockBodyHash,
-                    protocolVersionMajor = protocolVersionMajor,
-                    protocolVersionMinor = protocolVersionMinor,
-                    txId = transaction.id,
-                    tx = tx,
-                )
-            }
-        }
-    }
-
-    is BlockMary -> {
-        with(mary) {
-            val blockNumber = header.blockHeight
-            val slotNumber = header.slot
-            val blockSize = header.blockSize.toInt()
-            val blockBodyHash = header.blockHash
-            val protocolVersionMajor = header.protocolVersion?.major ?: 0
-            val protocolVersionMinor = header.protocolVersion?.minor ?: 0
-
-            body.map { transaction ->
-                val tx = transaction.raw!!.b64ToByteArray()
-
-                RawTransaction(
-                    blockNumber = blockNumber,
-                    slotNumber = slotNumber,
-                    blockSize = blockSize,
-                    blockBodyHash = blockBodyHash,
-                    protocolVersionMajor = protocolVersionMajor,
-                    protocolVersionMinor = protocolVersionMinor,
-                    txId = transaction.id,
-                    tx = tx,
-                )
-            }
-        }
-    }
-
-    is BlockAlonzo -> {
-        with(alonzo) {
-            val blockNumber = header.blockHeight
-            val slotNumber = header.slot
-            val blockSize = header.blockSize.toInt()
-            val blockBodyHash = header.blockHash
-            val protocolVersionMajor = header.protocolVersion?.major ?: 0
-            val protocolVersionMinor = header.protocolVersion?.minor ?: 0
-
-            body.map { transaction ->
-                val tx = transaction.raw!!.b64ToByteArray()
-
-                RawTransaction(
-                    blockNumber = blockNumber,
-                    slotNumber = slotNumber,
-                    blockSize = blockSize,
-                    blockBodyHash = blockBodyHash,
-                    protocolVersionMajor = protocolVersionMajor,
-                    protocolVersionMinor = protocolVersionMinor,
-                    txId = transaction.id,
-                    tx = tx,
-                )
-            }
-        }
-    }
-
-    is BlockBabbage -> {
-        with(babbage) {
-            val blockNumber = header.blockHeight
-            val slotNumber = header.slot
-            val blockSize = header.blockSize.toInt()
-            val blockBodyHash = header.blockHash
-            val protocolVersionMajor = header.protocolVersion?.major ?: 0
-            val protocolVersionMinor = header.protocolVersion?.minor ?: 0
-
-            body.map { transaction ->
-                val tx = transaction.raw!!.b64ToByteArray()
-
-                RawTransaction(
-                    blockNumber = blockNumber,
-                    slotNumber = slotNumber,
-                    blockSize = blockSize,
-                    blockBodyHash = blockBodyHash,
-                    protocolVersionMajor = protocolVersionMajor,
-                    protocolVersionMinor = protocolVersionMinor,
-                    txId = transaction.id,
-                    tx = tx,
-                )
-            }
-        }
+        RawTransaction(
+            blockNumber = blockNumber,
+            slotNumber = slotNumber,
+            blockSize = blockSize,
+            blockBodyHash = blockBodyHash,
+            protocolVersionMajor = protocolVersionMajor,
+            protocolVersionMinor = protocolVersionMinor,
+            txId = transaction.id,
+            tx = transaction.cbor!!.hexToByteArray(),
+        )
     }
 }
 
-private fun Certificate.toStakeDelegationOrNull(blockNumber: Long, epoch: Long) = when (this) {
-    is DelegationCertificate -> {
-        io.newm.chain.database.entity.StakeDelegation(
-            blockNumber = blockNumber,
-            stakeAddress = this.stakeDelegation.delegator,
-            poolId = this.stakeDelegation.delegatee,
-            epoch = epoch,
-        )
+private fun Certificate.toStakeDelegationOrNull(blockNumber: Long, epoch: Long): StakeDelegation? = when (this) {
+    is StakeDelegationCertificate -> {
+        this.stakePool?.id?.let { poolId ->
+            StakeDelegation(
+                blockNumber = blockNumber,
+                stakeAddress = this.credential.credentialToStakeAddress(),
+                poolId = poolId,
+                epoch = epoch,
+            )
+        }
     }
 
     else -> null
