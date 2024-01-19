@@ -5,12 +5,12 @@ import org.jetbrains.exposed.sql.Op
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SqlExpressionBuilder
 import org.jetbrains.exposed.sql.Table
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
 
 fun Table.firstOrNull(where: SqlExpressionBuilder.() -> Op<Boolean>): ResultRow? =
-    select(where).limit(1).firstOrNull()
+    selectAll().where(where).limit(1).firstOrNull()
 
-fun Table.exists(where: SqlExpressionBuilder.() -> Op<Boolean>): Boolean = !select(where).empty()
+fun Table.exists(where: SqlExpressionBuilder.() -> Op<Boolean>): Boolean = firstOrNull(where) != null
 
 fun <T : Comparable<T>> IdTable<T>.firstHavingIdOrNull(id: T): ResultRow? =
     this.firstOrNull { this@firstHavingIdOrNull.id eq id }
