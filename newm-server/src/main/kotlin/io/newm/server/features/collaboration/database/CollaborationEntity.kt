@@ -28,7 +28,7 @@ import org.jetbrains.exposed.sql.leftJoin
 import org.jetbrains.exposed.sql.lowerCase
 import org.jetbrains.exposed.sql.mapLazy
 import org.jetbrains.exposed.sql.or
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -66,7 +66,7 @@ class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                 otherTable = SongTable,
                 onColumn = { songId },
                 otherColumn = { id }
-            ).select {
+            ).selectAll().where {
                 (SongTable.archived eq false) and
                     (SongTable.ownerId eq ownerId) and
                     (CollaborationTable.email.lowerCase() eq email.lowercase()) and
@@ -112,7 +112,7 @@ class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                         otherTable = SongTable,
                         onColumn = { songId },
                         otherColumn = { id }
-                    ).select(andOp)
+                    ).selectAll().where(andOp)
                 )
             }
             return res.orderBy(CollaborationTable.createdAt to (filters.sortOrder ?: SortOrder.ASC))
@@ -149,8 +149,8 @@ class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                     otherTable = UserTable,
                     onColumn = { CollaborationTable.email.lowerCase() },
                     otherColumn = { email.lowerCase() }
-                ).slice(CollaborationTable.email.lowerCase(), SongTable.id.count())
-                    .select(AndOp(ops))
+                ).select(CollaborationTable.email.lowerCase(), SongTable.id.count())
+                    .where(AndOp(ops))
                     .groupBy(CollaborationTable.email.lowerCase())
                     .orderBy(CollaborationTable.email.lowerCase(), filters.sortOrder ?: SortOrder.ASC)
                     .mapLazy { it[CollaborationTable.email.lowerCase()] to it[SongTable.id.count()] }

@@ -27,7 +27,6 @@ import org.jetbrains.exposed.sql.lowerCase
 import org.jetbrains.exposed.sql.mapLazy
 import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.select
-import org.jetbrains.exposed.sql.selectAll
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
@@ -140,8 +139,8 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         fun genres(filters: SongFilters): SizedIterable<String> {
             val ops = filters.toOps()
             val genre = SongTable.genres.unnest()
-            val fields = SongTable.slice(SongTable.id.count(), genre)
-            val query = if (ops.isEmpty()) fields.selectAll() else fields.select(AndOp(ops))
+            val fields = SongTable.select(SongTable.id.count(), genre)
+            val query = if (ops.isEmpty()) fields else fields.where(AndOp(ops))
             return query.groupBy(genre)
                 .orderBy(SongTable.id.count(), filters.sortOrder ?: SortOrder.DESC)
                 .mapLazy { it[genre] }

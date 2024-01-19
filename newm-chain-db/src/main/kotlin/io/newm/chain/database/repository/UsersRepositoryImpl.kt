@@ -4,7 +4,7 @@ import com.github.benmanes.caffeine.cache.Caffeine
 import io.newm.chain.database.entity.User
 import io.newm.chain.database.table.UsersTable
 import org.jetbrains.exposed.sql.insertAndGetId
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 import java.time.Duration
@@ -15,7 +15,7 @@ class UsersRepositoryImpl : UsersRepository {
         .expireAfterWrite(Duration.ofMinutes(15))
         .build<Long, User?> { userId ->
             transaction {
-                UsersTable.select { UsersTable.id eq userId }.firstOrNull()?.let { row ->
+                UsersTable.selectAll().where { UsersTable.id eq userId }.limit(1).firstOrNull()?.let { row ->
                     User(
                         id = row[UsersTable.id].value,
                         name = row[UsersTable.name],
@@ -28,7 +28,7 @@ class UsersRepositoryImpl : UsersRepository {
 
     override fun getByName(name: String): User? {
         return transaction {
-            UsersTable.select { UsersTable.name eq name }.firstOrNull()?.let { row ->
+            UsersTable.selectAll().where { UsersTable.name eq name }.limit(1).firstOrNull()?.let { row ->
                 User(
                     id = row[UsersTable.id].value,
                     name = row[UsersTable.name],
