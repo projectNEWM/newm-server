@@ -6,11 +6,13 @@ import io.newm.server.aws.SqsMessageReceiver
 import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_EVEARA_STATUS_CHECK_MINUTES
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_MONITOR_PAYMENT_ADDRESS_TIMEOUT_MIN
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_OUTLET_STATUS_CHECK_MINUTES
 import io.newm.server.features.arweave.repo.ArweaveRepository
 import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.daemon.QuartzSchedulerDaemon
 import io.newm.server.features.minting.repo.MintingRepository
 import io.newm.server.features.scheduler.EvearaReleaseStatusJob
+import io.newm.server.features.scheduler.OutletReleaseStatusJob
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.repo.SongRepository
@@ -41,11 +43,11 @@ class MintingMessageReceiver : SqsMessageReceiver {
         log.info { "received: ${message.body}" }
         val mintingStatusSqsMessage: MintingStatusSqsMessage = json.decodeFromString(message.body)
         val dbSong = songRepository.get(mintingStatusSqsMessage.songId)
-        if (dbSong.mintingStatus == MintingStatus.Minted) {
-            // Sometimes, we will manually reprocess a song. If it is already minted successfully when we do
+        if (dbSong.mintingStatus == MintingStatus.Released) {
+            // Sometimes, we will manually reprocess a song. If it is already released successfully when we do
             // dead-letter queue reprocessing, we can safely ignore these messages and let them be successfully
             // consumed.
-            log.info { "DB MintingStatus: ${dbSong.mintingStatus} is already Minted. Ignoring SQS message." }
+            log.info { "DB MintingStatus: ${dbSong.mintingStatus} is already Released. Ignoring SQS message." }
             return
         }
         if (dbSong.mintingStatus != mintingStatusSqsMessage.mintingStatus) {
@@ -144,6 +146,10 @@ class MintingMessageReceiver : SqsMessageReceiver {
                     val song = songRepository.get(mintingStatusSqsMessage.songId)
 
                     val jobKey = JobKey("EvearaReleaseStatusJob-${song.id}", "EvearaReleaseStatusJobGroup")
+                    if (quartzSchedulerDaemon.jobExists(jobKey)) {
+                        log.warn { "Job $jobKey is already scheduled" }
+                        return
+                    }
                     val jobDetail = newJob(EvearaReleaseStatusJob::class.java)
                         .withIdentity(jobKey)
                         .usingJobData("songId", song.id.toString())
@@ -238,6 +244,43 @@ class MintingMessageReceiver : SqsMessageReceiver {
                     songRepository.updateSongMintingStatus(
                         songId = mintingStatusSqsMessage.songId,
                         mintingStatus = MintingStatus.MintingException,
+                        errorMessage = "$errorMessage: ${e.message}",
+                    )
+                    throw DistributeAndMintException(errorMessage, e).also { it.captureToSentry() }
+                }
+            }
+
+            MintingStatus.Minted -> {
+                try {
+                    // Schedule a job to check the stream platform release status every 12 hours
+                    val song = songRepository.get(mintingStatusSqsMessage.songId)
+
+                    val jobKey = JobKey("OutletReleaseStatusJob-${song.id}", "OutletReleaseStatusJobGroup")
+                    if (quartzSchedulerDaemon.jobExists(jobKey)) {
+                        log.warn { "Job $jobKey is already scheduled" }
+                        return
+                    }
+                    val jobDetail = newJob(OutletReleaseStatusJob::class.java)
+                        .withIdentity(jobKey)
+                        .usingJobData("songId", song.id.toString())
+                        .requestRecovery(true)
+                        .build()
+                    val trigger = newTrigger()
+                        .forJob(jobDetail)
+                        .withSchedule(
+                            simpleSchedule()
+                                .withIntervalInMinutes(configRepository.getInt(CONFIG_KEY_OUTLET_STATUS_CHECK_MINUTES))
+                                .repeatForever()
+                        )
+                        .build()
+
+                    quartzSchedulerDaemon.scheduleJob(jobDetail, trigger)
+                } catch (e: Throwable) {
+                    val errorMessage = "Error while creating OutletReleaseStatusJob!"
+                    log.error(errorMessage, e)
+                    songRepository.updateSongMintingStatus(
+                        songId = mintingStatusSqsMessage.songId,
+                        mintingStatus = MintingStatus.ReleaseCheckException,
                         errorMessage = "$errorMessage: ${e.message}",
                     )
                     throw DistributeAndMintException(errorMessage, e).also { it.captureToSentry() }

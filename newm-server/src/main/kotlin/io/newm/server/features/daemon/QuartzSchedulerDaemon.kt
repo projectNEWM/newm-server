@@ -149,6 +149,8 @@ class QuartzSchedulerDaemon : Daemon {
         return date
     }
 
+    fun jobExists(jobKey: JobKey): Boolean = scheduler.checkExists(jobKey)
+
     companion object {
         private const val EVEARA_SYNC_QUARTZ_JOB_KEY = "eveara_sync_job"
         private const val EVEARA_SYNC_QUARTZ_GROUP = "eveara_sync_group"

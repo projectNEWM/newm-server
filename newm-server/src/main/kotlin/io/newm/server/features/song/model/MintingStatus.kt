@@ -22,6 +22,10 @@ enum class MintingStatus {
     SubmittedForDistributionException, // An exception occurred while checking submitted for distribution. - 16
     ArweaveUploadException, // An exception occurred while uploading to Arweave. - 17
     MintingException, // An exception occurred while minting. - 18
+    ReleaseCheckException, // An exception occurred while checking release status. - 19
+
+    Released, // Song has been officially released by at least one major streaming platform (e.g., Spotify) - 20
+
     /**
      * --- IMPORTANT! ---
      * All new statuses should be added to the end of this list. We don't want to change the ordinal of any existing

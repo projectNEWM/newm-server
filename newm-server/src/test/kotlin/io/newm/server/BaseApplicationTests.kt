@@ -24,6 +24,9 @@ import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.database.SongReceiptTable
 import io.newm.server.features.song.database.SongTable
 import io.newm.server.features.song.model.Song
+import io.newm.server.features.user.QUALIFIER_APPLE_MUSIC_PROFILE_URL_VERIFIER
+import io.newm.server.features.user.QUALIFIER_SOUND_CLOUD_PROFILE_URL_VERIFIER
+import io.newm.server.features.user.QUALIFIER_SPOTIFY_PROFILE_URL_VERIFIER
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
 import io.newm.server.features.user.model.User
@@ -46,7 +49,6 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.TestInstance
 import org.koin.core.context.GlobalContext.loadKoinModules
-import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Container
@@ -143,13 +145,13 @@ open class BaseApplicationTests {
                 single { mockk<LinkedInUserProvider>(relaxed = true) }
                 single { mockk<AppleUserProvider>(relaxed = true) }
                 single { mockk<AmazonS3>(relaxed = true) }
-                single<OutletProfileUrlVerifier>(named("spotifyProfileUrlVerifier")) {
+                single<OutletProfileUrlVerifier>(QUALIFIER_SPOTIFY_PROFILE_URL_VERIFIER) {
                     mockk<OutletProfileUrlVerifier>(relaxed = true)
                 }
-                single<OutletProfileUrlVerifier>(named("appleMusicProfileUrlVerifier")) {
+                single<OutletProfileUrlVerifier>(QUALIFIER_APPLE_MUSIC_PROFILE_URL_VERIFIER) {
                     mockk<OutletProfileUrlVerifier>(relaxed = true)
                 }
-                single<OutletProfileUrlVerifier>(named("soundCloudProfileUrlVerifier")) {
+                single<OutletProfileUrlVerifier>(QUALIFIER_SOUND_CLOUD_PROFILE_URL_VERIFIER) {
                     mockk<OutletProfileUrlVerifier>(relaxed = true)
                 }
             }
