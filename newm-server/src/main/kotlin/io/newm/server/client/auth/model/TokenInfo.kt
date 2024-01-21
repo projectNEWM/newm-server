@@ -1,4 +1,4 @@
-package io.newm.server.features.user.model
+package io.newm.server.client.auth.model
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

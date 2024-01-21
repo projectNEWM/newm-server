@@ -34,5 +34,6 @@ interface ConfigRepository {
         const val CONFIG_KEY_EVEARA_STATUS_CHECK_MINUTES = "eveara.statusCheckMinutes"
         const val CONFIG_KEY_EMAIL_WHITELIST = "email.whitelist"
         const val CONFIG_KEY_DISTRIBUTION_PRICE_USD = "distribution.price.usd"
+        const val CONFIG_KEY_OUTLET_STATUS_CHECK_MINUTES = "outlet.statusCheckMinutes"
     }
 }
