@@ -26,12 +26,12 @@ class SpotifyProfileUrlVerifier(
             accept(ContentType.Application.Json)
         }
         if (!response.status.isSuccess()) {
-            throw IllegalArgumentException("Spotify profile not found for $spotifyProfileId")
+            throw OutletProfileUrlVerificationException("Spotify profile not found for $spotifyProfileId")
         }
         val spotifyArtistResponse: SpotifyArtistResponse = response.body()
         logger.info { "Spotify profile response for $spotifyProfileId : $spotifyArtistResponse" }
         if (spotifyArtistResponse.name != stageOrFullName) {
-            throw IllegalArgumentException("Spotify profile name (${spotifyArtistResponse.name}) does not match stageOrFullName ($stageOrFullName) for $spotifyProfileId")
+            throw OutletProfileUrlVerificationException("Spotify profile name (${spotifyArtistResponse.name}) does not match stageOrFullName ($stageOrFullName) for $spotifyProfileId")
         }
     }
 
