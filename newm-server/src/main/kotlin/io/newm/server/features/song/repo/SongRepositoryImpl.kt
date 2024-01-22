@@ -528,8 +528,8 @@ internal class SongRepositoryImpl(
             MintingStatus.ReadyToDistribute,
             MintingStatus.SubmittedForDistribution,
             MintingStatus.Distributed,
-            MintingStatus.Pending,
-            MintingStatus.Minted -> {
+            MintingStatus.Released,
+            MintingStatus.Pending -> {
                 // Update SQS
                 val messageToSend = json.encodeToString(
                     MintingStatusSqsMessage(
