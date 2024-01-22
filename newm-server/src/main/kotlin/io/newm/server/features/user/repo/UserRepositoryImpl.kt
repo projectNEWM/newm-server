@@ -15,6 +15,7 @@ import io.newm.server.features.user.oauth.providers.AppleUserProvider
 import io.newm.server.features.user.oauth.providers.FacebookUserProvider
 import io.newm.server.features.user.oauth.providers.GoogleUserProvider
 import io.newm.server.features.user.oauth.providers.LinkedInUserProvider
+import io.newm.server.features.user.verify.OutletProfileUrlVerificationException
 import io.newm.server.features.user.verify.OutletProfileUrlVerifier
 import io.newm.server.ktx.asValidEmail
 import io.newm.server.ktx.asValidUrl
@@ -32,6 +33,7 @@ import io.newm.shared.ktx.error
 import io.newm.shared.ktx.existsHavingId
 import io.newm.shared.ktx.isValidPassword
 import io.newm.shared.ktx.orNull
+import io.newm.shared.ktx.warn
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf
@@ -58,14 +60,20 @@ internal class UserRepositoryImpl(
         user.checkFieldLengths()
         val email = user.email.asValidEmail().asVerifiedEmail(user.authCode)
         val passwordHash = user.newPassword.asValidPassword(user.confirmPassword).toHash()
-        user.spotifyProfile?.let {
-            spotifyProfileUrlVerifier.verify(it, user.stageOrFullName)
-        }
-        user.appleMusicProfile?.let {
-            appleMusicProfileUrlVerifier.verify(it, user.stageOrFullName)
-        }
-        user.soundCloudProfile?.let {
-            soundCloudProfileUrlVerifier.verify(it, user.stageOrFullName)
+        try {
+            user.spotifyProfile?.let {
+                spotifyProfileUrlVerifier.verify(it, user.stageOrFullName)
+            }
+            user.appleMusicProfile?.let {
+                appleMusicProfileUrlVerifier.verify(it, user.stageOrFullName)
+            }
+            user.soundCloudProfile?.let {
+                soundCloudProfileUrlVerifier.verify(it, user.stageOrFullName)
+            }
+        } catch (exception: OutletProfileUrlVerificationException) {
+            val message = exception.message ?: exception.toString()
+            logger.warn { message }
+            throw HttpUnprocessableEntityException(message)
         }
 
         return transaction {
@@ -196,20 +204,26 @@ internal class UserRepositoryImpl(
             user.websiteUrl?.let { entity.websiteUrl = it.orNull()?.asValidUrl() }
             user.twitterUrl?.let { entity.twitterUrl = it.orNull()?.asValidUrl() }
             user.instagramUrl?.let { entity.instagramUrl = it.orNull()?.asValidUrl() }
-            user.spotifyProfile?.let {
-                entity.spotifyProfile = it.substringBefore("?").orNull()?.also { profile ->
-                    spotifyProfileUrlVerifier.verify(profile, entity.stageOrFullName)
+            try {
+                user.spotifyProfile?.let {
+                    entity.spotifyProfile = it.substringBefore("?").orNull()?.also { profile ->
+                        spotifyProfileUrlVerifier.verify(profile, entity.stageOrFullName)
+                    }
                 }
-            }
-            user.soundCloudProfile?.let {
-                entity.soundCloudProfile = it.substringBefore("?").orNull()?.also { profile ->
-                    soundCloudProfileUrlVerifier.verify(profile, entity.stageOrFullName)
+                user.soundCloudProfile?.let {
+                    entity.soundCloudProfile = it.substringBefore("?").orNull()?.also { profile ->
+                        soundCloudProfileUrlVerifier.verify(profile, entity.stageOrFullName)
+                    }
                 }
-            }
-            user.appleMusicProfile?.let {
-                entity.appleMusicProfile = it.substringBefore("?").orNull()?.also { profile ->
-                    appleMusicProfileUrlVerifier.verify(profile, entity.stageOrFullName)
+                user.appleMusicProfile?.let {
+                    entity.appleMusicProfile = it.substringBefore("?").orNull()?.also { profile ->
+                        appleMusicProfileUrlVerifier.verify(profile, entity.stageOrFullName)
+                    }
                 }
+            } catch (exception: OutletProfileUrlVerificationException) {
+                val message = exception.message ?: exception.toString()
+                logger.warn { message }
+                throw HttpUnprocessableEntityException(message)
             }
             user.location?.let { entity.location = it.orNull() }
             user.role?.let { entity.role = it.orNull() }

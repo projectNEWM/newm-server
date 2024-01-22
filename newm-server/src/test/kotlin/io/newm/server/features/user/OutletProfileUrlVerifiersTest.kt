@@ -14,6 +14,7 @@ import io.newm.server.client.auth.appleMusicBearer
 import io.newm.server.client.auth.soundCloudBearer
 import io.newm.server.client.auth.spotifyBearer
 import io.newm.server.features.user.verify.AppleMusicProfileUrlVerifier
+import io.newm.server.features.user.verify.OutletProfileUrlVerificationException
 import io.newm.server.features.user.verify.SoundCloudProfileUrlVerifier
 import io.newm.server.features.user.verify.SpotifyProfileUrlVerifier
 import io.newm.server.security.KeyParser
@@ -95,7 +96,7 @@ class OutletProfileUrlVerifiersTest : BaseApplicationTests() {
     @Disabled("This test is disabled because it requires a valid Spotify API token")
     fun testSpotifyProfileUrlVerifierFailure() = runBlocking {
         val verifier = SpotifyProfileUrlVerifier(spotifyHttpClient)
-        val exception = assertThrows<IllegalArgumentException> {
+        val exception = assertThrows<OutletProfileUrlVerificationException> {
             verifier.verify("https://open.spotify.com/artist/3WrFJ7ztbogyGnTHbHJFl2", "Teh Beatles")
         }
         assertThat(exception.message).isEqualTo("Spotify profile name (The Beatles) does not match stageOrFullName (Teh Beatles) for 3WrFJ7ztbogyGnTHbHJFl2")
@@ -112,7 +113,7 @@ class OutletProfileUrlVerifiersTest : BaseApplicationTests() {
     @Disabled("This test is disabled because it requires a valid Apple Music JWT token")
     fun testAppleMusicProfileUrlVerifierFailure() = runBlocking {
         val verifier = AppleMusicProfileUrlVerifier(appleMusicHttpClient)
-        val exception = assertThrows<IllegalArgumentException> {
+        val exception = assertThrows<OutletProfileUrlVerificationException> {
             verifier.verify("https://music.apple.com/us/artist/beatles/136975", "Teh Beatles")
         }
         assertThat(exception.message).isEqualTo("Apple Music profile name (The Beatles) does not match stageOrFullName (Teh Beatles) for 136975")
@@ -129,7 +130,7 @@ class OutletProfileUrlVerifiersTest : BaseApplicationTests() {
     @Disabled("This test is disabled because it requires a valid SoundCloud API token")
     fun testSoundCloudProfileUrlVerifierFailure() = runBlocking {
         val verifier = SoundCloudProfileUrlVerifier(soundCloudHttpClient)
-        val exception = assertThrows<IllegalArgumentException> {
+        val exception = assertThrows<OutletProfileUrlVerificationException> {
             verifier.verify("https://soundcloud.com/bogusprofile123", "Cringe Noize")
         }
         assertThat(exception.message).isEqualTo("SoundCloud profile not found for https://soundcloud.com/bogusprofile123")

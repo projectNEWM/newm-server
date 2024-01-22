@@ -27,7 +27,7 @@ class SoundCloudProfileUrlVerifier(
             try {
                 Jsoup.connect(outletProfileUrl).get()
             } catch (e: HttpStatusException) {
-                throw IllegalArgumentException("SoundCloud profile not found for $outletProfileUrl")
+                throw OutletProfileUrlVerificationException("SoundCloud profile not found for $outletProfileUrl")
             }
         }
         val userId = doc.select("meta[property='twitter:app:url:iphone']").attr("content").substringAfterLast(':')
@@ -37,7 +37,7 @@ class SoundCloudProfileUrlVerifier(
             accept(ContentType.Application.Json)
         }
         if (!response.status.isSuccess()) {
-            throw IllegalArgumentException("SoundCloud profile not found for $userId")
+            throw OutletProfileUrlVerificationException("SoundCloud profile not found for $userId")
         }
         val soundCloudArtistResponse: SoundCloudArtistResponse = response.body()
         logger.info { "SoundCloud profile response for $userId : $soundCloudArtistResponse" }

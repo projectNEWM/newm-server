@@ -26,15 +26,15 @@ class AppleMusicProfileUrlVerifier(
             accept(ContentType.Application.Json)
         }
         if (!response.status.isSuccess()) {
-            throw IllegalArgumentException("Apple Music profile not found for $appleProfileId")
+            throw OutletProfileUrlVerificationException("Apple Music profile not found for $appleProfileId")
         }
         val appleMusicArtistResponse: AppleMusicArtistResponse = response.body()
         if (appleMusicArtistResponse.data.isEmpty()) {
-            throw IllegalArgumentException("Apple Music profile not found for $appleProfileId")
+            throw OutletProfileUrlVerificationException("Apple Music profile not found for $appleProfileId")
         }
         logger.info { "Apple Music profile response for $appleProfileId : $appleMusicArtistResponse" }
         if (appleMusicArtistResponse.data[0].attributes.name != stageOrFullName) {
-            throw IllegalArgumentException("Apple Music profile name (${appleMusicArtistResponse.data[0].attributes.name}) does not match stageOrFullName ($stageOrFullName) for $appleProfileId")
+            throw OutletProfileUrlVerificationException("Apple Music profile name (${appleMusicArtistResponse.data[0].attributes.name}) does not match stageOrFullName ($stageOrFullName) for $appleProfileId")
         }
     }
 
