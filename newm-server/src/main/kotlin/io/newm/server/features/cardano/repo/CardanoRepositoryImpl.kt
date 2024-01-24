@@ -437,7 +437,7 @@ internal class CardanoRepositoryImpl(
         const val MUTEX_NAME = "newm-server"
 
         // Charli3 ADA/USD OracleFeed token
-        private const val CHARLI3_ADA_USD_POLICY = "3d0d75aad1eb32f0ce78fb1ebc101b6b51de5d8f13c12daa88017624"
+        private const val CHARLI3_ADA_USD_POLICY = "08c56c0fa73748a23c3bc1d9e6a60a4187416fc4ff8fe3475506990e"
         private const val CHARLI3_ADA_USD_NAME = "4f7261636c6546656564"
     }
 }
