@@ -388,7 +388,7 @@ class CollaborationRoutesTests : BaseApplicationTests() {
             allCollaborations += addCollaborationToDatabase(testUserId, offset)
         }
 
-        for (expectedStatus in CollaborationStatus.values()) {
+        for (expectedStatus in CollaborationStatus.entries) {
             // filter out
             val expectedCollaborations = allCollaborations.filter { it.status == expectedStatus }
 
@@ -878,7 +878,7 @@ private fun addCollaborationToDatabase(
             royaltyRate = 1f / (offset + 2)
             credited = (offset % 2) == 1
             featured = (offset % 2) == 0
-            this.status = status ?: CollaborationStatus.values()[offset % CollaborationStatus.values().size]
+            this.status = status ?: CollaborationStatus.entries[offset % CollaborationStatus.entries.size]
         }
     }.toModel()
 }

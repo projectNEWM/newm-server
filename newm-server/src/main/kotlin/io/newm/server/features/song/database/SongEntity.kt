@@ -6,6 +6,7 @@ import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongBarcodeType
 import io.newm.server.features.song.model.SongFilters
+import io.newm.server.features.user.database.UserTable
 import io.newm.shared.exposed.overlaps
 import io.newm.shared.exposed.unnest
 import io.newm.shared.ktx.exists
@@ -23,10 +24,11 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.count
+import org.jetbrains.exposed.sql.innerJoin
 import org.jetbrains.exposed.sql.lowerCase
 import org.jetbrains.exposed.sql.mapLazy
 import org.jetbrains.exposed.sql.or
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
@@ -132,14 +134,32 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     companion object : UUIDEntityClass<SongEntity>(SongTable) {
         fun all(filters: SongFilters): SizedIterable<SongEntity> {
             val ops = filters.toOps()
-            return (if (ops.isEmpty()) all() else find(AndOp(ops)))
-                .orderBy(SongTable.createdAt to (filters.sortOrder ?: SortOrder.ASC))
+            return when {
+                ops.isEmpty() -> all()
+                filters.phrase == null -> find(AndOp(ops))
+                else -> SongEntity.wrapRows(
+                    SongTable.innerJoin(
+                        otherTable = UserTable,
+                        onColumn = { ownerId },
+                        otherColumn = { id }
+                    ).selectAll().where(AndOp(ops))
+                )
+            }.orderBy(SongTable.createdAt to (filters.sortOrder ?: SortOrder.ASC))
         }
 
         fun genres(filters: SongFilters): SizedIterable<String> {
             val ops = filters.toOps()
             val genre = SongTable.genres.unnest()
-            val fields = SongTable.select(SongTable.id.count(), genre)
+            val table = if (filters.phrase == null) {
+                SongTable
+            } else {
+                SongTable.innerJoin(
+                    otherTable = UserTable,
+                    onColumn = { ownerId },
+                    otherColumn = { id }
+                )
+            }
+            val fields = table.select(SongTable.id.count(), genre)
             val query = if (ops.isEmpty()) fields else fields.where(AndOp(ops))
             return query.groupBy(genre)
                 .orderBy(SongTable.id.count(), filters.sortOrder ?: SortOrder.DESC)
@@ -183,6 +203,13 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                         or (SongTable.description.lowerCase() like pattern)
                         or (SongTable.album.lowerCase() like pattern)
                         or (SongTable.nftName.lowerCase() like pattern)
+                        or (UserTable.nickname.lowerCase() like pattern)
+                        or (
+                            (UserTable.nickname eq null) and (
+                                (UserTable.firstName.lowerCase() like pattern)
+                                    or (UserTable.lastName.lowerCase() like pattern)
+                                )
+                            )
                     )
             }
             nftNames?.let {

@@ -460,7 +460,7 @@ class SongRoutesTests : BaseApplicationTests() {
             allSongs += addSongToDatabase(offset)
         }
 
-        for (expectedMintingStatus in MintingStatus.values()) {
+        for (expectedMintingStatus in MintingStatus.entries) {
             // filter out
             val expectedSongs = allSongs.filter { it.mintingStatus == expectedMintingStatus }
 
@@ -569,8 +569,13 @@ class SongRoutesTests : BaseApplicationTests() {
         }
 
         // filter out for phrase
-        val expectedSongs = allSongs.filter {
-            phrase in it.title!! || phrase in it.description!! || phrase in it.album!! || phrase in it.nftName!!
+        val expectedSongs = allSongs.filter { song ->
+            val stageOrFullName = transaction { UserEntity[song.ownerId!!].stageOrFullName }
+            phrase in song.title!! ||
+                phrase in song.description!! ||
+                phrase in song.album!! ||
+                phrase in song.nftName!! ||
+                phrase in stageOrFullName
         }
 
         // Get all songs forcing pagination
@@ -938,6 +943,13 @@ fun addSongToDatabase(
     } ?: transaction {
         UserEntity.new {
             email = "artist$offset@newm.io"
+            if (phrase != null) {
+                when (offset % 7) {
+                    0 -> firstName = "firstName$offset $phrase blah blah"
+                    1 -> lastName = "lastName$offset $phrase blah blah"
+                    2 -> nickname = "nickname$offset $phrase blah blah"
+                }
+            }
         }
     }.id
 
@@ -949,16 +961,16 @@ fun addSongToDatabase(
         }
     }.id
 
-    fun phraseOrBlank(offset: Int, target: Int) = phrase?.takeIf { offset % 4 == target }.orEmpty()
+    fun phraseOrBlank(offset: Int, target: Int) = phrase?.takeIf { offset % 7 == target }.orEmpty()
 
     return transaction {
         SongEntity.new {
             this.archived = archived
             this.ownerId = ownerEntityId
-            title = "title$offset ${phraseOrBlank(offset, 0)} blah blah"
-            description = "description$offset ${phraseOrBlank(offset, 1)} blah blah"
-            album = "album$offset ${phraseOrBlank(offset, 2)} blah blah"
-            nftName = "nftName$offset ${phraseOrBlank(offset, 3)} blah blah"
+            title = "title$offset ${phraseOrBlank(offset, 3)} blah blah"
+            description = "description$offset ${phraseOrBlank(offset, 4)} blah blah"
+            album = "album$offset ${phraseOrBlank(offset, 5)} blah blah"
+            nftName = "nftName$offset ${phraseOrBlank(offset, 6)} blah blah"
             genres = arrayOf("genre${offset}_0", "genre${offset}_1")
             moods = arrayOf("mood${offset}_0", "mood${offset}_1")
             coverArtUrl = "https://newm.io/cover$offset"
@@ -970,7 +982,7 @@ fun addSongToDatabase(
             phonographicCopyrightOwner = "copyright$phonographicCopyrightOwner"
             phonographicCopyrightYear = 2 * offset
             parentalAdvisory = "parentalAdvisory$offset"
-            barcodeType = SongBarcodeType.values()[offset % SongBarcodeType.values().size]
+            barcodeType = SongBarcodeType.entries[offset % SongBarcodeType.entries.size]
             barcodeNumber = "barcodeNumber$offset"
             isrc = "isrc$offset"
             iswc = "iswc$offset"
@@ -984,9 +996,9 @@ fun addSongToDatabase(
             streamUrl = "https://newm.io/stream$offset"
             duration = offset
             nftPolicyId = "nftPolicyId$offset"
-            audioEncodingStatus = AudioEncodingStatus.values()[offset % AudioEncodingStatus.values().size]
-            mintingStatus = MintingStatus.values()[offset % MintingStatus.values().size]
-            marketplaceStatus = MarketplaceStatus.values()[offset % MarketplaceStatus.values().size]
+            audioEncodingStatus = AudioEncodingStatus.entries[offset % AudioEncodingStatus.entries.size]
+            mintingStatus = MintingStatus.entries[offset % MintingStatus.entries.size]
+            marketplaceStatus = MarketplaceStatus.entries[offset % MarketplaceStatus.entries.size]
             this.paymentKeyId = paymentKeyId
             if (init != null) {
                 this.apply { init() }
