@@ -334,7 +334,7 @@ fun addSongToDatabase(
             phonographicCopyrightOwner = "copyright$phonographicCopyrightOwner"
             phonographicCopyrightYear = 2 * offset
             parentalAdvisory = "parentalAdvisory$offset"
-            barcodeType = SongBarcodeType.values()[offset % SongBarcodeType.values().size]
+            barcodeType = SongBarcodeType.entries[offset % SongBarcodeType.entries.size]
             barcodeNumber = "barcodeNumber$offset"
             isrc = "isrc$offset"
             iswc = "iswc$offset"
@@ -348,9 +348,9 @@ fun addSongToDatabase(
             streamUrl = "https://newm.io/stream$offset"
             duration = offset
             nftPolicyId = nftPolicy
-            audioEncodingStatus = AudioEncodingStatus.values()[offset % AudioEncodingStatus.values().size]
-            mintingStatus = MintingStatus.values()[offset % MintingStatus.values().size]
-            marketplaceStatus = MarketplaceStatus.values()[offset % MarketplaceStatus.values().size]
+            audioEncodingStatus = AudioEncodingStatus.entries[offset % AudioEncodingStatus.entries.size]
+            mintingStatus = MintingStatus.entries[offset % MintingStatus.entries.size]
+            marketplaceStatus = MarketplaceStatus.entries[offset % MarketplaceStatus.entries.size]
             this.paymentKeyId = paymentKeyId
             if (init != null) {
                 this.apply { init() }
