@@ -528,8 +528,8 @@ internal class SongRepositoryImpl(
             MintingStatus.ReadyToDistribute,
             MintingStatus.SubmittedForDistribution,
             MintingStatus.Distributed,
-            MintingStatus.Released,
-            MintingStatus.Pending -> {
+            MintingStatus.Pending,
+            MintingStatus.Minted -> {
                 // Update SQS
                 val messageToSend = json.encodeToString(
                     MintingStatusSqsMessage(
@@ -563,6 +563,12 @@ internal class SongRepositoryImpl(
             MintingStatus.Declined -> {
                 logger.info { "Declined song $songId FAILED!" }
                 sendMintingNotification("failed", songId)
+            }
+
+            MintingStatus.Released -> {
+                logger.info { "Released song $songId SUCCESS!" }
+                // TODO: Maybe send an email once the song is live on spotify.
+                // sendMintingNotification("released", songId)
             }
 
             else -> Unit
