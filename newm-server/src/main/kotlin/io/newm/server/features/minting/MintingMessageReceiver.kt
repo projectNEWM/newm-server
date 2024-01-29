@@ -184,44 +184,7 @@ class MintingMessageReceiver : SqsMessageReceiver {
             }
 
             MintingStatus.Distributed -> {
-                // Now that the song is distributed. Wait until it is Released on spotify before we mint.
-                try {
-                    // Schedule a job to check the stream platform release status every 12 hours
-                    val song = songRepository.get(mintingStatusSqsMessage.songId)
-
-                    val jobKey = JobKey("OutletReleaseStatusJob-${song.id}", "OutletReleaseStatusJobGroup")
-                    if (quartzSchedulerDaemon.jobExists(jobKey)) {
-                        log.warn { "Job $jobKey is already scheduled" }
-                        return
-                    }
-                    val jobDetail = newJob(OutletReleaseStatusJob::class.java)
-                        .withIdentity(jobKey)
-                        .usingJobData("songId", song.id.toString())
-                        .requestRecovery(true)
-                        .build()
-                    val trigger = newTrigger()
-                        .forJob(jobDetail)
-                        .withSchedule(
-                            simpleSchedule()
-                                .withIntervalInMinutes(configRepository.getInt(CONFIG_KEY_OUTLET_STATUS_CHECK_MINUTES))
-                                .repeatForever()
-                        )
-                        .build()
-
-                    quartzSchedulerDaemon.scheduleJob(jobDetail, trigger)
-                } catch (e: Throwable) {
-                    val errorMessage = "Error while creating OutletReleaseStatusJob!"
-                    log.error(errorMessage, e)
-                    songRepository.updateSongMintingStatus(
-                        songId = mintingStatusSqsMessage.songId,
-                        mintingStatus = MintingStatus.ReleaseCheckException,
-                        errorMessage = "$errorMessage: ${e.message}",
-                    )
-                    throw DistributeAndMintException(errorMessage, e).also { it.captureToSentry() }
-                }
-            }
-
-            MintingStatus.Released -> {
+                // Now that the song is Distributed, upload the song assets to arweave
                 try {
                     val song = songRepository.get(mintingStatusSqsMessage.songId)
                     if (song.nftPolicyId?.isNotBlank() == true && song.nftName?.isNotBlank() == true) {
@@ -282,6 +245,44 @@ class MintingMessageReceiver : SqsMessageReceiver {
                     songRepository.updateSongMintingStatus(
                         songId = mintingStatusSqsMessage.songId,
                         mintingStatus = MintingStatus.MintingException,
+                        errorMessage = "$errorMessage: ${e.message}",
+                    )
+                    throw DistributeAndMintException(errorMessage, e).also { it.captureToSentry() }
+                }
+            }
+
+            MintingStatus.Minted -> {
+                // Now that the song is minted. Wait until it is Released on spotify.
+                try {
+                    // Schedule a job to check the stream platform release status every 12 hours
+                    val song = songRepository.get(mintingStatusSqsMessage.songId)
+
+                    val jobKey = JobKey("OutletReleaseStatusJob-${song.id}", "OutletReleaseStatusJobGroup")
+                    if (quartzSchedulerDaemon.jobExists(jobKey)) {
+                        log.warn { "Job $jobKey is already scheduled" }
+                        return
+                    }
+                    val jobDetail = newJob(OutletReleaseStatusJob::class.java)
+                        .withIdentity(jobKey)
+                        .usingJobData("songId", song.id.toString())
+                        .requestRecovery(true)
+                        .build()
+                    val trigger = newTrigger()
+                        .forJob(jobDetail)
+                        .withSchedule(
+                            simpleSchedule()
+                                .withIntervalInMinutes(configRepository.getInt(CONFIG_KEY_OUTLET_STATUS_CHECK_MINUTES))
+                                .repeatForever()
+                        )
+                        .build()
+
+                    quartzSchedulerDaemon.scheduleJob(jobDetail, trigger)
+                } catch (e: Throwable) {
+                    val errorMessage = "Error while creating OutletReleaseStatusJob!"
+                    log.error(errorMessage, e)
+                    songRepository.updateSongMintingStatus(
+                        songId = mintingStatusSqsMessage.songId,
+                        mintingStatus = MintingStatus.ReleaseCheckException,
                         errorMessage = "$errorMessage: ${e.message}",
                     )
                     throw DistributeAndMintException(errorMessage, e).also { it.captureToSentry() }
