@@ -43,11 +43,11 @@ class MintingMessageReceiver : SqsMessageReceiver {
         log.info { "received: ${message.body}" }
         val mintingStatusSqsMessage: MintingStatusSqsMessage = json.decodeFromString(message.body)
         val dbSong = songRepository.get(mintingStatusSqsMessage.songId)
-        if (dbSong.mintingStatus == MintingStatus.Minted) {
-            // Sometimes, we will manually reprocess a song. If it is already minted successfully when we do
+        if (dbSong.mintingStatus == MintingStatus.Released) {
+            // Sometimes, we will manually reprocess a song. If it is already minted & released successfully when we do
             // dead-letter queue reprocessing, we can safely ignore these messages and let them be successfully
             // consumed.
-            log.info { "DB MintingStatus: ${dbSong.mintingStatus} is already Minted. Ignoring SQS message." }
+            log.info { "DB MintingStatus: ${dbSong.mintingStatus} is already Released. Ignoring SQS message." }
             return
         }
         if (dbSong.mintingStatus != mintingStatusSqsMessage.mintingStatus) {
