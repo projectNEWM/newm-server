@@ -20,31 +20,32 @@ val QUALIFIER_SPOTIFY_PROFILE_URL_VERIFIER = named("spotifyProfileUrlVerifier")
 val QUALIFIER_APPLE_MUSIC_PROFILE_URL_VERIFIER = named("appleMusicProfileUrlVerifier")
 val QUALIFIER_SOUND_CLOUD_PROFILE_URL_VERIFIER = named("soundCloudProfileUrlVerifier")
 
-val userKoinModule = module {
-    single<OutletProfileUrlVerifier>(QUALIFIER_SPOTIFY_PROFILE_URL_VERIFIER) {
-        SpotifyProfileUrlVerifier(get(QUALIFIER_SPOTIFY_HTTP_CLIENT))
+val userKoinModule =
+    module {
+        single<OutletProfileUrlVerifier>(QUALIFIER_SPOTIFY_PROFILE_URL_VERIFIER) {
+            SpotifyProfileUrlVerifier(get(QUALIFIER_SPOTIFY_HTTP_CLIENT))
+        }
+        single<OutletProfileUrlVerifier>(QUALIFIER_APPLE_MUSIC_PROFILE_URL_VERIFIER) {
+            AppleMusicProfileUrlVerifier(get(QUALIFIER_APPLE_MUSIC_HTTP_CLIENT))
+        }
+        single<OutletProfileUrlVerifier>(QUALIFIER_SOUND_CLOUD_PROFILE_URL_VERIFIER) {
+            SoundCloudProfileUrlVerifier(get(QUALIFIER_SOUND_CLOUD_HTTP_CLIENT))
+        }
+        single<UserRepository> {
+            UserRepositoryImpl(
+                get(),
+                get(),
+                get(),
+                get(),
+                get(),
+                get(),
+                get(QUALIFIER_SPOTIFY_PROFILE_URL_VERIFIER),
+                get(QUALIFIER_APPLE_MUSIC_PROFILE_URL_VERIFIER),
+                get(QUALIFIER_SOUND_CLOUD_PROFILE_URL_VERIFIER)
+            )
+        }
+        single { GoogleUserProvider(get(), get()) }
+        single { FacebookUserProvider(get(), get()) }
+        single { LinkedInUserProvider(get(), get()) }
+        single { AppleUserProvider(get()) }
     }
-    single<OutletProfileUrlVerifier>(QUALIFIER_APPLE_MUSIC_PROFILE_URL_VERIFIER) {
-        AppleMusicProfileUrlVerifier(get(QUALIFIER_APPLE_MUSIC_HTTP_CLIENT))
-    }
-    single<OutletProfileUrlVerifier>(QUALIFIER_SOUND_CLOUD_PROFILE_URL_VERIFIER) {
-        SoundCloudProfileUrlVerifier(get(QUALIFIER_SOUND_CLOUD_HTTP_CLIENT))
-    }
-    single<UserRepository> {
-        UserRepositoryImpl(
-            get(),
-            get(),
-            get(),
-            get(),
-            get(),
-            get(),
-            get(QUALIFIER_SPOTIFY_PROFILE_URL_VERIFIER),
-            get(QUALIFIER_APPLE_MUSIC_PROFILE_URL_VERIFIER),
-            get(QUALIFIER_SOUND_CLOUD_PROFILE_URL_VERIFIER)
-        )
-    }
-    single { GoogleUserProvider(get(), get()) }
-    single { FacebookUserProvider(get(), get()) }
-    single { LinkedInUserProvider(get(), get()) }
-    single { AppleUserProvider(get()) }
-}

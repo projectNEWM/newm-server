@@ -19,39 +19,42 @@ import kotlinx.serialization.json.JsonPrimitive
 import org.junit.jupiter.api.Test
 
 class CloudinaryRoutesTests : BaseApplicationTests() {
-
     @Test
-    fun testSign() = runBlocking {
-        val start = Instant.now().epochSecond
+    fun testSign() =
+        runBlocking {
+            val start = Instant.now().epochSecond
 
-        val params = mapOf(
-            "string1" to JsonPrimitive("test"),
-            "double1" to JsonPrimitive(Math.PI),
-            "long1" to JsonPrimitive(Long.MAX_VALUE),
-            "bool1" to JsonPrimitive(true),
-            "bool2" to JsonPrimitive(false)
-        )
+            val params =
+                mapOf(
+                    "string1" to JsonPrimitive("test"),
+                    "double1" to JsonPrimitive(Math.PI),
+                    "long1" to JsonPrimitive(Long.MAX_VALUE),
+                    "bool1" to JsonPrimitive(true),
+                    "bool2" to JsonPrimitive(false)
+                )
 
-        val response = client.post("v1/cloudinary/sign") {
-            bearerAuth(testUserToken)
-            contentType(ContentType.Application.Json)
-            setBody(params)
+            val response =
+                client.post("v1/cloudinary/sign") {
+                    bearerAuth(testUserToken)
+                    contentType(ContentType.Application.Json)
+                    setBody(params)
+                }
+
+            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+            val resp = response.body<CloudinarySignResponse>()
+            val cloudinary by inject<Cloudinary>()
+            assertThat(resp.cloudName).isEqualTo(cloudinary.config.cloudName)
+            assertThat(resp.apiKey).isEqualTo(cloudinary.config.apiKey)
+            assertThat(resp.timestamp).isAtLeast(start)
+
+            val expSignature =
+                cloudinary.apiSignRequest(
+                    mutableMapOf<String, Any>().apply {
+                        params.mapValuesTo(this) { it.value.value }
+                        put("timestamp", resp.timestamp)
+                    },
+                    cloudinary.config.apiSecret
+                )
+            assertThat(resp.signature).isEqualTo(expSignature)
         }
-
-        assertThat(response.status).isEqualTo(HttpStatusCode.OK)
-        val resp = response.body<CloudinarySignResponse>()
-        val cloudinary by inject<Cloudinary>()
-        assertThat(resp.cloudName).isEqualTo(cloudinary.config.cloudName)
-        assertThat(resp.apiKey).isEqualTo(cloudinary.config.apiKey)
-        assertThat(resp.timestamp).isAtLeast(start)
-
-        val expSignature = cloudinary.apiSignRequest(
-            mutableMapOf<String, Any>().apply {
-                params.mapValuesTo(this) { it.value.value }
-                put("timestamp", resp.timestamp)
-            },
-            cloudinary.config.apiSecret
-        )
-        assertThat(resp.signature).isEqualTo(expSignature)
-    }
 }

@@ -17,9 +17,15 @@ interface ChainRepository {
 
     fun rollback(blockNumber: Long): Int
 
-    fun rollbackMonitoredAddressChain(address: String, blockNumber: Long): Int
+    fun rollbackMonitoredAddressChain(
+        address: String,
+        blockNumber: Long
+    ): Int
 
-    fun pruneMonitoredAddressChainHistory(address: String, currentBlockNumber: Long): Int
+    fun pruneMonitoredAddressChainHistory(
+        address: String,
+        currentBlockNumber: Long
+    ): Int
 
     fun getFindIntersectPairsAddressChain(address: String): List<PointDetail>
 

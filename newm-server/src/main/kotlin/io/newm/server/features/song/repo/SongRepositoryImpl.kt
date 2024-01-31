@@ -85,7 +85,6 @@ internal class SongRepositoryImpl(
     private val collaborationRepository: CollaborationRepository,
     private val emailRepository: EmailRepository,
 ) : SongRepository {
-
     private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
     private val json: Json by inject()
     private val queueUrl by lazy { environment.getConfigString("aws.sqs.minting.queueUrl") }
@@ -93,7 +92,10 @@ internal class SongRepositoryImpl(
         propertiesFromResource("audio-mime-types.properties")
     }
 
-    override suspend fun add(song: Song, ownerId: UUID): UUID {
+    override suspend fun add(
+        song: Song,
+        ownerId: UUID
+    ): UUID {
         logger.debug { "add: song = $song" }
         val title = song.title ?: throw HttpUnprocessableEntityException("missing title")
         val genres = song.genres ?: throw HttpUnprocessableEntityException("missing genres")
@@ -129,7 +131,11 @@ internal class SongRepositoryImpl(
         }
     }
 
-    override suspend fun update(songId: UUID, song: Song, requesterId: UUID?) {
+    override suspend fun update(
+        songId: UUID,
+        song: Song,
+        requesterId: UUID?
+    ) {
         logger.debug { "update: songId = $songId, song = $song, requesterId = $requesterId" }
         song.checkFieldLengths()
         transaction {
@@ -192,7 +198,10 @@ internal class SongRepositoryImpl(
         }
     }
 
-    override fun set(songId: UUID, editor: (SongEntity) -> Unit) {
+    override fun set(
+        songId: UUID,
+        editor: (SongEntity) -> Unit
+    ) {
         logger.debug { "set: songId = $songId" }
         transaction {
             val entity = SongEntity[songId]
@@ -200,7 +209,10 @@ internal class SongRepositoryImpl(
         }
     }
 
-    override suspend fun delete(songId: UUID, requesterId: UUID) {
+    override suspend fun delete(
+        songId: UUID,
+        requesterId: UUID
+    ) {
         logger.debug { "delete: songId = $songId, requesterId = $requesterId" }
         transaction {
             val entity = SongEntity[songId]
@@ -216,7 +228,11 @@ internal class SongRepositoryImpl(
         }
     }
 
-    override suspend fun getAll(filters: SongFilters, offset: Int, limit: Int): List<Song> {
+    override suspend fun getAll(
+        filters: SongFilters,
+        offset: Int,
+        limit: Int
+    ): List<Song> {
         logger.debug { "getAll: filters = $filters, offset = $offset, limit = $limit" }
         return transaction {
             SongEntity.all(filters)
@@ -232,7 +248,11 @@ internal class SongRepositoryImpl(
         }
     }
 
-    override suspend fun getGenres(filters: SongFilters, offset: Int, limit: Int): List<String> {
+    override suspend fun getGenres(
+        filters: SongFilters,
+        offset: Int,
+        limit: Int
+    ): List<String> {
         logger.debug { "getGenres: filters = $filters, offset = $offset, limit = $limit" }
         return transaction {
             SongEntity.genres(filters)
@@ -268,8 +288,9 @@ internal class SongRepositoryImpl(
 
             // enforce supported format
             val type = Tika().detect(file)
-            val ext = mimeTypes.getProperty(type)
-                ?: throw HttpUnprocessableEntityException("Unsupported media type: $type")
+            val ext =
+                mimeTypes.getProperty(type)
+                    ?: throw HttpUnprocessableEntityException("Unsupported media type: $type")
 
             // enforce duration
             val header = AudioFileIO.readAs(file, ext).audioHeader
@@ -315,11 +336,12 @@ internal class SongRepositoryImpl(
         val cookieDom = environment.getConfigString("ktor.deployment.cookieDomain")
 
         // fix up the url so that the url does not point to old cloudfront distros
-        val streamUrl = URLBuilder().apply {
-            protocol = URLProtocol.createOrDefault(mediaHostUrl.protocol)
-            host = mediaHostUrl.host
-            encodedPath = songStreamUrl.path
-        }.build()
+        val streamUrl =
+            URLBuilder().apply {
+                protocol = URLProtocol.createOrDefault(mediaHostUrl.protocol)
+                host = mediaHostUrl.host
+                encodedPath = songStreamUrl.path
+            }.build()
 
         return cloudfrontAudioStreamData {
             url = streamUrl.toString()
@@ -329,7 +351,11 @@ internal class SongRepositoryImpl(
         }
     }
 
-    override suspend fun processStreamTokenAgreement(songId: UUID, requesterId: UUID, accepted: Boolean) {
+    override suspend fun processStreamTokenAgreement(
+        songId: UUID,
+        requesterId: UUID,
+        accepted: Boolean
+    ) {
         logger.debug { "processStreamTokenAgreement: songId = $songId, accepted = $accepted" }
 
         checkRequester(songId, requesterId, verified = true)
@@ -344,10 +370,11 @@ internal class SongRepositoryImpl(
             }
             update(
                 songId = songId,
-                song = Song(
-                    mintingStatus = MintingStatus.StreamTokenAgreementApproved,
-                    tokenAgreementUrl = s3UrlStringOf(bucketName, key)
-                )
+                song =
+                    Song(
+                        mintingStatus = MintingStatus.StreamTokenAgreementApproved,
+                        tokenAgreementUrl = s3UrlStringOf(bucketName, key)
+                    )
             )
         } else {
             update(songId, Song(mintingStatus = MintingStatus.Undistributed))
@@ -411,11 +438,15 @@ internal class SongRepositoryImpl(
         )
     }
 
-    override suspend fun getMintingPaymentAmount(songId: UUID, requesterId: UUID): MintPaymentResponse {
+    override suspend fun getMintingPaymentAmount(
+        songId: UUID,
+        requesterId: UUID
+    ): MintPaymentResponse {
         logger.debug { "getMintingPaymentAmount: songId = $songId" }
         // TODO: We might need to change this code in the future if we're charging NEWM tokens in addition to ada
-        val numberOfCollaborators = collaborationRepository.getAllBySongId(songId)
-            .count { it.royaltyRate.orZero() > BigDecimal.ZERO }
+        val numberOfCollaborators =
+            collaborationRepository.getAllBySongId(songId)
+                .count { it.royaltyRate.orZero() > BigDecimal.ZERO }
         val mintCostBase = configRepository.getLong(CONFIG_KEY_MINT_PRICE)
         // defined in whole usd cents with 6 decimals
         val dspPriceUsd = configRepository.getLong(CONFIG_KEY_DISTRIBUTION_PRICE_USD)
@@ -463,10 +494,11 @@ internal class SongRepositoryImpl(
         val sendTokenFeeUsd = usdAdaExchangeRate * sendTokenFee.toBigInteger() / 1000000.toBigInteger()
         val sendTokenFeePerArtistUsd = usdAdaExchangeRate * minUtxo.toBigInteger() / 1000000.toBigInteger()
 
+        // we send an extra changeAmountLovelace to ensure we have enough ada to cover a return utxo
         return MintPaymentResponse(
-            cborHex = // we send an extra changeAmountLovelace to ensure we have enough ada to cover a return utxo
-            CborInteger.create(mintCostLovelace + dspPriceLovelace.toLong() + changeAmountLovelace).toCborByteArray()
-                .toHexString(),
+            cborHex =
+                CborInteger.create(mintCostLovelace + dspPriceLovelace.toLong() + changeAmountLovelace).toCborByteArray()
+                    .toHexString(),
             adaPrice = (mintCostLovelace.toBigInteger() + dspPriceLovelace).toAdaString(),
             usdPrice = usdPrice.toAdaString(),
             dspPriceAda = dspPriceLovelace.toAdaString(),
@@ -494,23 +526,28 @@ internal class SongRepositoryImpl(
         val song = get(songId)
         val key = Key.generateNew()
         val keyId = cardanoRepository.saveKey(key)
-        val transaction = cardanoRepository.buildTransaction {
-            this.sourceUtxos.addAll(sourceUtxos)
-            this.outputUtxos.add(
-                outputUtxo {
-                    address = key.address
-                    lovelace = song.mintCostLovelace.toString()
-                }
-            )
-            this.changeAddress = changeAddress
-        }
+        val transaction =
+            cardanoRepository.buildTransaction {
+                this.sourceUtxos.addAll(sourceUtxos)
+                this.outputUtxos.add(
+                    outputUtxo {
+                        address = key.address
+                        lovelace = song.mintCostLovelace.toString()
+                    }
+                )
+                this.changeAddress = changeAddress
+            }
 
         update(songId, Song(paymentKeyId = keyId))
         updateSongMintingStatus(songId, MintingStatus.MintingPaymentRequested)
         return transaction.transactionCbor.toByteArray().toHexString()
     }
 
-    override suspend fun updateSongMintingStatus(songId: UUID, mintingStatus: MintingStatus, errorMessage: String) {
+    override suspend fun updateSongMintingStatus(
+        songId: UUID,
+        mintingStatus: MintingStatus,
+        errorMessage: String
+    ) {
         // Update DB
         update(
             songId,
@@ -531,12 +568,13 @@ internal class SongRepositoryImpl(
             MintingStatus.Pending,
             MintingStatus.Minted -> {
                 // Update SQS
-                val messageToSend = json.encodeToString(
-                    MintingStatusSqsMessage(
-                        songId = songId,
-                        mintingStatus = mintingStatus
+                val messageToSend =
+                    json.encodeToString(
+                        MintingStatusSqsMessage(
+                            songId = songId,
+                            mintingStatus = mintingStatus
+                        )
                     )
-                )
                 logger.info { "sending: $messageToSend" }
                 SendMessageRequest()
                     .withQueueUrl(queueUrl)
@@ -575,7 +613,10 @@ internal class SongRepositoryImpl(
         }
     }
 
-    override fun saveOrUpdateReceipt(songId: UUID, mintPaymentResponse: MintPaymentResponse) {
+    override fun saveOrUpdateReceipt(
+        songId: UUID,
+        mintPaymentResponse: MintPaymentResponse
+    ) {
         logger.debug { "saveOrUpdateReceipt: songId = $songId" }
         transaction {
             SongReceiptEntity.find { SongReceiptTable.songId eq songId }.firstOrNull()?.let { receipt ->
@@ -615,36 +656,44 @@ internal class SongRepositoryImpl(
         sendMintingNotification("started", songId)
     }
 
-    private suspend fun sendMintingNotification(path: String, songId: UUID) {
-        val (song, owner) = transaction {
-            val song = SongEntity[songId]
-            song to UserEntity[song.ownerId]
-        }
+    private suspend fun sendMintingNotification(
+        path: String,
+        songId: UUID
+    ) {
+        val (song, owner) =
+            transaction {
+                val song = SongEntity[songId]
+                song to UserEntity[song.ownerId]
+            }
 
-        val collaborations = collaborationRepository.getAllBySongId(song.id.value)
-            .filter { it.royaltyRate.orZero() > BigDecimal.ZERO }
+        val collaborations =
+            collaborationRepository.getAllBySongId(song.id.value)
+                .filter { it.royaltyRate.orZero() > BigDecimal.ZERO }
 
-        val collaborators = collaborationRepository.getCollaborators(
-            userId = owner.id.value,
-            filters = CollaboratorFilters(emails = collaborations.mapNotNull { it.email }),
-            offset = 0,
-            limit = Int.MAX_VALUE
-        )
+        val collaborators =
+            collaborationRepository.getCollaborators(
+                userId = owner.id.value,
+                filters = CollaboratorFilters(emails = collaborations.mapNotNull { it.email }),
+                offset = 0,
+                limit = Int.MAX_VALUE
+            )
 
         emailRepository.send(
             to = owner.email,
             subject = environment.getConfigString("mintingNotifications.$path.subject"),
             messageUrl = environment.getConfigString("mintingNotifications.$path.messageUrl"),
-            messageArgs = mapOf(
-                "owner" to owner.stageOrFullName,
-                "song" to song.title,
-                "collabs" to collaborations.joinToString(separator = "") { collaboration ->
-                    "<li>${
-                        collaborators.firstOrNull { it.email.equals(collaboration.email, ignoreCase = true) }
-                            ?.user?.stageOrFullName ?: collaboration.email
-                    }: ${collaboration.royaltyRate}%</li>"
-                }
-            )
+            messageArgs =
+                mapOf(
+                    "owner" to owner.stageOrFullName,
+                    "song" to song.title,
+                    "collabs" to
+                        collaborations.joinToString(separator = "") { collaboration ->
+                            "<li>${
+                                collaborators.firstOrNull { it.email.equals(collaboration.email, ignoreCase = true) }
+                                    ?.user?.stageOrFullName ?: collaboration.email
+                            }: ${collaboration.royaltyRate}%</li>"
+                        }
+                )
         )
     }
 
@@ -654,11 +703,18 @@ internal class SongRepositoryImpl(
         distributionRepository.distributeSong(song)
     }
 
-    private fun checkRequester(songId: UUID, requesterId: UUID, verified: Boolean = false) = transaction {
+    private fun checkRequester(
+        songId: UUID,
+        requesterId: UUID,
+        verified: Boolean = false
+    ) = transaction {
         SongEntity[songId].checkRequester(requesterId, verified)
     }
 
-    private fun SongEntity.checkRequester(requesterId: UUID, verified: Boolean = false) {
+    private fun SongEntity.checkRequester(
+        requesterId: UUID,
+        verified: Boolean = false
+    ) {
         if (ownerId.value != requesterId) throw HttpForbiddenException("operation allowed only by owner")
         if (verified && UserEntity[requesterId].verificationStatus != UserVerificationStatus.Verified) {
             throw HttpUnprocessableEntityException("operation allowed only after owner is KYC verified")

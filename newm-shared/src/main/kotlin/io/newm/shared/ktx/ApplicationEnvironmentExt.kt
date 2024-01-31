@@ -12,8 +12,10 @@ fun ApplicationEnvironment.getConfigString(path: String): String = config.getStr
 
 fun ApplicationEnvironment.getConfigStrings(path: String): List<String> = config.getStrings(path)
 
-fun ApplicationEnvironment.getConfigSplitStrings(path: String, delimiter: String = ","): List<String> =
-    config.getSplitStrings(path, delimiter).filter { it.isNotBlank() }
+fun ApplicationEnvironment.getConfigSplitStrings(
+    path: String,
+    delimiter: String = ","
+): List<String> = config.getSplitStrings(path, delimiter).filter { it.isNotBlank() }
 
 fun ApplicationEnvironment.getConfigInt(path: String): Int = config.getInt(path)
 

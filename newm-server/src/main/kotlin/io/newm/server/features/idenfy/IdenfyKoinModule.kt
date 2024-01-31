@@ -14,15 +14,16 @@ import javax.crypto.spec.SecretKeySpec
 
 val IDENFY_KEY_QUALIFIER: Qualifier = named("IdenfyKey")
 
-val idenfyKoinModule = module {
-    single<Key>(IDENFY_KEY_QUALIFIER) {
-        with(get<ApplicationEnvironment>()) {
-            SecretKeySpec(
-                runBlocking { getSecureConfigString("idenfy.signature.key").toByteArray() },
-                getConfigString("idenfy.signature.algorithm")
-            )
+val idenfyKoinModule =
+    module {
+        single<Key>(IDENFY_KEY_QUALIFIER) {
+            with(get<ApplicationEnvironment>()) {
+                SecretKeySpec(
+                    runBlocking { getSecureConfigString("idenfy.signature.key").toByteArray() },
+                    getConfigString("idenfy.signature.algorithm")
+                )
+            }
         }
-    }
 
-    single<IdenfyRepository> { IdenfyRepositoryImpl(get(), get(), get()) }
-}
+        single<IdenfyRepository> { IdenfyRepositoryImpl(get(), get(), get()) }
+    }

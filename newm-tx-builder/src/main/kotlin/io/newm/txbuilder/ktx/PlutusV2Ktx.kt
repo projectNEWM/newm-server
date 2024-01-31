@@ -12,9 +12,10 @@ import java.math.BigInteger
 fun List<BigInteger>.toCborObject(): CborObject {
     return CborMap.create(
         mapOf(
-            LANGUAGE_KEY_PLUTUSV2 to CborArray.create(
-                this.map { CborInteger.create(it) }
-            )
+            LANGUAGE_KEY_PLUTUSV2 to
+                CborArray.create(
+                    this.map { CborInteger.create(it) }
+                )
         )
     )
 }

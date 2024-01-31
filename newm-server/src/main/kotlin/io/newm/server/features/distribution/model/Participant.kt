@@ -9,6 +9,7 @@ data class Participant(
     val id: Long,
     @SerialName("role_id")
     val roleId: List<Long>,
+    // should always be 100 for the NEWM Participant
     @SerialName("payout_share_percentage")
-    val payoutSharePercentage: Int // should always be 100 for the NEWM Participant
+    val payoutSharePercentage: Int
 )

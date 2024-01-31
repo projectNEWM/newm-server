@@ -4,6 +4,7 @@ import io.newm.server.features.collaboration.repo.CollaborationRepository
 import io.newm.server.features.collaboration.repo.CollaborationRepositoryImpl
 import org.koin.dsl.module
 
-val collaborationKoinModule = module {
-    single<CollaborationRepository> { CollaborationRepositoryImpl(get(), get()) }
-}
+val collaborationKoinModule =
+    module {
+        single<CollaborationRepository> { CollaborationRepositoryImpl(get(), get()) }
+    }

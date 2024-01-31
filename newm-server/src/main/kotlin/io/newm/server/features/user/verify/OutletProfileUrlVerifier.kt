@@ -5,7 +5,10 @@ package io.newm.server.features.user.verify
  */
 interface OutletProfileUrlVerifier {
     @Throws(OutletProfileUrlVerificationException::class)
-    suspend fun verify(outletProfileUrl: String, stageOrFullName: String)
+    suspend fun verify(
+        outletProfileUrl: String,
+        stageOrFullName: String
+    )
 }
 
 class OutletProfileUrlVerificationException(message: String) : Exception(message)

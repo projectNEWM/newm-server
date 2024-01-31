@@ -4,21 +4,21 @@ import com.google.common.truth.Truth
 import org.junit.jupiter.api.Test
 
 // https://passwordsgenerator.net/
-private val passwords = listOf(
-    "K9Z<cC&zg9\\zEq.}",
-    "+efAAR$;y`v24yWg",
-    "p`!Mj)M9u\"G:b9\".",
-    "zBKApxzY_4y\\*8-<",
-    "m32!>_'N)~ZLu2H!",
-    "\\Ake#:Bv,b4={k>G",
-    "2f*/,!eX6CnG4eY5",
-    "['~m6nT?UM^D^/~*",
-    "~=8({Gp4\\~!<w@r",
-    "D:yKfCh9>6X>XCYZ"
-)
+private val passwords =
+    listOf(
+        "K9Z<cC&zg9\\zEq.}",
+        "+efAAR$;y`v24yWg",
+        "p`!Mj)M9u\"G:b9\".",
+        "zBKApxzY_4y\\*8-<",
+        "m32!>_'N)~ZLu2H!",
+        "\\Ake#:Bv,b4={k>G",
+        "2f*/,!eX6CnG4eY5",
+        "['~m6nT?UM^D^/~*",
+        "~=8({Gp4\\~!<w@r",
+        "D:yKfCh9>6X>XCYZ"
+    )
 
 class VerifyHashTests {
-
     @Test
     fun testVerifyValid() {
         for (password in passwords) {

@@ -43,9 +43,10 @@ private suspend fun ApplicationCall.respondStatus(
     cause: Throwable
 ) = respond(
     status = statusCode,
-    message = StatusResponse(
-        code = statusCode.value,
-        description = statusCode.description,
-        cause = cause.message ?: cause.toString()
-    )
+    message =
+        StatusResponse(
+            code = statusCode.value,
+            description = statusCode.description,
+            cause = cause.message ?: cause.toString()
+        )
 )

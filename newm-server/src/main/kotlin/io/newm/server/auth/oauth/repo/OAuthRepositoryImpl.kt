@@ -21,19 +21,24 @@ class OAuthRepositoryImpl(
 ) : OAuthRepository {
     private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
 
-    override suspend fun getTokens(type: OAuthType, code: String, redirectUri: String?): OAuthTokens {
+    override suspend fun getTokens(
+        type: OAuthType,
+        code: String,
+        redirectUri: String?
+    ): OAuthTokens {
         logger.debug { "getTokens: type = $type, redirectUri=$redirectUri" }
 
         with(environment.getConfigChild("oauth.${type.name.lowercase()}")) {
             return httpClient.submitForm(
                 url = getString("accessTokenUrl"),
-                formParameters = Parameters.build {
-                    append("grant_type", "authorization_code")
-                    append("code", code)
-                    redirectUri?.let { append("redirect_uri", it) }
-                    append("client_id", getSecureString("clientId"))
-                    append("client_secret", getSecureString("clientSecret"))
-                }
+                formParameters =
+                    Parameters.build {
+                        append("grant_type", "authorization_code")
+                        append("code", code)
+                        redirectUri?.let { append("redirect_uri", it) }
+                        append("client_id", getSecureString("clientId"))
+                        append("client_secret", getSecureString("clientSecret"))
+                    }
             ).checkedBody()
         }
     }

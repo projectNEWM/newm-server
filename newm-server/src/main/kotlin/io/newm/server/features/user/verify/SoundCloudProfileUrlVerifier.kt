@@ -22,20 +22,25 @@ class SoundCloudProfileUrlVerifier(
 ) : OutletProfileUrlVerifier {
     private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
 
-    override suspend fun verify(outletProfileUrl: String, stageOrFullName: String) {
-        val doc = withContext(Dispatchers.IO) {
-            try {
-                Jsoup.connect(outletProfileUrl).get()
-            } catch (e: HttpStatusException) {
-                throw OutletProfileUrlVerificationException("SoundCloud profile not found for $outletProfileUrl")
+    override suspend fun verify(
+        outletProfileUrl: String,
+        stageOrFullName: String
+    ) {
+        val doc =
+            withContext(Dispatchers.IO) {
+                try {
+                    Jsoup.connect(outletProfileUrl).get()
+                } catch (e: HttpStatusException) {
+                    throw OutletProfileUrlVerificationException("SoundCloud profile not found for $outletProfileUrl")
+                }
             }
-        }
         val userId = doc.select("meta[property='twitter:app:url:iphone']").attr("content").substringAfterLast(':')
-        val response = httpClient.get(
-            "https://api.soundcloud.com/users/$userId"
-        ) {
-            accept(ContentType.Application.Json)
-        }
+        val response =
+            httpClient.get(
+                "https://api.soundcloud.com/users/$userId"
+            ) {
+                accept(ContentType.Application.Json)
+            }
         if (!response.status.isSuccess()) {
             throw OutletProfileUrlVerificationException("SoundCloud profile not found for $userId")
         }

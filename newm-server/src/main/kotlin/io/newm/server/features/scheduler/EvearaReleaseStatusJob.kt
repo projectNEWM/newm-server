@@ -24,6 +24,7 @@ class EvearaReleaseStatusJob : Job {
     private val distributionRepository: DistributionRepository by inject()
     private val userRepository: UserRepository by inject()
     private val songRepository: SongRepository by inject()
+
     override fun execute(context: JobExecutionContext) {
         log.info {
             "EvearaReleaseStatusJob key: ${context.jobDetail.key.name} executed at ${
@@ -42,21 +43,22 @@ class EvearaReleaseStatusJob : Job {
                 val song = songRepository.get(songId)
                 val distributionReleaseStatusResponse =
                     distributionRepository.distributionOutletReleaseStatus(user, song.distributionReleaseId!!)
-                val spotifyOutletStatusCode = if (song.forceDistributed == true) {
-                    // If the song is force distributed, then we can mark it as disapproved or distributed
-                    if (song.title!!.contains("[DistributionFailure]")) {
-                        OutletStatusCode.DISAPPROVED
+                val spotifyOutletStatusCode =
+                    if (song.forceDistributed == true) {
+                        // If the song is force distributed, then we can mark it as disapproved or distributed
+                        if (song.title!!.contains("[DistributionFailure]")) {
+                            OutletStatusCode.DISAPPROVED
+                        } else {
+                            OutletStatusCode.DISTRIBUTED
+                        }
                     } else {
-                        OutletStatusCode.DISTRIBUTED
+                        distributionReleaseStatusResponse.outletReleaseStatuses?.find {
+                            it.storeName.equals(
+                                "Spotify",
+                                ignoreCase = true
+                            )
+                        }?.outletStatus?.statusCode
                     }
-                } else {
-                    distributionReleaseStatusResponse.outletReleaseStatuses?.find {
-                        it.storeName.equals(
-                            "Spotify",
-                            ignoreCase = true
-                        )
-                    }?.outletStatus?.statusCode
-                }
 
                 when (spotifyOutletStatusCode) {
                     OutletStatusCode.DISTRIBUTED -> {

@@ -86,9 +86,10 @@ fun Routing.createSongRoutes() {
                     )
                 }
                 get("stream") {
-                    val streamData = songRepository.generateAudioStreamData(
-                        songId = songId,
-                    )
+                    val streamData =
+                        songRepository.generateAudioStreamData(
+                            songId = songId,
+                        )
                     streamData.cookies.forEach { response.cookies.append(it) }
                     respond(
                         AudioStreamResponse(streamData)
@@ -116,12 +117,13 @@ fun Routing.createSongRoutes() {
                             }
                             respond(
                                 MintPaymentResponse(
-                                    cborHex = songRepository.generateMintingPaymentTransaction(
-                                        songId = songId,
-                                        requesterId = myUserId,
-                                        sourceUtxos = utxos,
-                                        changeAddress = request.changeAddress
-                                    )
+                                    cborHex =
+                                        songRepository.generateMintingPaymentTransaction(
+                                            songId = songId,
+                                            requesterId = myUserId,
+                                            sourceUtxos = utxos,
+                                            changeAddress = request.changeAddress
+                                        )
                                 )
                             )
                         }

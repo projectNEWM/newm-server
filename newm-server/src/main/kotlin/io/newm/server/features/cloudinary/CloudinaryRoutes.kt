@@ -19,10 +19,11 @@ fun Routing.createCloudinaryRoutes() {
     authenticate(AUTH_JWT) {
         post("/v1/cloudinary/sign") {
             val timestamp = Instant.now().epochSecond
-            val params = mutableMapOf<String, Any>().apply {
-                receive<Map<String, JsonPrimitive>>().mapValuesTo(this) { it.value.value }
-                put("timestamp", timestamp)
-            }
+            val params =
+                mutableMapOf<String, Any>().apply {
+                    receive<Map<String, JsonPrimitive>>().mapValuesTo(this) { it.value.value }
+                    put("timestamp", timestamp)
+                }
             respond(
                 CloudinarySignResponse(
                     signature = cloudinary.apiSignRequest(params, cloudinary.config.apiSecret),

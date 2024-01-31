@@ -18,8 +18,7 @@ import io.newm.chain.grpc.plutusData
 import io.newm.chain.util.hexToByteArray
 import io.newm.chain.util.toHexString
 
-fun String.cborHexToPlutusData(): PlutusData =
-    CborReader.createFromByteArray(this.hexToByteArray()).readDataItem().toPlutusData(this)
+fun String.cborHexToPlutusData(): PlutusData = CborReader.createFromByteArray(this.hexToByteArray()).readDataItem().toPlutusData(this)
 
 /**
  * Read on-chain data back into PlutusData for monitoring addresses.
@@ -32,11 +31,12 @@ fun CborObject.toPlutusData(cborHex: String? = null): PlutusData {
                 this.cborHex = it
             }
             if (fields.tag != CborTag.UNTAGGED) {
-                constr = if (fields.tag >= 128) {
-                    fields.tag - 1273
-                } else {
-                    fields.tag - 121
-                }
+                constr =
+                    if (fields.tag >= 128) {
+                        fields.tag - 1273
+                    } else {
+                        fields.tag - 121
+                    }
             }
 
             when (fields) {
@@ -45,22 +45,26 @@ fun CborObject.toPlutusData(cborHex: String? = null): PlutusData {
                     bytes =
                         fields.byteArrayValue().takeUnless { it.isEmpty() }?.get(0)?.toByteString() ?: ByteString.EMPTY
 
-                is CborArray -> list = PlutusDataList.newBuilder().apply {
-                    addAllListItem(
-                        fields.map { it.toPlutusData() }
-                    )
-                }.build()
+                is CborArray ->
+                    list =
+                        PlutusDataList.newBuilder().apply {
+                            addAllListItem(
+                                fields.map { it.toPlutusData() }
+                            )
+                        }.build()
 
-                is CborMap -> map = PlutusDataMap.newBuilder().apply {
-                    addAllMapItem(
-                        fields.mapValue().entries.map { (k, v) ->
-                            PlutusDataMapItem.newBuilder().apply {
-                                mapItemKey = k.toPlutusData()
-                                mapItemValue = v.toPlutusData()
-                            }.build()
-                        }
-                    )
-                }.build()
+                is CborMap ->
+                    map =
+                        PlutusDataMap.newBuilder().apply {
+                            addAllMapItem(
+                                fields.mapValue().entries.map { (k, v) ->
+                                    PlutusDataMapItem.newBuilder().apply {
+                                        mapItemKey = k.toPlutusData()
+                                        mapItemValue = v.toPlutusData()
+                                    }.build()
+                                }
+                            )
+                        }.build()
 
                 else -> throw IllegalArgumentException(
                     "plutus_data fields must be int, bytes, array, or map!: ${
@@ -82,15 +86,16 @@ fun PlutusData.toCborObject(): CborObject {
     }
 
     // define the correct cborTag
-    val cborTag = if (this.hasConstr()) {
-        if (constr >= 7) {
-            constr + 1273
+    val cborTag =
+        if (this.hasConstr()) {
+            if (constr >= 7) {
+                constr + 1273
+            } else {
+                constr + 121
+            }
         } else {
-            constr + 121
+            CborTag.UNTAGGED
         }
-    } else {
-        CborTag.UNTAGGED
-    }
 
     // build the stuff from objects
     return when (this.plutusDataWrapperCase) {
@@ -113,9 +118,10 @@ fun PlutusData.toCborObject(): CborObject {
         PlutusData.PlutusDataWrapperCase.INT -> CborInteger.create(int, cborTag)
         PlutusData.PlutusDataWrapperCase.BYTES -> {
             if (bytes.size() > 64) {
-                val chunks = bytes.toByteArray().asList().chunked(64).map { chunk ->
-                    chunk.toByteArray()
-                }.toTypedArray()
+                val chunks =
+                    bytes.toByteArray().asList().chunked(64).map { chunk ->
+                        chunk.toByteArray()
+                    }.toTypedArray()
                 CborByteString.wrap(chunks, cborTag, true)
             } else {
                 CborByteString.create(

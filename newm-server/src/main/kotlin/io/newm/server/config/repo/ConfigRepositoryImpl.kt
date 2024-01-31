@@ -8,18 +8,19 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.Duration
 
 internal class ConfigRepositoryImpl : ConfigRepository {
-
-    private val configCache = Caffeine.newBuilder()
-        .expireAfterWrite(Duration.ofMinutes(5))
-        .build<String, String> { key ->
-            transaction {
-                ConfigEntity[key].value
+    private val configCache =
+        Caffeine.newBuilder()
+            .expireAfterWrite(Duration.ofMinutes(5))
+            .build<String, String> { key ->
+                transaction {
+                    ConfigEntity[key].value
+                }
             }
-        }
 
-    override suspend fun exists(id: String): Boolean = transaction {
-        ConfigEntity.existsHavingId(id)
-    }
+    override suspend fun exists(id: String): Boolean =
+        transaction {
+            ConfigEntity.existsHavingId(id)
+        }
 
     override suspend fun getString(id: String): String = configCache[id]
 
@@ -37,12 +38,16 @@ internal class ConfigRepositoryImpl : ConfigRepository {
 
     override suspend fun getBooleans(id: String): List<Boolean> = getStrings(id).map(String::toBoolean)
 
-    override suspend fun putString(id: String, value: String): Unit = transaction {
-        ConfigEntity.new(id) {
-            this.value = value
+    override suspend fun putString(
+        id: String,
+        value: String
+    ): Unit =
+        transaction {
+            ConfigEntity.new(id) {
+                this.value = value
+            }
+            configCache.invalidate(id)
         }
-        configCache.invalidate(id)
-    }
 
     override fun invalidateCache() {
         configCache.invalidateAll()

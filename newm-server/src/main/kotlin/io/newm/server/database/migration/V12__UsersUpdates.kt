@@ -10,11 +10,11 @@ class V12__UsersUpdates : BaseJavaMigration() {
         transaction {
             exec(
                 """
-                    ALTER TABLE users
-                        ADD COLUMN IF NOT EXISTS instagram_url text,
-                        ADD COLUMN IF NOT EXISTS company_name text,
-                        ADD COLUMN IF NOT EXISTS company_logo_url text,
-                        ADD COLUMN IF NOT EXISTS company_ip_rights boolean
+                ALTER TABLE users
+                    ADD COLUMN IF NOT EXISTS instagram_url text,
+                    ADD COLUMN IF NOT EXISTS company_name text,
+                    ADD COLUMN IF NOT EXISTS company_logo_url text,
+                    ADD COLUMN IF NOT EXISTS company_ip_rights boolean
                 """.trimIndent()
             )
         }

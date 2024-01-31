@@ -10,19 +10,19 @@ import org.jetbrains.exposed.sql.update
 import java.time.Duration
 
 class UsersRepositoryImpl : UsersRepository {
-
-    private val usersByIdCache = Caffeine.newBuilder()
-        .expireAfterWrite(Duration.ofMinutes(15))
-        .build<Long, User?> { userId ->
-            transaction {
-                UsersTable.selectAll().where { UsersTable.id eq userId }.limit(1).firstOrNull()?.let { row ->
-                    User(
-                        id = row[UsersTable.id].value,
-                        name = row[UsersTable.name],
-                    )
+    private val usersByIdCache =
+        Caffeine.newBuilder()
+            .expireAfterWrite(Duration.ofMinutes(15))
+            .build<Long, User?> { userId ->
+                transaction {
+                    UsersTable.selectAll().where { UsersTable.id eq userId }.limit(1).firstOrNull()?.let { row ->
+                        User(
+                            id = row[UsersTable.id].value,
+                            name = row[UsersTable.name],
+                        )
+                    }
                 }
             }
-        }
 
     override fun get(userId: Long): User? = usersByIdCache[userId]
 

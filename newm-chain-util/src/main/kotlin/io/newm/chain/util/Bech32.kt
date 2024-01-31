@@ -33,7 +33,12 @@ object Bech32 {
         return chk
     }
 
-    private fun convert(data: IntArray, inBits: Int, outBits: Int, pad: Boolean): IntArray {
+    private fun convert(
+        data: IntArray,
+        inBits: Int,
+        outBits: Int,
+        pad: Boolean
+    ): IntArray {
         var value = 0
         var bits = 0
         val maxV = (1 shl outBits) - 1
@@ -75,7 +80,10 @@ object Bech32 {
         return res.map { it.toByte() }.toByteArray()
     }
 
-    fun encode(prefix: String, bytes: ByteArray): String {
+    fun encode(
+        prefix: String,
+        bytes: ByteArray
+    ): String {
         val words = toWords(bytes)
         val pre = prefix.lowercase()
         var chk = prefixCheck(pre)

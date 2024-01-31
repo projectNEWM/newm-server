@@ -40,19 +40,21 @@ class ArweaveCheckAndFundJob : Job {
                         )
                     }"
                 }
-                val newmWeaveRequest = WeaveRequest(
-                    json.encodeToString(
-                        WeaveProps(
-                            arweaveWalletJson = environment.getSecureConfigString("arweave.walletJson"),
-                            files = emptyList(),
-                            checkAndFund = true
+                val newmWeaveRequest =
+                    WeaveRequest(
+                        json.encodeToString(
+                            WeaveProps(
+                                arweaveWalletJson = environment.getSecureConfigString("arweave.walletJson"),
+                                files = emptyList(),
+                                checkAndFund = true
+                            )
                         )
                     )
-                )
 
-                val invokeRequest = InvokeRequest()
-                    .withFunctionName(environment.getConfigString("arweave.lambdaFunctionName"))
-                    .withPayload(json.encodeToString(newmWeaveRequest))
+                val invokeRequest =
+                    InvokeRequest()
+                        .withFunctionName(environment.getConfigString("arweave.lambdaFunctionName"))
+                        .withPayload(json.encodeToString(newmWeaveRequest))
 
                 val invokeResult = invokeRequest.await()
                 val weaveResponse: WeaveResponse = json.decodeFromString(invokeResult.payload.array().decodeToString())

@@ -12,14 +12,15 @@ class StringFormatTests {
         val four = true
         val rawString = "one {one} two {two} three {three} four {four} five {five} ".repeat(3)
         val expectedString = "one $one two $two three $three four $four five {five} ".repeat(3)
-        val actualString = rawString.format(
-            mapOf(
-                "one" to one,
-                "two" to two,
-                "three" to three,
-                "four" to four
+        val actualString =
+            rawString.format(
+                mapOf(
+                    "one" to one,
+                    "two" to two,
+                    "three" to three,
+                    "four" to four
+                )
             )
-        )
         Truth.assertThat(actualString).isEqualTo(expectedString)
     }
 }

@@ -11,10 +11,10 @@ class V13__CreateMonitoredAddressChain : BaseJavaMigration() {
             execInBatch(
                 listOf(
                     """
-                        CREATE TABLE IF NOT EXISTS "monitored_address_chain" ("id" BIGSERIAL PRIMARY KEY, "address" TEXT NOT NULL, "height" BIGINT NOT NULL, "slot" BIGINT NOT NULL, "hash" TEXT NOT NULL)
+                    CREATE TABLE IF NOT EXISTS "monitored_address_chain" ("id" BIGSERIAL PRIMARY KEY, "address" TEXT NOT NULL, "height" BIGINT NOT NULL, "slot" BIGINT NOT NULL, "hash" TEXT NOT NULL)
                     """.trimIndent(),
                     """
-                        CREATE INDEX IF NOT EXISTS "monitored_address_chain_address_height_slot_index" ON "monitored_address_chain" (address,height,slot)
+                    CREATE INDEX IF NOT EXISTS "monitored_address_chain_address_height_slot_index" ON "monitored_address_chain" (address,height,slot)
                     """.trimIndent(),
                 )
             )

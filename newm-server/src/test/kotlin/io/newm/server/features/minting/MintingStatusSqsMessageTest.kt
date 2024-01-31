@@ -9,19 +9,20 @@ import org.junit.jupiter.api.Test
 import java.util.*
 
 class MintingStatusSqsMessageTest {
-
     @Test
     fun `test MintingStatusSqsMessage`() {
-        val json = Json {
-            ignoreUnknownKeys = true
-            explicitNulls = false
-            isLenient = true
-        }
+        val json =
+            Json {
+                ignoreUnknownKeys = true
+                explicitNulls = false
+                isLenient = true
+            }
         val songId = UUID.randomUUID()
-        val message = MintingStatusSqsMessage(
-            songId = songId,
-            mintingStatus = MintingStatus.ReadyToDistribute,
-        )
+        val message =
+            MintingStatusSqsMessage(
+                songId = songId,
+                mintingStatus = MintingStatus.ReadyToDistribute,
+            )
 
         val messageJson = json.encodeToString(message)
         val expectedJson = """{"songId":"$songId","mintingStatus":"ReadyToDistribute"}"""

@@ -11,13 +11,13 @@ class V5__SongsUpdates : BaseJavaMigration() {
             execInBatch(
                 listOf(
                     """
-                        ALTER TABLE songs ADD COLUMN IF NOT EXISTS genres TEXT ARRAY
+                    ALTER TABLE songs ADD COLUMN IF NOT EXISTS genres TEXT ARRAY
                     """.trimIndent(),
                     """
-                        UPDATE songs SET genres[1] = genre
+                    UPDATE songs SET genres[1] = genre
                     """.trimIndent(),
                     """
-                        ALTER TABLE songs DROP COLUMN genre
+                    ALTER TABLE songs DROP COLUMN genre
                     """.trimIndent()
                 )
             )

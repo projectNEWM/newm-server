@@ -26,11 +26,12 @@ import org.koin.ktor.plugin.Koin
 import org.slf4j.LoggerFactory
 
 fun Application.installDependencyInjection() {
-    val appKoinModule = module {
-        single { this@installDependencyInjection }
-        factory { get<Application>().environment }
-        factory { params -> LoggerFactory.getLogger(params.get<String>()) }
-    }
+    val appKoinModule =
+        module {
+            single { this@installDependencyInjection }
+            factory { get<Application>().environment }
+            factory { params -> LoggerFactory.getLogger(params.get<String>()) }
+        }
     install(Koin) {
         modules(
             appKoinModule,

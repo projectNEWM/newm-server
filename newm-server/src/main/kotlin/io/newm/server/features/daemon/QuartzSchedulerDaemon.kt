@@ -37,12 +37,13 @@ class QuartzSchedulerDaemon : Daemon {
 
     override fun start() {
         log.info { "starting..." }
-        scheduler = try {
-            initializeQuartzScheduler().apply { start() }
-        } catch (e: Throwable) {
-            log.error("Error initializing Quartz!", e)
-            return
-        }
+        scheduler =
+            try {
+                initializeQuartzScheduler().apply { start() }
+            } catch (e: Throwable) {
+                log.error("Error initializing Quartz!", e)
+                return
+            }
         startEvearaSync(scheduler)
         startArweaveCheckAndFund(scheduler)
         log.info { "startup complete." }
@@ -81,13 +82,15 @@ class QuartzSchedulerDaemon : Daemon {
                     val triggerKey = TriggerKey("${jobKey.name}_$evearaCronSyncSchedule", EVEARA_SYNC_QUARTZ_GROUP)
                     if (!scheduler.checkExists(jobKey)) {
                         log.info { "Creating new job for $EVEARA_SYNC_QUARTZ_JOB_KEY" }
-                        val jobDetail = newJob(EvearaSyncJob::class.java)
-                            .withIdentity(jobKey)
-                            .build()
-                        val trigger = newTrigger()
-                            .withIdentity(triggerKey)
-                            .withSchedule(cronSchedule(evearaCronSyncSchedule))
-                            .build()
+                        val jobDetail =
+                            newJob(EvearaSyncJob::class.java)
+                                .withIdentity(jobKey)
+                                .build()
+                        val trigger =
+                            newTrigger()
+                                .withIdentity(triggerKey)
+                                .withSchedule(cronSchedule(evearaCronSyncSchedule))
+                                .build()
                         scheduler.scheduleJob(jobDetail, trigger)
                         log.info { "Scheduled job $jobKey with trigger: $trigger" }
                     } else {
@@ -98,10 +101,11 @@ class QuartzSchedulerDaemon : Daemon {
                             // correct trigger doesn't exist for this job. remove all existing triggers and re-schedule it
                             scheduler.unscheduleJobs(currentTriggers.map { it.key })
                             // reschedule
-                            val trigger = newTrigger()
-                                .withIdentity(triggerKey)
-                                .withSchedule(cronSchedule(evearaCronSyncSchedule))
-                                .build()
+                            val trigger =
+                                newTrigger()
+                                    .withIdentity(triggerKey)
+                                    .withSchedule(cronSchedule(evearaCronSyncSchedule))
+                                    .build()
 
                             scheduler.scheduleJob(jobDetail, trigger)
                             log.info { "Rescheduled job $jobKey with trigger: $trigger" }
@@ -126,14 +130,16 @@ class QuartzSchedulerDaemon : Daemon {
             }
             val triggerKey = TriggerKey("${jobKey.name}_trigger", ARWEAVE_CHECK_AND_FUND_JOB_GROUP)
             log.info { "Creating new job for $jobKey" }
-            val jobDetail = newJob(ArweaveCheckAndFundJob::class.java)
-                .withIdentity(jobKey)
-                .build()
-            val trigger = newTrigger()
-                .withIdentity(triggerKey)
-                .startAt(Date(System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(30)))
-                .withSchedule(simpleSchedule().withIntervalInHours(24).repeatForever())
-                .build()
+            val jobDetail =
+                newJob(ArweaveCheckAndFundJob::class.java)
+                    .withIdentity(jobKey)
+                    .build()
+            val trigger =
+                newTrigger()
+                    .withIdentity(triggerKey)
+                    .startAt(Date(System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(30)))
+                    .withSchedule(simpleSchedule().withIntervalInHours(24).repeatForever())
+                    .build()
             scheduler.scheduleJob(jobDetail, trigger)
             log.info { "Scheduled job $jobKey with trigger: $trigger" }
         } catch (e: CancellationException) {
@@ -143,7 +149,10 @@ class QuartzSchedulerDaemon : Daemon {
         }
     }
 
-    fun scheduleJob(jobDetail: JobDetail, trigger: Trigger): Date {
+    fun scheduleJob(
+        jobDetail: JobDetail,
+        trigger: Trigger
+    ): Date {
         val date = scheduler.scheduleJob(jobDetail, trigger)
         log.warn { "Scheduled job ${jobDetail.key} with trigger: $trigger" }
         return date

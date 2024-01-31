@@ -9,7 +9,6 @@ import javax.crypto.spec.SecretKeySpec
 import kotlin.concurrent.getOrSet
 
 class BIP32PublicKey(val bech32XPub: String) {
-
     val pk: ByteArray
     val chaincode: ByteArray
 
@@ -65,7 +64,11 @@ class BIP32PublicKey(val bech32XPub: String) {
         }
     }
 
-    private fun mkXPub(out: ByteArray, pk: ByteArray, cc: ByteArray) {
+    private fun mkXPub(
+        out: ByteArray,
+        pk: ByteArray,
+        cc: ByteArray
+    ) {
         require(out.size == XPUB_SIZE) { "Invalid output length" }
         require(pk.size == 32) { "Invalid public key length" }
         require(cc.size == CHAIN_CODE_SIZE) { "Invalid chain code length" }
@@ -83,7 +86,10 @@ class BIP32PublicKey(val bech32XPub: String) {
         )
     }
 
-    private fun add28Mul8(x: ByteArray, y: ByteArray): ByteArray {
+    private fun add28Mul8(
+        x: ByteArray,
+        y: ByteArray
+    ): ByteArray {
         var carry: UShort = 0u
         val out = ByteArray(32)
 
@@ -108,7 +114,10 @@ class BIP32PublicKey(val bech32XPub: String) {
         return a.toBytes()
     }
 
-    private fun pointPlus(p1: ByteArray, p2: ByteArray): ByteArray {
+    private fun pointPlus(
+        p1: ByteArray,
+        p2: ByteArray
+    ): ByteArray {
         val a = requireNotNull(Ge.fromBytes(p1)) { "InvalidAddition" }
         val b = requireNotNull(Ge.fromBytes(p2)) { "InvalidAddition" }
         val r = a + b.toCached()
@@ -125,8 +134,9 @@ class BIP32PublicKey(val bech32XPub: String) {
         private val zMacThreadLocal = ThreadLocal<Mac>()
         private val iMacThreadLocal = ThreadLocal<Mac>()
 
-        private val publicKeyDerivationCache = Caffeine.newBuilder()
-            .maximumSize(1073741824L) // 1GB - 2^30
-            .build<String, BIP32PublicKey>()
+        private val publicKeyDerivationCache =
+            Caffeine.newBuilder()
+                .maximumSize(1073741824L) // 1GB - 2^30
+                .build<String, BIP32PublicKey>()
     }
 }

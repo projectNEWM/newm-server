@@ -27,32 +27,33 @@ import java.io.IOException
 import java.math.BigInteger
 
 class Cip68DatumTest {
-
     @Test
     fun `test CIP68 datum`() {
-        val createdUtxoSet = setOf(
-            CreatedUtxo(
-                address = "addr_test1xqyeshaz2w77449uepcap6p8pud9ju3rjckddxdv9qxf787m46qvthcky2x42khv4jyuen72ksjtqrapzw28jdy3vtdqnkrmz5",
-                addressType = "00",
-                stakeAddress = "stake_test17rd6aqx9mutz9r24ttk2ezwvel9tgf9sp7s389rexjgk9kssedugy",
-                hash = "5916ad353cadca8cef2951bbdd47500325fb9d8d149237327f17edda8d283650",
-                ix = 0L,
-                lovelace = BigInteger("1706760"),
-                datumHash = null,
-                datum = "d8799fa3446e616d6548537061636542756445696d6167654b697066733a2f2f7465737445696d616765583061723a2f2f66355738525a6d4151696d757a5f7679744659396f66497a6439517047614449763255587272616854753401ff",
-                scriptRef = null,
-                nativeAssets = listOf(
-                    NativeAsset(
-                        policy = "169e3ad7038f23049f3ed7fff137b1b29bccaba4732035477c15b4c9",
-                        name = "000643b00211c612bdc6ab89e8797f796fb3d83232b70139a484b25e022ab2",
-                        amount = BigInteger.ONE
-                    )
-                ),
-                cbor = null,
-                paymentCred = null,
-                stakeCred = null,
+        val createdUtxoSet =
+            setOf(
+                CreatedUtxo(
+                    address = "addr_test1xqyeshaz2w77449uepcap6p8pud9ju3rjckddxdv9qxf787m46qvthcky2x42khv4jyuen72ksjtqrapzw28jdy3vtdqnkrmz5",
+                    addressType = "00",
+                    stakeAddress = "stake_test17rd6aqx9mutz9r24ttk2ezwvel9tgf9sp7s389rexjgk9kssedugy",
+                    hash = "5916ad353cadca8cef2951bbdd47500325fb9d8d149237327f17edda8d283650",
+                    ix = 0L,
+                    lovelace = BigInteger("1706760"),
+                    datumHash = null,
+                    datum = "d8799fa3446e616d6548537061636542756445696d6167654b697066733a2f2f7465737445696d616765583061723a2f2f66355738525a6d4151696d757a5f7679744659396f66497a6439517047614449763255587272616854753401ff",
+                    scriptRef = null,
+                    nativeAssets =
+                        listOf(
+                            NativeAsset(
+                                policy = "169e3ad7038f23049f3ed7fff137b1b29bccaba4732035477c15b4c9",
+                                name = "000643b00211c612bdc6ab89e8797f796fb3d83232b70139a484b25e022ab2",
+                                amount = BigInteger.ONE
+                            )
+                        ),
+                    cbor = null,
+                    paymentCred = null,
+                    stakeCred = null,
+                )
             )
-        )
 
         val result = cip68UtxoOutputsTo721MetadataMap(createdUtxoSet)
         val ledgerAssetMetadata = result[0].first.extractAssetMetadata(result[0].second)
@@ -61,67 +62,70 @@ class Cip68DatumTest {
 
     @Test
     @Disabled("This test requires a running ogmios instance")
-    fun testDerpBirdsOutpostsCIP68() = runBlocking {
-        val root: Logger = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME) as Logger
-        root.level = Level.INFO
+    fun testDerpBirdsOutpostsCIP68() =
+        runBlocking {
+            val root: Logger = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME) as Logger
+            root.level = Level.INFO
 
-        createChainSyncClient(
-            websocketHost = "localhost",
-            websocketPort = 1337,
-            secure = false,
-            ogmiosCompact = false,
-        ).use { client ->
-            val connectResult = client.connect()
-            if (!connectResult) {
-                throw IOException("client.connect() was false!")
-            }
-            if (!client.isConnected) {
-                throw IOException("client.isConnected was false!")
-            }
-            (client as StateQueryClient).genesisConfig(GenesisEra.SHELLEY).let { genesisConfig ->
-                Config.genesis = genesisConfig.result as ShelleyGenesisConfigResult
-            }
+            createChainSyncClient(
+                websocketHost = "localhost",
+                websocketPort = 1337,
+                secure = false,
+                ogmiosCompact = false,
+            ).use { client ->
+                val connectResult = client.connect()
+                if (!connectResult) {
+                    throw IOException("client.connect() was false!")
+                }
+                if (!client.isConnected) {
+                    throw IOException("client.isConnected was false!")
+                }
+                (client as StateQueryClient).genesisConfig(GenesisEra.SHELLEY).let { genesisConfig ->
+                    Config.genesis = genesisConfig.result as ShelleyGenesisConfigResult
+                }
 
-            val msgFindIntersectResponse = client.findIntersect(
-                listOf(
-                    PointDetail(
-                        105659354L,
-                        "7ebe1503ca9119343d06e56fd0048e0b0cd1873dbaaaf7d5039235558808219c"
+                val msgFindIntersectResponse =
+                    client.findIntersect(
+                        listOf(
+                            PointDetail(
+                                105659354L,
+                                "7ebe1503ca9119343d06e56fd0048e0b0cd1873dbaaaf7d5039235558808219c"
+                            )
+                        )
                     )
-                )
-            )
+                assertThat(msgFindIntersectResponse.result).isNotNull()
 
-            var shouldContinue = true
-            while (shouldContinue) {
-                val response = client.nextBlock(timeoutMs = Client.DEFAULT_REQUEST_TIMEOUT_MS)
-                when (response.result) {
-                    is RollBackward -> {
-                        println("RollBackward: ${(response.result as RollBackward).point}")
-                    }
-
-                    is RollForward -> {
-                        val rollForward = response.result as RollForward
-                        val block = rollForward.block
-                        val createdUtxos = block.toCreatedUtxoSet()
-                        require(createdUtxos.isNotEmpty()) { "createdUtxos is empty!" }
-                        // Save metadata for CIP-68 reference metadata appearing on createdUtxos datum values
-                        val nativeAssetMetadataList = cip68UtxoOutputsTo721MetadataMap(createdUtxos)
-                        require(nativeAssetMetadataList.isNotEmpty()) { "nativeAssetMetadataList is empty!" }
-                        nativeAssetMetadataList.forEach { (metadataMap, assetList) ->
-                            try {
-                                val assetMetadatas = metadataMap.extractAssetMetadata(assetList)
-                                println(assetMetadatas)
-                            } catch (e: Throwable) {
-                                println("metadataError at block ${block.height}, metadataMap: $metadataMap, assetList: $assetList")
-                                throw e
-                            }
+                var shouldContinue = true
+                while (shouldContinue) {
+                    val response = client.nextBlock(timeoutMs = Client.DEFAULT_REQUEST_TIMEOUT_MS)
+                    when (response.result) {
+                        is RollBackward -> {
+                            println("RollBackward: ${(response.result as RollBackward).point}")
                         }
-                        shouldContinue = false
+
+                        is RollForward -> {
+                            val rollForward = response.result as RollForward
+                            val block = rollForward.block
+                            val createdUtxos = block.toCreatedUtxoSet()
+                            require(createdUtxos.isNotEmpty()) { "createdUtxos is empty!" }
+                            // Save metadata for CIP-68 reference metadata appearing on createdUtxos datum values
+                            val nativeAssetMetadataList = cip68UtxoOutputsTo721MetadataMap(createdUtxos)
+                            require(nativeAssetMetadataList.isNotEmpty()) { "nativeAssetMetadataList is empty!" }
+                            nativeAssetMetadataList.forEach { (metadataMap, assetList) ->
+                                try {
+                                    val assetMetadatas = metadataMap.extractAssetMetadata(assetList)
+                                    println(assetMetadatas)
+                                } catch (e: Throwable) {
+                                    println("metadataError at block ${block.height}, metadataMap: $metadataMap, assetList: $assetList")
+                                    throw e
+                                }
+                            }
+                            shouldContinue = false
+                        }
                     }
                 }
             }
         }
-    }
 
     private fun cip68UtxoOutputsTo721MetadataMap(createdUtxos: Set<CreatedUtxo>): List<Pair<MetadataMap, List<LedgerAsset>>> {
         var i = 1L
@@ -142,15 +146,16 @@ class Cip68DatumTest {
                         nativeAsset.name.matches(CIP68_REFERENCE_TOKEN_REGEX)
                     }.map { nativeAsset ->
                         val metadataMap = cip68PlutusData.toMetadataMap(nativeAsset.policy, nativeAsset.name)
-                        metadataMap to cip68CreatedUtxo.nativeAssets.map { na ->
-                            // dummy in the data
-                            LedgerAsset(
-                                id = i++,
-                                policy = na.policy,
-                                name = na.name,
-                                supply = BigInteger.ONE
-                            )
-                        }
+                        metadataMap to
+                            cip68CreatedUtxo.nativeAssets.map { na ->
+                                // dummy in the data
+                                LedgerAsset(
+                                    id = i++,
+                                    policy = na.policy,
+                                    name = na.name,
+                                    supply = BigInteger.ONE
+                                )
+                            }
                     }
                 } else {
                     null

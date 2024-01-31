@@ -11,10 +11,10 @@ class V10__AlterLedgerAssetMetadata : BaseJavaMigration() {
             execInBatch(
                 listOf(
                     """
-                        DROP INDEX IF EXISTS "ledger_asset_metadata_asset_id_key_value_nest_level_index"
+                    DROP INDEX IF EXISTS "ledger_asset_metadata_asset_id_key_value_nest_level_index"
                     """.trimIndent(),
                     """
-                        CREATE INDEX IF NOT EXISTS "ledger_asset_metadata_asset_id_parent_id" ON "ledger_asset_metadata" ("asset_id","parent_id")
+                    CREATE INDEX IF NOT EXISTS "ledger_asset_metadata_asset_id_parent_id" ON "ledger_asset_metadata" ("asset_id","parent_id")
                     """.trimIndent(),
                 )
             )

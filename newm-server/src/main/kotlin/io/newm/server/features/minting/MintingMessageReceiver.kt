@@ -53,7 +53,9 @@ class MintingMessageReceiver : SqsMessageReceiver {
         if (dbSong.mintingStatus != mintingStatusSqsMessage.mintingStatus) {
             // sometimes, we will send an SQS message manually to re-process a given song. This is fine, but we need to
             // sync the DB with the SQS message.
-            log.warn { "DB MintingStatus: ${dbSong.mintingStatus} does not match SQS MintingStatus: ${mintingStatusSqsMessage.mintingStatus}... updating db" }
+            log.warn {
+                "DB MintingStatus: ${dbSong.mintingStatus} does not match SQS MintingStatus: ${mintingStatusSqsMessage.mintingStatus}... updating db"
+            }
             songRepository.update(
                 mintingStatusSqsMessage.songId,
                 Song(
@@ -68,14 +70,17 @@ class MintingMessageReceiver : SqsMessageReceiver {
                 try {
                     val song = songRepository.get(mintingStatusSqsMessage.songId)
                     val paymentKey = cardanoRepository.getKey(song.paymentKeyId!!)
-                    val response = cardanoRepository.awaitPayment(
-                        monitorPaymentAddressRequest {
-                            address = paymentKey.address
-                            lovelace = song.mintCostLovelace!!.toString()
-                            timeoutMs =
-                                configRepository.getLong(CONFIG_KEY_MINT_MONITOR_PAYMENT_ADDRESS_TIMEOUT_MIN).minutes.inWholeMilliseconds
-                        }
-                    )
+                    val response =
+                        cardanoRepository.awaitPayment(
+                            monitorPaymentAddressRequest {
+                                address = paymentKey.address
+                                lovelace = song.mintCostLovelace!!.toString()
+                                timeoutMs =
+                                    configRepository.getLong(
+                                        CONFIG_KEY_MINT_MONITOR_PAYMENT_ADDRESS_TIMEOUT_MIN
+                                    ).minutes.inWholeMilliseconds
+                            }
+                        )
                     if (response.success) {
                         // We got paid!!! Move -> MintingPaymentReceived
                         songRepository.updateSongMintingStatus(
@@ -150,20 +155,22 @@ class MintingMessageReceiver : SqsMessageReceiver {
                         log.warn { "Job $jobKey is already scheduled" }
                         return
                     }
-                    val jobDetail = newJob(EvearaReleaseStatusJob::class.java)
-                        .withIdentity(jobKey)
-                        .usingJobData("songId", song.id.toString())
-                        .usingJobData("userId", song.ownerId.toString())
-                        .requestRecovery(true)
-                        .build()
-                    val trigger = newTrigger()
-                        .forJob(jobDetail)
-                        .withSchedule(
-                            simpleSchedule()
-                                .withIntervalInMinutes(configRepository.getInt(CONFIG_KEY_EVEARA_STATUS_CHECK_MINUTES))
-                                .repeatForever()
-                        )
-                        .build()
+                    val jobDetail =
+                        newJob(EvearaReleaseStatusJob::class.java)
+                            .withIdentity(jobKey)
+                            .usingJobData("songId", song.id.toString())
+                            .usingJobData("userId", song.ownerId.toString())
+                            .requestRecovery(true)
+                            .build()
+                    val trigger =
+                        newTrigger()
+                            .forJob(jobDetail)
+                            .withSchedule(
+                                simpleSchedule()
+                                    .withIntervalInMinutes(configRepository.getInt(CONFIG_KEY_EVEARA_STATUS_CHECK_MINUTES))
+                                    .repeatForever()
+                            )
+                            .build()
 
                     quartzSchedulerDaemon.scheduleJob(jobDetail, trigger)
 
@@ -227,11 +234,12 @@ class MintingMessageReceiver : SqsMessageReceiver {
                     // Update the song record with the minting info
                     songRepository.update(
                         songId = mintingStatusSqsMessage.songId,
-                        song = Song(
-                            mintingTxId = mintInfo.transactionId,
-                            nftPolicyId = mintInfo.policyId,
-                            nftName = mintInfo.assetName,
-                        )
+                        song =
+                            Song(
+                                mintingTxId = mintInfo.transactionId,
+                                nftPolicyId = mintInfo.policyId,
+                                nftName = mintInfo.assetName,
+                            )
                     )
 
                     // Done submitting mint transaction. Move -> Minted
@@ -262,19 +270,21 @@ class MintingMessageReceiver : SqsMessageReceiver {
                         log.warn { "Job $jobKey is already scheduled" }
                         return
                     }
-                    val jobDetail = newJob(OutletReleaseStatusJob::class.java)
-                        .withIdentity(jobKey)
-                        .usingJobData("songId", song.id.toString())
-                        .requestRecovery(true)
-                        .build()
-                    val trigger = newTrigger()
-                        .forJob(jobDetail)
-                        .withSchedule(
-                            simpleSchedule()
-                                .withIntervalInMinutes(configRepository.getInt(CONFIG_KEY_OUTLET_STATUS_CHECK_MINUTES))
-                                .repeatForever()
-                        )
-                        .build()
+                    val jobDetail =
+                        newJob(OutletReleaseStatusJob::class.java)
+                            .withIdentity(jobKey)
+                            .usingJobData("songId", song.id.toString())
+                            .requestRecovery(true)
+                            .build()
+                    val trigger =
+                        newTrigger()
+                            .forJob(jobDetail)
+                            .withSchedule(
+                                simpleSchedule()
+                                    .withIntervalInMinutes(configRepository.getInt(CONFIG_KEY_OUTLET_STATUS_CHECK_MINUTES))
+                                    .repeatForever()
+                            )
+                            .build()
 
                     quartzSchedulerDaemon.scheduleJob(jobDetail, trigger)
                 } catch (e: Throwable) {

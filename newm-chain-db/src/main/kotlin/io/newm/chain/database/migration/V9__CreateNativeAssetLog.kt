@@ -11,7 +11,7 @@ class V9__CreateNativeAssetLog : BaseJavaMigration() {
             execInBatch(
                 listOf(
                     """
-                        CREATE TABLE IF NOT EXISTS "native_asset_log" ("id" BIGSERIAL PRIMARY KEY, "monitor_native_assets_response" BYTEA NOT NULL)
+                    CREATE TABLE IF NOT EXISTS "native_asset_log" ("id" BIGSERIAL PRIMARY KEY, "monitor_native_assets_response" BYTEA NOT NULL)
                     """.trimIndent(),
                 )
             )

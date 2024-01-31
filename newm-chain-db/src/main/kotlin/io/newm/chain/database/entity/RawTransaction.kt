@@ -5,28 +5,20 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class RawTransaction(
     val id: Long? = null,
-
     // the block number
     val blockNumber: Long,
-
     // the slot number
     val slotNumber: Long,
-
     // the block size
     val blockSize: Int,
-
     // the block body hash in hex
     val blockBodyHash: String,
-
     // the major number
     val protocolVersionMajor: Int,
-
     // the minor number
     val protocolVersionMinor: Int,
-
     // transaction id
     val txId: String,
-
     // the raw transaction cbor bytes
     val tx: ByteArray,
 ) {

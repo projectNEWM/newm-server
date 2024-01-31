@@ -11,13 +11,13 @@ class V6__UsersUpdates : BaseJavaMigration() {
             execInBatch(
                 listOf(
                     """
-                        ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_status int
+                    ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_status int
                     """.trimIndent(),
                     """
-                        UPDATE users SET verification_status = 0 WHERE verification_status IS NULL
+                    UPDATE users SET verification_status = 0 WHERE verification_status IS NULL
                     """.trimIndent(),
                     """
-                        ALTER TABLE users ALTER COLUMN verification_status SET NOT NULL
+                    ALTER TABLE users ALTER COLUMN verification_status SET NOT NULL
                     """.trimIndent()
                 )
             )

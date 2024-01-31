@@ -28,20 +28,21 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 class OutletReleaseRepositoryTest : BaseApplicationTests() {
-
     private val httpClient: HttpClient by lazy {
         HttpClient(CIO) {
             install(ContentNegotiation) {
                 json(
-                    json = Json {
-                        ignoreUnknownKeys = true
-                        explicitNulls = false
-                        isLenient = true
-                        serializersModule = SerializersModule {
-                            contextual(BigDecimal::class, BigDecimalSerializer)
-                            contextual(BigInteger::class, BigIntegerSerializer)
+                    json =
+                        Json {
+                            ignoreUnknownKeys = true
+                            explicitNulls = false
+                            isLenient = true
+                            serializersModule =
+                                SerializersModule {
+                                    contextual(BigDecimal::class, BigDecimalSerializer)
+                                    contextual(BigInteger::class, BigIntegerSerializer)
+                                }
                         }
-                    }
                 )
             }
             install(HttpTimeout) {
@@ -57,29 +58,35 @@ class OutletReleaseRepositoryTest : BaseApplicationTests() {
 
     @Test
     @Disabled("This test is disabled because it requires a valid Spotify API token")
-    fun testIsReleasedTrue() = runBlocking {
-        val songId = UUID.randomUUID()
-        val song = mockk<Song>(relaxed = true) {
-            every { isrc } returns "IE-WNY-23-492250" // Nido: After The Storm
+    fun testIsReleasedTrue() =
+        runBlocking {
+            val songId = UUID.randomUUID()
+            val song =
+                mockk<Song>(relaxed = true) {
+                    every { isrc } returns "IE-WNY-23-492250" // Nido: After The Storm
+                }
+            val songRepository =
+                mockk<SongRepository>(relaxed = true) {
+                    coEvery { get(songId) } returns song
+                }
+            val releaseRepository = OutletReleaseRepositoryImpl(httpClient, songRepository)
+            assertThat(releaseRepository.isSongReleased(songId)).isTrue()
         }
-        val songRepository = mockk<SongRepository>(relaxed = true) {
-            coEvery { get(songId) } returns song
-        }
-        val releaseRepository = OutletReleaseRepositoryImpl(httpClient, songRepository)
-        assertThat(releaseRepository.isSongReleased(songId)).isTrue()
-    }
 
     @Test
     @Disabled("This test is disabled because it requires a valid Spotify API token")
-    fun testIsReleasedFalse() = runBlocking {
-        val songId = UUID.randomUUID()
-        val song = mockk<Song>(relaxed = true) {
-            every { isrc } returns "IE-WNY-00-000000" // Garbage
+    fun testIsReleasedFalse() =
+        runBlocking {
+            val songId = UUID.randomUUID()
+            val song =
+                mockk<Song>(relaxed = true) {
+                    every { isrc } returns "IE-WNY-00-000000" // Garbage
+                }
+            val songRepository =
+                mockk<SongRepository>(relaxed = true) {
+                    coEvery { get(songId) } returns song
+                }
+            val releaseRepository = OutletReleaseRepositoryImpl(httpClient, songRepository)
+            assertThat(releaseRepository.isSongReleased(songId)).isFalse()
         }
-        val songRepository = mockk<SongRepository>(relaxed = true) {
-            coEvery { get(songId) } returns song
-        }
-        val releaseRepository = OutletReleaseRepositoryImpl(httpClient, songRepository)
-        assertThat(releaseRepository.isSongReleased(songId)).isFalse()
-    }
 }

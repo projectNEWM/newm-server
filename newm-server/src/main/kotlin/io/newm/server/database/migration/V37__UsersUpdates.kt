@@ -10,10 +10,10 @@ class V37__UsersUpdates : BaseJavaMigration() {
         transaction {
             exec(
                 """
-                    ALTER TABLE users
-                        ADD COLUMN IF NOT EXISTS spotify_profile text,
-                        ADD COLUMN IF NOT EXISTS sound_cloud_profile text,
-                        ADD COLUMN IF NOT EXISTS apple_music_profile text
+                ALTER TABLE users
+                    ADD COLUMN IF NOT EXISTS spotify_profile text,
+                    ADD COLUMN IF NOT EXISTS sound_cloud_profile text,
+                    ADD COLUMN IF NOT EXISTS apple_music_profile text
                 """.trimIndent()
             )
         }

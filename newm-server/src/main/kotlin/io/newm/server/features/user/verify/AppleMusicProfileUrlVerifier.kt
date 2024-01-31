@@ -18,13 +18,17 @@ class AppleMusicProfileUrlVerifier(
 ) : OutletProfileUrlVerifier {
     private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
 
-    override suspend fun verify(outletProfileUrl: String, stageOrFullName: String) {
+    override suspend fun verify(
+        outletProfileUrl: String,
+        stageOrFullName: String
+    ) {
         val appleProfileId = outletProfileUrl.substringAfterLast("/").substringBefore("?")
-        val response = httpClient.get(
-            "https://api.music.apple.com/v1/catalog/us/artists/$appleProfileId"
-        ) {
-            accept(ContentType.Application.Json)
-        }
+        val response =
+            httpClient.get(
+                "https://api.music.apple.com/v1/catalog/us/artists/$appleProfileId"
+            ) {
+                accept(ContentType.Application.Json)
+            }
         if (!response.status.isSuccess()) {
             throw OutletProfileUrlVerificationException("Apple Music profile not found for $appleProfileId")
         }
@@ -34,7 +38,9 @@ class AppleMusicProfileUrlVerifier(
         }
         logger.info { "Apple Music profile response for $appleProfileId : $appleMusicArtistResponse" }
         if (appleMusicArtistResponse.data[0].attributes.name != stageOrFullName) {
-            throw OutletProfileUrlVerificationException("Apple Music profile name (${appleMusicArtistResponse.data[0].attributes.name}) does not match stageOrFullName ($stageOrFullName) for $appleProfileId")
+            throw OutletProfileUrlVerificationException(
+                "Apple Music profile name (${appleMusicArtistResponse.data[0].attributes.name}) does not match stageOrFullName ($stageOrFullName) for $appleProfileId"
+            )
         }
     }
 

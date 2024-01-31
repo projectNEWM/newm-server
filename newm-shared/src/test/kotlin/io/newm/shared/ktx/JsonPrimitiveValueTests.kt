@@ -5,7 +5,6 @@ import kotlinx.serialization.json.JsonPrimitive
 import org.junit.jupiter.api.Test
 
 class JsonPrimitiveValueTests {
-
     @Test
     fun testStringValues() {
         val values = listOf("hello", "", "true", "1", "1.0")

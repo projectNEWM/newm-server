@@ -43,22 +43,26 @@ fun Block.toChainBlock(): ChainBlock {
         nodeVrfVkey = this.issuer.vrfVerificationKey,
         blockVrf = if (this.nonce == null) this.issuer.leaderValue.output else "",
         blockVrfProof = if (this.nonce == null) this.issuer.leaderValue.proof else "",
-        etaVrf0 = this.nonce?.output
-            ?: Blake2b.hash256(NONCE_VRF_HEADER + this.issuer.leaderValue.output.hexToByteArray()).toHexString(),
+        etaVrf0 =
+            this.nonce?.output
+                ?: Blake2b.hash256(NONCE_VRF_HEADER + this.issuer.leaderValue.output.hexToByteArray()).toHexString(),
         etaVrf1 = this.nonce?.proof ?: "",
-        leaderVrf0 = if (this.nonce != null) {
-            this.issuer.leaderValue.output
-        } else {
-            Blake2b.hash256(LEADER_VRF_HEADER + this.issuer.leaderValue.output.hexToByteArray())
-                .toHexString()
-        },
+        leaderVrf0 =
+            if (this.nonce != null) {
+                this.issuer.leaderValue.output
+            } else {
+                Blake2b.hash256(LEADER_VRF_HEADER + this.issuer.leaderValue.output.hexToByteArray())
+                    .toHexString()
+            },
         leaderVrf1 = if (this.nonce != null) this.issuer.leaderValue.proof else "",
         blockSize = this.size.bytes.toInt(),
-        blockBodyHash = "", // this value is no longer sent by Ogmios 6
+        // this value is no longer sent by Ogmios 6
+        blockBodyHash = "",
         poolOpcert = this.issuer.operationalCertificate.kes.verificationKey,
         sequenceNumber = this.issuer.operationalCertificate.count.toInt(),
         kesPeriod = this.issuer.operationalCertificate.kes.period.toInt(),
-        sigmaSignature = "", // this value is no longer sent by Ogmios 6
+        // this value is no longer sent by Ogmios 6
+        sigmaSignature = "",
         protocolMajorVersion = this.protocol.version.major,
         protocolMinorVersion = this.protocol.version.minor,
         transactionDestAddresses = this.toTransactionDestAddressSet(),
@@ -82,22 +86,24 @@ private fun Block.toPaymentStakeAddressSet(): Set<PaymentStakeAddress> {
     }.toSet()
 }
 
-private fun List<UtxoOutput>.toPaymentStakeAddressList() = this.mapNotNull { utxoOutput ->
-    if (receiveAddressRegex.matches(utxoOutput.address)) {
-        PaymentStakeAddress(
-            receivingAddress = utxoOutput.address,
-            stakeAddress = utxoOutput.address.extractStakeAddress(Config.isMainnet),
-        )
+private fun List<UtxoOutput>.toPaymentStakeAddressList() =
+    this.mapNotNull { utxoOutput ->
+        if (receiveAddressRegex.matches(utxoOutput.address)) {
+            PaymentStakeAddress(
+                receivingAddress = utxoOutput.address,
+                stakeAddress = utxoOutput.address.extractStakeAddress(Config.isMainnet),
+            )
+        } else {
+            null
+        }
+    }
+
+private fun UtxoOutput.extractStakeAddressOrNull() =
+    if (receiveAddressRegex.matches(this.address)) {
+        this.address.extractStakeAddress(Config.isMainnet)
     } else {
         null
     }
-}
-
-private fun UtxoOutput.extractStakeAddressOrNull() = if (receiveAddressRegex.matches(this.address)) {
-    this.address.extractStakeAddress(Config.isMainnet)
-} else {
-    null
-}
 
 fun Block.toCreatedUtxoMap(): Map<String, Set<CreatedUtxo>> {
     require(this is BlockPraos) { "Block is not a Praos block" }
@@ -114,10 +120,13 @@ fun Block.toCreatedUtxoSet(): Set<CreatedUtxo> {
     }.toSet()
 }
 
-fun List<UtxoOutput>.toCreatedUtxoList(txId: String, datumsMap: Map<String, String>) =
-    this.mapIndexed { index, utxoOutput ->
-        // Save off credential to txid mapping
-        val credentials = if (utxoOutput.address.startsWith("addr")) {
+fun List<UtxoOutput>.toCreatedUtxoList(
+    txId: String,
+    datumsMap: Map<String, String>
+) = this.mapIndexed { index, utxoOutput ->
+    // Save off credential to txid mapping
+    val credentials =
+        if (utxoOutput.address.startsWith("addr")) {
             try {
                 utxoOutput.address.extractCredentials()
             } catch (e: Throwable) {
@@ -127,41 +136,46 @@ fun List<UtxoOutput>.toCreatedUtxoList(txId: String, datumsMap: Map<String, Stri
             null
         }
 
-        val datumHash = utxoOutput.datumHash ?: utxoOutput.datum?.let { datum ->
+    val datumHash =
+        utxoOutput.datumHash ?: utxoOutput.datum?.let { datum ->
             Blake2b.hash256(datum.hexToByteArray()).toHexString()
         }
-        val datum = datumsMap[datumHash] ?: if (datumHash != utxoOutput.datum) {
+    val datum =
+        datumsMap[datumHash] ?: if (datumHash != utxoOutput.datum) {
             utxoOutput.datum
         } else {
             null
         }
 
-        if (datum != null && datum == datumHash) {
-            log.warn("Datum hash is the same as the datum itself: utxoOutput: $utxoOutput, datumsMap: $datumsMap")
-        }
+    if (datum != null && datum == datumHash) {
+        log.warn("Datum hash is the same as the datum itself: utxoOutput: $utxoOutput, datumsMap: $datumsMap")
+    }
 
-        CreatedUtxo(
-            address = utxoOutput.address,
-            addressType = utxoOutput.address.addressType(),
-            stakeAddress = utxoOutput.extractStakeAddressOrNull(),
-            hash = txId,
-            ix = index.toLong(),
-            lovelace = utxoOutput.value.ada.ada.lovelace,
-            datumHash = datumHash,
-            datum = datum,
-            scriptRef = (utxoOutput.script as? ScriptPlutusV2)?.cbor, // we only care about plutus v2
-            nativeAssets = utxoOutput.value.assets?.map { asset ->
+    CreatedUtxo(
+        address = utxoOutput.address,
+        addressType = utxoOutput.address.addressType(),
+        stakeAddress = utxoOutput.extractStakeAddressOrNull(),
+        hash = txId,
+        ix = index.toLong(),
+        lovelace = utxoOutput.value.ada.ada.lovelace,
+        datumHash = datumHash,
+        datum = datum,
+        // we only care about plutus v2
+        scriptRef = (utxoOutput.script as? ScriptPlutusV2)?.cbor,
+        nativeAssets =
+            utxoOutput.value.assets?.map { asset ->
                 NativeAsset(
                     policy = asset.policyId,
                     name = asset.name,
                     amount = asset.quantity,
                 )
             }.orEmpty(),
-            cbor = null, // TODO: fix if we ever need it
-            paymentCred = credentials?.first,
-            stakeCred = credentials?.second,
-        )
-    }
+        // TODO: fix if we ever need it
+        cbor = null,
+        paymentCred = credentials?.first,
+        stakeCred = credentials?.second,
+    )
+}
 
 fun Block.toSpentUtxoMap(): Map<String, Set<SpentUtxo>> {
     require(this is BlockPraos) { "Block is not a Praos block" }
@@ -199,30 +213,36 @@ fun Block.toStakeRegistrationList(): List<StakeRegistration> {
     }
 }
 
-private fun Certificate.toStakeRegistrationOrNull(slot: Long, txIndex: Int, certIndex: Int): StakeRegistration? {
+private fun Certificate.toStakeRegistrationOrNull(
+    slot: Long,
+    txIndex: Int,
+    certIndex: Int
+): StakeRegistration? {
     return when (this) {
-        is StakeCredentialRegistrationCertificate -> StakeRegistration(
-            slot = slot,
-            txIndex = txIndex,
-            certIndex = certIndex,
-            stakeAddress = credential.credentialToStakeAddress(),
-        )
+        is StakeCredentialRegistrationCertificate ->
+            StakeRegistration(
+                slot = slot,
+                txIndex = txIndex,
+                certIndex = certIndex,
+                stakeAddress = credential.credentialToStakeAddress(),
+            )
 
         else -> null
     }
 }
 
-private fun String.credentialToStakeAddress(): String = if (Config.isMainnet) {
-    Bech32.encode(
-        "stake",
-        ByteArray(1) { Constants.STAKE_ADDRESS_KEY_PREFIX_MAINNET } + this.hexToByteArray()
-    )
-} else {
-    Bech32.encode(
-        "stake_test",
-        ByteArray(1) { Constants.STAKE_ADDRESS_KEY_PREFIX_TESTNET } + this.hexToByteArray()
-    )
-}
+private fun String.credentialToStakeAddress(): String =
+    if (Config.isMainnet) {
+        Bech32.encode(
+            "stake",
+            ByteArray(1) { Constants.STAKE_ADDRESS_KEY_PREFIX_MAINNET } + this.hexToByteArray()
+        )
+    } else {
+        Bech32.encode(
+            "stake_test",
+            ByteArray(1) { Constants.STAKE_ADDRESS_KEY_PREFIX_TESTNET } + this.hexToByteArray()
+        )
+    }
 
 fun Block.toStakeDelegationList(epoch: Long): List<StakeDelegation> {
     require(this is BlockPraos) { "Block is not a Praos block" }
@@ -257,29 +277,30 @@ fun Block.toAssetMetadataList(ledgerAssets: List<LedgerAsset>): List<LedgerAsset
     }
 }
 
-fun MetadataMap?.extractAssetMetadata(
-    ledgerAssets: List<LedgerAsset>,
-): List<LedgerAssetMetadata> =
+fun MetadataMap?.extractAssetMetadata(ledgerAssets: List<LedgerAsset>): List<LedgerAssetMetadata> =
     this?.flatMap { (policyIdKey, assetMetadataValue) ->
-        val policyId = when (policyIdKey) {
-            is MetadataString -> policyIdKey.string
-            is MetadataBytes -> policyIdKey.bytes.b64ToByteArray().toHexString()
-            else -> null
-        }
+        val policyId =
+            when (policyIdKey) {
+                is MetadataString -> policyIdKey.string
+                is MetadataBytes -> policyIdKey.bytes.b64ToByteArray().toHexString()
+                else -> null
+            }
         policyId?.let {
             (assetMetadataValue as? MetadataMap)?.let { assetMetadataMap ->
                 assetMetadataMap.flatMap { (nameMetadataValue, detailsMetadataValue) ->
-                    val name = when (nameMetadataValue) {
-                        is MetadataString -> nameMetadataValue.string
-                        is MetadataBytes -> nameMetadataValue.bytes.b64ToByteArray().toHexString()
-                        else -> null
-                    }
+                    val name =
+                        when (nameMetadataValue) {
+                            is MetadataString -> nameMetadataValue.string
+                            is MetadataBytes -> nameMetadataValue.bytes.b64ToByteArray().toHexString()
+                            else -> null
+                        }
                     name?.let {
                         val hexName = it.toByteArray().toHexString()
-                        val ledgerAsset = ledgerAssets.find { asset ->
-                            asset.policy == policyId &&
-                                (asset.name == hexName || asset.name == it)
-                        }
+                        val ledgerAsset =
+                            ledgerAssets.find { asset ->
+                                asset.policy == policyId &&
+                                    (asset.name == hexName || asset.name == it)
+                            }
 
                         ledgerAsset?.let {
                             (detailsMetadataValue as? MetadataMap)?.mapNotNull { (keyMetadataValue, valueMetadataValue) ->
@@ -298,20 +319,22 @@ private fun buildAssetMetadata(
     valueMetadataValue: MetadataValue,
     nestLevel: Int
 ): LedgerAssetMetadata? {
-    val (key, keyType) = when (keyMetadataValue) {
-        is MetadataString -> Pair(keyMetadataValue.string, "string")
-        is MetadataBytes -> Pair(keyMetadataValue.bytes.b64ToByteArray().toHexString(), "bytestring")
-        is MetadataInteger -> Pair(keyMetadataValue.int.toString(), "integer")
-        else -> return null // ignore maps or lists for keys
-    }
+    val (key, keyType) =
+        when (keyMetadataValue) {
+            is MetadataString -> Pair(keyMetadataValue.string, "string")
+            is MetadataBytes -> Pair(keyMetadataValue.bytes.b64ToByteArray().toHexString(), "bytestring")
+            is MetadataInteger -> Pair(keyMetadataValue.int.toString(), "integer")
+            else -> return null // ignore maps or lists for keys
+        }
 
-    val (value, valueType) = when (valueMetadataValue) {
-        is MetadataString -> Pair(valueMetadataValue.string, "string")
-        is MetadataBytes -> Pair(valueMetadataValue.bytes.b64ToByteArray().toHexString(), "bytestring")
-        is MetadataInteger -> Pair(valueMetadataValue.int.toString(), "integer")
-        is MetadataList -> Pair("", "array")
-        is MetadataMap -> Pair("", "map")
-    }
+    val (value, valueType) =
+        when (valueMetadataValue) {
+            is MetadataString -> Pair(valueMetadataValue.string, "string")
+            is MetadataBytes -> Pair(valueMetadataValue.bytes.b64ToByteArray().toHexString(), "bytestring")
+            is MetadataInteger -> Pair(valueMetadataValue.int.toString(), "integer")
+            is MetadataList -> Pair("", "array")
+            is MetadataMap -> Pair("", "map")
+        }
 
     return LedgerAssetMetadata(
         assetId = assetId,
@@ -320,17 +343,20 @@ private fun buildAssetMetadata(
         valueType = valueType,
         value = value,
         nestLevel = nestLevel,
-        children = when (valueType) {
-            "array" -> (valueMetadataValue as MetadataList).mapNotNull { subValueMetadata ->
-                buildAssetMetadata(assetId, keyMetadataValue, subValueMetadata, nestLevel + 1)
-            }
+        children =
+            when (valueType) {
+                "array" ->
+                    (valueMetadataValue as MetadataList).mapNotNull { subValueMetadata ->
+                        buildAssetMetadata(assetId, keyMetadataValue, subValueMetadata, nestLevel + 1)
+                    }
 
-            "map" -> (valueMetadataValue as MetadataMap).mapNotNull { (subKeyMetadata, subValueMetadata) ->
-                buildAssetMetadata(assetId, subKeyMetadata, subValueMetadata, nestLevel + 1)
-            }
+                "map" ->
+                    (valueMetadataValue as MetadataMap).mapNotNull { (subKeyMetadata, subValueMetadata) ->
+                        buildAssetMetadata(assetId, subKeyMetadata, subValueMetadata, nestLevel + 1)
+                    }
 
-            else -> emptyList()
-        }
+                else -> emptyList()
+            }
     )
 }
 
@@ -357,17 +383,21 @@ fun Block.toRawTransactionList(): List<RawTransaction> {
     }
 }
 
-private fun Certificate.toStakeDelegationOrNull(blockNumber: Long, epoch: Long): StakeDelegation? = when (this) {
-    is StakeDelegationCertificate -> {
-        this.stakePool?.id?.let { poolId ->
-            StakeDelegation(
-                blockNumber = blockNumber,
-                stakeAddress = this.credential.credentialToStakeAddress(),
-                poolId = poolId,
-                epoch = epoch,
-            )
+private fun Certificate.toStakeDelegationOrNull(
+    blockNumber: Long,
+    epoch: Long
+): StakeDelegation? =
+    when (this) {
+        is StakeDelegationCertificate -> {
+            this.stakePool?.id?.let { poolId ->
+                StakeDelegation(
+                    blockNumber = blockNumber,
+                    stakeAddress = this.credential.credentialToStakeAddress(),
+                    poolId = poolId,
+                    epoch = epoch,
+                )
+            }
         }
-    }
 
-    else -> null
-}
+        else -> null
+    }

@@ -64,9 +64,10 @@ val ApplicationCall.ids: List<UUID>?
     get() = parameters["ids"]?.splitAndTrim()?.map(String::toUUID)
 
 val ApplicationCall.ownerIds: List<UUID>?
-    get() = parameters["ownerIds"]?.splitAndTrim()?.map {
-        if (it == "me") myUserId else it.toUUID()
-    }
+    get() =
+        parameters["ownerIds"]?.splitAndTrim()?.map {
+            if (it == "me") myUserId else it.toUUID()
+        }
 val ApplicationCall.songIds: List<UUID>?
     get() = parameters["songIds"]?.splitAndTrim()?.map(String::toUUID)
 
@@ -100,16 +101,12 @@ val ApplicationCall.mintingStatuses: List<MintingStatus>?
 val ApplicationCall.nftNames: List<String>?
     get() = parameters["nftNames"]?.splitAndTrim()
 
-suspend inline fun ApplicationCall.identifyUser(
-    crossinline body: suspend ApplicationCall.(UUID, Boolean) -> Unit
-) {
+suspend inline fun ApplicationCall.identifyUser(crossinline body: suspend ApplicationCall.(UUID, Boolean) -> Unit) {
     val uid = userId
     body(uid, uid == myUserId)
 }
 
-suspend inline fun ApplicationCall.restrictToMe(
-    crossinline body: suspend ApplicationCall.(UUID) -> Unit
-) {
+suspend inline fun ApplicationCall.restrictToMe(crossinline body: suspend ApplicationCall.(UUID) -> Unit) {
     identifyUser { userId, isMe ->
         if (isMe) {
             body(userId)
@@ -136,9 +133,10 @@ suspend fun <T : Any> ApplicationCall.receiveAndVerify(
     type: KClass<T>
 ): T {
     val signature = request.headers[signatureHeader] ?: throw HttpUnauthorizedException("missing signature")
-    val mac = Mac.getInstance(key.algorithm).apply {
-        init(key)
-    }
+    val mac =
+        Mac.getInstance(key.algorithm).apply {
+            init(key)
+        }
     request.pipeline.intercept(ApplicationReceivePipeline.Before) { data ->
         val channel = data as ByteReadChannel
         val size = channel.availableForRead

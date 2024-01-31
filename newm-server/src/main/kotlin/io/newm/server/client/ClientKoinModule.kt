@@ -18,38 +18,39 @@ val QUALIFIER_SPOTIFY_HTTP_CLIENT = named("spotifyHttpClient")
 val QUALIFIER_APPLE_MUSIC_HTTP_CLIENT = named("appleMusicHttpClient")
 val QUALIFIER_SOUND_CLOUD_HTTP_CLIENT = named("soundCloudHttpClient")
 
-val clientKoinModule = module {
-    single {
-        HttpClient(CIO) {
-            install(ContentNegotiation) {
-                json(json = get())
+val clientKoinModule =
+    module {
+        single {
+            HttpClient(CIO) {
+                install(ContentNegotiation) {
+                    json(json = get())
+                }
+                install(HttpTimeout) {
+                    requestTimeoutMillis = 2.minutes.inWholeMilliseconds
+                    connectTimeoutMillis = 10.seconds.inWholeMilliseconds
+                    socketTimeoutMillis = 30.seconds.inWholeMilliseconds
+                }
             }
-            install(HttpTimeout) {
-                requestTimeoutMillis = 2.minutes.inWholeMilliseconds
-                connectTimeoutMillis = 10.seconds.inWholeMilliseconds
-                socketTimeoutMillis = 30.seconds.inWholeMilliseconds
+        }
+        single(QUALIFIER_SPOTIFY_HTTP_CLIENT) {
+            get<HttpClient>().config {
+                install(Auth) {
+                    spotifyBearer()
+                }
+            }
+        }
+        single(QUALIFIER_APPLE_MUSIC_HTTP_CLIENT) {
+            get<HttpClient>().config {
+                install(Auth) {
+                    appleMusicBearer()
+                }
+            }
+        }
+        single(QUALIFIER_SOUND_CLOUD_HTTP_CLIENT) {
+            get<HttpClient>().config {
+                install(Auth) {
+                    soundCloudBearer()
+                }
             }
         }
     }
-    single(QUALIFIER_SPOTIFY_HTTP_CLIENT) {
-        get<HttpClient>().config {
-            install(Auth) {
-                spotifyBearer()
-            }
-        }
-    }
-    single(QUALIFIER_APPLE_MUSIC_HTTP_CLIENT) {
-        get<HttpClient>().config {
-            install(Auth) {
-                appleMusicBearer()
-            }
-        }
-    }
-    single(QUALIFIER_SOUND_CLOUD_HTTP_CLIENT) {
-        get<HttpClient>().config {
-            install(Auth) {
-                soundCloudBearer()
-            }
-        }
-    }
-}

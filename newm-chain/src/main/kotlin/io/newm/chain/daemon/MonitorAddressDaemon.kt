@@ -69,11 +69,12 @@ class MonitorAddressDaemon(
     private val port by lazy { environment.getConfigInt("ogmios.port") }
     private val secure by lazy { environment.getConfigBoolean("ogmios.secure") }
     private val blockDaemon by inject<BlockDaemon>()
-    private val rollForwardFlow = MutableSharedFlow<RollForward>(
-        replay = 0,
-        extraBufferCapacity = 0,
-        onBufferOverflow = BufferOverflow.SUSPEND
-    )
+    private val rollForwardFlow =
+        MutableSharedFlow<RollForward>(
+            replay = 0,
+            extraBufferCapacity = 0,
+            onBufferOverflow = BufferOverflow.SUSPEND
+        )
     private var blockBufferSize = 1
     private val blockBuffer: MutableList<BlockPraos> = mutableListOf()
 
@@ -191,7 +192,10 @@ class MonitorAddressDaemon(
         }
     }
 
-    private suspend fun processBlock(block: BlockPraos, isTip: Boolean) {
+    private suspend fun processBlock(
+        block: BlockPraos,
+        isTip: Boolean
+    ) {
         blockBuffer.add(block)
         if (blockBuffer.size == blockBufferSize || isTip) {
             // Create a copy of the list
@@ -204,7 +208,11 @@ class MonitorAddressDaemon(
     }
 
     private var lastLoggedCommit = Instant.EPOCH
-    private suspend fun commitBlocks(blocksToCommit: List<BlockPraos>, isTip: Boolean) {
+
+    private suspend fun commitBlocks(
+        blocksToCommit: List<BlockPraos>,
+        isTip: Boolean
+    ) {
 //        if (!isTip) {
 //            log.warn("starting commitBlocks()...")
 //        }
@@ -216,44 +224,48 @@ class MonitorAddressDaemon(
         measureTimeMillis {
             newSuspendedTransaction {
                 warnLongQueriesDuration = 1000L
-                rollbackTime += measureTimeMillis {
-                    chainRepository.rollbackMonitoredAddressChain(monitorAddress, firstBlock.height)
-                    AddressTxLogTable.deleteWhere {
-                        (address eq monitorAddress) and (blockNumber greaterEq firstBlock.height)
+                rollbackTime +=
+                    measureTimeMillis {
+                        chainRepository.rollbackMonitoredAddressChain(monitorAddress, firstBlock.height)
+                        AddressTxLogTable.deleteWhere {
+                            (address eq monitorAddress) and (blockNumber greaterEq firstBlock.height)
+                        }
                     }
-                }
 
                 blocksToCommit.forEach { block ->
                     // Insert any monitor address tx log responses
-                    createTime += measureTimeMillis {
-                        commitMonitorAddressTransactions(block)
-                    }
+                    createTime +=
+                        measureTimeMillis {
+                            commitMonitorAddressTransactions(block)
+                        }
                 }
 
                 if (!isTipReached) {
-                    createTime += measureTimeMillis {
-                        // Insert the last processed block into the database
-                        chainRepository.insertMonitoredAddressChain(
-                            MonitoredAddressChain(
-                                address = monitorAddress,
-                                height = latestBlock.height,
-                                slot = latestBlock.slot,
-                                hash = latestBlock.id,
+                    createTime +=
+                        measureTimeMillis {
+                            // Insert the last processed block into the database
+                            chainRepository.insertMonitoredAddressChain(
+                                MonitoredAddressChain(
+                                    address = monitorAddress,
+                                    height = latestBlock.height,
+                                    slot = latestBlock.slot,
+                                    hash = latestBlock.id,
+                                )
                             )
-                        )
-                    }
+                        }
                 }
 
                 // Prune any old stuff we don't need any longer
-                pruneTime = measureTimeMillis {
-                    // only prune every 10000 blocks
-                    if (latestBlock.height % 10_000L == 0L) {
-                        chainRepository.pruneMonitoredAddressChainHistory(
-                            monitorAddress,
-                            latestBlock.height
-                        )
+                pruneTime =
+                    measureTimeMillis {
+                        // only prune every 10000 blocks
+                        if (latestBlock.height % 10_000L == 0L) {
+                            chainRepository.pruneMonitoredAddressChainHistory(
+                                monitorAddress,
+                                latestBlock.height
+                            )
+                        }
                     }
-                }
             }
         }.also { totalTime ->
             val now = Instant.now()
@@ -267,7 +279,9 @@ class MonitorAddressDaemon(
                 lastLoggedCommit = now
             }
             if ((isTip && totalTime > COMMIT_BLOCKS_WARN_LEVEL_MILLIS) || (totalTime > COMMIT_BLOCKS_ERROR_LEVEL_MILLIS)) {
-                log.warn("commitBlocks(${blocksToCommit.size}) total: ${totalTime}ms, rollback: ${rollbackTime}ms, create: ${createTime}ms, prune: ${pruneTime}ms")
+                log.warn(
+                    "commitBlocks(${blocksToCommit.size}) total: ${totalTime}ms, rollback: ${rollbackTime}ms, create: ${createTime}ms, prune: ${pruneTime}ms"
+                )
             }
 
             // Adjust blockBufferSize based on how long it took to commit these blocks
@@ -316,34 +330,36 @@ class MonitorAddressDaemon(
                     }.build()
                 }.orEmpty()
 
-            val createdAddressUtxos = createdUtxoMap[transactionId]?.filter { createdUtxo ->
-                createdUtxo.address == monitorAddress
-            }?.map { utxo ->
-                Utxo.newBuilder().apply {
-                    hash = utxo.hash
-                    ix = utxo.ix
-                    lovelace = utxo.lovelace.toString()
-                    utxo.datumHash?.let { datumHash = it }
-                    utxo.datum?.let {
-                        datum = it.cborHexToPlutusData()
-                    }
-                    utxo.nativeAssets.forEach { nativeAsset ->
-                        addNativeAssets(
-                            NativeAsset.newBuilder().apply {
-                                policy = nativeAsset.policy
-                                name = nativeAsset.name
-                                amount = nativeAsset.amount.toString()
-                            }
-                        )
-                    }
-                }.build()
-            }.orEmpty()
+            val createdAddressUtxos =
+                createdUtxoMap[transactionId]?.filter { createdUtxo ->
+                    createdUtxo.address == monitorAddress
+                }?.map { utxo ->
+                    Utxo.newBuilder().apply {
+                        hash = utxo.hash
+                        ix = utxo.ix
+                        lovelace = utxo.lovelace.toString()
+                        utxo.datumHash?.let { datumHash = it }
+                        utxo.datum?.let {
+                            datum = it.cborHexToPlutusData()
+                        }
+                        utxo.nativeAssets.forEach { nativeAsset ->
+                            addNativeAssets(
+                                NativeAsset.newBuilder().apply {
+                                    policy = nativeAsset.policy
+                                    name = nativeAsset.name
+                                    amount = nativeAsset.amount.toString()
+                                }
+                            )
+                        }
+                    }.build()
+                }.orEmpty()
 
             if (spentAddressUtxos.isNotEmpty() || createdAddressUtxos.isNotEmpty()) {
-                val monitorAddressResponses = monitorAddressResponsesMap[monitorAddress]
-                    ?: mutableListOf<MonitorAddressResponse>().also {
-                        monitorAddressResponsesMap[monitorAddress] = it
-                    }
+                val monitorAddressResponses =
+                    monitorAddressResponsesMap[monitorAddress]
+                        ?: mutableListOf<MonitorAddressResponse>().also {
+                            monitorAddressResponsesMap[monitorAddress] = it
+                        }
                 monitorAddressResponses.add(
                     MonitorAddressResponse
                         .newBuilder()
@@ -370,23 +386,26 @@ class MonitorAddressDaemon(
                                         val key =
                                             "${redeemer.validator.purpose.lowercase()}:${redeemer.validator.index}"
                                         val plutusData = redeemer.redeemer.cborHexToPlutusData()
-                                        key to redeemer {
-                                            tag = when (redeemer.validator.purpose) {
-                                                "spend" -> RedeemerTag.SPEND
-                                                "mint" -> RedeemerTag.MINT
-                                                "certificate" -> RedeemerTag.CERT
-                                                "withdrawal" -> RedeemerTag.REWARD
-                                                else -> throw IllegalArgumentException(
-                                                    "Unknown redeemer tag"
-                                                )
+                                        key to
+                                            redeemer {
+                                                tag =
+                                                    when (redeemer.validator.purpose) {
+                                                        "spend" -> RedeemerTag.SPEND
+                                                        "mint" -> RedeemerTag.MINT
+                                                        "certificate" -> RedeemerTag.CERT
+                                                        "withdrawal" -> RedeemerTag.REWARD
+                                                        else -> throw IllegalArgumentException(
+                                                            "Unknown redeemer tag"
+                                                        )
+                                                    }
+                                                index = redeemer.validator.index.toLong()
+                                                data = plutusData
+                                                exUnits =
+                                                    exUnits {
+                                                        mem = redeemer.executionUnits.memory.toLong()
+                                                        steps = redeemer.executionUnits.cpu.toLong()
+                                                    }
                                             }
-                                            index = redeemer.validator.index.toLong()
-                                            data = plutusData
-                                            exUnits = exUnits {
-                                                mem = redeemer.executionUnits.memory.toLong()
-                                                steps = redeemer.executionUnits.cpu.toLong()
-                                            }
-                                        }
                                     }
                                 )
                             }
@@ -458,9 +477,10 @@ class MonitorAddressDaemon(
         var lastLogged = Instant.EPOCH
         var isTip: Boolean
         do {
-            val response = client.nextBlock(
-                timeoutMs = Client.DEFAULT_REQUEST_TIMEOUT_MS
-            )
+            val response =
+                client.nextBlock(
+                    timeoutMs = Client.DEFAULT_REQUEST_TIMEOUT_MS
+                )
             when (response.result) {
                 is RollBackward -> {
                     log.info("RollBackward: ${(response.result as RollBackward).point}")

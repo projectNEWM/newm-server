@@ -78,11 +78,12 @@ class ChainRepositoryImpl : ChainRepository {
         transaction {
             blocks.forEach { block ->
                 ChainTable.deleteWhere { blockNumber greaterEq block.blockNumber }
-                val prevEtaV: String = ChainTable.select(
-                    ChainTable.etaV
-                ).where { ChainTable.slotNumber eqSubQuery ChainTable.select(ChainTable.slotNumber.max()) }
-                    .singleOrNull()?.get(ChainTable.etaV)
-                    ?: Config.shelleyGenesisHash
+                val prevEtaV: String =
+                    ChainTable.select(
+                        ChainTable.etaV
+                    ).where { ChainTable.slotNumber eqSubQuery ChainTable.select(ChainTable.slotNumber.max()) }
+                        .singleOrNull()?.get(ChainTable.etaV)
+                        ?: Config.shelleyGenesisHash
 
                 ChainTable.insertAndGetId { row ->
                     row[blockNumber] = block.blockNumber
@@ -128,36 +129,38 @@ class ChainRepositoryImpl : ChainRepository {
 
     override fun insert(block: ChainBlock): Long {
         return transaction {
-            val prevEtaV: String = prevEtaVCache.getIfPresent(block.blockNumber - 1) ?: ChainTable.select(
-                ChainTable.etaV
-            ).where { ChainTable.blockNumber eq (block.blockNumber - 1) }.singleOrNull()?.get(ChainTable.etaV)
-                ?: Config.shelleyGenesisHash
+            val prevEtaV: String =
+                prevEtaVCache.getIfPresent(block.blockNumber - 1) ?: ChainTable.select(
+                    ChainTable.etaV
+                ).where { ChainTable.blockNumber eq (block.blockNumber - 1) }.singleOrNull()?.get(ChainTable.etaV)
+                    ?: Config.shelleyGenesisHash
 
             val newEtaV = calculateEtaV(prevEtaV, block.etaVrf0)
-            val chainId = ChainTable.insertAndGetId { row ->
-                row[blockNumber] = block.blockNumber
-                row[slotNumber] = block.slotNumber
-                row[hash] = block.hash
-                row[prevHash] = block.prevHash
-                row[poolId] = nodeVKeyToPoolId(block.nodeVkey)
-                row[etaV] = newEtaV
-                row[nodeVkey] = block.nodeVkey
-                row[nodeVrfVkey] = block.nodeVrfVkey
-                row[blockVrf0] = block.blockVrf
-                row[blockVrf1] = block.blockVrfProof
-                row[etaVrf0] = block.etaVrf0
-                row[etaVrf1] = block.etaVrf1
-                row[leaderVrf0] = block.leaderVrf0
-                row[leaderVrf1] = block.leaderVrf1
-                row[blockSize] = block.blockSize
-                row[blockBodyHash] = block.blockBodyHash
-                row[poolOpcert] = block.poolOpcert
-                row[sequenceNumber] = block.sequenceNumber
-                row[kesPeriod] = block.kesPeriod
-                row[sigmaSignature] = block.sigmaSignature
-                row[protocolMajorVersion] = block.protocolMajorVersion
-                row[protocolMinorVersion] = block.protocolMinorVersion
-            }.value
+            val chainId =
+                ChainTable.insertAndGetId { row ->
+                    row[blockNumber] = block.blockNumber
+                    row[slotNumber] = block.slotNumber
+                    row[hash] = block.hash
+                    row[prevHash] = block.prevHash
+                    row[poolId] = nodeVKeyToPoolId(block.nodeVkey)
+                    row[etaV] = newEtaV
+                    row[nodeVkey] = block.nodeVkey
+                    row[nodeVrfVkey] = block.nodeVrfVkey
+                    row[blockVrf0] = block.blockVrf
+                    row[blockVrf1] = block.blockVrfProof
+                    row[etaVrf0] = block.etaVrf0
+                    row[etaVrf1] = block.etaVrf1
+                    row[leaderVrf0] = block.leaderVrf0
+                    row[leaderVrf1] = block.leaderVrf1
+                    row[blockSize] = block.blockSize
+                    row[blockBodyHash] = block.blockBodyHash
+                    row[poolOpcert] = block.poolOpcert
+                    row[sequenceNumber] = block.sequenceNumber
+                    row[kesPeriod] = block.kesPeriod
+                    row[sigmaSignature] = block.sigmaSignature
+                    row[protocolMajorVersion] = block.protocolMajorVersion
+                    row[protocolMinorVersion] = block.protocolMinorVersion
+                }.value
             prevEtaVCache.put(block.blockNumber, newEtaV)
 
             if (block.stakeDestAddresses.isNotEmpty()) {
@@ -176,60 +179,72 @@ class ChainRepositoryImpl : ChainRepository {
         }
     }
 
-    override fun rollback(blockNumber: Long) = transaction {
-        ChainTable.deleteWhere { ChainTable.blockNumber greaterEq blockNumber }
-    }
-
-    override fun rollbackMonitoredAddressChain(address: String, blockNumber: Long): Int = transaction {
-        MonitoredAddressChainTable.deleteWhere {
-            (MonitoredAddressChainTable.address eq address) and
-                (height greaterEq blockNumber)
+    override fun rollback(blockNumber: Long) =
+        transaction {
+            ChainTable.deleteWhere { ChainTable.blockNumber greaterEq blockNumber }
         }
-    }
 
-    override fun pruneMonitoredAddressChainHistory(address: String, currentBlockNumber: Long): Int = transaction {
-        MonitoredAddressChainTable.deleteWhere {
-            (MonitoredAddressChainTable.address eq address) and
-                (height less currentBlockNumber - 1000) and
-                (height greater 0)
-        }
-    }
-
-    override fun getFindIntersectPairsAddressChain(address: String): List<PointDetail> = transaction {
-        MonitoredAddressChainTable.select(
-            MonitoredAddressChainTable.slot,
-            MonitoredAddressChainTable.hash
-        ).where { MonitoredAddressChainTable.address eq address }
-            .orderBy(MonitoredAddressChainTable.slot, SortOrder.DESC)
-            .limit(33).filterIndexed { index, _ ->
-                // all powers of 2 including 0th element 0, 2, 4, 8, 16, 32
-                (index == 0) || ((index > 1) && (index and (index - 1) == 0))
-            }.map { row ->
-                PointDetail(
-                    slot = row[MonitoredAddressChainTable.slot],
-                    id = row[MonitoredAddressChainTable.hash],
-                )
+    override fun rollbackMonitoredAddressChain(
+        address: String,
+        blockNumber: Long
+    ): Int =
+        transaction {
+            MonitoredAddressChainTable.deleteWhere {
+                (MonitoredAddressChainTable.address eq address) and
+                    (height greaterEq blockNumber)
             }
-    }
+        }
 
-    override fun insertMonitoredAddressChain(monitoredAddressChain: MonitoredAddressChain): Long = transaction {
-        MonitoredAddressChainTable.insertAndGetId { row ->
-            row[address] = monitoredAddressChain.address
-            row[height] = monitoredAddressChain.height
-            row[slot] = monitoredAddressChain.slot
-            row[hash] = monitoredAddressChain.hash
-        }.value
-    }
+    override fun pruneMonitoredAddressChainHistory(
+        address: String,
+        currentBlockNumber: Long
+    ): Int =
+        transaction {
+            MonitoredAddressChainTable.deleteWhere {
+                (MonitoredAddressChainTable.address eq address) and
+                    (height less currentBlockNumber - 1000) and
+                    (height greater 0)
+            }
+        }
 
-    override fun markTipMonitoredAddressChain(address: String): Long = transaction {
-        MonitoredAddressChainTable.deleteWhere { MonitoredAddressChainTable.address eq address }
-        MonitoredAddressChainTable.insertAndGetId { row ->
-            row[MonitoredAddressChainTable.address] = address
-            row[height] = -1
-            row[slot] = -1
-            row[hash] = ""
-        }.value
-    }
+    override fun getFindIntersectPairsAddressChain(address: String): List<PointDetail> =
+        transaction {
+            MonitoredAddressChainTable.select(
+                MonitoredAddressChainTable.slot,
+                MonitoredAddressChainTable.hash
+            ).where { MonitoredAddressChainTable.address eq address }
+                .orderBy(MonitoredAddressChainTable.slot, SortOrder.DESC)
+                .limit(33).filterIndexed { index, _ ->
+                    // all powers of 2 including 0th element 0, 2, 4, 8, 16, 32
+                    (index == 0) || ((index > 1) && (index and (index - 1) == 0))
+                }.map { row ->
+                    PointDetail(
+                        slot = row[MonitoredAddressChainTable.slot],
+                        id = row[MonitoredAddressChainTable.hash],
+                    )
+                }
+        }
+
+    override fun insertMonitoredAddressChain(monitoredAddressChain: MonitoredAddressChain): Long =
+        transaction {
+            MonitoredAddressChainTable.insertAndGetId { row ->
+                row[address] = monitoredAddressChain.address
+                row[height] = monitoredAddressChain.height
+                row[slot] = monitoredAddressChain.slot
+                row[hash] = monitoredAddressChain.hash
+            }.value
+        }
+
+    override fun markTipMonitoredAddressChain(address: String): Long =
+        transaction {
+            MonitoredAddressChainTable.deleteWhere { MonitoredAddressChainTable.address eq address }
+            MonitoredAddressChainTable.insertAndGetId { row ->
+                row[MonitoredAddressChainTable.address] = address
+                row[height] = -1
+                row[slot] = -1
+                row[hash] = ""
+            }.value
+        }
 
     private fun nodeVKeyToPoolId(nodeVKey: String): String {
         val vKeyByteArray = nodeVKey.hexToByteArray()
@@ -240,7 +255,10 @@ class ChainRepositoryImpl : ChainRepository {
     /**
      * Evolve the etaV nonce value
      */
-    private fun calculateEtaV(prevEtaV: String, etaVrf0: String): String {
+    private fun calculateEtaV(
+        prevEtaV: String,
+        etaVrf0: String
+    ): String {
         val prevEtaVBytes = prevEtaV.hexToByteArray()
         val etaVrf0Bytes = etaVrf0.hexToByteArray()
         val eta = Blake2b.hash256(etaVrf0Bytes)

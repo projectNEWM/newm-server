@@ -11,10 +11,10 @@ class V7__DropKeys : BaseJavaMigration() {
             execInBatch(
                 listOf(
                     """
-                        DROP TABLE IF EXISTS "keys"
+                    DROP TABLE IF EXISTS "keys"
                     """.trimIndent(),
                     """
-                        DROP TABLE IF EXISTS "transaction_dest_addresses"
+                    DROP TABLE IF EXISTS "transaction_dest_addresses"
                     """.trimIndent()
                 )
             )

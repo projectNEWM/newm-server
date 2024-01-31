@@ -9,9 +9,10 @@ private val fullPathPerConfig = synchronizedMap(WeakHashMap<ApplicationConfig, S
 
 fun ApplicationConfig.getChildFullPath(path: String): String = fullPathPerConfig[this]?.let { "$it.$path" } ?: path
 
-fun ApplicationConfig.getChild(path: String): ApplicationConfig = config(path).also { child ->
-    fullPathPerConfig[child] = getChildFullPath(path)
-}
+fun ApplicationConfig.getChild(path: String): ApplicationConfig =
+    config(path).also { child ->
+        fullPathPerConfig[child] = getChildFullPath(path)
+    }
 
 fun ApplicationConfig.getChildren(path: String): List<ApplicationConfig> {
     val config = getChild(path)
@@ -22,8 +23,10 @@ fun ApplicationConfig.getString(path: String): String = property(path).getString
 
 fun ApplicationConfig.getStrings(path: String): List<String> = property(path).getList()
 
-fun ApplicationConfig.getSplitStrings(path: String, delimiter: String = ","): List<String> =
-    getStrings(path).flatMap { it.split(delimiter) }
+fun ApplicationConfig.getSplitStrings(
+    path: String,
+    delimiter: String = ","
+): List<String> = getStrings(path).flatMap { it.split(delimiter) }
 
 fun ApplicationConfig.getInt(path: String): Int = getString(path).toInt()
 

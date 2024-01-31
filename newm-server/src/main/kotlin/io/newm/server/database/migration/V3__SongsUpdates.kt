@@ -10,8 +10,8 @@ class V3__SongsUpdates : BaseJavaMigration() {
         transaction {
             exec(
                 """
-                    ALTER TABLE songs
-                        ADD COLUMN duration int
+                ALTER TABLE songs
+                    ADD COLUMN duration int
                 """.trimIndent()
             )
         }

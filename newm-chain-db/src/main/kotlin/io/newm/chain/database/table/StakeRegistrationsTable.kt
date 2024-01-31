@@ -4,7 +4,6 @@ import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.Column
 
 object StakeRegistrationsTable : LongIdTable(name = "stake_registrations") {
-
     // the user's stake address
     val stakeAddress: Column<String> = text("stake_address")
 

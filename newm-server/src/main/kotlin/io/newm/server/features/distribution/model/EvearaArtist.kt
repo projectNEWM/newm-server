@@ -7,8 +7,9 @@ import kotlinx.serialization.Serializable
 data class EvearaArtist(
     @SerialName("artist_id")
     val artistId: Long,
+    // 1 == active, 0 == inactive
     @SerialName("is_active")
-    val isActive: Int, // 1 == active, 0 == inactive
+    val isActive: Int,
     @SerialName("featureArtist")
     val featureArtist: Int? = null,
     @SerialName("outlets")

@@ -24,10 +24,11 @@ fun Application.installFakeAuthentication() {
 }
 
 private class FakeAuthProvider(name: String) : AuthenticationProvider(object : Config(name) {}) {
-    override suspend fun onAuthenticate(context: AuthenticationContext) = context.run {
-        val authHeader = call.request.parseAuthorizationHeader() as HttpAuthHeader.Single
-        principal(JWTPrincipal(FakePayload(authHeader.blob)))
-    }
+    override suspend fun onAuthenticate(context: AuthenticationContext) =
+        context.run {
+            val authHeader = call.request.parseAuthorizationHeader() as HttpAuthHeader.Single
+            principal(JWTPrincipal(FakePayload(authHeader.blob)))
+        }
 }
 
 private class FakePayload(private val userId: String) : Payload {
@@ -45,20 +46,32 @@ private class FakePayload(private val userId: String) : Payload {
 
     override fun getId(): String = ""
 
-    override fun getClaim(name: String?): Claim = object : Claim {
-        override fun isNull(): Boolean = true
-        override fun isMissing(): Boolean = true
-        override fun asBoolean(): Boolean? = null
-        override fun asInt(): Int? = null
-        override fun asLong(): Long? = null
-        override fun asDouble(): Double? = null
-        override fun asString(): String? = null
-        override fun asDate(): Date? = null
-        override fun <T : Any?> asArray(clazz: Class<T>?): Array<T>? = null
-        override fun <T : Any?> asList(clazz: Class<T>?): MutableList<T>? = null
-        override fun asMap(): MutableMap<String, Any>? = null
-        override fun <T : Any?> `as`(clazz: Class<T>?): T? = null
-    }
+    override fun getClaim(name: String?): Claim =
+        object : Claim {
+            override fun isNull(): Boolean = true
+
+            override fun isMissing(): Boolean = true
+
+            override fun asBoolean(): Boolean? = null
+
+            override fun asInt(): Int? = null
+
+            override fun asLong(): Long? = null
+
+            override fun asDouble(): Double? = null
+
+            override fun asString(): String? = null
+
+            override fun asDate(): Date? = null
+
+            override fun <T : Any?> asArray(clazz: Class<T>?): Array<T>? = null
+
+            override fun <T : Any?> asList(clazz: Class<T>?): MutableList<T>? = null
+
+            override fun asMap(): MutableMap<String, Any>? = null
+
+            override fun <T : Any?> `as`(clazz: Class<T>?): T? = null
+        }
 
     override fun getClaims(): MutableMap<String, Claim> = mutableMapOf()
 }

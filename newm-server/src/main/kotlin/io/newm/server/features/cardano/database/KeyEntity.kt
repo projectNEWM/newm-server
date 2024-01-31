@@ -17,7 +17,6 @@ import java.time.LocalDateTime
 import java.util.*
 
 class KeyEntity(id: EntityID<UUID>) : UUIDEntity(id) {
-
     val createdAt: LocalDateTime by KeyTable.createdAt
     var skey: String by KeyTable.skey
     var vkey: String by KeyTable.vkey
@@ -26,15 +25,16 @@ class KeyEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var scriptAddress: String? by KeyTable.scriptAddress
     var name: String? by KeyTable.name
 
-    fun toModel(skeyBytes: ByteArray): Key = Key(
-        id = id.value,
-        createdAt = createdAt,
-        skey = skeyBytes,
-        vkey = vkey.hexToByteArray(),
-        address = address,
-        script = script,
-        scriptAddress = scriptAddress,
-    )
+    fun toModel(skeyBytes: ByteArray): Key =
+        Key(
+            id = id.value,
+            createdAt = createdAt,
+            skey = skeyBytes,
+            vkey = vkey.hexToByteArray(),
+            address = address,
+            script = script,
+            scriptAddress = scriptAddress,
+        )
 
     companion object : UUIDEntityClass<KeyEntity>(KeyTable) {
         fun all(filters: KeyFilters): SizedIterable<KeyEntity> {

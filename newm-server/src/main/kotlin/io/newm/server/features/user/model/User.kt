@@ -20,7 +20,8 @@ data class User(
     val oauthId: String? = null,
     val firstName: String? = null,
     val lastName: String? = null,
-    @VisibleForTesting // nickname should be accessed through stageOrFullName
+    // nickname should be accessed through stageOrFullName
+    @VisibleForTesting
     val nickname: String? = null,
     val pictureUrl: String? = null,
     val bannerUrl: String? = null,

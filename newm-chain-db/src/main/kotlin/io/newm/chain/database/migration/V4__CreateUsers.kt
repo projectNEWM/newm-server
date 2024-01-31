@@ -11,10 +11,10 @@ class V4__CreateUsers : BaseJavaMigration() {
             execInBatch(
                 listOf(
                     """
-                        CREATE TABLE IF NOT EXISTS "api_users" ("id" BIGSERIAL PRIMARY KEY, "name" TEXT NOT NULL)
+                    CREATE TABLE IF NOT EXISTS "api_users" ("id" BIGSERIAL PRIMARY KEY, "name" TEXT NOT NULL)
                     """.trimIndent(),
                     """
-                        CREATE INDEX IF NOT EXISTS "api_users_name_index" ON "api_users" ("name")
+                    CREATE INDEX IF NOT EXISTS "api_users_name_index" ON "api_users" ("name")
                     """.trimIndent(),
                 )
             )

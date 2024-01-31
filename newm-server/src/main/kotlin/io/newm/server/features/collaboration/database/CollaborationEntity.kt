@@ -43,25 +43,34 @@ class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var status: CollaborationStatus by CollaborationTable.status
     var distributionArtistId: Long? by CollaborationTable.distributionArtistId
 
-    fun toModel(): Collaboration = Collaboration(
-        id = id.value,
-        createdAt = createdAt,
-        songId = songId.value,
-        email = email,
-        role = role,
-        royaltyRate = royaltyRate?.toBigDecimal(),
-        credited = credited,
-        featured = featured,
-        status = status,
-        distributionArtistId = distributionArtistId,
-    )
+    fun toModel(): Collaboration =
+        Collaboration(
+            id = id.value,
+            createdAt = createdAt,
+            songId = songId.value,
+            email = email,
+            role = role,
+            royaltyRate = royaltyRate?.toBigDecimal(),
+            credited = credited,
+            featured = featured,
+            status = status,
+            distributionArtistId = distributionArtistId,
+        )
 
     companion object : UUIDEntityClass<CollaborationEntity>(CollaborationTable) {
-        fun exists(songId: UUID, email: String): Boolean = exists {
-            (CollaborationTable.songId eq songId) and (CollaborationTable.email.lowerCase() eq email.lowercase())
-        }
+        fun exists(
+            songId: UUID,
+            email: String
+        ): Boolean =
+            exists {
+                (CollaborationTable.songId eq songId) and (CollaborationTable.email.lowerCase() eq email.lowercase())
+            }
 
-        fun exists(ownerId: UUID, email: String, status: CollaborationStatus): Boolean {
+        fun exists(
+            ownerId: UUID,
+            email: String,
+            status: CollaborationStatus
+        ): Boolean {
             return CollaborationTable.innerJoin(
                 otherTable = SongTable,
                 onColumn = { songId },
@@ -74,7 +83,10 @@ class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             }.any()
         }
 
-        fun all(userId: UUID, filters: CollaborationFilters): SizedIterable<CollaborationEntity> {
+        fun all(
+            userId: UUID,
+            filters: CollaborationFilters
+        ): SizedIterable<CollaborationEntity> {
             val inbound = filters.inbound == true
             val ops = mutableListOf<Op<Boolean>>()
             if (inbound) {
@@ -104,24 +116,27 @@ class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                 }
             }
             val andOp = AndOp(ops)
-            val res = if (inbound) {
-                find(andOp)
-            } else {
-                CollaborationEntity.wrapRows(
-                    CollaborationTable.innerJoin(
-                        otherTable = SongTable,
-                        onColumn = { songId },
-                        otherColumn = { id }
-                    ).selectAll().where(andOp)
-                )
-            }
+            val res =
+                if (inbound) {
+                    find(andOp)
+                } else {
+                    CollaborationEntity.wrapRows(
+                        CollaborationTable.innerJoin(
+                            otherTable = SongTable,
+                            onColumn = { songId },
+                            otherColumn = { id }
+                        ).selectAll().where(andOp)
+                    )
+                }
             return res.orderBy(CollaborationTable.createdAt to (filters.sortOrder ?: SortOrder.ASC))
         }
 
-        fun findBySongId(songId: UUID): SizedIterable<CollaborationEntity> =
-            find { CollaborationTable.songId eq songId }
+        fun findBySongId(songId: UUID): SizedIterable<CollaborationEntity> = find { CollaborationTable.songId eq songId }
 
-        fun collaborators(userId: UUID, filters: CollaboratorFilters): SizedIterable<Pair<String, Long>> {
+        fun collaborators(
+            userId: UUID,
+            filters: CollaboratorFilters
+        ): SizedIterable<Pair<String, Long>> {
             val ops = mutableListOf<Op<Boolean>>()
             ops += SongTable.archived eq false
             ops += SongTable.ownerId eq userId

@@ -7,7 +7,10 @@ import java.math.BigInteger
  * load 8 bytes from input[ofs..ofs+7] as little endian u64
  */
 @OptIn(ExperimentalUnsignedTypes::class)
-internal fun load(bytes: ByteArray, ofs: Int): ULong {
+internal fun load(
+    bytes: ByteArray,
+    ofs: Int
+): ULong {
     require(bytes.size == 32) { "Invalid byte array length" }
     return (bytes[ofs].toUByte().toULong())
         .or((bytes[ofs + 1].toUByte().toULong() shl 8))
@@ -19,10 +22,16 @@ internal fun load(bytes: ByteArray, ofs: Int): ULong {
         .or((bytes[ofs + 7].toUByte().toULong() shl 56))
 }
 
-internal fun mul128(a: ULong, b: ULong): BigInteger {
+internal fun mul128(
+    a: ULong,
+    b: ULong
+): BigInteger {
     return a.toBigInteger() * b.toBigInteger()
 }
 
-internal fun shl128(v: BigInteger, shift: Int): ULong {
+internal fun shl128(
+    v: BigInteger,
+    shift: Int
+): ULong {
     return ((v shl shift) shr 64).toString(16).toULong(16)
 }

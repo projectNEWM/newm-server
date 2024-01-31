@@ -81,55 +81,56 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var forceDistributed: Boolean? by SongTable.forceDistributed
     var errorMessage: String? by SongTable.errorMessage
 
-    fun toModel(): Song = Song(
-        id = id.value,
-        archived = archived,
-        ownerId = ownerId.value,
-        createdAt = createdAt,
-        title = title,
-        genres = genres.toList(),
-        moods = moods?.toList(),
-        coverArtUrl = coverArtUrl,
-        description = description,
-        album = album,
-        track = track,
-        language = language,
-        coverRemixSample = coverRemixSample,
-        compositionCopyrightOwner = compositionCopyrightOwner,
-        compositionCopyrightYear = compositionCopyrightYear,
-        phonographicCopyrightOwner = phonographicCopyrightOwner,
-        phonographicCopyrightYear = phonographicCopyrightYear,
-        parentalAdvisory = parentalAdvisory,
-        barcodeType = barcodeType,
-        barcodeNumber = barcodeNumber,
-        isrc = isrc,
-        iswc = iswc,
-        ipis = ipis?.toList(),
-        releaseDate = releaseDate,
-        publicationDate = publicationDate,
-        lyricsUrl = lyricsUrl,
-        tokenAgreementUrl = tokenAgreementUrl,
-        originalAudioUrl = originalAudioUrl,
-        clipUrl = clipUrl,
-        streamUrl = streamUrl,
-        duration = duration,
-        nftPolicyId = nftPolicyId,
-        nftName = nftName,
-        audioEncodingStatus = audioEncodingStatus,
-        mintingStatus = mintingStatus,
-        mintingTxId = mintingTxId,
-        marketplaceStatus = marketplaceStatus,
-        paymentKeyId = paymentKeyId?.value,
-        arweaveCoverArtUrl = arweaveCoverArtUrl,
-        arweaveLyricsUrl = arweaveLyricsUrl,
-        arweaveTokenAgreementUrl = arweaveTokenAgreementUrl,
-        arweaveClipUrl = arweaveClipUrl,
-        distributionTrackId = distributionTrackId,
-        distributionReleaseId = distributionReleaseId,
-        mintCostLovelace = mintCostLovelace,
-        forceDistributed = forceDistributed,
-        errorMessage = errorMessage,
-    )
+    fun toModel(): Song =
+        Song(
+            id = id.value,
+            archived = archived,
+            ownerId = ownerId.value,
+            createdAt = createdAt,
+            title = title,
+            genres = genres.toList(),
+            moods = moods?.toList(),
+            coverArtUrl = coverArtUrl,
+            description = description,
+            album = album,
+            track = track,
+            language = language,
+            coverRemixSample = coverRemixSample,
+            compositionCopyrightOwner = compositionCopyrightOwner,
+            compositionCopyrightYear = compositionCopyrightYear,
+            phonographicCopyrightOwner = phonographicCopyrightOwner,
+            phonographicCopyrightYear = phonographicCopyrightYear,
+            parentalAdvisory = parentalAdvisory,
+            barcodeType = barcodeType,
+            barcodeNumber = barcodeNumber,
+            isrc = isrc,
+            iswc = iswc,
+            ipis = ipis?.toList(),
+            releaseDate = releaseDate,
+            publicationDate = publicationDate,
+            lyricsUrl = lyricsUrl,
+            tokenAgreementUrl = tokenAgreementUrl,
+            originalAudioUrl = originalAudioUrl,
+            clipUrl = clipUrl,
+            streamUrl = streamUrl,
+            duration = duration,
+            nftPolicyId = nftPolicyId,
+            nftName = nftName,
+            audioEncodingStatus = audioEncodingStatus,
+            mintingStatus = mintingStatus,
+            mintingTxId = mintingTxId,
+            marketplaceStatus = marketplaceStatus,
+            paymentKeyId = paymentKeyId?.value,
+            arweaveCoverArtUrl = arweaveCoverArtUrl,
+            arweaveLyricsUrl = arweaveLyricsUrl,
+            arweaveTokenAgreementUrl = arweaveTokenAgreementUrl,
+            arweaveClipUrl = arweaveClipUrl,
+            distributionTrackId = distributionTrackId,
+            distributionReleaseId = distributionReleaseId,
+            mintCostLovelace = mintCostLovelace,
+            forceDistributed = forceDistributed,
+            errorMessage = errorMessage,
+        )
 
     companion object : UUIDEntityClass<SongEntity>(SongTable) {
         fun all(filters: SongFilters): SizedIterable<SongEntity> {
@@ -137,28 +138,30 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             return when {
                 ops.isEmpty() -> all()
                 filters.phrase == null -> find(AndOp(ops))
-                else -> SongEntity.wrapRows(
-                    SongTable.innerJoin(
-                        otherTable = UserTable,
-                        onColumn = { ownerId },
-                        otherColumn = { id }
-                    ).selectAll().where(AndOp(ops))
-                )
+                else ->
+                    SongEntity.wrapRows(
+                        SongTable.innerJoin(
+                            otherTable = UserTable,
+                            onColumn = { ownerId },
+                            otherColumn = { id }
+                        ).selectAll().where(AndOp(ops))
+                    )
             }.orderBy(SongTable.createdAt to (filters.sortOrder ?: SortOrder.ASC))
         }
 
         fun genres(filters: SongFilters): SizedIterable<String> {
             val ops = filters.toOps()
             val genre = SongTable.genres.unnest()
-            val table = if (filters.phrase == null) {
-                SongTable
-            } else {
-                SongTable.innerJoin(
-                    otherTable = UserTable,
-                    onColumn = { ownerId },
-                    otherColumn = { id }
-                )
-            }
+            val table =
+                if (filters.phrase == null) {
+                    SongTable
+                } else {
+                    SongTable.innerJoin(
+                        otherTable = UserTable,
+                        onColumn = { ownerId },
+                        otherColumn = { id }
+                    )
+                }
             val fields = table.select(SongTable.id.count(), genre)
             val query = if (ops.isEmpty()) fields else fields.where(AndOp(ops))
             return query.groupBy(genre)
@@ -166,11 +169,15 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                 .mapLazy { it[genre] }
         }
 
-        fun exists(ownerId: UUID, title: String): Boolean = exists {
-            (SongTable.archived eq false) and
-                (SongTable.ownerId eq ownerId) and
-                (SongTable.title.lowerCase() eq title.lowercase())
-        }
+        fun exists(
+            ownerId: UUID,
+            title: String
+        ): Boolean =
+            exists {
+                (SongTable.archived eq false) and
+                    (SongTable.ownerId eq ownerId) and
+                    (SongTable.title.lowerCase() eq title.lowercase())
+            }
 
         private fun SongFilters.toOps(): List<Op<Boolean>> {
             val ops = mutableListOf<Op<Boolean>>()
@@ -208,9 +215,9 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                             (UserTable.nickname eq null) and (
                                 (UserTable.firstName.lowerCase() like pattern)
                                     or (UserTable.lastName.lowerCase() like pattern)
-                                )
                             )
-                    )
+                        )
+                )
             }
             nftNames?.let {
                 ops += SongTable.nftName inList it

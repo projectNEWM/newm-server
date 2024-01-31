@@ -15,59 +15,69 @@ import io.newm.kogmios.protocols.model.MetadataMap
 import io.newm.kogmios.protocols.model.MetadataString
 import io.newm.kogmios.protocols.model.MetadataValue
 
-private const val nullByte = 0x00.toByte()
-fun ByteString.isValidDbUtf8(): Boolean = isValidUtf8 && !contains(nullByte)
+private const val NULL_BYTE = 0x00.toByte()
 
-fun PlutusData.toMetadataMap(policy: String, nameHex: String): MetadataMap {
+fun ByteString.isValidDbUtf8(): Boolean = isValidUtf8 && !contains(NULL_BYTE)
+
+fun PlutusData.toMetadataMap(
+    policy: String,
+    nameHex: String
+): MetadataMap {
     val cip68PlutusData = this
     return MetadataMap().apply {
-        this[MetadataString(policy)] = MetadataMap().apply {
-            val nameKey = if (nameHex.hexToByteArray().toByteString().isValidDbUtf8()) {
-                MetadataString(String(nameHex.hexToByteArray()))
-            } else {
-                MetadataBytes(nameHex.hexToByteArray().toB64String())
-            }
-            this[nameKey] = MetadataMap().apply {
-                if (cip68PlutusData.hasList()) {
-                    cip68PlutusData.list.listItemList?.firstOrNull()?.let { plutusMetadata ->
-                        if (plutusMetadata.hasMap()) {
-                            plutusMetadata.map.mapItemList.forEach { plutusDataMapItem ->
-                                val key: MetadataValue = plutusDataMapItem.mapItemKey.toMetadataValue()
-                                if (key is MetadataString) {
-                                    val value: MetadataValue = plutusDataMapItem.mapItemValue.toMetadataValue()
-                                    this[key] = value
+        this[MetadataString(policy)] =
+            MetadataMap().apply {
+                val nameKey =
+                    if (nameHex.hexToByteArray().toByteString().isValidDbUtf8()) {
+                        MetadataString(String(nameHex.hexToByteArray()))
+                    } else {
+                        MetadataBytes(nameHex.hexToByteArray().toB64String())
+                    }
+                this[nameKey] =
+                    MetadataMap().apply {
+                        if (cip68PlutusData.hasList()) {
+                            cip68PlutusData.list.listItemList?.firstOrNull()?.let { plutusMetadata ->
+                                if (plutusMetadata.hasMap()) {
+                                    plutusMetadata.map.mapItemList.forEach { plutusDataMapItem ->
+                                        val key: MetadataValue = plutusDataMapItem.mapItemKey.toMetadataValue()
+                                        if (key is MetadataString) {
+                                            val value: MetadataValue = plutusDataMapItem.mapItemValue.toMetadataValue()
+                                            this[key] = value
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
-                }
             }
-        }
     }
 }
 
 fun PlutusData.toMetadataValue(): MetadataValue {
     return when (plutusDataWrapperCase) {
-        PlutusData.PlutusDataWrapperCase.MAP -> MetadataMap().apply {
-            map.mapItemList.forEach { plutusDataMapItem ->
-                val key = plutusDataMapItem.mapItemKey.toMetadataValue()
-                val value = plutusDataMapItem.mapItemValue.toMetadataValue()
-                this[key] = value
+        PlutusData.PlutusDataWrapperCase.MAP ->
+            MetadataMap().apply {
+                map.mapItemList.forEach { plutusDataMapItem ->
+                    val key = plutusDataMapItem.mapItemKey.toMetadataValue()
+                    val value = plutusDataMapItem.mapItemValue.toMetadataValue()
+                    this[key] = value
+                }
             }
-        }
 
-        PlutusData.PlutusDataWrapperCase.LIST -> MetadataList().apply {
-            list.listItemList.forEach { plutusDataListItem ->
-                add(plutusDataListItem.toMetadataValue())
+        PlutusData.PlutusDataWrapperCase.LIST ->
+            MetadataList().apply {
+                list.listItemList.forEach { plutusDataListItem ->
+                    add(plutusDataListItem.toMetadataValue())
+                }
             }
-        }
 
         PlutusData.PlutusDataWrapperCase.INT -> MetadataInteger(int.toBigInteger())
-        PlutusData.PlutusDataWrapperCase.BYTES -> if (bytes.isValidDbUtf8()) {
-            MetadataString(bytes.toStringUtf8())
-        } else {
-            MetadataBytes(bytes.toByteArray().toB64String())
-        }
+        PlutusData.PlutusDataWrapperCase.BYTES ->
+            if (bytes.isValidDbUtf8()) {
+                MetadataString(bytes.toStringUtf8())
+            } else {
+                MetadataBytes(bytes.toByteArray().toB64String())
+            }
 
         else -> throw IllegalStateException("plutusDataWrapper must be set!")
     }
@@ -88,7 +98,10 @@ fun LedgerAssetMetadata.toLedgerAssetMetadataItem(): LedgerAssetMetadataItem {
 /**
  * Convert database records to json
  */
-fun List<LedgerAssetMetadata>.to721Json(policy: String, name: String): String {
+fun List<LedgerAssetMetadata>.to721Json(
+    policy: String,
+    name: String
+): String {
     val sb = StringBuilder()
     sb.append("{")
     sb.append("\"721\":{")

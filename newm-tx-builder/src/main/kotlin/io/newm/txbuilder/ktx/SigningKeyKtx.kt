@@ -6,6 +6,7 @@ import org.bouncycastle.crypto.signers.Ed25519Signer
 import kotlin.concurrent.getOrSet
 
 private val ed25519Signer = ThreadLocal<Ed25519Signer>()
+
 fun SigningKey.sign(transactionId: ByteArray): ByteArray {
     val signer = ed25519Signer.getOrSet { Ed25519Signer() }
     signer.reset()

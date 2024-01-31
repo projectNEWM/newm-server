@@ -11,7 +11,10 @@ data class LoginResponse(
     val refreshToken: String
 )
 
-suspend fun JwtRepository.createLoginResponse(userId: UUID, admin: Boolean = false) = LoginResponse(
+suspend fun JwtRepository.createLoginResponse(
+    userId: UUID,
+    admin: Boolean = false
+) = LoginResponse(
     accessToken = create(JwtType.Access, userId, admin),
     refreshToken = create(JwtType.Refresh, userId, admin)
 )

@@ -20,20 +20,21 @@ class SongReceiptEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var usdCollabPrice: Long by SongReceiptTable.usdCollabPrice
     var usdAdaExchangeRate: Long by SongReceiptTable.usdAdaExchangeRate
 
-    fun toModel(): SongReceipt = SongReceipt(
-        id = id.value,
-        createdAt = createdAt,
-        songId = songId.value,
-        adaPrice = adaPrice,
-        usdPrice = usdPrice,
-        adaDspPrice = adaDspPrice,
-        usdDspPrice = usdDspPrice,
-        adaMintPrice = adaMintPrice,
-        usdMintPrice = usdMintPrice,
-        adaCollabPrice = adaCollabPrice,
-        usdCollabPrice = usdCollabPrice,
-        usdAdaExchangeRate = usdAdaExchangeRate,
-    )
+    fun toModel(): SongReceipt =
+        SongReceipt(
+            id = id.value,
+            createdAt = createdAt,
+            songId = songId.value,
+            adaPrice = adaPrice,
+            usdPrice = usdPrice,
+            adaDspPrice = adaDspPrice,
+            usdDspPrice = usdDspPrice,
+            adaMintPrice = adaMintPrice,
+            usdMintPrice = usdMintPrice,
+            adaCollabPrice = adaCollabPrice,
+            usdCollabPrice = usdCollabPrice,
+            usdAdaExchangeRate = usdAdaExchangeRate,
+        )
 
     companion object : UUIDEntityClass<SongReceiptEntity>(SongReceiptTable) {
     }

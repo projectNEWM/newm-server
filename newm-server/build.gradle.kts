@@ -147,11 +147,12 @@ tasks {
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
     kotlinOptions {
-        freeCompilerArgs = listOf(
-            "-Xjsr305=strict",
-            "-opt-in=kotlin.RequiresOptIn",
-            "-opt-in=kotlinx.serialization.ExperimentalSerializationApi"
-        )
+        freeCompilerArgs =
+            listOf(
+                "-Xjsr305=strict",
+                "-opt-in=kotlin.RequiresOptIn",
+                "-opt-in=kotlinx.serialization.ExperimentalSerializationApi"
+            )
         jvmTarget = "17"
     }
 }
@@ -161,13 +162,14 @@ fun Test.configTest(instance: String) {
     // integration.time ensures that tests are run on teach invocation per https://blog.gradle.org/stop-rerunning-tests
     inputs.property("integration.time", Instant.now().toEpochMilli())
     this.testLogging {
-        events = setOf(
-            TestLogEvent.PASSED,
-            TestLogEvent.SKIPPED,
-            TestLogEvent.FAILED,
-            TestLogEvent.STANDARD_OUT,
-            TestLogEvent.STANDARD_ERROR,
-        )
+        events =
+            setOf(
+                TestLogEvent.PASSED,
+                TestLogEvent.SKIPPED,
+                TestLogEvent.FAILED,
+                TestLogEvent.STANDARD_OUT,
+                TestLogEvent.STANDARD_ERROR,
+            )
     }
     description = "Runs integration tests against the $instance newm instance"
     group = "verification"

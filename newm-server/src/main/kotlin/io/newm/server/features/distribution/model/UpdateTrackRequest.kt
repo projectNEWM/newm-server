@@ -17,16 +17,19 @@ data class UpdateTrackRequest(
     val genre: List<Long>? = null,
     @SerialName("language")
     val language: String? = null,
+    // Explicit : 0-Clean, 1-Explicit, 2-Not Required
     @SerialName("explicit")
-    val explicit: Int? = null, // Explicit : 0-Clean, 1-Explicit, 2-Not Required
+    val explicit: Int? = null,
+    // 1 = Download, 2 = Streaming
     @SerialName("availability")
-    val availability: List<Int>, // 1 = Download, 2 = Streaming
+    val availability: List<Int>,
     @SerialName("artists")
     val artists: List<Long>? = null,
     @SerialName("featured_artists")
     val featuredArtists: List<Long>? = null,
+    // false = Single, true = Album
     @SerialName("album_only")
-    val albumOnly: Boolean = false, // false = Single, true = Album
+    val albumOnly: Boolean = false,
     @SerialName("lyrics")
     val lyrics: String? = null,
     @SerialName("dolby_atmos_isrc")

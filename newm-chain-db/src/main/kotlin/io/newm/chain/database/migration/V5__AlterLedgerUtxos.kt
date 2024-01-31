@@ -11,7 +11,7 @@ class V5__AlterLedgerUtxos : BaseJavaMigration() {
             execInBatch(
                 listOf(
                     """
-                        ALTER TABLE "ledger_utxos" ADD COLUMN "script_ref" TEXT
+                    ALTER TABLE "ledger_utxos" ADD COLUMN "script_ref" TEXT
                     """.trimIndent(),
                 )
             )

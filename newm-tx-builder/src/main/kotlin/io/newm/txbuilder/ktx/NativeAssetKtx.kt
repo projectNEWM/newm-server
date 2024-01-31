@@ -31,11 +31,12 @@ fun List<NativeAsset>.toNativeAssetCborMap(): CborMap? {
 
     return CborMap.create(
         nativeAssetMap.entries.associate { (key, value) ->
-            CborByteString.create(key.hexToByteArray()) to CborMap.create(
-                value.sortedWithCanonicalCbor().associate { nativeAsset ->
-                    CborByteString.create(nativeAsset.name.hexToByteArray()) to CborInteger.create(nativeAsset.amount.toBigInteger())
-                }
-            )
+            CborByteString.create(key.hexToByteArray()) to
+                CborMap.create(
+                    value.sortedWithCanonicalCbor().associate { nativeAsset ->
+                        CborByteString.create(nativeAsset.name.hexToByteArray()) to CborInteger.create(nativeAsset.amount.toBigInteger())
+                    }
+                )
         }
     )
 }
@@ -69,18 +70,19 @@ fun List<NativeAsset>.mergeAmounts(): List<NativeAsset> {
 private fun List<NativeAsset>.toSortedNativeAssetMap(): SortedMap<String, List<NativeAsset>> {
     val nativeAssetMap = sortedMapOf<String, List<NativeAsset>>()
     this.forEach { nativeAsset ->
-        val updatedNativeAssets: List<NativeAsset> = nativeAssetMap[nativeAsset.policy]?.let { nativeAssets ->
-            nativeAssets.find { it.name == nativeAsset.name }?.let { na ->
-                val mutableList = nativeAssets.toMutableList()
-                mutableList.remove(na)
-                mutableList.add(
-                    na.toBuilder()
-                        .setAmount((na.amount.toBigInteger() + nativeAsset.amount.toBigInteger()).toString())
-                        .build()
-                )
-                mutableList
-            } ?: (nativeAssets + nativeAsset)
-        } ?: listOf(nativeAsset)
+        val updatedNativeAssets: List<NativeAsset> =
+            nativeAssetMap[nativeAsset.policy]?.let { nativeAssets ->
+                nativeAssets.find { it.name == nativeAsset.name }?.let { na ->
+                    val mutableList = nativeAssets.toMutableList()
+                    mutableList.remove(na)
+                    mutableList.add(
+                        na.toBuilder()
+                            .setAmount((na.amount.toBigInteger() + nativeAsset.amount.toBigInteger()).toString())
+                            .build()
+                    )
+                    mutableList
+                } ?: (nativeAssets + nativeAsset)
+            } ?: listOf(nativeAsset)
         nativeAssetMap[nativeAsset.policy] = updatedNativeAssets
     }
     return nativeAssetMap
@@ -89,10 +91,11 @@ private fun List<NativeAsset>.toSortedNativeAssetMap(): SortedMap<String, List<N
 /**
  * Canonical Cbor sort. Shorter name lengths first, then lexicographically
  */
-private fun List<NativeAsset>.sortedWithCanonicalCbor(): List<NativeAsset> = this.sortedWith { nativeAsset, other ->
-    var comparison = nativeAsset.name.length.compareTo(other.name.length)
-    if (comparison == 0) {
-        comparison = nativeAsset.name.compareTo(other.name)
+private fun List<NativeAsset>.sortedWithCanonicalCbor(): List<NativeAsset> =
+    this.sortedWith { nativeAsset, other ->
+        var comparison = nativeAsset.name.length.compareTo(other.name.length)
+        if (comparison == 0) {
+            comparison = nativeAsset.name.compareTo(other.name)
+        }
+        comparison
     }
-    comparison
-}

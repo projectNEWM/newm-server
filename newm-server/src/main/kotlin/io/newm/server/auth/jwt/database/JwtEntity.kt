@@ -13,8 +13,9 @@ class JwtEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var expiresAt: LocalDateTime by JwtTable.expiresAt
 
     companion object : UUIDEntityClass<JwtEntity>(JwtTable) {
-        fun deleteAllExpired() = JwtTable.deleteWhere {
-            expiresAt lessEq LocalDateTime.now()
-        }
+        fun deleteAllExpired() =
+            JwtTable.deleteWhere {
+                expiresAt lessEq LocalDateTime.now()
+            }
     }
 }

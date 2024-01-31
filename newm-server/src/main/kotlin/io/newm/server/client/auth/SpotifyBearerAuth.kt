@@ -16,20 +16,21 @@ import io.newm.server.ktx.getSecureConfigString
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.getConfigString
 
-fun Auth.spotifyBearer() = bearer {
-    val loader = SpotifyTokenLoader()
+fun Auth.spotifyBearer() =
+    bearer {
+        val loader = SpotifyTokenLoader()
 
-    // Load and refresh tokens without waiting for a 401 first if the host matches
-    sendWithoutRequest { request ->
-        request.url.host == "api.spotify.com"
+        // Load and refresh tokens without waiting for a 401 first if the host matches
+        sendWithoutRequest { request ->
+            request.url.host == "api.spotify.com"
+        }
+        loadTokens {
+            loader.tokens ?: loader.load()
+        }
+        refreshTokens {
+            loader.load()
+        }
     }
-    loadTokens {
-        loader.tokens ?: loader.load()
-    }
-    refreshTokens {
-        loader.load()
-    }
-}
 
 private class SpotifyTokenLoader {
     private val environment: ApplicationEnvironment by inject()
@@ -40,15 +41,17 @@ private class SpotifyTokenLoader {
         val clientId = environment.getSecureConfigString("oauth.spotify.clientId")
         val clientSecret = environment.getSecureConfigString("oauth.spotify.clientSecret")
         val accessTokenUrl = environment.getConfigString("oauth.spotify.accessTokenUrl")
-        val tokenInfo: TokenInfo = httpClient.submitForm(
-            url = accessTokenUrl,
-            formParameters = parameters {
-                append("grant_type", "client_credentials")
-            }
-        ) {
-            basicAuth(clientId, clientSecret)
-            accept(ContentType.Application.Json)
-        }.checkedBody()
+        val tokenInfo: TokenInfo =
+            httpClient.submitForm(
+                url = accessTokenUrl,
+                formParameters =
+                    parameters {
+                        append("grant_type", "client_credentials")
+                    }
+            ) {
+                basicAuth(clientId, clientSecret)
+                accept(ContentType.Application.Json)
+            }.checkedBody()
         return BearerTokens(tokenInfo.accessToken, tokenInfo.accessToken).also { tokens = it }
     }
 }

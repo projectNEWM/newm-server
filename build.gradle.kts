@@ -57,19 +57,21 @@ subprojects {
 
     project.tasks.withType<org.jetbrains.kotlin.gradle.tasks.UsesKotlinJavaToolchain>().configureEach {
         val service = project.extensions.getByType<JavaToolchainService>()
-        val customLauncher = service.launcherFor {
-            this.languageVersion.set(JavaLanguageVersion.of(JavaVersion.VERSION_17.majorVersion))
-        }
+        val customLauncher =
+            service.launcherFor {
+                this.languageVersion.set(JavaLanguageVersion.of(JavaVersion.VERSION_17.majorVersion))
+            }
 
         this.kotlinJavaToolchain.toolchain.use(customLauncher)
     }
 
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
         kotlinOptions {
-            freeCompilerArgs = listOf(
-                "-Xjsr305=strict",
-                "-opt-in=kotlin.RequiresOptIn",
-            )
+            freeCompilerArgs =
+                listOf(
+                    "-Xjsr305=strict",
+                    "-opt-in=kotlin.RequiresOptIn",
+                )
             jvmTarget = "17"
         }
     }
@@ -87,10 +89,11 @@ subprojects {
     tasks.withType<Test> {
         useJUnitPlatform()
         maxHeapSize = "8192m"
-        environment = mapOf(
-            "AWS_ACCESS_KEY_ID" to "TEST",
-            "AWS_SECRET_ACCESS_KEY" to "12345678"
-        )
+        environment =
+            mapOf(
+                "AWS_ACCESS_KEY_ID" to "TEST",
+                "AWS_SECRET_ACCESS_KEY" to "12345678"
+            )
     }
 }
 

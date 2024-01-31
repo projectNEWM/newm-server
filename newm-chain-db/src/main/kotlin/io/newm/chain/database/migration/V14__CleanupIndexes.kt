@@ -12,44 +12,42 @@ class V14__CleanupIndexes : BaseJavaMigration() {
                 listOf(
                     // drop some indexes
                     """
-                        DROP INDEX IF EXISTS "chain_created_index"
+                    DROP INDEX IF EXISTS "chain_created_index"
                     """.trimIndent(),
                     """
-                        DROP INDEX IF EXISTS "chain_slot_number_index"
+                    DROP INDEX IF EXISTS "chain_slot_number_index"
                     """.trimIndent(),
                     """
-                        DROP INDEX IF EXISTS "chain_block_number_index"
+                    DROP INDEX IF EXISTS "chain_block_number_index"
                     """.trimIndent(),
                     """
-                        DROP INDEX IF EXISTS "ledger_utxo_spent_index"
+                    DROP INDEX IF EXISTS "ledger_utxo_spent_index"
                     """.trimIndent(),
                     """
-                        DROP INDEX IF EXISTS "ledger_utxo_slot_spent_index"
+                    DROP INDEX IF EXISTS "ledger_utxo_slot_spent_index"
                     """.trimIndent(),
-
                     // drop unused columns
                     """
-                        ALTER TABLE "chain" DROP COLUMN "created"
+                    ALTER TABLE "chain" DROP COLUMN "created"
                     """.trimIndent(),
                     """
-                        ALTER TABLE "chain" DROP COLUMN "processed"
+                    ALTER TABLE "chain" DROP COLUMN "processed"
                     """.trimIndent(),
                     """
-                        ALTER TABLE "ledger_utxos" DROP COLUMN "slot_created"
+                    ALTER TABLE "ledger_utxos" DROP COLUMN "slot_created"
                     """.trimIndent(),
                     """
-                        ALTER TABLE "ledger_utxos" DROP COLUMN "slot_spent"
+                    ALTER TABLE "ledger_utxos" DROP COLUMN "slot_spent"
                     """.trimIndent(),
-
                     // re-create some indexes
                     """
-                        CREATE UNIQUE INDEX IF NOT EXISTS "chain_slot_number_index" ON "chain" (slot_number)
+                    CREATE UNIQUE INDEX IF NOT EXISTS "chain_slot_number_index" ON "chain" (slot_number)
                     """.trimIndent(),
                     """
-                        CREATE UNIQUE INDEX IF NOT EXISTS "chain_block_number_index" ON "chain" (block_number)
+                    CREATE UNIQUE INDEX IF NOT EXISTS "chain_block_number_index" ON "chain" (block_number)
                     """.trimIndent(),
                     """
-                        CREATE INDEX IF NOT EXISTS "ledger_utxo_block_spent_index" ON "ledger_utxos" (block_spent)
+                    CREATE INDEX IF NOT EXISTS "ledger_utxo_block_spent_index" ON "ledger_utxos" (block_spent)
                     """.trimIndent()
                 )
             )

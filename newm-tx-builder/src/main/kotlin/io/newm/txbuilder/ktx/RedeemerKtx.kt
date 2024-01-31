@@ -10,7 +10,10 @@ import io.newm.kogmios.protocols.model.Validator
 /**
  * Convert a redeemer object into cbor so it can be included in a transaction.
  */
-fun Redeemer.toCborObject(dummyExUnitsMemory: Long, dummyExUnitsSteps: Long): CborObject {
+fun Redeemer.toCborObject(
+    dummyExUnitsMemory: Long,
+    dummyExUnitsSteps: Long
+): CborObject {
     return CborArray.create(
         listOf(
             // redeemer tag

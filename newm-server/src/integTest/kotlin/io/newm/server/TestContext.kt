@@ -21,30 +21,32 @@ object TestContext {
     val email: String = config.getString("newm.email")
     val password: String = config.getString("newm.password")
     var loginResponse: LoginResponse
-    val client: HttpClient = HttpClient() {
-        install(ContentNegotiation) {
-            json(
-                Json {
-                    ignoreUnknownKeys = true
-                }
-            )
+    val client: HttpClient =
+        HttpClient {
+            install(ContentNegotiation) {
+                json(
+                    Json {
+                        ignoreUnknownKeys = true
+                    }
+                )
+            }
         }
-    }
 
     init {
         runBlocking {
             // Go ahead and login when test starts so we have access to accessToken and refreshToken
             // this kind of defeats the point of having an Auth success test, but couldn't think of another way
             // right now
-            val response = client.post("$baseUrl/v1/auth/login") {
-                contentType(ContentType.Application.Json)
-                setBody(
-                    LoginRequest(
-                        email = email,
-                        password = Password(password)
+            val response =
+                client.post("$baseUrl/v1/auth/login") {
+                    contentType(ContentType.Application.Json)
+                    setBody(
+                        LoginRequest(
+                            email = email,
+                            password = Password(password)
+                        )
                     )
-                )
-            }
+                }
             loginResponse = response.body()
         }
     }

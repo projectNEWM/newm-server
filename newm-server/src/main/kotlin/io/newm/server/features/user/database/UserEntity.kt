@@ -58,44 +58,45 @@ class UserEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var distributionIpn: String? by UserTable.distributionIpn
     var distributionNewmParticipantId: Long? by UserTable.distributionNewmParticipantId
 
-    fun toModel(includeAll: Boolean = true) = User(
-        id = id.value,
-        createdAt = createdAt,
-        oauthType = oauthType.takeIf { includeAll },
-        oauthId = oauthId.takeIf { includeAll },
-        firstName = firstName,
-        lastName = lastName,
-        nickname = nickname,
-        pictureUrl = pictureUrl,
-        bannerUrl = bannerUrl,
-        websiteUrl = websiteUrl,
-        twitterUrl = twitterUrl,
-        instagramUrl = instagramUrl,
-        spotifyProfile = spotifyProfile,
-        soundCloudProfile = soundCloudProfile,
-        appleMusicProfile = appleMusicProfile,
-        location = location,
-        role = role,
-        genre = genre,
-        biography = biography,
-        walletAddress = walletAddress.takeIf { includeAll },
-        email = email.takeIf { includeAll },
-        verificationStatus = verificationStatus.takeIf { includeAll },
-        companyName = companyName,
-        companyLogoUrl = companyLogoUrl,
-        companyIpRights = companyIpRights,
-        isni = isni,
-        ipi = ipi,
-        dspPlanSubscribed = dspPlanSubscribed,
-        distributionUserId = distributionUserId,
-        distributionArtistId = distributionArtistId,
-        distributionParticipantId = distributionParticipantId,
-        distributionSubscriptionId = distributionSubscriptionId,
-        distributionLabelId = distributionLabelId,
-        distributionIsni = distributionIsni,
-        distributionIpn = distributionIpn,
-        distributionNewmParticipantId = distributionNewmParticipantId
-    )
+    fun toModel(includeAll: Boolean = true) =
+        User(
+            id = id.value,
+            createdAt = createdAt,
+            oauthType = oauthType.takeIf { includeAll },
+            oauthId = oauthId.takeIf { includeAll },
+            firstName = firstName,
+            lastName = lastName,
+            nickname = nickname,
+            pictureUrl = pictureUrl,
+            bannerUrl = bannerUrl,
+            websiteUrl = websiteUrl,
+            twitterUrl = twitterUrl,
+            instagramUrl = instagramUrl,
+            spotifyProfile = spotifyProfile,
+            soundCloudProfile = soundCloudProfile,
+            appleMusicProfile = appleMusicProfile,
+            location = location,
+            role = role,
+            genre = genre,
+            biography = biography,
+            walletAddress = walletAddress.takeIf { includeAll },
+            email = email.takeIf { includeAll },
+            verificationStatus = verificationStatus.takeIf { includeAll },
+            companyName = companyName,
+            companyLogoUrl = companyLogoUrl,
+            companyIpRights = companyIpRights,
+            isni = isni,
+            ipi = ipi,
+            dspPlanSubscribed = dspPlanSubscribed,
+            distributionUserId = distributionUserId,
+            distributionArtistId = distributionArtistId,
+            distributionParticipantId = distributionParticipantId,
+            distributionSubscriptionId = distributionSubscriptionId,
+            distributionLabelId = distributionLabelId,
+            distributionIsni = distributionIsni,
+            distributionIpn = distributionIpn,
+            distributionNewmParticipantId = distributionNewmParticipantId
+        )
 
     val stageOrFullName: String
         get() = User.stageOrFullNameOf(nickname, firstName, lastName)
@@ -124,12 +125,14 @@ class UserEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                 .orderBy(UserTable.createdAt to (filters.sortOrder ?: SortOrder.ASC))
         }
 
-        fun getByEmail(email: String): UserEntity? = find {
-            UserTable.email.lowerCase() eq email.lowercase()
-        }.firstOrNull()
+        fun getByEmail(email: String): UserEntity? =
+            find {
+                UserTable.email.lowerCase() eq email.lowercase()
+            }.firstOrNull()
 
-        fun existsByEmail(email: String): Boolean = exists {
-            UserTable.email.lowerCase() eq email.lowercase()
-        }
+        fun existsByEmail(email: String): Boolean =
+            exists {
+                UserTable.email.lowerCase() eq email.lowercase()
+            }
     }
 }

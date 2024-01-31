@@ -26,7 +26,10 @@ fun AuthenticationConfig.configureJwt() {
     configureJwt(AUTH_JWT_ADMIN, JwtType.Access)
 }
 
-private fun AuthenticationConfig.configureJwt(name: String, type: JwtType) {
+private fun AuthenticationConfig.configureJwt(
+    name: String,
+    type: JwtType
+) {
     val environment: ApplicationEnvironment by inject()
     val repository: JwtRepository by inject()
     val logger: Logger by inject { parametersOf(javaClass.simpleName) }
@@ -50,11 +53,12 @@ private fun AuthenticationConfig.configureJwt(name: String, type: JwtType) {
                 val admin = payload.getClaim("admin")?.asBoolean() == true
                 val exists = payload.id?.let { jwkId -> repository.exists(jwkId.toUUID()) } == true
 
-                val isValid = if (name == AUTH_JWT_ADMIN) {
-                    admin && exists
-                } else {
-                    exists
-                }
+                val isValid =
+                    if (name == AUTH_JWT_ADMIN) {
+                        admin && exists
+                    } else {
+                        exists
+                    }
 
                 if (isValid) {
                     JWTPrincipal(payload)

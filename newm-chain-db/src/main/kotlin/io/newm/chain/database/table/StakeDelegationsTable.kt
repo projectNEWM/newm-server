@@ -4,7 +4,6 @@ import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.Column
 
 object StakeDelegationsTable : LongIdTable(name = "stake_delegations") {
-
     // the block in which this delegation/deregistration occurred
     val blockNumber: Column<Long> = long("block_number")
 

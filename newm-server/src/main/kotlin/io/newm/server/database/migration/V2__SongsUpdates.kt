@@ -11,16 +11,16 @@ class V2__SongsUpdates : BaseJavaMigration() {
             execInBatch(
                 listOf(
                     """
-                        UPDATE songs SET genre = '' WHERE genre IS NULL
+                    UPDATE songs SET genre = '' WHERE genre IS NULL
                     """.trimIndent(),
                     """
-                        ALTER TABLE songs
-                            ALTER COLUMN genre SET NOT NULL
+                    ALTER TABLE songs
+                        ALTER COLUMN genre SET NOT NULL
                     """.trimIndent(),
                     """
-                        ALTER TABLE songs
-                            ADD COLUMN minting_status int,
-                            ADD COLUMN marketplace_status int
+                    ALTER TABLE songs
+                        ADD COLUMN minting_status int,
+                        ADD COLUMN marketplace_status int
                     """.trimIndent()
                 )
             )

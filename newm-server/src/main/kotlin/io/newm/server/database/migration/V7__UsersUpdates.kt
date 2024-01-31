@@ -10,9 +10,9 @@ class V7__UsersUpdates : BaseJavaMigration() {
         transaction {
             exec(
                 """
-                    ALTER TABLE users
-                        ADD COLUMN IF NOT EXISTS biography text,
-                        ADD COLUMN IF NOT EXISTS created_at timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP
+                ALTER TABLE users
+                    ADD COLUMN IF NOT EXISTS biography text,
+                    ADD COLUMN IF NOT EXISTS created_at timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP
                 """.trimIndent()
             )
         }
