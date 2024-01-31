@@ -13,6 +13,7 @@ import io.newm.server.features.cloudinary.cloudinaryKoinModule
 import io.newm.server.features.collaboration.collaborationKoinModule
 import io.newm.server.features.daemon.daemonsKoinModule
 import io.newm.server.features.distribution.distributionKoinModule
+import io.newm.server.features.earnings.earningsKoinModule
 import io.newm.server.features.email.emailKoinModule
 import io.newm.server.features.idenfy.idenfyKoinModule
 import io.newm.server.features.minting.mintingKoinModule
@@ -56,6 +57,7 @@ fun Application.installDependencyInjection() {
             arweaveKoinModule,
             mintingKoinModule,
             releaseKoinModule,
+            earningsKoinModule,
         )
     }
 }
