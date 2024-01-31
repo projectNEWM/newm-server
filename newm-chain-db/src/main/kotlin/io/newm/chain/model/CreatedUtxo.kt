@@ -37,7 +37,9 @@ data class CreatedUtxo(
         if (cbor != null) {
             if (other.cbor == null) return false
             if (!cbor.contentEquals(other.cbor)) return false
-        } else if (other.cbor != null) return false
+        } else if (other.cbor != null) {
+            return false
+        }
         if (paymentCred != other.paymentCred) return false
         return stakeCred == other.stakeCred
     }

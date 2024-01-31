@@ -13,48 +13,56 @@ import org.junit.jupiter.api.Test
 
 class UserTest {
     @Test
-    fun `me endpoint returns success`() = runBlocking {
-        val response = TestContext.client.get("${TestContext.baseUrl}/v1/users/me") {
-            headers {
-                append("Authorization", "Bearer ${TestContext.loginResponse.accessToken}")
-                accept(ContentType.Application.Json)
-            }
+    fun `me endpoint returns success`() =
+        runBlocking {
+            val response =
+                TestContext.client.get("${TestContext.baseUrl}/v1/users/me") {
+                    headers {
+                        append("Authorization", "Bearer ${TestContext.loginResponse.accessToken}")
+                        accept(ContentType.Application.Json)
+                    }
+                }
+            val user: User = response.body()
+            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+            assertThat(user.email).isEqualTo(TestContext.email)
         }
-        val user: User = response.body()
-        assertThat(response.status).isEqualTo(HttpStatusCode.OK)
-        assertThat(user.email).isEqualTo(TestContext.email)
-    }
 
     @Test
-    fun `me endpoint invalid auth returns unauthorized`() = runBlocking {
-        val response = TestContext.client.get("${TestContext.baseUrl}/v1/users/me") {
-            headers {
-                append("Authorization", "Bearer INVALIDACCESSTOKEN")
-                accept(ContentType.Application.Json)
-            }
+    fun `me endpoint invalid auth returns unauthorized`() =
+        runBlocking {
+            val response =
+                TestContext.client.get("${TestContext.baseUrl}/v1/users/me") {
+                    headers {
+                        append("Authorization", "Bearer INVALIDACCESSTOKEN")
+                        accept(ContentType.Application.Json)
+                    }
+                }
+            assertThat(response.status).isEqualTo(HttpStatusCode.Unauthorized)
         }
-        assertThat(response.status).isEqualTo(HttpStatusCode.Unauthorized)
-    }
 
     @Test
-    fun `Unrecognized user id returns Not Found`() = runBlocking {
-        val response = TestContext.client.get("${TestContext.baseUrl}/v1/users/00000000-0000-0000-0000-000000000000") {
-            headers {
-                append("Authorization", "Bearer ${TestContext.loginResponse.accessToken}")
-                accept(ContentType.Application.Json)
-            }
+    fun `Unrecognized user id returns Not Found`() =
+        runBlocking {
+            val response =
+                TestContext.client.get("${TestContext.baseUrl}/v1/users/00000000-0000-0000-0000-000000000000") {
+                    headers {
+                        append("Authorization", "Bearer ${TestContext.loginResponse.accessToken}")
+                        accept(ContentType.Application.Json)
+                    }
+                }
+            assertThat(response.status).isEqualTo(HttpStatusCode.NotFound)
         }
-        assertThat(response.status).isEqualTo(HttpStatusCode.NotFound)
-    }
 
     @Test
-    fun `invalid user id returns Unprocessable Entity`() = runBlocking {
-        val response = TestContext.client.get("${TestContext.baseUrl}/v1/users/-1") {
-            headers {
-                append("Authorization", "Bearer ${TestContext.loginResponse.accessToken}")
-                accept(ContentType.Application.Json)
-            }
+    fun `invalid user id returns Unprocessable Entity`() =
+        runBlocking {
+            val response =
+                TestContext.client.get("${TestContext.baseUrl}/v1/users/-1") {
+                    headers {
+                        append("Authorization", "Bearer ${TestContext.loginResponse.accessToken}")
+                        accept(ContentType.Application.Json)
+                    }
+                }
+            assertThat(response.status).isEqualTo(HttpStatusCode.UnprocessableEntity)
         }
-        assertThat(response.status).isEqualTo(HttpStatusCode.UnprocessableEntity)
-    }
 }

@@ -17,15 +17,16 @@ interface SupervisorScope : CoroutineScope {
         get() {
             val key = javaClass.canonicalName
             return coroutineContexts.computeIfAbsent(key) {
-                SupervisorJob() + Dispatchers.IO + CoroutineExceptionHandler { _, throwable ->
-                    if (throwable !is CancellationException) {
-                        log.error("Unhandled Coroutine Exception!", throwable)
-                        Thread.sleep(5000)
-                        exitProcess(1)
-                    } else {
-                        log.warn("CancellationException!", throwable)
+                SupervisorJob() + Dispatchers.IO +
+                    CoroutineExceptionHandler { _, throwable ->
+                        if (throwable !is CancellationException) {
+                            log.error("Unhandled Coroutine Exception!", throwable)
+                            Thread.sleep(5000)
+                            exitProcess(1)
+                        } else {
+                            log.warn("CancellationException!", throwable)
+                        }
                     }
-                }
             }
         }
 

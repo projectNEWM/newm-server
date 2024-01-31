@@ -49,7 +49,10 @@ suspend fun ApplicationConfig.getSecureString(path: String): String {
             secretsManager.getSecretValueAsync(
                 GetSecretValueRequest().withSecretId(configValue),
                 object : AsyncHandler<GetSecretValueRequest, GetSecretValueResult> {
-                    override fun onSuccess(request: GetSecretValueRequest, result: GetSecretValueResult) {
+                    override fun onSuccess(
+                        request: GetSecretValueRequest,
+                        result: GetSecretValueResult
+                    ) {
                         val secretsMap: Map<String, String> = json.decodeFromString(result.secretString)
                         secretsCache.put(configValue, secretsMap)
                         secretsMap[fullPath]?.let {

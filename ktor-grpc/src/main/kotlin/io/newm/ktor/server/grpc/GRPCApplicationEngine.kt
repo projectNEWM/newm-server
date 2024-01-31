@@ -35,7 +35,6 @@ class GRPCApplicationEngine(
     environment: ApplicationEngineEnvironment,
     configure: Configuration.() -> Unit = {}
 ) : BaseApplicationEngine(environment) {
-
     private val log by lazy { LoggerFactory.getLogger("GRPCApplicationEngine") }
 
     class Configuration : BaseApplicationEngine.Configuration() {
@@ -82,23 +81,28 @@ class GRPCApplicationEngine(
         return this
     }
 
-    override fun stop(gracePeriodMillis: Long, timeoutMillis: Long) {
+    override fun stop(
+        gracePeriodMillis: Long,
+        timeoutMillis: Long
+    ) {
         stopRequest.complete()
 
         runBlocking {
-            val result = withTimeoutOrNull(gracePeriodMillis) {
-                serverJob.get().join()
-                true
-            }
+            val result =
+                withTimeoutOrNull(gracePeriodMillis) {
+                    serverJob.get().join()
+                    true
+                }
 
             if (result == null) {
                 // timeout
                 serverJob.get().cancel()
 
-                val forceShutdown = withTimeoutOrNull(timeoutMillis - gracePeriodMillis) {
-                    serverJob.get().join()
-                    false
-                } ?: true
+                val forceShutdown =
+                    withTimeoutOrNull(timeoutMillis - gracePeriodMillis) {
+                        serverJob.get().join()
+                        false
+                    } ?: true
 
                 if (forceShutdown) {
                     environment.stop()
@@ -127,12 +131,13 @@ class GRPCApplicationEngine(
                 }
 
                 // Start the GRPC server
-                server = ServerBuilder
-                    .forPort(configuration.port)
-                    .apply(configuration.configFileServerConfigurer)
-                    .apply(configuration.serverConfigurer)
-                    .build()
-                    .start()
+                server =
+                    ServerBuilder
+                        .forPort(configuration.port)
+                        .apply(configuration.configFileServerConfigurer)
+                        .apply(configuration.serverConfigurer)
+                        .build()
+                        .start()
 
                 log.info("Started GRPC Server on port: ${configuration.port}")
                 server.services.forEach { service ->

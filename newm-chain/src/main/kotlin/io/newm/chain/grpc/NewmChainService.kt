@@ -115,7 +115,9 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
         }
     }
 
-    override suspend fun queryTransactionConfirmationCount(request: QueryTransactionConfirmationCountRequest): QueryTransactionConfirmationCountResponse {
+    override suspend fun queryTransactionConfirmationCount(
+        request: QueryTransactionConfirmationCountRequest
+    ): QueryTransactionConfirmationCountResponse {
         return queryTransactionConfirmationCountResponse {
             txIdToConfirmationCount.putAll(
                 ledgerRepository.queryTransactionConfirmationCounts(request.txIdsList)
@@ -155,48 +157,51 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
     override fun monitorAddress(request: MonitorAddressRequest): Flow<MonitorAddressResponse> {
         log.warn("monitorAddress($request) started.")
         val responseFlow = MutableSharedFlow<MonitorAddressResponse>(replay = 1)
-        val messageHandlerJob: Job = CoroutineScope(context).launch {
-            try {
-                var startAfterTxId: String? = if (request.hasStartAfterTxId()) {
-                    request.startAfterTxId.trim()
-                } else {
-                    null
-                }
-                val limit = 1000
-                var offset = 0L
-                var nextStartAfterTxId: String? = startAfterTxId
-                while (true) {
-                    while (true) {
-                        val monitorAddressResponseList = ledgerRepository.queryAddressTxLogsAfter(
-                            request.address.trim(),
-                            startAfterTxId,
-                            limit,
-                            offset,
-                        ).map {
-                            MonitorAddressResponse.parseFrom(it)
-                        }
-
-                        if (monitorAddressResponseList.isNotEmpty()) {
-                            monitorAddressResponseList.forEach { monitorAddressResponse ->
-                                responseFlow.emit(monitorAddressResponse)
-                            }
-                            offset += monitorAddressResponseList.size
-                            nextStartAfterTxId = monitorAddressResponseList.last().txId
+        val messageHandlerJob: Job =
+            CoroutineScope(context).launch {
+                try {
+                    var startAfterTxId: String? =
+                        if (request.hasStartAfterTxId()) {
+                            request.startAfterTxId.trim()
                         } else {
-                            break
+                            null
                         }
-                    }
+                    val limit = 1000
+                    var offset = 0L
+                    var nextStartAfterTxId: String? = startAfterTxId
+                    while (true) {
+                        while (true) {
+                            val monitorAddressResponseList =
+                                ledgerRepository.queryAddressTxLogsAfter(
+                                    request.address.trim(),
+                                    startAfterTxId,
+                                    limit,
+                                    offset,
+                                ).map {
+                                    MonitorAddressResponse.parseFrom(it)
+                                }
 
-                    startAfterTxId = nextStartAfterTxId
-                    offset = 0L
-                    delay(1000L)
-                }
-            } catch (e: Throwable) {
-                if (e !is CancellationException) {
-                    log.error(e.message, e)
+                            if (monitorAddressResponseList.isNotEmpty()) {
+                                monitorAddressResponseList.forEach { monitorAddressResponse ->
+                                    responseFlow.emit(monitorAddressResponse)
+                                }
+                                offset += monitorAddressResponseList.size
+                                nextStartAfterTxId = monitorAddressResponseList.last().txId
+                            } else {
+                                break
+                            }
+                        }
+
+                        startAfterTxId = nextStartAfterTxId
+                        offset = 0L
+                        delay(1000L)
+                    }
+                } catch (e: Throwable) {
+                    if (e !is CancellationException) {
+                        log.error(e.message, e)
+                    }
                 }
             }
-        }
 
         messageHandlerJob.invokeOnCompletion {
             log.warn("invokeOnCompletion: ${it?.message}")
@@ -212,21 +217,23 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
 
     override suspend fun monitorPaymentAddress(request: MonitorPaymentAddressRequest): MonitorPaymentAddressResponse {
         try {
-            val requestNativeAssetMap = request.nativeAssetsList.map {
-                io.newm.chain.model.NativeAsset(
-                    policy = it.policy,
-                    name = it.name,
-                    amount = it.amount.toBigInteger()
-                )
-            }.toNativeAssetMap()
+            val requestNativeAssetMap =
+                request.nativeAssetsList.map {
+                    io.newm.chain.model.NativeAsset(
+                        policy = it.policy,
+                        name = it.name,
+                        amount = it.amount.toBigInteger()
+                    )
+                }.toNativeAssetMap()
 
             return withTimeoutOrNull(request.timeoutMs) {
                 // Check utxos immediately to see if payment has already arrived
                 val liveUtxosResponse = queryLiveUtxos(queryUtxosRequest { address = request.address })
-                val existingUtxo = liveUtxosResponse.utxosList.firstOrNull { utxo ->
-                    (utxo.lovelace == request.lovelace) && // lovelace matches
-                        (requestNativeAssetMap == utxo.nativeAssetsList.toNativeAssetMap()) // nativeAssets match exactly
-                }
+                val existingUtxo =
+                    liveUtxosResponse.utxosList.firstOrNull { utxo ->
+                        (utxo.lovelace == request.lovelace) && // lovelace matches
+                            (requestNativeAssetMap == utxo.nativeAssetsList.toNativeAssetMap()) // nativeAssets match exactly
+                    }
                 if (existingUtxo != null) {
                     monitorPaymentAddressResponse {
                         success = true
@@ -234,13 +241,14 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                     }
                 } else {
                     // Wait for payment to arrive
-                    val matchingUtxo = confirmedBlockFlow.mapNotNull { block ->
-                        block.toCreatedUtxoMap().values.flatten().firstOrNull { createdUtxo ->
-                            (createdUtxo.address == request.address) && // address matches
-                                (createdUtxo.lovelace == request.lovelace.toBigInteger()) && // lovelace matches
-                                (requestNativeAssetMap == createdUtxo.nativeAssets.toNativeAssetMap()) // nativeAssets match exactly
-                        }
-                    }.firstOrNull()
+                    val matchingUtxo =
+                        confirmedBlockFlow.mapNotNull { block ->
+                            block.toCreatedUtxoMap().values.flatten().firstOrNull { createdUtxo ->
+                                (createdUtxo.address == request.address) && // address matches
+                                    (createdUtxo.lovelace == request.lovelace.toBigInteger()) && // lovelace matches
+                                    (requestNativeAssetMap == createdUtxo.nativeAssets.toNativeAssetMap()) // nativeAssets match exactly
+                            }
+                        }.firstOrNull()
 
                     matchingUtxo?.let {
                         // Make sure this utxo is not spent by checking liveUtxos on the address
@@ -296,12 +304,13 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                         request
                     }
 
-                val (txId, cborBytes) = TransactionBuilder.transactionBuilder(
-                    protocolParams,
-                    calculateTxExecutionUnits
-                ) {
-                    loadFrom(updatedRequest)
-                }
+                val (txId, cborBytes) =
+                    TransactionBuilder.transactionBuilder(
+                        protocolParams,
+                        calculateTxExecutionUnits
+                    ) {
+                        loadFrom(updatedRequest)
+                    }
                 transactionBuilderResponse {
                     transactionId = txId
                     transactionCbor = cborBytes.toByteString()
@@ -321,49 +330,51 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
     override fun monitorNativeAssets(request: MonitorNativeAssetsRequest): Flow<MonitorNativeAssetsResponse> {
         log.info { "monitorNativeAssets request: $request" }
         val responseFlow = MutableSharedFlow<MonitorNativeAssetsResponse>(replay = 1)
-        val messageHandlerJob: Job = CoroutineScope(context).launch {
-            try {
-                var startAfterId: Long? = if (request.hasStartAfterId()) {
-                    request.startAfterId
-                } else {
-                    null
-                }
-                val limit = 1000
-                var offset = 0L
-                var nativeAssetLogList: List<Pair<Long, ByteArray>>
-                var nextStartAfterId: Long = startAfterId ?: -1L
-                while (true) {
-                    while (true) {
-                        // loop through all existing records before we change startAfterId
-                        nativeAssetLogList = ledgerRepository.queryNativeAssetLogsAfter(startAfterId, limit, offset)
-
-                        if (nativeAssetLogList.isNotEmpty()) {
-                            nativeAssetLogList.forEach { nativeAssetLog ->
-                                responseFlow.emit(
-                                    MonitorNativeAssetsResponse.parseFrom(nativeAssetLog.second)
-                                        .toBuilder()
-                                        .setId(nativeAssetLog.first)
-                                        .build()
-                                )
-                            }
-                            offset += nativeAssetLogList.size
-                            nextStartAfterId = nativeAssetLogList.last().first
+        val messageHandlerJob: Job =
+            CoroutineScope(context).launch {
+                try {
+                    var startAfterId: Long? =
+                        if (request.hasStartAfterId()) {
+                            request.startAfterId
                         } else {
-                            break
+                            null
                         }
-                    }
+                    val limit = 1000
+                    var offset = 0L
+                    var nativeAssetLogList: List<Pair<Long, ByteArray>>
+                    var nextStartAfterId: Long = startAfterId ?: -1L
+                    while (true) {
+                        while (true) {
+                            // loop through all existing records before we change startAfterId
+                            nativeAssetLogList = ledgerRepository.queryNativeAssetLogsAfter(startAfterId, limit, offset)
 
-                    startAfterId = nextStartAfterId
-                    offset = 0L
-                    delay(1000L)
-                }
-            } catch (e: Throwable) {
-                if (e !is CancellationException) {
-                    Sentry.addBreadcrumb(request.toString(), "NewmChainService")
-                    log.error(e.message, e)
+                            if (nativeAssetLogList.isNotEmpty()) {
+                                nativeAssetLogList.forEach { nativeAssetLog ->
+                                    responseFlow.emit(
+                                        MonitorNativeAssetsResponse.parseFrom(nativeAssetLog.second)
+                                            .toBuilder()
+                                            .setId(nativeAssetLog.first)
+                                            .build()
+                                    )
+                                }
+                                offset += nativeAssetLogList.size
+                                nextStartAfterId = nativeAssetLogList.last().first
+                            } else {
+                                break
+                            }
+                        }
+
+                        startAfterId = nextStartAfterId
+                        offset = 0L
+                        delay(1000L)
+                    }
+                } catch (e: Throwable) {
+                    if (e !is CancellationException) {
+                        Sentry.addBreadcrumb(request.toString(), "NewmChainService")
+                        log.error(e.message, e)
+                    }
                 }
             }
-        }
 
         messageHandlerJob.invokeOnCompletion {
             log.warn("invokeOnCompletion: ${it?.message}")
@@ -423,12 +434,13 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
             val paymentStakeChangeAddresses = deriveAddresses(ROLE_CHANGE, changeRootPk, stakeCredential)
 
             return deriveWalletAddressesResponse {
-                this.stakeAddress = address {
-                    this.address = stakeAddress
-                    this.role = ROLE_STAKING.toInt()
-                    this.index = 0
-                    this.used = true
-                }
+                this.stakeAddress =
+                    address {
+                        this.address = stakeAddress
+                        this.role = ROLE_STAKING.toInt()
+                        this.index = 0
+                        this.used = true
+                    }
                 this.enterpriseAddress.addAll(enterpriseAddresses)
                 this.paymentStakeAddress.addAll(paymentStakeAddresses)
                 this.enterpriseChangeAddress.addAll(enterpriseChangeAddresses)
@@ -449,13 +461,14 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
         val addresses = mutableListOf<io.newm.chain.grpc.Address>()
         var indexStart = 0u
         do {
-            val paymentAddresses = (indexStart..indexStart + 39u).map { index ->
-                val paymentPk = rolePk.derive(index)
-                val paymentCredential = AddressCredential.fromKey(paymentPk)
-                stakeCredential?.let {
-                    Address.fromPaymentStakeAddressCredentialsKeyKey(paymentCredential, it, Config.isMainnet).address
-                } ?: Address.fromPaymentAddressCredential(paymentCredential, Config.isMainnet).address
-            }
+            val paymentAddresses =
+                (indexStart..indexStart + 39u).map { index ->
+                    val paymentPk = rolePk.derive(index)
+                    val paymentCredential = AddressCredential.fromKey(paymentPk)
+                    stakeCredential?.let {
+                        Address.fromPaymentStakeAddressCredentialsKeyKey(paymentCredential, it, Config.isMainnet).address
+                    } ?: Address.fromPaymentAddressCredential(paymentCredential, Config.isMainnet).address
+                }
             val usedAddresses = ledgerRepository.queryUsedAddresses(paymentAddresses)
             addresses.addAll(
                 paymentAddresses.mapIndexed { index, address ->
@@ -490,17 +503,18 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
             val allUsedAddresses =
                 enterpriseAddresses + paymentStakeAddresses + enterpriseChangeAddresses + paymentStakeChangeAddresses
 
-            val addressUtxosList = allUsedAddresses.mapNotNull { address ->
-                val utxos = ledgerRepository.queryLiveUtxos(address.address)
-                if (utxos.isEmpty()) {
-                    null
-                } else {
-                    addressUtxos {
-                        this.address = address
-                        this.utxos.addAll(utxos.toQueryUtxosResponse().utxosList)
+            val addressUtxosList =
+                allUsedAddresses.mapNotNull { address ->
+                    val utxos = ledgerRepository.queryLiveUtxos(address.address)
+                    if (utxos.isEmpty()) {
+                        null
+                    } else {
+                        addressUtxos {
+                            this.address = address
+                            this.utxos.addAll(utxos.toQueryUtxosResponse().utxosList)
+                        }
                     }
                 }
-            }
 
             return queryWalletControlledUtxosResponse {
                 this.addressUtxos.addAll(addressUtxosList)
@@ -548,20 +562,22 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
     override suspend fun acquireMutex(request: AcquireMutexRequest): MutexResponse {
         try {
             val mutex = mutexMap.getOrPut(request.mutexName) { Mutex() }
-            val locked = withTimeoutOrNull(request.acquireWaitTimeoutMs) {
-                val owner = mutexOwnerMap.getOrPut(request.mutexName) { UUID.randomUUID() }
-                mutex.lock(owner)
-                true
-            } ?: false
+            val locked =
+                withTimeoutOrNull(request.acquireWaitTimeoutMs) {
+                    val owner = mutexOwnerMap.getOrPut(request.mutexName) { UUID.randomUUID() }
+                    mutex.lock(owner)
+                    true
+                } ?: false
 
             return if (locked) {
-                mutexExpiryJobMap[request.mutexName] = CoroutineScope(context).launch {
-                    delay(request.lockExpiryMs)
-                    // There's a highly-unlikely race condition with unlocking the mutex here.
-                    // If the mutex is also unlocked by the releaseMutex request at the same moment, then this will throw an exception.
-                    mutex.unlock(request.mutexName)
-                    mutexExpiryJobMap.remove(request.mutexName)
-                }
+                mutexExpiryJobMap[request.mutexName] =
+                    CoroutineScope(context).launch {
+                        delay(request.lockExpiryMs)
+                        // There's a highly-unlikely race condition with unlocking the mutex here.
+                        // If the mutex is also unlocked by the releaseMutex request at the same moment, then this will throw an exception.
+                        mutex.unlock(request.mutexName)
+                        mutexExpiryJobMap.remove(request.mutexName)
+                    }
                 mutexResponse {
                     success = true
                     message = "Mutex acquired!"

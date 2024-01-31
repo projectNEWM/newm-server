@@ -251,20 +251,24 @@ class TransactionBuilder(
         }
     }
 
-    private fun updateFeesAndCollateral(cborByteSize: Int, computationalFee: Long?) {
+    private fun updateFeesAndCollateral(
+        cborByteSize: Int,
+        computationalFee: Long?
+    ) {
         fee = (txFeeFixed + txFeePerByte * cborByteSize) + (computationalFee ?: 0L)
         computationalFee?.let {
             totalCollateral = ceil(protocolParameters.collateralPercentage.toLong() * fee!! / 100.0).toLong()
 
             // fix collateralReturn now that we have accurate totalCollateral
             val collateralReturnLovelace = collateralUtxos!!.sumOf { it.lovelace.toLong() } - totalCollateral!!
-            collateralReturn = outputUtxo {
-                address = collateralReturnAddress!!
-                lovelace = collateralReturnLovelace.toString()
-                nativeAssets.addAll(
-                    collateralUtxos!!.map { it.nativeAssetsList }.flatten().toNativeAssetMap().values.flatten()
-                )
-            }
+            collateralReturn =
+                outputUtxo {
+                    address = collateralReturnAddress!!
+                    lovelace = collateralReturnLovelace.toString()
+                    nativeAssets.addAll(
+                        collateralUtxos!!.map { it.nativeAssetsList }.flatten().toNativeAssetMap().values.flatten()
+                    )
+                }
         }
     }
 
@@ -273,15 +277,18 @@ class TransactionBuilder(
         return mapOf<CborObject, CborObject?>(
             // Metadata
             AUX_DATA_KEY_METADATA to transactionMetadata,
-            AUX_DATA_KEY_NATIVE_SCRIPT to auxNativeScripts.takeUnless { it.isNullOrEmpty() }?.let {
-                CborArray.create(it.map { nativeScript -> nativeScript.toCborObject() })
-            },
-            AUX_DATA_KEY_PLUTUS_V1_SCRIPT to auxPlutusV1Scripts.takeUnless { it.isNullOrEmpty() }?.let {
-                CborArray.create(it.map { plutusV1Script -> CborByteString.create(plutusV1Script) })
-            },
-            AUX_DATA_KEY_PLUTUS_V2_SCRIPT to auxPlutusV2Scripts.takeUnless { it.isNullOrEmpty() }?.let {
-                CborArray.create(it.map { plutusV2Script -> CborByteString.create(plutusV2Script) })
-            }
+            AUX_DATA_KEY_NATIVE_SCRIPT to
+                auxNativeScripts.takeUnless { it.isNullOrEmpty() }?.let {
+                    CborArray.create(it.map { nativeScript -> nativeScript.toCborObject() })
+                },
+            AUX_DATA_KEY_PLUTUS_V1_SCRIPT to
+                auxPlutusV1Scripts.takeUnless { it.isNullOrEmpty() }?.let {
+                    CborArray.create(it.map { plutusV1Script -> CborByteString.create(plutusV1Script) })
+                },
+            AUX_DATA_KEY_PLUTUS_V2_SCRIPT to
+                auxPlutusV2Scripts.takeUnless { it.isNullOrEmpty() }?.let {
+                    CborArray.create(it.map { plutusV2Script -> CborByteString.create(plutusV2Script) })
+                }
         ).filterValues { it != null }.ifEmpty { null }?.let {
             CborMap.create(it, AUX_DATA_TAG).also { auxData ->
                 auxDataHash = Blake2b.hash256(auxData.toCborByteArray())
@@ -294,12 +301,13 @@ class TransactionBuilder(
             // calculate the scriptDataHash - // redeemerBytes + datumBytes + languageViewMap
             val redeemerBytes = createRedeemerWitnesses()?.toCborByteArray() ?: ByteArray(1) { 0x80.toByte() }
             val datumBytes = createDatumWitnesses()?.toCborByteArray() ?: ByteArray(0)
-            val languageViewMap = if (!redeemers.isNullOrEmpty()) {
-                protocolParameters.plutusCostModels.plutusV2!!.toCborObject().toCborByteArray()
-            } else {
-                // empty cbor map
-                ByteArray(1) { 0xa0.toByte() }
-            }
+            val languageViewMap =
+                if (!redeemers.isNullOrEmpty()) {
+                    protocolParameters.plutusCostModels.plutusV2!!.toCborObject().toCborByteArray()
+                } else {
+                    // empty cbor map
+                    ByteArray(1) { 0xa0.toByte() }
+                }
             scriptDataHash = Blake2b.hash256(redeemerBytes + datumBytes + languageViewMap)
         }
     }
@@ -312,13 +320,14 @@ class TransactionBuilder(
 
         if (collateralReturnAddress != null && collateralReturn == null) {
             val collateralReturnLovelace = collateralUtxos!!.sumOf { it.lovelace.toLong() } - totalCollateral!!
-            collateralReturn = outputUtxo {
-                address = collateralReturnAddress!!
-                lovelace = collateralReturnLovelace.toString()
-                nativeAssets.addAll(
-                    collateralUtxos!!.map { it.nativeAssetsList }.flatten().toNativeAssetMap().values.flatten()
-                )
-            }
+            collateralReturn =
+                outputUtxo {
+                    address = collateralReturnAddress!!
+                    lovelace = collateralReturnLovelace.toString()
+                    nativeAssets.addAll(
+                        collateralUtxos!!.map { it.nativeAssetsList }.flatten().toNativeAssetMap().values.flatten()
+                    )
+                }
         }
     }
 
@@ -329,24 +338,32 @@ class TransactionBuilder(
             _transactionId = ByteArray(32)
             secureRandom.nextBytes(_transactionId)
 
-            var dummyTxCbor = CborArray.create().apply {
-                add(txBody)
-                add(createTxWitnessSet(true))
-                add(CborSimple.TRUE)
-                add(auxData ?: CborSimple.NULL)
-            }.toCborByteArray()
+            var dummyTxCbor =
+                CborArray.create().apply {
+                    add(txBody)
+                    add(createTxWitnessSet(true))
+                    add(CborSimple.TRUE)
+                    add(auxData ?: CborSimple.NULL)
+                }.toCborByteArray()
 
             // Calculate minimum transaction fee
-            val maxComputationalFee = if (totalCollateral != null) {
-                ceil(
-                    (
-                        protocolParameters.scriptExecutionPrices.memory.multiply(protocolParameters.maxExecutionUnitsPerTransaction.memory)
-                            .add(protocolParameters.scriptExecutionPrices.cpu.multiply(protocolParameters.maxExecutionUnitsPerTransaction.cpu))
+            val maxComputationalFee =
+                if (totalCollateral != null) {
+                    ceil(
+                        (
+                            protocolParameters.scriptExecutionPrices.memory.multiply(
+                                protocolParameters.maxExecutionUnitsPerTransaction.memory
+                            )
+                                .add(
+                                    protocolParameters.scriptExecutionPrices.cpu.multiply(
+                                        protocolParameters.maxExecutionUnitsPerTransaction.cpu
+                                    )
+                                )
                         ).toDouble()
-                ).toLong()
-            } else {
-                null
-            }
+                    ).toLong()
+                } else {
+                    null
+                }
             updateFeesAndCollateral(dummyTxCbor.size, maxComputationalFee)
 
             if (totalCollateral != null && calculateTxExecutionUnits != null) {
@@ -366,10 +383,11 @@ class TransactionBuilder(
                                 tag = redeemerTag
                                 index = idx
                                 data = it.data
-                                exUnits = exUnits {
-                                    mem = executionUnits.memory.toLong()
-                                    steps = executionUnits.cpu.toLong()
-                                }
+                                exUnits =
+                                    exUnits {
+                                        mem = executionUnits.memory.toLong()
+                                        steps = executionUnits.cpu.toLong()
+                                    }
                             }
                         } else {
                             // Leave unchanged
@@ -383,7 +401,7 @@ class TransactionBuilder(
                         (
                             protocolParameters.scriptExecutionPrices.memory.multiply(totalMemory)
                                 .add(protocolParameters.scriptExecutionPrices.cpu.multiply(totalSteps))
-                            ).toDouble()
+                        ).toDouble()
                     ).toLong()
                 updateFeesAndCollateral(dummyTxCbor.size, computationalFee)
 
@@ -392,12 +410,13 @@ class TransactionBuilder(
                 _transactionId = ByteArray(32)
                 secureRandom.nextBytes(_transactionId)
 
-                dummyTxCbor = CborArray.create().apply {
-                    add(txBody)
-                    add(createTxWitnessSet(true))
-                    add(CborSimple.TRUE)
-                    add(auxData ?: CborSimple.NULL)
-                }.toCborByteArray()
+                dummyTxCbor =
+                    CborArray.create().apply {
+                        add(txBody)
+                        add(createTxWitnessSet(true))
+                        add(CborSimple.TRUE)
+                        add(auxData ?: CborSimple.NULL)
+                    }.toCborByteArray()
 
                 updateFeesAndCollateral(dummyTxCbor.size, computationalFee)
             }
@@ -413,19 +432,23 @@ class TransactionBuilder(
                 TX_KEY_UTXO_OUTPUTS to createOutputUtxos(),
                 TX_KEY_FEE to (fee?.let { CborInteger.create(it) } ?: CborInteger.create(3000000L)),
                 TX_KEY_TTL to ttlAbsoluteSlot?.let { CborInteger.create(it) },
-                TX_KEY_CERTIFICATES to null, // TODO: Implement posting certificates to chain
-                TX_KEY_WITHDRAWALS to null, // TODO: Implement reward withdrawals
-                TX_KEY_UPDATES to null, // TODO: Implement protocol param updates
+                // TODO: Implement posting certificates to chain
+                TX_KEY_CERTIFICATES to null,
+                // TODO: Implement reward withdrawals
+                TX_KEY_WITHDRAWALS to null,
+                // TODO: Implement protocol param updates
+                TX_KEY_UPDATES to null,
                 TX_KEY_AUX_DATA_HASH to auxDataHash?.let { CborByteString.create(it) },
                 TX_KEY_VALIDITY_INTERVAL_START to validityIntervalStart?.let { CborInteger.create(it) },
                 TX_KEY_MINT to mintTokens?.toNativeAssetCborMap(),
                 TX_KEY_SCRIPT_DATA_HASH to scriptDataHash?.let { CborByteString.create(it) },
                 TX_KEY_COLLATERAL_INPUTS to collateralUtxos?.toCborObject(),
-                TX_KEY_REQUIRED_SIGNERS to requiredSigners.takeUnless { it.isNullOrEmpty() }?.let {
-                    CborArray.create(
-                        it.map { requiredSigner -> CborByteString.create(requiredSigner) }
-                    )
-                },
+                TX_KEY_REQUIRED_SIGNERS to
+                    requiredSigners.takeUnless { it.isNullOrEmpty() }?.let {
+                        CborArray.create(
+                            it.map { requiredSigner -> CborByteString.create(requiredSigner) }
+                        )
+                    },
                 TX_KEY_NETWORK_ID to networkId?.number?.let { CborInteger.create(it) },
                 TX_KEY_COLLATERAL_RETURN to collateralReturn?.toCborObject(),
                 TX_KEY_TOTAL_COLLATERAL to totalCollateral?.let { CborInteger.create(it) },
@@ -473,19 +496,20 @@ class TransactionBuilder(
             changeLovelace -= fee!!
         }
 
-        val changeUtxos = if (changeLovelace > 0) {
-            listOf(
-                OutputUtxo.newBuilder().apply {
-                    address = changeAddress
-                    lovelace = changeLovelace.toString()
-                    if (changeNativeAssetMap.isNotEmpty()) {
-                        addAllNativeAssets(changeNativeAssetMap.values.flatten())
-                    }
-                }.build()
-            )
-        } else {
-            emptyList()
-        }
+        val changeUtxos =
+            if (changeLovelace > 0) {
+                listOf(
+                    OutputUtxo.newBuilder().apply {
+                        address = changeAddress
+                        lovelace = changeLovelace.toString()
+                        if (changeNativeAssetMap.isNotEmpty()) {
+                            addAllNativeAssets(changeNativeAssetMap.values.flatten())
+                        }
+                    }.build()
+                )
+            } else {
+                emptyList()
+            }
 
         return CborArray.create(
             (outputUtxos!! + changeUtxos)
@@ -499,7 +523,8 @@ class TransactionBuilder(
             mapOf<CborObject, CborObject?>(
                 WITNESS_SET_KEY_VKEYWITNESS to createVKeyWitnesses(isFeeCalculation),
                 WITNESS_SET_KEY_NATIVE_SCRIPT to createNativeScriptWitnesses(),
-                WITNESS_SET_KEY_BOOTSTRAP_WITNESS to null, // TODO: implement
+                // TODO: implement bootstrap witness
+                WITNESS_SET_KEY_BOOTSTRAP_WITNESS to null,
                 WITNESS_SET_KEY_PLUTUS_V1_SCRIPT to createPlutusV1ScriptWitnesses(),
                 WITNESS_SET_KEY_PLUTUS_DATA to createDatumWitnesses(),
                 WITNESS_SET_KEY_REDEEMER to createRedeemerWitnesses(),
@@ -509,25 +534,27 @@ class TransactionBuilder(
     }
 
     private fun createVKeyWitnesses(isFeeCalculation: Boolean): CborObject? {
-        val rawSignatures = signatures?.map { signature ->
-            CborArray.create(
-                listOf(
-                    CborByteString.create(signature.vkey.toByteArray()),
-                    CborByteString.create(signature.sig.toByteArray()),
-                )
-            )
-        }.orEmpty()
-
-        val keySignatures = signingKeys?.map { signingKey ->
-            CborArray.create(
-                listOf(
-                    CborByteString.create(signingKey.vkey.toByteArray()),
-                    CborByteString.create(
-                        signingKey.sign(_transactionId)
+        val rawSignatures =
+            signatures?.map { signature ->
+                CborArray.create(
+                    listOf(
+                        CborByteString.create(signature.vkey.toByteArray()),
+                        CborByteString.create(signature.sig.toByteArray()),
                     )
                 )
-            )
-        }.orEmpty()
+            }.orEmpty()
+
+        val keySignatures =
+            signingKeys?.map { signingKey ->
+                CborArray.create(
+                    listOf(
+                        CborByteString.create(signingKey.vkey.toByteArray()),
+                        CborByteString.create(
+                            signingKey.sign(_transactionId)
+                        )
+                    )
+                )
+            }.orEmpty()
 
         val requiredSignerDummySignatures =
             if (isFeeCalculation && rawSignatures.isEmpty() && keySignatures.isEmpty()) {

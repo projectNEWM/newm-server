@@ -22,7 +22,6 @@ import org.slf4j.Logger
 internal class EmailRepositoryImpl(
     private val environment: ApplicationEnvironment
 ) : EmailRepository {
-
     private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
 
     override suspend fun send(
@@ -38,41 +37,43 @@ internal class EmailRepositoryImpl(
         subject: String,
         messageUrl: String,
         messageArgs: Map<String, Any>
-    ): Unit = coroutineScope {
-        launch {
-            logger.debug { "send to: $to, bcc: $bcc, subject: $subject" }
+    ): Unit =
+        coroutineScope {
+            launch {
+                logger.debug { "send to: $to, bcc: $bcc, subject: $subject" }
 
-            try {
-                with(environment.getConfigChild("email")) {
-                    if (getBoolean("enabled")) {
-                        val message = messageUrl
-                            .toUrl()
-                            .readText()
-                            .format(messageArgs + getChild("arguments").toMap())
+                try {
+                    with(environment.getConfigChild("email")) {
+                        if (getBoolean("enabled")) {
+                            val message =
+                                messageUrl
+                                    .toUrl()
+                                    .readText()
+                                    .format(messageArgs + getChild("arguments").toMap())
 
-                        HtmlEmail().apply {
-                            hostName = getSecureString("smtpHost")
-                            setSmtpPort(getInt("smtpPort"))
-                            isSSLOnConnect = getBoolean("sslOnConnect")
-                            setAuthenticator(
-                                DefaultAuthenticator(
-                                    getSecureString("userName"),
-                                    getSecureString("password")
+                            HtmlEmail().apply {
+                                hostName = getSecureString("smtpHost")
+                                setSmtpPort(getInt("smtpPort"))
+                                isSSLOnConnect = getBoolean("sslOnConnect")
+                                setAuthenticator(
+                                    DefaultAuthenticator(
+                                        getSecureString("userName"),
+                                        getSecureString("password")
+                                    )
                                 )
-                            )
-                            setFrom(getSecureString("from"))
-                            to.forEach { addTo(it) }
-                            bcc.forEach { addBcc(it) }
-                            this.subject = subject
-                            setHtmlMsg(message)
-                        }.send()
-                    } else {
-                        logger.warn { "Email notifications disabled - skipped sending message" }
+                                setFrom(getSecureString("from"))
+                                to.forEach { addTo(it) }
+                                bcc.forEach { addBcc(it) }
+                                this.subject = subject
+                                setHtmlMsg(message)
+                            }.send()
+                        } else {
+                            logger.warn { "Email notifications disabled - skipped sending message" }
+                        }
                     }
+                } catch (error: Throwable) {
+                    logger.error(error) { "Failure sending to: $to, bcc: $bcc, subject: $subject" }
                 }
-            } catch (error: Throwable) {
-                logger.error(error) { "Failure sending to: $to, bcc: $bcc, subject: $subject" }
             }
         }
-    }
 }

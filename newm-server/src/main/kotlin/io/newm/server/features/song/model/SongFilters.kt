@@ -31,16 +31,17 @@ data class SongFilters(
 )
 
 val ApplicationCall.songFilters: SongFilters
-    get() = SongFilters(
-        archived,
-        sortOrder,
-        olderThan,
-        newerThan,
-        ids,
-        ownerIds,
-        genres,
-        moods,
-        mintingStatuses,
-        phrase,
-        nftNames
-    )
+    get() =
+        SongFilters(
+            archived,
+            sortOrder,
+            olderThan,
+            newerThan,
+            ids,
+            ownerIds,
+            genres,
+            moods,
+            mintingStatuses,
+            phrase,
+            nftNames
+        )

@@ -18,20 +18,26 @@ class SpotifyProfileUrlVerifier(
 ) : OutletProfileUrlVerifier {
     private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
 
-    override suspend fun verify(outletProfileUrl: String, stageOrFullName: String) {
+    override suspend fun verify(
+        outletProfileUrl: String,
+        stageOrFullName: String
+    ) {
         val spotifyProfileId = outletProfileUrl.substringAfterLast("/").substringBefore("?")
-        val response = httpClient.get(
-            "https://api.spotify.com/v1/artists/$spotifyProfileId"
-        ) {
-            accept(ContentType.Application.Json)
-        }
+        val response =
+            httpClient.get(
+                "https://api.spotify.com/v1/artists/$spotifyProfileId"
+            ) {
+                accept(ContentType.Application.Json)
+            }
         if (!response.status.isSuccess()) {
             throw OutletProfileUrlVerificationException("Spotify profile not found for $spotifyProfileId")
         }
         val spotifyArtistResponse: SpotifyArtistResponse = response.body()
         logger.info { "Spotify profile response for $spotifyProfileId : $spotifyArtistResponse" }
         if (spotifyArtistResponse.name != stageOrFullName) {
-            throw OutletProfileUrlVerificationException("Spotify profile name (${spotifyArtistResponse.name}) does not match stageOrFullName ($stageOrFullName) for $spotifyProfileId")
+            throw OutletProfileUrlVerificationException(
+                "Spotify profile name (${spotifyArtistResponse.name}) does not match stageOrFullName ($stageOrFullName) for $spotifyProfileId"
+            )
         }
     }
 

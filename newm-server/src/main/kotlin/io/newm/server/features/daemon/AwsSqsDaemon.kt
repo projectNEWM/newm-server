@@ -57,10 +57,11 @@ class AwsSqsDaemon : Daemon {
                 log.info { "SQS Listening on $queueUrl -> ${receiverClass.simpleName}" }
                 while (true) {
                     try {
-                        val request = ReceiveMessageRequest()
-                            .withQueueUrl(queueUrl)
-                            .withWaitTimeSeconds(waitTime)
-                            .withMaxNumberOfMessages(1)
+                        val request =
+                            ReceiveMessageRequest()
+                                .withQueueUrl(queueUrl)
+                                .withWaitTimeSeconds(waitTime)
+                                .withMaxNumberOfMessages(1)
                         val result = request.await()
                         for (message in result.messages) {
                             try {

@@ -110,8 +110,7 @@ fun List<LedgerAssetMetadataItem>.toNFTSongs(asset: NativeAsset): List<NFTSong> 
     }
 }
 
-private operator fun List<LedgerAssetMetadataItem>.get(key: String): LedgerAssetMetadataItem? =
-    firstOrNull { it.key == key }
+private operator fun List<LedgerAssetMetadataItem>.get(key: String): LedgerAssetMetadataItem? = firstOrNull { it.key == key }
 
 private fun List<LedgerAssetMetadataItem>.value(key: String): String? = this[key]?.value
 
@@ -152,11 +151,12 @@ private fun List<LedgerAssetMetadataItem>.toFile(): File {
     )
 }
 
-internal fun String.toResourceUrl(): String = when {
-    startsWith("ipfs://") -> "https://ipfs.io/ipfs/${substring(7)}"
-    startsWith("ar://") -> "https://arweave.net/${substring(5)}"
-    else -> {
-        logger.warn { "Unknown resource schema: $this" }
-        this
+internal fun String.toResourceUrl(): String =
+    when {
+        startsWith("ipfs://") -> "https://ipfs.io/ipfs/${substring(7)}"
+        startsWith("ar://") -> "https://arweave.net/${substring(5)}"
+        else -> {
+            logger.warn { "Unknown resource schema: $this" }
+            this
+        }
     }
-}

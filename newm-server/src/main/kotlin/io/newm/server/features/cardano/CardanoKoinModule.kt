@@ -15,40 +15,42 @@ import kotlinx.coroutines.runBlocking
 import org.koin.dsl.module
 import java.util.concurrent.TimeUnit
 
-val cardanoKoinModule = module {
-    single<CardanoRepository> {
-        CardanoRepositoryImpl(
-            get(),
-            get(),
-            runBlocking { get<ApplicationEnvironment>().getSecureConfigString("aws.kms.keyId") },
-            get(),
-        )
-    }
-    single<NewmChainCoroutineStub> {
-        val environment = get<ApplicationEnvironment>()
-        val host = environment.getConfigString("newmChain.host")
-        val port = environment.getConfigInt("newmChain.port")
-        val jwt = runBlocking { environment.getSecureConfigString("newmChain.jwt") }
-        val secure = environment.getConfigBoolean("newmChain.secure")
-        val channel = ManagedChannelBuilder.forAddress(host, port).apply {
-            keepAliveTime(30L, TimeUnit.SECONDS)
-            keepAliveTimeout(20L, TimeUnit.SECONDS)
-            keepAliveWithoutCalls(true)
-            if (secure) {
-                useTransportSecurity()
-            } else {
-                usePlaintext()
-            }
-        }.build()
-        NewmChainCoroutineStub(channel).withInterceptors(
-            MetadataUtils.newAttachHeadersInterceptor(
-                Metadata().apply {
-                    put(
-                        Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER),
-                        "Bearer $jwt"
-                    )
-                }
+val cardanoKoinModule =
+    module {
+        single<CardanoRepository> {
+            CardanoRepositoryImpl(
+                get(),
+                get(),
+                runBlocking { get<ApplicationEnvironment>().getSecureConfigString("aws.kms.keyId") },
+                get(),
             )
-        ).withWaitForReady()
+        }
+        single<NewmChainCoroutineStub> {
+            val environment = get<ApplicationEnvironment>()
+            val host = environment.getConfigString("newmChain.host")
+            val port = environment.getConfigInt("newmChain.port")
+            val jwt = runBlocking { environment.getSecureConfigString("newmChain.jwt") }
+            val secure = environment.getConfigBoolean("newmChain.secure")
+            val channel =
+                ManagedChannelBuilder.forAddress(host, port).apply {
+                    keepAliveTime(30L, TimeUnit.SECONDS)
+                    keepAliveTimeout(20L, TimeUnit.SECONDS)
+                    keepAliveWithoutCalls(true)
+                    if (secure) {
+                        useTransportSecurity()
+                    } else {
+                        usePlaintext()
+                    }
+                }.build()
+            NewmChainCoroutineStub(channel).withInterceptors(
+                MetadataUtils.newAttachHeadersInterceptor(
+                    Metadata().apply {
+                        put(
+                            Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER),
+                            "Bearer $jwt"
+                        )
+                    }
+                )
+            ).withWaitForReady()
+        }
     }
-}

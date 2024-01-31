@@ -10,10 +10,12 @@ import java.math.BigDecimal
 import java.math.RoundingMode
 
 object BigDecimalSerializer : KSerializer<BigDecimal> {
-
     override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("BigDecimal", PrimitiveKind.STRING)
 
-    override fun serialize(encoder: Encoder, value: BigDecimal) {
+    override fun serialize(
+        encoder: Encoder,
+        value: BigDecimal
+    ) {
         encoder.encodeString(value.toPlainString())
     }
 

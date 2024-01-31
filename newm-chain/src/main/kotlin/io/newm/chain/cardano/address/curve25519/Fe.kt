@@ -12,7 +12,6 @@ import io.newm.chain.util.toULong
  */
 @OptIn(ExperimentalUnsignedTypes::class)
 data class Fe(private val values: ULongArray) {
-
     operator fun plus(rhs: Fe): Fe {
         val f0 = values[0]
         val f1 = values[1]
@@ -291,6 +290,7 @@ data class Fe(private val values: ULongArray) {
      *
      * the element to invert must be non 0
      */
+    @Suppress("ktlint:standard:property-naming")
     fun invert(): Fe {
         val z1 = this
         val z2 = z1.square()
@@ -319,6 +319,7 @@ data class Fe(private val values: ULongArray) {
         return z_255_21
     }
 
+    @Suppress("ktlint:standard:property-naming")
     fun pow25523(): Fe {
         val z2 = this.square()
         val z8 = z2.squareRepeatdly(2)
@@ -381,7 +382,11 @@ data class Fe(private val values: ULongArray) {
         return ulongArrayOf(out0, out1, out2, out3)
     }
 
-    private fun write8(ofs: Int, v: ULong, out: ByteArray) {
+    private fun write8(
+        ofs: Int,
+        v: ULong,
+        out: ByteArray
+    ) {
         val x = v.toLittleEndianBytes()
         out[ofs] = x[0]
         out[ofs + 1] = x[1]
@@ -428,35 +433,38 @@ data class Fe(private val values: ULongArray) {
         val ZERO: Fe = Fe(ulongArrayOf(0uL, 0uL, 0uL, 0uL, 0uL))
         val ONE: Fe = Fe(ulongArrayOf(1uL, 0uL, 0uL, 0uL, 0uL))
 
-        val SQRTM1: Fe = Fe(
-            ulongArrayOf(
-                0x61b274a0ea0b0uL,
-                0xd5a5fc8f189duL,
-                0x7ef5e9cbd0c60uL,
-                0x78595a6804c9euL,
-                0x2b8324804fc1duL
+        val SQRTM1: Fe =
+            Fe(
+                ulongArrayOf(
+                    0x61b274a0ea0b0uL,
+                    0xd5a5fc8f189duL,
+                    0x7ef5e9cbd0c60uL,
+                    0x78595a6804c9euL,
+                    0x2b8324804fc1duL
+                )
             )
-        )
 
-        val D: Fe = Fe(
-            ulongArrayOf(
-                0x34dca135978a3uL,
-                0x1a8283b156ebduL,
-                0x5e7a26001c029uL,
-                0x739c663a03cbbuL,
-                0x52036cee2b6ffuL
+        val D: Fe =
+            Fe(
+                ulongArrayOf(
+                    0x34dca135978a3uL,
+                    0x1a8283b156ebduL,
+                    0x5e7a26001c029uL,
+                    0x739c663a03cbbuL,
+                    0x52036cee2b6ffuL
+                )
             )
-        )
 
-        val D2: Fe = Fe(
-            ulongArrayOf(
-                0x69b9426b2f159uL,
-                0x35050762add7auL,
-                0x3cf44c0038052uL,
-                0x6738cc7407977uL,
-                0x2406d9dc56dffuL
+        val D2: Fe =
+            Fe(
+                ulongArrayOf(
+                    0x69b9426b2f159uL,
+                    0x35050762add7auL,
+                    0x3cf44c0038052uL,
+                    0x6738cc7407977uL,
+                    0x2406d9dc56dffuL
+                )
             )
-        )
 
         /**
          * Create the Field Element from its little-endian byte representation (256 bits)

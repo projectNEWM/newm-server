@@ -72,6 +72,7 @@ fun ByteArray.toB64String(): String {
 }
 
 private val hexRegex = Regex("([a-f\\d]{2})+")
+
 fun String.assetNameToHexString(): String {
     return if (hexRegex.matches(this)) {
         // it's already hex string
@@ -93,6 +94,7 @@ fun String.hexStringToAssetName(): String {
 }
 
 fun Int.toHexString(): String = Integer.toHexString(this)
+
 fun Long.toHexString(): String = java.lang.Long.toHexString(this)
 
 fun BigInteger.toAda(): BigDecimal = this.toBigDecimal(6)
@@ -100,6 +102,7 @@ fun BigInteger.toAda(): BigDecimal = this.toBigDecimal(6)
 fun BigInteger.toAdaString() = toAda().toPlainString()
 
 private val MAX_ULONG = BigInteger("ffffffffffffffff", 16)
+
 fun BigInteger.toULong(): ULong = (this and MAX_ULONG).toString(16).toULong(16)
 
 fun ULong.toBigInteger(): BigInteger = BigInteger(this.toString(16), 16)
@@ -153,13 +156,14 @@ fun String.extractCredentials(): Pair<String, String?> {
         // skip address type byte
         buffer.position(1)
         buffer.get(paymentBuf)
-        val stakeBuf = if (buffer.remaining() == 28) {
-            val stakeBuf = ByteArray(28)
-            buffer.get(stakeBuf)
-            stakeBuf
-        } else {
-            null
-        }
+        val stakeBuf =
+            if (buffer.remaining() == 28) {
+                val stakeBuf = ByteArray(28)
+                buffer.get(stakeBuf)
+                stakeBuf
+            } else {
+                null
+            }
         return Pair(paymentBuf.toHexString(), stakeBuf?.toHexString())
     } catch (e: Throwable) {
         log.error("Failed to extract credentials: $this", e)

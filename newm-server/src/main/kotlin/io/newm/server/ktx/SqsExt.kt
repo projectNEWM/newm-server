@@ -17,12 +17,16 @@ import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
 private val sqs: AmazonSQSAsync by inject()
+
 suspend fun SendMessageRequest.await(): SendMessageResult {
     return suspendCoroutine { continuation ->
         sqs.sendMessageAsync(
             this,
             object : AsyncHandler<SendMessageRequest, SendMessageResult> {
-                override fun onSuccess(request: SendMessageRequest, result: SendMessageResult) {
+                override fun onSuccess(
+                    request: SendMessageRequest,
+                    result: SendMessageResult
+                ) {
                     continuation.resume(result)
                 }
 
@@ -39,7 +43,10 @@ suspend fun ReceiveMessageRequest.await(): ReceiveMessageResult {
         sqs.receiveMessageAsync(
             this,
             object : AsyncHandler<ReceiveMessageRequest, ReceiveMessageResult> {
-                override fun onSuccess(request: ReceiveMessageRequest, result: ReceiveMessageResult) {
+                override fun onSuccess(
+                    request: ReceiveMessageRequest,
+                    result: ReceiveMessageResult
+                ) {
                     continuation.resume(result)
                 }
 
@@ -57,7 +64,10 @@ suspend fun Message.delete(queueUrl: String): DeleteMessageResult {
             queueUrl,
             receiptHandle,
             object : AsyncHandler<DeleteMessageRequest, DeleteMessageResult> {
-                override fun onSuccess(request: DeleteMessageRequest, result: DeleteMessageResult) {
+                override fun onSuccess(
+                    request: DeleteMessageRequest,
+                    result: DeleteMessageResult
+                ) {
                     continuation.resume(result)
                 }
 
@@ -76,7 +86,10 @@ suspend fun Message.markFailed(queueUrl: String): ChangeMessageVisibilityResult 
             receiptHandle,
             0,
             object : AsyncHandler<ChangeMessageVisibilityRequest, ChangeMessageVisibilityResult> {
-                override fun onSuccess(request: ChangeMessageVisibilityRequest, result: ChangeMessageVisibilityResult) {
+                override fun onSuccess(
+                    request: ChangeMessageVisibilityRequest,
+                    result: ChangeMessageVisibilityResult
+                ) {
                     continuation.resume(result)
                 }
 

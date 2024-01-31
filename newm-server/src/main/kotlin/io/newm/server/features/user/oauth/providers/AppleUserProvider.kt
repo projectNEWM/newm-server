@@ -23,7 +23,6 @@ import kotlinx.coroutines.runBlocking
 private class AppleUser(
     val jwt: DecodedJWT
 ) : OAuthUser {
-
     override val id: String
         get() = jwt.subject!!
 
@@ -39,18 +38,18 @@ private class AppleUser(
 internal class AppleUserProvider(
     environment: ApplicationEnvironment
 ) : OAuthUserProvider {
-
-    private val verifier: JWTVerifier = JWT.require(
-        Algorithm.RSA256(
-            JwkProviderBuilder(environment.getConfigString("oauth.apple.publicKeysUrl"))
-                .build()
-                .toRSAKeyProvider()
-        )
-    ).withAnyOfIssuer(environment.getConfigStrings("oauth.apple.issuers"))
-        .withAnyOfAudience(runBlocking { environment.getSecureConfigStrings("oauth.apple.audiences") })
-        .withClaimPresence("sub")
-        .withClaimPresence("email")
-        .build()
+    private val verifier: JWTVerifier =
+        JWT.require(
+            Algorithm.RSA256(
+                JwkProviderBuilder(environment.getConfigString("oauth.apple.publicKeysUrl"))
+                    .build()
+                    .toRSAKeyProvider()
+            )
+        ).withAnyOfIssuer(environment.getConfigStrings("oauth.apple.issuers"))
+            .withAnyOfAudience(runBlocking { environment.getSecureConfigStrings("oauth.apple.audiences") })
+            .withClaimPresence("sub")
+            .withClaimPresence("email")
+            .build()
 
     override suspend fun getUser(tokens: OAuthTokens): OAuthUser {
         val token = tokens.idToken ?: throw HttpBadRequestException("Apple OAuth requires idToken")

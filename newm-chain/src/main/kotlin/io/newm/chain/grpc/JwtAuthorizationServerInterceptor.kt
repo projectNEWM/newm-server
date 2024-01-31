@@ -26,7 +26,6 @@ import java.time.temporal.ChronoUnit
 import java.util.*
 
 class JwtAuthorizationServerInterceptor(jwtConfig: ApplicationConfig) : ServerInterceptor {
-
     private val log: Logger by inject { parametersOf("JwtAuthorizationServerInterceptor") }
     private val usersRepository: UsersRepository by inject()
 
@@ -56,26 +55,27 @@ class JwtAuthorizationServerInterceptor(jwtConfig: ApplicationConfig) : ServerIn
         headers: Metadata,
         next: ServerCallHandler<ReqT, RespT>
     ): ServerCall.Listener<ReqT> {
-        val status: Status = headers.get(AUTHORIZATION_METADATA_KEY)?.let { authToken ->
-            if (!authToken.startsWith(BEARER_TYPE)) {
-                Status.UNAUTHENTICATED.withDescription("Unknown authorization type")
-            } else {
-                val jwtBearerToken = authToken.substring(BEARER_TYPE.length).trim()
-                try {
-                    val jwt = jwtVerifier.verify(jwtBearerToken)
-                    jwt.claims["user"]?.asString()?.let { user ->
-                        val jwtUser = "$user|jwt"
-                        usersRepository.getByName(jwtUser)?.let {
-                            val ctx = Context.current().withValue(CLIENT_ID_CONTEXT_KEY, user)
-                            Sentry.addBreadcrumb("jwtUser: $jwtUser", "auth")
-                            return Contexts.interceptCall(ctx, call, headers, next)
-                        } ?: Status.UNAUTHENTICATED.withDescription("Missing JWT user account")
-                    } ?: Status.UNAUTHENTICATED.withDescription("JWT has no user claim")
-                } catch (e: JWTVerificationException) {
-                    Status.UNAUTHENTICATED.withCause(e)
+        val status: Status =
+            headers.get(AUTHORIZATION_METADATA_KEY)?.let { authToken ->
+                if (!authToken.startsWith(BEARER_TYPE)) {
+                    Status.UNAUTHENTICATED.withDescription("Unknown authorization type")
+                } else {
+                    val jwtBearerToken = authToken.substring(BEARER_TYPE.length).trim()
+                    try {
+                        val jwt = jwtVerifier.verify(jwtBearerToken)
+                        jwt.claims["user"]?.asString()?.let { user ->
+                            val jwtUser = "$user|jwt"
+                            usersRepository.getByName(jwtUser)?.let {
+                                val ctx = Context.current().withValue(CLIENT_ID_CONTEXT_KEY, user)
+                                Sentry.addBreadcrumb("jwtUser: $jwtUser", "auth")
+                                return Contexts.interceptCall(ctx, call, headers, next)
+                            } ?: Status.UNAUTHENTICATED.withDescription("Missing JWT user account")
+                        } ?: Status.UNAUTHENTICATED.withDescription("JWT has no user claim")
+                    } catch (e: JWTVerificationException) {
+                        Status.UNAUTHENTICATED.withCause(e)
+                    }
                 }
-            }
-        } ?: Status.UNAUTHENTICATED.withDescription("Authorization token is missing")
+            } ?: Status.UNAUTHENTICATED.withDescription("Authorization token is missing")
 
         call.close(status, headers)
         return object : ServerCall.Listener<ReqT>() {
@@ -84,13 +84,14 @@ class JwtAuthorizationServerInterceptor(jwtConfig: ApplicationConfig) : ServerIn
     }
 
     fun createJwtUser(name: String) {
-        val token = JWT.create()
-            .withAudience(audience)
-            .withIssuer(issuer)
-            .withClaim("user", name)
-            .withExpiresAt(Date.from(Instant.now().plus(durationYears * 365, ChronoUnit.DAYS)))
-            .withIssuedAt(Date.from(Instant.now()))
-            .sign(algorithm)
+        val token =
+            JWT.create()
+                .withAudience(audience)
+                .withIssuer(issuer)
+                .withClaim("user", name)
+                .withExpiresAt(Date.from(Instant.now().plus(durationYears * 365, ChronoUnit.DAYS)))
+                .withIssuedAt(Date.from(Instant.now()))
+                .sign(algorithm)
 
         log.warn("JWT token: $token")
         val jwtUser = "$name|jwt"

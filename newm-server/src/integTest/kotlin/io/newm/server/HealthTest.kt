@@ -8,8 +8,9 @@ import org.junit.jupiter.api.Test
 
 class HealthTest {
     @Test
-    fun `healthcheck request`() = runBlocking {
-        val response = TestContext.client.get("${TestContext.baseUrl}/healthz")
-        assertThat(response.status).isEqualTo(HttpStatusCode.OK)
-    }
+    fun `healthcheck request`() =
+        runBlocking {
+            val response = TestContext.client.get("${TestContext.baseUrl}/healthz")
+            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+        }
 }

@@ -51,15 +51,16 @@ fun List<Utxo>.toNativeAssetMap(): Map<String, List<NativeAsset>> {
     val nativeAssetMap = sortedMapOf<String, List<NativeAsset>>()
     this.forEach { utxo ->
         utxo.nativeAssets.forEach { nativeAsset ->
-            val updatedNativeAssets: List<NativeAsset> = nativeAssetMap[nativeAsset.policy]?.let { nativeAssets ->
-                nativeAssets.find { it.name == nativeAsset.name }?.let {
-                    val prevAmount = it.amount
-                    val mutableList = nativeAssets.toMutableList()
-                    mutableList.remove(it)
-                    mutableList.add(NativeAsset(nativeAsset.name, nativeAsset.policy, nativeAsset.amount + prevAmount))
-                    mutableList
-                } ?: (nativeAssets + nativeAsset)
-            } ?: listOf(nativeAsset)
+            val updatedNativeAssets: List<NativeAsset> =
+                nativeAssetMap[nativeAsset.policy]?.let { nativeAssets ->
+                    nativeAssets.find { it.name == nativeAsset.name }?.let {
+                        val prevAmount = it.amount
+                        val mutableList = nativeAssets.toMutableList()
+                        mutableList.remove(it)
+                        mutableList.add(NativeAsset(nativeAsset.name, nativeAsset.policy, nativeAsset.amount + prevAmount))
+                        mutableList
+                    } ?: (nativeAssets + nativeAsset)
+                } ?: listOf(nativeAsset)
             nativeAssetMap[nativeAsset.policy] = updatedNativeAssets
         }
     }
@@ -71,15 +72,16 @@ fun List<Utxo>.toNativeAssetMap(): Map<String, List<NativeAsset>> {
 fun List<NativeAsset>.toNativeAssetMap(): Map<String, List<NativeAsset>> {
     val nativeAssetMap = sortedMapOf<String, List<NativeAsset>>()
     this.forEach { nativeAsset ->
-        val updatedNativeAssets: List<NativeAsset> = nativeAssetMap[nativeAsset.policy]?.let { nativeAssets ->
-            nativeAssets.find { it.name == nativeAsset.name }?.let {
-                val prevAmount = it.amount
-                val mutableList = nativeAssets.toMutableList()
-                mutableList.remove(it)
-                mutableList.add(NativeAsset(nativeAsset.name, nativeAsset.policy, nativeAsset.amount + prevAmount))
-                mutableList
-            } ?: (nativeAssets + nativeAsset)
-        } ?: listOf(nativeAsset)
+        val updatedNativeAssets: List<NativeAsset> =
+            nativeAssetMap[nativeAsset.policy]?.let { nativeAssets ->
+                nativeAssets.find { it.name == nativeAsset.name }?.let {
+                    val prevAmount = it.amount
+                    val mutableList = nativeAssets.toMutableList()
+                    mutableList.remove(it)
+                    mutableList.add(NativeAsset(nativeAsset.name, nativeAsset.policy, nativeAsset.amount + prevAmount))
+                    mutableList
+                } ?: (nativeAssets + nativeAsset)
+            } ?: listOf(nativeAsset)
         nativeAssetMap[nativeAsset.policy] = updatedNativeAssets
     }
 

@@ -53,45 +53,52 @@ object GrpcConfig {
 
                 val grpcConfig = appConfig.config("grpc")
 
-                val certificateChainPath = Paths.get(
-                    grpcConfig.propertyOrNull("sslCertChainPath")?.getString() ?: "/nonexistent_${randomHex(16)}.pem"
-                )
-                val privateKeyPath = Paths.get(
-                    grpcConfig.propertyOrNull("sslPrivateKeyPath")?.getString() ?: "/nonexistent_${randomHex(16)}.pem"
-                )
+                val certificateChainPath =
+                    Paths.get(
+                        grpcConfig.propertyOrNull("sslCertChainPath")?.getString() ?: "/nonexistent_${randomHex(16)}.pem"
+                    )
+                val privateKeyPath =
+                    Paths.get(
+                        grpcConfig.propertyOrNull("sslPrivateKeyPath")?.getString() ?: "/nonexistent_${randomHex(16)}.pem"
+                    )
 
                 if (certificateChainPath.exists() && privateKeyPath.exists()) {
                     (this as? NettyServerBuilder)?.let { nettyServerBuilder ->
                         log.warn("gRPC Secured with TLS")
                         val keyManager: X509ExtendedKeyManager =
                             PemUtils.loadIdentityMaterial(certificateChainPath, privateKeyPath)
-                        val sslFactory = SSLFactory.builder()
-                            .withIdentityMaterial(keyManager)
-                            .withSwappableIdentityMaterial()
-                            .build()
+                        val sslFactory =
+                            SSLFactory.builder()
+                                .withIdentityMaterial(keyManager)
+                                .withSwappableIdentityMaterial()
+                                .build()
                         val sslContext = GrpcSslContexts.configure(NettySslUtils.forServer(sslFactory)).build()
                         nettyServerBuilder.sslContext(sslContext)
 
                         @OptIn(DelicateCoroutinesApi::class)
                         GlobalScope.launch {
-                            var privateKeyLastModified = withContext(Dispatchers.IO) {
-                                Files.readAttributes(privateKeyPath, BasicFileAttributes::class.java).lastModifiedTime()
-                            }
-                            var certChainLastModified = withContext(Dispatchers.IO) {
-                                Files.readAttributes(certificateChainPath, BasicFileAttributes::class.java)
-                                    .lastModifiedTime()
-                            }
+                            var privateKeyLastModified =
+                                withContext(Dispatchers.IO) {
+                                    Files.readAttributes(privateKeyPath, BasicFileAttributes::class.java).lastModifiedTime()
+                                }
+                            var certChainLastModified =
+                                withContext(Dispatchers.IO) {
+                                    Files.readAttributes(certificateChainPath, BasicFileAttributes::class.java)
+                                        .lastModifiedTime()
+                                }
                             while (true) {
                                 try {
                                     delay(60000L)
-                                    val checkPrivateKeyLastModified = withContext(Dispatchers.IO) {
-                                        Files.readAttributes(privateKeyPath, BasicFileAttributes::class.java)
-                                            .lastModifiedTime()
-                                    }
-                                    val checkCertChainLastModified = withContext(Dispatchers.IO) {
-                                        Files.readAttributes(certificateChainPath, BasicFileAttributes::class.java)
-                                            .lastModifiedTime()
-                                    }
+                                    val checkPrivateKeyLastModified =
+                                        withContext(Dispatchers.IO) {
+                                            Files.readAttributes(privateKeyPath, BasicFileAttributes::class.java)
+                                                .lastModifiedTime()
+                                        }
+                                    val checkCertChainLastModified =
+                                        withContext(Dispatchers.IO) {
+                                            Files.readAttributes(certificateChainPath, BasicFileAttributes::class.java)
+                                                .lastModifiedTime()
+                                        }
                                     if (privateKeyLastModified != checkPrivateKeyLastModified || certChainLastModified != checkCertChainLastModified) {
                                         // data has changed. reload it
                                         val newKeyManager: X509ExtendedKeyManager =

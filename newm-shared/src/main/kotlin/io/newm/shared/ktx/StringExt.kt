@@ -10,31 +10,35 @@ import java.util.UUID
 /**
  * Based on android.util.Patterns.EMAIL_ADDRESS
  */
-private val EMAIL_REGEX = Regex(
-    pattern = """[a-zA-Z0-9+._%\-]{1,256}@[a-zA-Z0-9][a-zA-Z0-9\-]{0,64}(\.[a-zA-Z0-9][a-zA-Z0-9\-]{0,25})+"""
-)
+private val EMAIL_REGEX =
+    Regex(
+        pattern = """[a-zA-Z0-9+._%\-]{1,256}@[a-zA-Z0-9][a-zA-Z0-9\-]{0,64}(\.[a-zA-Z0-9][a-zA-Z0-9\-]{0,25})+"""
+    )
 
 /**
  * Password regex, it must contain the following:
  * 8 characters, 1 uppercase letter, 1 lowercase letter and 1 number.
  */
-private val PASSWORD_REGEX = Regex(
-    pattern = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z]).{8,}\$"
-)
+private val PASSWORD_REGEX =
+    Regex(
+        pattern = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z]).{8,}\$"
+    )
 
-private val HEX_REGEX = Regex(
-    pattern = "([a-f0-9]{2})+",
-    option = RegexOption.IGNORE_CASE,
-)
+private val HEX_REGEX =
+    Regex(
+        pattern = "([a-f0-9]{2})+",
+        option = RegexOption.IGNORE_CASE,
+    )
 
 private val FORMAT_REGEX = Regex("""\{([^}]+)}""")
 
 // Allows validating URL format ignoring the protocol value (e.g., "s3:", "ar:")
 private object DummyURLHandler : URLStreamHandler() {
-    override fun openConnection(url: URL): URLConnection = object : URLConnection(url) {
-        override fun connect() {
+    override fun openConnection(url: URL): URLConnection =
+        object : URLConnection(url) {
+            override fun connect() {
+            }
         }
-    }
 }
 
 /**
@@ -50,12 +54,13 @@ fun String.isValidPassword(): Boolean = PASSWORD_REGEX.matches(this)
 
 fun String.isValidHex(): Boolean = HEX_REGEX.matches(this)
 
-fun String.isValidUrl(): Boolean = try {
-    URL(null, this, DummyURLHandler).toURI()
-    true
-} catch (_: Exception) {
-    false
-}
+fun String.isValidUrl(): Boolean =
+    try {
+        URL(null, this, DummyURLHandler).toURI()
+        true
+    } catch (_: Exception) {
+        false
+    }
 
 fun String.toUrl(): URL = EMAIL_REGEX.javaClass.getResource(this) ?: URL(this)
 
@@ -70,6 +75,7 @@ fun String.toLocalDateTime(): LocalDateTime = LocalDateTime.parse(this)
 /**
  * Formats a String with curly brace delimited arguments.
  */
-fun String.format(args: Map<String, Any?>): String = FORMAT_REGEX.replace(this) { result ->
-    args[result.groupValues[1]]?.toString() ?: result.value
-}
+fun String.format(args: Map<String, Any?>): String =
+    FORMAT_REGEX.replace(this) { result ->
+        args[result.groupValues[1]]?.toString() ?: result.value
+    }

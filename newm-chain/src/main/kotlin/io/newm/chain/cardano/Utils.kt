@@ -24,43 +24,49 @@ val timestampFormatter: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIM
 
 private val source by lazy { "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890`~!@#$%^&*()_-=+;:><?[]{}" }
 private val random by lazy { SecureRandom() }
+
 fun randomString(length: Long) =
     random.ints(length, 0, source.length)
         .asSequence()
         .map(source::get)
         .joinToString("")
 
-fun randomHex(numBytes: Int) = ByteArray(numBytes).apply {
-    random.nextBytes(this)
-}.toHexString()
+fun randomHex(numBytes: Int) =
+    ByteArray(numBytes).apply {
+        random.nextBytes(this)
+    }.toHexString()
 
 fun randomPercentage(bound: Int) = random.nextInt(bound)
 
 val byronGenesis by lazy {
     when (shelleyGenesis.networkMagic) {
-        NETWORK_MAGIC_MAINNET -> ByronGenesis(
-            startTime = 1506203091L,
-            protocolConsts = ProtocolConsts(k = 2160L),
-            blockVersionData = BlockVersionData(slotDuration = 20000L)
-        )
+        NETWORK_MAGIC_MAINNET ->
+            ByronGenesis(
+                startTime = 1506203091L,
+                protocolConsts = ProtocolConsts(k = 2160L),
+                blockVersionData = BlockVersionData(slotDuration = 20000L)
+            )
 
-        NETWORK_MAGIC_GUILD -> ByronGenesis(
-            startTime = 1639090522L,
-            protocolConsts = ProtocolConsts(k = 36L),
-            blockVersionData = BlockVersionData(slotDuration = 100L)
-        )
+        NETWORK_MAGIC_GUILD ->
+            ByronGenesis(
+                startTime = 1639090522L,
+                protocolConsts = ProtocolConsts(k = 36L),
+                blockVersionData = BlockVersionData(slotDuration = 100L)
+            )
 
-        NETWORK_MAGIC_PREPROD -> ByronGenesis(
-            startTime = 1654041600L,
-            protocolConsts = ProtocolConsts(k = 2160L),
-            blockVersionData = BlockVersionData(slotDuration = 20000L)
-        )
+        NETWORK_MAGIC_PREPROD ->
+            ByronGenesis(
+                startTime = 1654041600L,
+                protocolConsts = ProtocolConsts(k = 2160L),
+                blockVersionData = BlockVersionData(slotDuration = 20000L)
+            )
 
-        NETWORK_MAGIC_PREVIEW -> ByronGenesis(
-            startTime = 1666656000L,
-            protocolConsts = ProtocolConsts(k = 432L),
-            blockVersionData = BlockVersionData(slotDuration = 20000L)
-        )
+        NETWORK_MAGIC_PREVIEW ->
+            ByronGenesis(
+                startTime = 1666656000L,
+                protocolConsts = ProtocolConsts(k = 432L),
+                blockVersionData = BlockVersionData(slotDuration = 20000L)
+            )
 
         else -> throw IllegalStateException("Unknown network magic: ${shelleyGenesis.networkMagic}")
     }
@@ -84,8 +90,7 @@ val byronToShelleyEpochs by lazy {
     }
 }
 
-fun getCurrentEpoch(): Long =
-    ((Instant.now().epochSecond) - genesisStartTimeSec) / shelleyGenesis.epochLength
+fun getCurrentEpoch(): Long = ((Instant.now().epochSecond) - genesisStartTimeSec) / shelleyGenesis.epochLength
 
 fun getEpochForSlot(slot: Long): Long {
     val shelleyTransitionEpoch = getShelleyTransitionEpoch()
@@ -112,12 +117,13 @@ fun getSlotAtInstant(now: Instant): Long {
 fun getLastSlotOfYear(): Long {
     val transTimeEnd = genesisStartTimeSec + byronToShelleyEpochs * shelleyGenesis.epochLength
     val transSlots = byronToShelleyEpochs * shelleyGenesis.epochLength / 20
-    val lastSecondOfYear = LocalDateTime.now(ZoneOffset.UTC)
-        .with(TemporalAdjusters.lastDayOfYear())
-        .withHour(23)
-        .withMinute(59)
-        .withSecond(59)
-        .toEpochSecond(ZoneOffset.UTC)
+    val lastSecondOfYear =
+        LocalDateTime.now(ZoneOffset.UTC)
+            .with(TemporalAdjusters.lastDayOfYear())
+            .withHour(23)
+            .withMinute(59)
+            .withSecond(59)
+            .toEpochSecond(ZoneOffset.UTC)
     return transSlots + ((lastSecondOfYear - transTimeEnd) / (shelleyGenesis.slotLength.milliseconds.toLong() / 1000L))
 }
 
@@ -156,8 +162,7 @@ fun getShelleyTransitionEpoch(): Long {
     return byronEpochs
 }
 
-fun getSlotInEpoch(): Long =
-    shelleyGenesis.epochLength - getTimeUntilNextEpoch()
+fun getSlotInEpoch(): Long = shelleyGenesis.epochLength - getTimeUntilNextEpoch()
 
 fun getTimeUntilNextEpoch(): Long =
     shelleyGenesis.epochLength - (Instant.now().epochSecond - genesisStartTimeSec) + (getCurrentEpoch() * shelleyGenesis.epochLength)

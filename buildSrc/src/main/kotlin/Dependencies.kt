@@ -1,5 +1,4 @@
 object Dependencies {
-
     object VersionsPlugin {
         const val VERSION = "0.51.0"
         const val ID = "com.github.ben-manes.versions"
@@ -11,7 +10,7 @@ object Dependencies {
     }
 
     object KtlintPlugin {
-        const val VERSION = "11.5.1"
+        const val VERSION = "12.1.0"
         const val ID = "org.jlleitschuh.gradle.ktlint"
     }
 
@@ -62,11 +61,11 @@ object Dependencies {
     }
 
     object KtLint {
-        const val VERSION = "0.50.0"
+        const val VERSION = "1.1.1"
     }
 
     object Ktor {
-        private const val VERSION = "2.3.7"
+        private const val VERSION = "2.3.8"
 
         const val SERVER_CORE = "io.ktor:ktor-server-core:$VERSION"
         const val SERVER_CIO = "io.ktor:ktor-server-cio:$VERSION"
@@ -98,17 +97,15 @@ object Dependencies {
     }
 
     object Koin {
-        private const val VERSION = "3.4.3"
-        private const val KTOR_VERSION = "3.4.3"
-        private const val TEST_JUNIT_VERSION = "3.4.3"
+        private const val VERSION = "3.5.3"
 
-        const val KTOR = "io.insert-koin:koin-ktor:$KTOR_VERSION"
+        const val KTOR = "io.insert-koin:koin-ktor:$VERSION"
         const val TEST = "io.insert-koin:koin-test:$VERSION"
-        const val JUNIT = "io.insert-koin:koin-test-junit5:$TEST_JUNIT_VERSION"
+        const val JUNIT = "io.insert-koin:koin-test-junit5:$VERSION"
     }
 
     object Exposed {
-        private const val VERSION = "0.46.0"
+        private const val VERSION = "0.47.0"
 
         const val CORE = "org.jetbrains.exposed:exposed-core:$VERSION"
         const val DAO = "org.jetbrains.exposed:exposed-dao:$VERSION"
@@ -135,7 +132,7 @@ object Dependencies {
     }
 
     object FlywayDB {
-        private const val VERSION = "10.6.0"
+        private const val VERSION = "10.7.1"
 
         const val CORE = "org.flywaydb:flyway-core:$VERSION"
         const val POSTGRES = "org.flywaydb:flyway-database-postgresql:$VERSION"
@@ -211,8 +208,8 @@ object Dependencies {
     }
 
     object Aws {
-        private const val VERSION = "1.12.639"
-        private const val VERSION2 = "2.23.5"
+        private const val VERSION = "1.12.648"
+        private const val VERSION2 = "2.23.14"
         private const val JAXB_VERSION = "2.3.1"
 
         const val BOM = "com.amazonaws:aws-java-sdk-bom:$VERSION"
@@ -264,7 +261,7 @@ object Dependencies {
     }
 
     object Sentry {
-        private const val VERSION = "7.2.0"
+        private const val VERSION = "7.3.0"
 
         const val CORE = "io.sentry:sentry:$VERSION"
         const val LOGBACK = "io.sentry:sentry-logback:$VERSION"
@@ -315,7 +312,7 @@ object Dependencies {
     }
 
     object TestContainers {
-        private const val VERSION = "1.19.3"
+        private const val VERSION = "1.19.4"
 
         const val CORE = "org.testcontainers:testcontainers:$VERSION"
         const val JUINT = "org.testcontainers:junit-jupiter:$VERSION"

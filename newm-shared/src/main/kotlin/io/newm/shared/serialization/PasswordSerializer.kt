@@ -12,5 +12,8 @@ object PasswordSerializer : KSerializer<Password> {
 
     override fun deserialize(decoder: Decoder): Password = Password(decoder.decodeString())
 
-    override fun serialize(encoder: Encoder, value: Password) = encoder.encodeString(value.value)
+    override fun serialize(
+        encoder: Encoder,
+        value: Password
+    ) = encoder.encodeString(value.value)
 }

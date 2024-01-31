@@ -22,7 +22,10 @@ import io.newm.shared.ktx.isValidUrl
 import io.newm.shared.ktx.toHexString
 import io.newm.txbuilder.ktx.toNativeAssetMap
 
-fun String.checkLength(name: String, max: Int = 64) {
+fun String.checkLength(
+    name: String,
+    max: Int = 64
+) {
     if (length > max) throw HttpUnprocessableEntityException("Field $name exceeds $max chars limit")
 }
 
@@ -115,19 +118,23 @@ fun String.cborHexToUtxo(): Utxo {
                     utxo {
                         hash = hashIxArray.elementToHexString(0)
                         ix = hashIxArray.elementToInt(1).toLong()
-                        address = value.elementToByteArray(0).let { bytes ->
-                            if (bytes[0] in PAYMENT_ADDRESS_PREFIXES_MAINNET) {
-                                Bech32.encode("addr", bytes)
-                            } else {
-                                Bech32.encode("addr_test", bytes)
+                        address =
+                            value.elementToByteArray(0).let { bytes ->
+                                if (bytes[0] in PAYMENT_ADDRESS_PREFIXES_MAINNET) {
+                                    Bech32.encode("addr", bytes)
+                                } else {
+                                    Bech32.encode("addr_test", bytes)
+                                }
                             }
-                        }
                         val valueAmount = value.elementAt(1)
-                        lovelace = when (valueAmount) {
-                            is CborInteger -> valueAmount.bigIntegerValue().toString()
-                            is CborArray -> valueAmount.elementToBigInteger(0).toString()
-                            else -> throw IllegalArgumentException("Invalid CBOR type: ${valueAmount.javaClass.name}, expected CborInteger or CborArray for lovelace!")
-                        }
+                        lovelace =
+                            when (valueAmount) {
+                                is CborInteger -> valueAmount.bigIntegerValue().toString()
+                                is CborArray -> valueAmount.elementToBigInteger(0).toString()
+                                else -> throw IllegalArgumentException(
+                                    "Invalid CBOR type: ${valueAmount.javaClass.name}, expected CborInteger or CborArray for lovelace!"
+                                )
+                            }
                         if (valueAmount is CborArray) {
                             nativeAssets.addAll(
                                 (valueAmount.elementAt(1) as CborMap).mapValue()

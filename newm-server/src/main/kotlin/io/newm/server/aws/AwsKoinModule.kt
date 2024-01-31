@@ -15,37 +15,38 @@ import io.ktor.server.application.ApplicationEnvironment
 import io.newm.shared.ktx.getConfigString
 import org.koin.dsl.module
 
-val awsKoinModule = module {
+val awsKoinModule =
+    module {
 
-    single<AmazonS3> {
-        AmazonS3ClientBuilder.standard()
-            .withRegion(get<Regions>())
-            .build()
+        single<AmazonS3> {
+            AmazonS3ClientBuilder.standard()
+                .withRegion(get<Regions>())
+                .build()
+        }
+
+        single<AmazonSQSAsync> {
+            AmazonSQSAsyncClientBuilder.standard()
+                .withRegion(get<Regions>())
+                .build()
+        }
+
+        single<AWSKMSAsync> {
+            AWSKMSAsyncClientBuilder.standard()
+                .withRegion(get<Regions>())
+                .build()
+        }
+
+        single<AWSSecretsManagerAsync> {
+            AWSSecretsManagerAsyncClientBuilder.standard()
+                .withRegion(get<Regions>())
+                .build()
+        }
+
+        single<AWSLambdaAsync> {
+            AWSLambdaAsyncClientBuilder.standard()
+                .withRegion(get<Regions>())
+                .build()
+        }
+
+        single { Regions.fromName(get<ApplicationEnvironment>().getConfigString("aws.region")) }
     }
-
-    single<AmazonSQSAsync> {
-        AmazonSQSAsyncClientBuilder.standard()
-            .withRegion(get<Regions>())
-            .build()
-    }
-
-    single<AWSKMSAsync> {
-        AWSKMSAsyncClientBuilder.standard()
-            .withRegion(get<Regions>())
-            .build()
-    }
-
-    single<AWSSecretsManagerAsync> {
-        AWSSecretsManagerAsyncClientBuilder.standard()
-            .withRegion(get<Regions>())
-            .build()
-    }
-
-    single<AWSLambdaAsync> {
-        AWSLambdaAsyncClientBuilder.standard()
-            .withRegion(get<Regions>())
-            .build()
-    }
-
-    single { Regions.fromName(get<ApplicationEnvironment>().getConfigString("aws.region")) }
-}

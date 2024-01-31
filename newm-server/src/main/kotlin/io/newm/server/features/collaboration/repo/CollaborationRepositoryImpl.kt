@@ -33,10 +33,12 @@ internal class CollaborationRepositoryImpl(
     private val environment: ApplicationEnvironment,
     private val emailRepository: EmailRepository
 ) : CollaborationRepository {
-
     private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
 
-    override suspend fun add(collaboration: Collaboration, requesterId: UUID): UUID {
+    override suspend fun add(
+        collaboration: Collaboration,
+        requesterId: UUID
+    ): UUID {
         logger.debug { "add: collaboration = $collaboration" }
 
         val songId = collaboration.songId.asMandatoryField("songId")
@@ -68,29 +70,33 @@ internal class CollaborationRepositoryImpl(
 
         collaboration.checkFieldLengths()
 
-        val entity = transaction {
-            CollaborationEntity[collaborationId].apply {
-                if (!skipStatusCheck) {
-                    checkSongState(requesterId)
-                    if (!userMatches(requesterId, email)) {
-                        checkStatus(CollaborationStatus.Editing, CollaborationStatus.Rejected)
+        val entity =
+            transaction {
+                CollaborationEntity[collaborationId].apply {
+                    if (!skipStatusCheck) {
+                        checkSongState(requesterId)
+                        if (!userMatches(requesterId, email)) {
+                            checkStatus(CollaborationStatus.Editing, CollaborationStatus.Rejected)
+                        }
                     }
+                    collaboration.email?.let { email = it.asValidUniqueEmail(this) }
+                    collaboration.role?.let { role = it }
+                    collaboration.royaltyRate?.let { royaltyRate = it.toFloat() }
+                    collaboration.credited?.let { credited = it }
+                    collaboration.featured?.let { featured = it }
+                    collaboration.distributionArtistId?.let { distributionArtistId = it }
                 }
-                collaboration.email?.let { email = it.asValidUniqueEmail(this) }
-                collaboration.role?.let { role = it }
-                collaboration.royaltyRate?.let { royaltyRate = it.toFloat() }
-                collaboration.credited?.let { credited = it }
-                collaboration.featured?.let { featured = it }
-                collaboration.distributionArtistId?.let { distributionArtistId = it }
             }
-        }
 
         if (entity.status == CollaborationStatus.Rejected) {
             invite(entity.songId.value) { listOf(entity) }
         }
     }
 
-    override suspend fun delete(collaborationId: UUID, requesterId: UUID) {
+    override suspend fun delete(
+        collaborationId: UUID,
+        requesterId: UUID
+    ) {
         logger.debug { "delete: collaborationId = $collaborationId" }
         transaction {
             val entity = CollaborationEntity[collaborationId]
@@ -100,7 +106,10 @@ internal class CollaborationRepositoryImpl(
         }
     }
 
-    override suspend fun get(collaborationId: UUID, requesterId: UUID): Collaboration {
+    override suspend fun get(
+        collaborationId: UUID,
+        requesterId: UUID
+    ): Collaboration {
         logger.debug { "get: collaborationId = $collaborationId" }
         return transaction {
             val entity = CollaborationEntity[collaborationId]
@@ -123,7 +132,10 @@ internal class CollaborationRepositoryImpl(
         }
     }
 
-    override suspend fun getAllCount(userId: UUID, filters: CollaborationFilters): Long {
+    override suspend fun getAllCount(
+        userId: UUID,
+        filters: CollaborationFilters
+    ): Long {
         logger.debug { "getAllCount: userId = $userId, filters = $filters" }
         return transaction {
             CollaborationEntity.all(userId, filters).count()
@@ -144,29 +156,38 @@ internal class CollaborationRepositoryImpl(
                     Collaborator(
                         email = email,
                         songCount = songCount,
-                        user = takeIf {
-                            CollaborationEntity.exists(userId, email, CollaborationStatus.Accepted)
-                        }?.let { UserEntity.getByEmail(email)?.toModel(false) }
+                        user =
+                            takeIf {
+                                CollaborationEntity.exists(userId, email, CollaborationStatus.Accepted)
+                            }?.let { UserEntity.getByEmail(email)?.toModel(false) }
                     )
                 }
         }
     }
 
-    override suspend fun getAllBySongId(songId: UUID): List<Collaboration> = getAll(
-        userId = transaction { SongEntity[songId].ownerId.value },
-        filters = CollaborationFilters(songIds = listOf(songId)),
-        offset = 0,
-        limit = Integer.MAX_VALUE
-    )
+    override suspend fun getAllBySongId(songId: UUID): List<Collaboration> =
+        getAll(
+            userId = transaction { SongEntity[songId].ownerId.value },
+            filters = CollaborationFilters(songIds = listOf(songId)),
+            offset = 0,
+            limit = Integer.MAX_VALUE
+        )
 
-    override suspend fun getCollaboratorCount(userId: UUID, filters: CollaboratorFilters): Long {
+    override suspend fun getCollaboratorCount(
+        userId: UUID,
+        filters: CollaboratorFilters
+    ): Long {
         logger.debug { "getCollaboratorCount: userId = $userId, filters = $filters" }
         return transaction {
             CollaborationEntity.collaborators(userId, filters).count()
         }
     }
 
-    override suspend fun reply(collaborationId: UUID, requesterId: UUID, accepted: Boolean): Collaboration {
+    override suspend fun reply(
+        collaborationId: UUID,
+        requesterId: UUID,
+        accepted: Boolean
+    ): Collaboration {
         logger.debug { "reply: collaborationId = $collaborationId, accepted = $accepted" }
         return transaction {
             val collaboration = CollaborationEntity[collaborationId]
@@ -184,42 +205,57 @@ internal class CollaborationRepositoryImpl(
         invite(songId) { CollaborationEntity.findBySongId(songId) }
     }
 
-    private suspend fun invite(songId: UUID, getCollaborations: Transaction.() -> Iterable<CollaborationEntity>) {
+    private suspend fun invite(
+        songId: UUID,
+        getCollaborations: Transaction.() -> Iterable<CollaborationEntity>
+    ) {
         val emails = mutableListOf<String>()
-        val song = transaction {
-            val song = SongEntity[songId]
-            val owner = UserEntity[song.ownerId]
-            getCollaborations().forEach { collab ->
-                collab.status = if (collab.email.equals(owner.email, ignoreCase = true)) {
-                    CollaborationStatus.Accepted
-                } else {
-                    emails += collab.email
-                    CollaborationStatus.Waiting
+        val song =
+            transaction {
+                val song = SongEntity[songId]
+                val owner = UserEntity[song.ownerId]
+                getCollaborations().forEach { collab ->
+                    collab.status =
+                        if (collab.email.equals(owner.email, ignoreCase = true)) {
+                            CollaborationStatus.Accepted
+                        } else {
+                            emails += collab.email
+                            CollaborationStatus.Waiting
+                        }
                 }
+                song
             }
-            song
-        }
         if (emails.isNotEmpty()) {
             emailRepository.send(
                 to = emptyList(),
                 bcc = emails,
                 subject = environment.getConfigString("collaboration.email.subject"),
                 messageUrl = environment.getConfigString("collaboration.email.messageUrl"),
-                messageArgs = mapOf(
-                    "title" to song.title,
-                    "duration" to song.duration?.toLong()?.millisToMinutesSecondsString().orEmpty()
-                )
+                messageArgs =
+                    mapOf(
+                        "title" to song.title,
+                        "duration" to song.duration?.toLong()?.millisToMinutesSecondsString().orEmpty()
+                    )
             )
         }
     }
 
-    private fun userMatches(userId: UUID, email: String?): Boolean =
-        UserEntity[userId].email.equals(email, ignoreCase = true)
+    private fun userMatches(
+        userId: UUID,
+        email: String?
+    ): Boolean = UserEntity[userId].email.equals(email, ignoreCase = true)
 
-    private fun CollaborationEntity.checkSongState(requesterId: UUID, edit: Boolean = true) =
-        checkSongState(songId.value, requesterId, email, edit)
+    private fun CollaborationEntity.checkSongState(
+        requesterId: UUID,
+        edit: Boolean = true
+    ) = checkSongState(songId.value, requesterId, email, edit)
 
-    private fun checkSongState(songId: UUID, requesterId: UUID, email: String? = null, edit: Boolean = true) {
+    private fun checkSongState(
+        songId: UUID,
+        requesterId: UUID,
+        email: String? = null,
+        edit: Boolean = true
+    ) {
         with(SongEntity[songId]) {
             if (ownerId.value != requesterId) {
                 if (edit) {
@@ -252,7 +288,10 @@ internal class CollaborationRepositoryImpl(
         return email
     }
 
-    private fun checkUniqueEmail(songId: UUID, email: String) {
+    private fun checkUniqueEmail(
+        songId: UUID,
+        email: String
+    ) {
         if (CollaborationEntity.exists(songId, email)) {
             throw HttpConflictException("Collaboration already exists: songId = $songId, email = $email")
         }

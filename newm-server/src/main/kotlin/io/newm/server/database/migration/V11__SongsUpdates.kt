@@ -8,7 +8,9 @@ import org.jetbrains.exposed.sql.transactions.transaction
 class V11__SongsUpdates : BaseJavaMigration() {
     override fun migrate(context: Context?) {
         transaction {
-            exec("ALTER TABLE songs ADD COLUMN IF NOT EXISTS payment_key_id uuid CONSTRAINT fk_songs_payment_key_id__id REFERENCES keys (id) ON DELETE NO ACTION ON UPDATE RESTRICT")
+            exec(
+                "ALTER TABLE songs ADD COLUMN IF NOT EXISTS payment_key_id uuid CONSTRAINT fk_songs_payment_key_id__id REFERENCES keys (id) ON DELETE NO ACTION ON UPDATE RESTRICT"
+            )
         }
     }
 }

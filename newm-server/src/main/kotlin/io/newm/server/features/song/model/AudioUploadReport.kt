@@ -6,7 +6,10 @@ import kotlinx.serialization.Serializable
 data class AudioUploadReport(
     val url: String,
     val mimeType: String,
-    val fileSize: Long, // in bytes
-    val duration: Int, // in seconds
-    val sampleRate: Int // in Hz
+    // in bytes
+    val fileSize: Long,
+    // in seconds
+    val duration: Int,
+    // in Hz
+    val sampleRate: Int
 )

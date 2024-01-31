@@ -11,18 +11,20 @@ import java.math.BigInteger
 /**
  * Anything marked as @Contextual will use the contextualSerializersModule to pick a serializer automatically.
  */
-private val contextualSerializersModule = SerializersModule {
-    contextual(BigInteger::class, BigIntegerSerializer)
-    contextual(BigDecimal::class, BigDecimalSerializer)
-}
+private val contextualSerializersModule =
+    SerializersModule {
+        contextual(BigInteger::class, BigIntegerSerializer)
+        contextual(BigDecimal::class, BigDecimalSerializer)
+    }
 
-val serializationModule = module {
-    single {
-        Json {
-            ignoreUnknownKeys = true
-            explicitNulls = false
-            isLenient = true
-            serializersModule = contextualSerializersModule
+val serializationModule =
+    module {
+        single {
+            Json {
+                ignoreUnknownKeys = true
+                explicitNulls = false
+                isLenient = true
+                serializersModule = contextualSerializersModule
+            }
         }
     }
-}

@@ -16,7 +16,10 @@ suspend fun InvokeRequest.await(): InvokeResult {
         awsLambda.invokeAsync(
             this,
             object : AsyncHandler<InvokeRequest, InvokeResult> {
-                override fun onSuccess(request: InvokeRequest, result: InvokeResult) {
+                override fun onSuccess(
+                    request: InvokeRequest,
+                    result: InvokeResult
+                ) {
                     continuation.resume(result)
                 }
 

@@ -9,11 +9,11 @@ import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 
 class PrivateKeyReaderTest : BaseApplicationTests() {
-
     @Test
-    fun testParsePrivateKey() = runBlocking {
-        val environment: ApplicationEnvironment by inject()
-        val pk = environment.getSecureConfigString("aws.cloudFront.audioStream.privateKey")
-        assertThat(PrivateKeyReader.readFromString(pk)).isNotNull()
-    }
+    fun testParsePrivateKey() =
+        runBlocking {
+            val environment: ApplicationEnvironment by inject()
+            val pk = environment.getSecureConfigString("aws.cloudFront.audioStream.privateKey")
+            assertThat(PrivateKeyReader.readFromString(pk)).isNotNull()
+        }
 }

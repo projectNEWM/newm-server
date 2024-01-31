@@ -19,17 +19,20 @@ data class AddAlbumRequest(
     val eanUpc: String?,
     @SerialName("label_id")
     val labelId: Long?,
+    // should always be set to "single" until we add album support
     @SerialName("product_type")
-    val productType: String, // should always be set to "single"
+    val productType: String,
     @SerialName("original_release_date")
     @Serializable(with = DMYLocalDateSerializer::class)
     val originalReleaseDate: LocalDate?,
+    // can be "ean" or "upc"
     @SerialName("product_code_type")
-    val productCodeType: String, // can be "ean" or "upc"
+    val productCodeType: String,
     @SerialName("code_auto_generate")
     val codeAutoGenerate: Boolean,
+    // should always be "stereo"
     @SerialName("product_format")
-    val productFormat: String, // should always be "stereo"
+    val productFormat: String,
     @SerialName("cover_image")
     val coverImage: CoverImage,
     @SerialName("tracks")

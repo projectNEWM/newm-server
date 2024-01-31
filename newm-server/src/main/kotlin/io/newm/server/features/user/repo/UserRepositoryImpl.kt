@@ -50,7 +50,6 @@ internal class UserRepositoryImpl(
     private val appleMusicProfileUrlVerifier: OutletProfileUrlVerifier,
     private val soundCloudProfileUrlVerifier: OutletProfileUrlVerifier,
 ) : UserRepository {
-
     private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
 
     override suspend fun add(user: User): UUID {
@@ -107,7 +106,10 @@ internal class UserRepositoryImpl(
         }
     }
 
-    override suspend fun find(email: String, password: Password): Pair<UUID, Boolean> {
+    override suspend fun find(
+        email: String,
+        password: Password
+    ): Pair<UUID, Boolean> {
         logger.debug { "find: email = $email" }
         return transaction {
             val entity = getUserEntityByEmail(email)
@@ -125,15 +127,19 @@ internal class UserRepositoryImpl(
         }
     }
 
-    override suspend fun findOrAdd(oauthType: OAuthType, oauthTokens: OAuthTokens): UUID {
+    override suspend fun findOrAdd(
+        oauthType: OAuthType,
+        oauthTokens: OAuthTokens
+    ): UUID {
         logger.debug { "findOrAdd: oauthType = $oauthType" }
 
-        val user = when (oauthType) {
-            OAuthType.Google -> googleUserProvider.getUser(oauthTokens)
-            OAuthType.Facebook -> facebookUserProvider.getUser(oauthTokens)
-            OAuthType.LinkedIn -> linkedInUserProvider.getUser(oauthTokens)
-            OAuthType.Apple -> appleUserProvider.getUser(oauthTokens)
-        }
+        val user =
+            when (oauthType) {
+                OAuthType.Google -> googleUserProvider.getUser(oauthTokens)
+                OAuthType.Facebook -> facebookUserProvider.getUser(oauthTokens)
+                OAuthType.LinkedIn -> linkedInUserProvider.getUser(oauthTokens)
+                OAuthType.Apple -> appleUserProvider.getUser(oauthTokens)
+            }
         logger.debug { "findOrAdd: oauthUser = $user" }
 
         user.checkWhitelist()
@@ -142,30 +148,39 @@ internal class UserRepositoryImpl(
             throw HttpUnauthorizedException("Unverified email: $email")
         }
         return transaction {
-            val entity = UserEntity.getByEmail(email) ?: UserEntity.new {
-                this.firstName = user.firstName
-                this.lastName = user.lastName
-                this.pictureUrl = user.pictureUrl?.asValidUrl()
-                this.email = email
-            }
+            val entity =
+                UserEntity.getByEmail(email) ?: UserEntity.new {
+                    this.firstName = user.firstName
+                    this.lastName = user.lastName
+                    this.pictureUrl = user.pictureUrl?.asValidUrl()
+                    this.email = email
+                }
             entity.oauthType = oauthType
             entity.oauthId = user.id
             entity.id.value
         }
     }
 
-    override suspend fun exists(userId: UUID): Boolean = transaction {
-        UserEntity.existsHavingId(userId)
-    }
+    override suspend fun exists(userId: UUID): Boolean =
+        transaction {
+            UserEntity.existsHavingId(userId)
+        }
 
-    override suspend fun get(userId: UUID, includeAll: Boolean): User {
+    override suspend fun get(
+        userId: UUID,
+        includeAll: Boolean
+    ): User {
         logger.debug { "get: userId = $userId, includeAll = $includeAll" }
         return transaction {
             UserEntity[userId].toModel(includeAll)
         }
     }
 
-    override suspend fun getAll(filters: UserFilters, offset: Int, limit: Int): List<User> {
+    override suspend fun getAll(
+        filters: UserFilters,
+        offset: Int,
+        limit: Int
+    ): List<User> {
         logger.debug { "getAll: filters = $filters, offset = $offset, limit = $limit" }
         return transaction {
             UserEntity.all(filters)
@@ -181,7 +196,10 @@ internal class UserRepositoryImpl(
         }
     }
 
-    override suspend fun update(userId: UUID, user: User) {
+    override suspend fun update(
+        userId: UUID,
+        user: User
+    ) {
         logger.debug { "update: userId = $userId, user = $user" }
 
         user.checkFieldLengths()
@@ -206,19 +224,22 @@ internal class UserRepositoryImpl(
             user.instagramUrl?.let { entity.instagramUrl = it.orNull()?.asValidUrl() }
             try {
                 user.spotifyProfile?.let {
-                    entity.spotifyProfile = it.substringBefore("?").orNull()?.also { profile ->
-                        spotifyProfileUrlVerifier.verify(profile, entity.stageOrFullName)
-                    }
+                    entity.spotifyProfile =
+                        it.substringBefore("?").orNull()?.also { profile ->
+                            spotifyProfileUrlVerifier.verify(profile, entity.stageOrFullName)
+                        }
                 }
                 user.soundCloudProfile?.let {
-                    entity.soundCloudProfile = it.substringBefore("?").orNull()?.also { profile ->
-                        soundCloudProfileUrlVerifier.verify(profile, entity.stageOrFullName)
-                    }
+                    entity.soundCloudProfile =
+                        it.substringBefore("?").orNull()?.also { profile ->
+                            soundCloudProfileUrlVerifier.verify(profile, entity.stageOrFullName)
+                        }
                 }
                 user.appleMusicProfile?.let {
-                    entity.appleMusicProfile = it.substringBefore("?").orNull()?.also { profile ->
-                        appleMusicProfileUrlVerifier.verify(profile, entity.stageOrFullName)
-                    }
+                    entity.appleMusicProfile =
+                        it.substringBefore("?").orNull()?.also { profile ->
+                            appleMusicProfileUrlVerifier.verify(profile, entity.stageOrFullName)
+                        }
                 }
             } catch (exception: OutletProfileUrlVerificationException) {
                 val message = exception.message ?: exception.toString()
@@ -259,7 +280,10 @@ internal class UserRepositoryImpl(
     /**
      * Update data fields except for email, password, and oauth fields.
      */
-    override fun updateUserData(userId: UUID, user: User) {
+    override fun updateUserData(
+        userId: UUID,
+        user: User
+    ) {
         transaction {
             val entity = UserEntity[userId]
             user.firstName?.let { entity.firstName = it.orNull() }
@@ -319,7 +343,11 @@ internal class UserRepositoryImpl(
         if (this == null || value.isBlank()) throw HttpBadRequestException("Missing password")
         if (confirm?.value.isNullOrBlank()) throw HttpBadRequestException("Missing password confirmation")
         if (this != confirm) throw HttpUnprocessableEntityException("Password confirmation failed")
-        if (!this.value.isValidPassword()) throw HttpUnprocessableEntityException("Password must contain at least 8 characters, 1 uppercase letter, 1 lowercase letter and 1 number.")
+        if (!this.value.isValidPassword()) {
+            throw HttpUnprocessableEntityException(
+                "Password must contain at least 8 characters, 1 uppercase letter, 1 lowercase letter and 1 number."
+            )
+        }
         return this
     }
 
@@ -335,7 +363,10 @@ internal class UserRepositoryImpl(
         }
     }
 
-    private fun UserEntity.checkNameModifiable(newName: String, currentName: String?) {
+    private fun UserEntity.checkNameModifiable(
+        newName: String,
+        currentName: String?
+    ) {
         if (verificationStatus != UserVerificationStatus.Unverified && newName != currentName) {
             throw HttpForbiddenException("Name modification not allowed after KYC verification")
         }
@@ -356,9 +387,10 @@ internal class UserRepositoryImpl(
 
     private suspend fun checkWhitelist(email: String) {
         if (configRepository.exists(CONFIG_KEY_EMAIL_WHITELIST)) {
-            val whitelistRegexList = configRepository.getStrings(CONFIG_KEY_EMAIL_WHITELIST).map {
-                Regex(it, RegexOption.IGNORE_CASE)
-            }
+            val whitelistRegexList =
+                configRepository.getStrings(CONFIG_KEY_EMAIL_WHITELIST).map {
+                    Regex(it, RegexOption.IGNORE_CASE)
+                }
             if (whitelistRegexList.none { it.matches(email) }) {
                 logger.error { "Email not whitelisted: $email" }
                 throw HttpUnauthorizedException("Email not whitelisted: $email")

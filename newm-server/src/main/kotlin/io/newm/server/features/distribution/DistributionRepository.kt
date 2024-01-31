@@ -59,11 +59,18 @@ interface DistributionRepository {
 
     suspend fun getUserSubscription(user: User): GetUserSubscriptionResponse
 
-    suspend fun addUserLabel(distributionUserId: String, label: String): AddUserLabelResponse
+    suspend fun addUserLabel(
+        distributionUserId: String,
+        label: String
+    ): AddUserLabelResponse
 
     suspend fun getUserLabel(user: User): GetUserLabelResponse
 
-    suspend fun updateUserLabel(distributionLabelId: Long, distributionUserId: String, label: String): UpdateUserLabelResponse
+    suspend fun updateUserLabel(
+        distributionLabelId: Long,
+        distributionUserId: String,
+        label: String
+    ): UpdateUserLabelResponse
 
     suspend fun deleteUserLabel(user: User): DeleteUserLabelResponse
 
@@ -73,7 +80,10 @@ interface DistributionRepository {
 
     suspend fun getArtists(user: User): GetArtistResponse
 
-    suspend fun updateArtist(artistId: Long, updateArtistRequest: UpdateArtistRequest): UpdateArtistResponse
+    suspend fun updateArtist(
+        artistId: Long,
+        updateArtistRequest: UpdateArtistRequest
+    ): UpdateArtistResponse
 
     suspend fun getArtistOutletProfileNames(user: User): GetOutletProfileNamesResponse
 
@@ -83,33 +93,76 @@ interface DistributionRepository {
 
     suspend fun getParticipants(user: User): GetParticipantsResponse
 
-    suspend fun addTrack(user: User, trackFile: File): AddTrackResponse
+    suspend fun addTrack(
+        user: User,
+        trackFile: File
+    ): AddTrackResponse
 
-    suspend fun updateTrack(user: User, trackId: Long, song: Song): EvearaSimpleResponse
+    suspend fun updateTrack(
+        user: User,
+        trackId: Long,
+        song: Song
+    ): EvearaSimpleResponse
 
-    suspend fun getTracks(user: User, trackId: Long? = null): GetTracksResponse
+    suspend fun getTracks(
+        user: User,
+        trackId: Long? = null
+    ): GetTracksResponse
 
-    suspend fun deleteTrack(user: User, trackId: Long): EvearaSimpleResponse
+    suspend fun deleteTrack(
+        user: User,
+        trackId: Long
+    ): EvearaSimpleResponse
 
-    suspend fun isTrackStatusCompleted(user: User, trackId: Long): Boolean
+    suspend fun isTrackStatusCompleted(
+        user: User,
+        trackId: Long
+    ): Boolean
 
-    suspend fun addAlbum(user: User, trackId: Long, song: Song): AddAlbumResponse
+    suspend fun addAlbum(
+        user: User,
+        trackId: Long,
+        song: Song
+    ): AddAlbumResponse
 
     suspend fun getAlbums(user: User): GetAlbumResponse
 
-    suspend fun updateAlbum(user: User, trackId: Long, song: Song): EvearaSimpleResponse
+    suspend fun updateAlbum(
+        user: User,
+        trackId: Long,
+        song: Song
+    ): EvearaSimpleResponse
 
-    suspend fun validateAlbum(user: User, releaseId: Long): ValidateAlbumResponse
+    suspend fun validateAlbum(
+        user: User,
+        releaseId: Long
+    ): ValidateAlbumResponse
 
-    suspend fun deleteAlbum(user: User, releaseId: Long): EvearaSimpleResponse
+    suspend fun deleteAlbum(
+        user: User,
+        releaseId: Long
+    ): EvearaSimpleResponse
 
-    suspend fun simulateDistributeRelease(user: User, releaseId: Long): EvearaSimpleResponse
+    suspend fun simulateDistributeRelease(
+        user: User,
+        releaseId: Long
+    ): EvearaSimpleResponse
 
-    suspend fun distributeReleaseToOutlets(user: User, releaseStartDate: LocalDate, releaseId: Long): DistributeReleaseResponse
+    suspend fun distributeReleaseToOutlets(
+        user: User,
+        releaseStartDate: LocalDate,
+        releaseId: Long
+    ): DistributeReleaseResponse
 
-    suspend fun distributeReleaseToFutureOutlets(user: User, releaseId: Long): DistributeReleaseResponse
+    suspend fun distributeReleaseToFutureOutlets(
+        user: User,
+        releaseId: Long
+    ): DistributeReleaseResponse
 
-    suspend fun distributionOutletReleaseStatus(user: User, releaseId: Long): DistributionOutletReleaseStatusResponse
+    suspend fun distributionOutletReleaseStatus(
+        user: User,
+        releaseId: Long
+    ): DistributionOutletReleaseStatusResponse
 
     suspend fun distributeSong(song: Song)
 

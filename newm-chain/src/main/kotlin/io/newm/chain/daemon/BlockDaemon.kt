@@ -90,17 +90,19 @@ class BlockDaemon(
     private val syncRawTxns by lazy { environment.getConfigBoolean("newmchain.syncRawTxns") }
     private val pruneUtxos by lazy { environment.getConfigBoolean("newmchain.pruneUtxos") }
 
-    private val rollForwardFlow = MutableSharedFlow<RollForward>(
-        replay = 0,
-        extraBufferCapacity = 0,
-        onBufferOverflow = BufferOverflow.SUSPEND
-    )
+    private val rollForwardFlow =
+        MutableSharedFlow<RollForward>(
+            replay = 0,
+            extraBufferCapacity = 0,
+            onBufferOverflow = BufferOverflow.SUSPEND
+        )
 
-    val committedRollForwardFlow = MutableSharedFlow<RollForward>(
-        replay = 0,
-        extraBufferCapacity = 20_000,
-        onBufferOverflow = BufferOverflow.SUSPEND
-    )
+    val committedRollForwardFlow =
+        MutableSharedFlow<RollForward>(
+            replay = 0,
+            extraBufferCapacity = 20_000,
+            onBufferOverflow = BufferOverflow.SUSPEND
+        )
 
     private var blockBufferSize = 1
     private val blockBuffer: MutableList<RollForward> = mutableListOf()
@@ -111,9 +113,10 @@ class BlockDaemon(
      * Store the blocknumber mapped to a map of transactionIds so we can re-submit to the mempool
      * in the event of a rollback.
      */
-    private val blockRollbackCache: Cache<Long, Set<String>> = Caffeine.newBuilder()
-        .expireAfterWrite(Duration.ofHours(1))
-        .build()
+    private val blockRollbackCache: Cache<Long, Set<String>> =
+        Caffeine.newBuilder()
+            .expireAfterWrite(Duration.ofHours(1))
+            .build()
 
     // We just need the service to re-submit transactions. We won't be going through GRPC to do it so we can just
     // create our own local instance.
@@ -228,13 +231,15 @@ class BlockDaemon(
         var lastLogged = Instant.EPOCH
         var isTip = true
         while (true) {
-            val response = client.nextBlock(
-                timeoutMs = if (isTip) {
-                    INFINITE_REQUEST_TIMEOUT_MS
-                } else {
-                    DEFAULT_REQUEST_TIMEOUT_MS
-                }
-            )
+            val response =
+                client.nextBlock(
+                    timeoutMs =
+                        if (isTip) {
+                            INFINITE_REQUEST_TIMEOUT_MS
+                        } else {
+                            DEFAULT_REQUEST_TIMEOUT_MS
+                        }
+                )
             when (response.result) {
                 is RollBackward -> {
                     log.info("RollBackward: ${(response.result as RollBackward).point}")
@@ -279,7 +284,10 @@ class BlockDaemon(
         }
     }
 
-    private suspend fun processBlock(rollForwardData: RollForward, isTip: Boolean) {
+    private suspend fun processBlock(
+        rollForwardData: RollForward,
+        isTip: Boolean
+    ) {
         blockBuffer.add(rollForwardData)
         if (blockBuffer.size == blockBufferSize || isTip) {
             // Create a copy of the list
@@ -292,7 +300,11 @@ class BlockDaemon(
     }
 
     private var lastLoggedCommit = Instant.EPOCH
-    private suspend fun commitBlocks(blocksToCommit: List<RollForward>, isTip: Boolean) {
+
+    private suspend fun commitBlocks(
+        blocksToCommit: List<RollForward>,
+        isTip: Boolean
+    ) {
 //        if (!isTip) {
 //            log.warn("starting commitBlocks()...")
 //        }
@@ -307,12 +319,13 @@ class BlockDaemon(
                 warnLongQueriesDuration = 1000L
                 val firstBlock = blocksToCommit.first().block as BlockPraos
                 val lastBlock = blocksToCommit.last().block as BlockPraos
-                rollbackTime += measureTimeMillis {
-                    chainRepository.rollback(firstBlock.height)
-                    ledgerRepository.doRollback(firstBlock.height)
-                    AddressTxLogTable.deleteWhere { blockNumber greaterEq firstBlock.height }
-                    NativeAssetMonitorLogTable.deleteWhere { blockNumber greaterEq firstBlock.height }
-                }
+                rollbackTime +=
+                    measureTimeMillis {
+                        chainRepository.rollback(firstBlock.height)
+                        ledgerRepository.doRollback(firstBlock.height)
+                        AddressTxLogTable.deleteWhere { blockNumber greaterEq firstBlock.height }
+                        NativeAssetMonitorLogTable.deleteWhere { blockNumber greaterEq firstBlock.height }
+                    }
 
                 blocksToCommit.forEach { rollForwardData ->
                     val block = rollForwardData.block as BlockPraos
@@ -323,98 +336,106 @@ class BlockDaemon(
                     val ledgerAssets = block.toLedgerAssets()
 
                     // Mark same block number as rolled back
-                    rollbackTime += measureTimeMillis {
-                        // Handle re-submitting any of our own transactions that got rolled back
-                        val tip = isTip && block == lastBlock
-                        if (tip || blockRollbackCache.getIfPresent(block.height) != null) {
-                            val ourTransactionIdsInBlock =
-                                createdUtxos.map { createdUtxo -> createdUtxo.hash }.toSet()
-                                    .filter { transactionId ->
-                                        submittedTransactionCache.get(transactionId)?.also {
-                                            log.debug { "Our transaction $transactionId was seen in a block!" }
-                                        } != null
-                                    }.toSet()
-                            checkBlockRollbacks(block.height, ourTransactionIdsInBlock)
+                    rollbackTime +=
+                        measureTimeMillis {
+                            // Handle re-submitting any of our own transactions that got rolled back
+                            val tip = isTip && block == lastBlock
+                            if (tip || blockRollbackCache.getIfPresent(block.height) != null) {
+                                val ourTransactionIdsInBlock =
+                                    createdUtxos.map { createdUtxo -> createdUtxo.hash }.toSet()
+                                        .filter { transactionId ->
+                                            submittedTransactionCache.get(transactionId)?.also {
+                                                log.debug { "Our transaction $transactionId was seen in a block!" }
+                                            } != null
+                                        }.toSet()
+                                checkBlockRollbacks(block.height, ourTransactionIdsInBlock)
+                            }
                         }
-                    }
 
-                    chainTime += measureTimeMillis {
-                        chainRepository.insert(block.toChainBlock())
-                    }
+                    chainTime +=
+                        measureTimeMillis {
+                            chainRepository.insert(block.toChainBlock())
+                        }
 
                     // Which ledger assets do we need to notify grpc subscribers of changes on.
                     val mintedLedgerAssets: List<LedgerAsset>
-                    nativeAssetTime += measureTimeMillis {
-                        // Handle any assets minted or burned
-                        mintedLedgerAssets = ledgerRepository.upcertLedgerAssets(ledgerAssets)
-                    }
+                    nativeAssetTime +=
+                        measureTimeMillis {
+                            // Handle any assets minted or burned
+                            mintedLedgerAssets = ledgerRepository.upcertLedgerAssets(ledgerAssets)
+                        }
 
                     // Insert unspent utxos and stake delegations/de-registrations
-                    createTime += measureTimeMillis {
-                        val blockNumber = block.height
-                        ledgerRepository.createUtxos(blockNumber, createdUtxos)
-                        val stakeRegistrations = block.toStakeRegistrationList()
-                        ledgerRepository.createStakeRegistrations(stakeRegistrations)
-                        val epoch = getEpochForSlot(block.slot)
-                        val stakeDelegations = block.toStakeDelegationList(epoch)
-                        ledgerRepository.createStakeDelegations(stakeDelegations)
-                        if (syncRawTxns) {
-                            val rawTransactions = block.toRawTransactionList()
-                            ledgerRepository.createRawTransactions(rawTransactions)
-                            ledgerRepository.createLedgerUtxoHistory(createdUtxos, blockNumber)
+                    createTime +=
+                        measureTimeMillis {
+                            val blockNumber = block.height
+                            ledgerRepository.createUtxos(blockNumber, createdUtxos)
+                            val stakeRegistrations = block.toStakeRegistrationList()
+                            ledgerRepository.createStakeRegistrations(stakeRegistrations)
+                            val epoch = getEpochForSlot(block.slot)
+                            val stakeDelegations = block.toStakeDelegationList(epoch)
+                            ledgerRepository.createStakeDelegations(stakeDelegations)
+                            if (syncRawTxns) {
+                                val rawTransactions = block.toRawTransactionList()
+                                ledgerRepository.createRawTransactions(rawTransactions)
+                                ledgerRepository.createLedgerUtxoHistory(createdUtxos, blockNumber)
+                            }
                         }
-                    }
 
                     // Mark spent utxos as spent
-                    spendTime += measureTimeMillis {
-                        ledgerRepository.spendUtxos(
-                            blockNumber = block.height,
-                            spentUtxos = block.toSpentUtxoSet()
-                        )
-                    }
+                    spendTime +=
+                        measureTimeMillis {
+                            ledgerRepository.spendUtxos(
+                                blockNumber = block.height,
+                                spentUtxos = block.toSpentUtxoSet()
+                            )
+                        }
 
                     // Load any Native asset metadata
-                    nativeAssetTime += measureTimeMillis {
-                        // Save metadata for CIP-68 reference metadata appearing on createdUtxos datum values
-                        val nativeAssetMetadataList = cip68UtxoOutputsTo721MetadataMap(createdUtxos)
-                        nativeAssetMetadataList.forEach { (metadataMap, assetList) ->
+                    nativeAssetTime +=
+                        measureTimeMillis {
+                            // Save metadata for CIP-68 reference metadata appearing on createdUtxos datum values
+                            val nativeAssetMetadataList = cip68UtxoOutputsTo721MetadataMap(createdUtxos)
+                            nativeAssetMetadataList.forEach { (metadataMap, assetList) ->
+                                try {
+                                    ledgerRepository.insertLedgerAssetMetadataList(
+                                        metadataMap.extractAssetMetadata(assetList)
+                                    )
+                                } catch (e: Throwable) {
+                                    log.error("metadataError at block ${block.height}, metadataMap: $metadataMap, assetList: $assetList")
+                                    throw e
+                                }
+                            }
+
                             try {
+                                // Save metadata for CIP-25 metadata appearing in tx metadata
                                 ledgerRepository.insertLedgerAssetMetadataList(
-                                    metadataMap.extractAssetMetadata(assetList)
+                                    block.toAssetMetadataList(mintedLedgerAssets)
                                 )
                             } catch (e: Throwable) {
-                                log.error("metadataError at block ${block.height}, metadataMap: $metadataMap, assetList: $assetList")
+                                log.error("metadataError at block ${block.height}, mintedLedgerAssets: $mintedLedgerAssets")
                                 throw e
                             }
                         }
 
-                        try {
-                            // Save metadata for CIP-25 metadata appearing in tx metadata
-                            ledgerRepository.insertLedgerAssetMetadataList(
-                                block.toAssetMetadataList(mintedLedgerAssets)
-                            )
-                        } catch (e: Throwable) {
-                            log.error("metadataError at block ${block.height}, mintedLedgerAssets: $mintedLedgerAssets")
-                            throw e
-                        }
-                    }
-
                     // Insert any native asset log responses
-                    nativeAssetTime += measureTimeMillis {
-                        if (ledgerAssets.isNotEmpty()) {
-                            commitNativeAssetLogTransactions(block, ledgerAssets, createdUtxos)
+                    nativeAssetTime +=
+                        measureTimeMillis {
+                            if (ledgerAssets.isNotEmpty()) {
+                                commitNativeAssetLogTransactions(block, ledgerAssets, createdUtxos)
+                            }
                         }
-                    }
                 }
 
                 // Prune any old spent utxos we don't need any longer
                 if (pruneUtxos) {
-                    pruneTime = measureTimeMillis {
-                        // only prune every 10000 blocks
-                        if (lastBlock.height % 10_000L == 0L) {
-                            ledgerRepository.pruneSpent(lastBlock.height)
+                    pruneTime =
+                        measureTimeMillis {
+                            // only prune every 10000 blocks
+                            if (lastBlock.height % 10_000L == 0L) {
+                                ledgerRepository.pruneSpent(lastBlock.height)
+                            }
                         }
-                    }
                 }
             }
             // Emit the blocks to the flows
@@ -430,7 +451,9 @@ class BlockDaemon(
                 lastLoggedCommit = now
             }
             if ((isTip && totalTime > COMMIT_BLOCKS_WARN_LEVEL_MILLIS) || (totalTime > COMMIT_BLOCKS_ERROR_LEVEL_MILLIS)) {
-                log.warn("commitBlocks(${blocksToCommit.size}) total: ${totalTime}ms, rollback: ${rollbackTime}ms, nativeAsset: ${nativeAssetTime}ms, create: ${createTime}ms, spend: ${spendTime}ms, prune: ${pruneTime}ms")
+                log.warn(
+                    "commitBlocks(${blocksToCommit.size}) total: ${totalTime}ms, rollback: ${rollbackTime}ms, nativeAsset: ${nativeAssetTime}ms, create: ${createTime}ms, spend: ${spendTime}ms, prune: ${pruneTime}ms"
+                )
             }
 
             // Adjust blockBufferSize based on how long it took to commit these blocks
@@ -457,9 +480,10 @@ class BlockDaemon(
                         nativeAsset.name.matches(CIP68_REFERENCE_TOKEN_REGEX)
                     }.map { nativeAsset ->
                         val metadataMap = cip68PlutusData.toMetadataMap(nativeAsset.policy, nativeAsset.name)
-                        metadataMap to cip68CreatedUtxo.nativeAssets.map { na ->
-                            ledgerRepository.queryLedgerAsset(na.policy, na.name)!!
-                        }
+                        metadataMap to
+                            cip68CreatedUtxo.nativeAssets.map { na ->
+                                ledgerRepository.queryLedgerAsset(na.policy, na.name)!!
+                            }
                     }
                 } else {
                     null
@@ -468,7 +492,10 @@ class BlockDaemon(
         }.flatten()
     }
 
-    private suspend fun checkBlockRollbacks(blockHeight: Long, transactionIdsInBlock: Set<String>) {
+    private suspend fun checkBlockRollbacks(
+        blockHeight: Long,
+        transactionIdsInBlock: Set<String>
+    ) {
         // See if we're overwriting an existing block due to a rollback
         blockRollbackCache.getIfPresent(blockHeight)?.let { rolledBackBlockTransactionList ->
             handleBlockRollback(rolledBackBlockTransactionList, transactionIdsInBlock)
@@ -493,25 +520,27 @@ class BlockDaemon(
         rolledBackBlockTransactionList.find { transactionId -> transactionIdsInBlock.none { it == transactionId } }
             ?.let { firstTransactionIdNotInBlock ->
                 val keys = submittedTransactionCache.keys
-                val startIndex = keys.indexOfFirst { it == firstTransactionIdNotInBlock }.let { index ->
-                    // try to start 20 transactions before we need to
-                    if (index < 0) {
-                        index
-                    } else if (index - 20 < 0) {
-                        0
-                    } else {
-                        index - 20
+                val startIndex =
+                    keys.indexOfFirst { it == firstTransactionIdNotInBlock }.let { index ->
+                        // try to start 20 transactions before we need to
+                        if (index < 0) {
+                            index
+                        } else if (index - 20 < 0) {
+                            0
+                        } else {
+                            index - 20
+                        }
                     }
-                }
                 val lastIndex = keys.size - 1
                 if (startIndex > -1) {
                     keys.forEachIndexed { index, transactionId ->
                         if (index >= startIndex) {
                             submittedTransactionCache.get(transactionId)?.let { cbor ->
-                                val request = SubmitTransactionRequest
-                                    .newBuilder()
-                                    .setCbor(cbor.toByteString())
-                                    .build()
+                                val request =
+                                    SubmitTransactionRequest
+                                        .newBuilder()
+                                        .setCbor(cbor.toByteString())
+                                        .build()
                                 when (newmChainService.submitTransaction(request).result) {
                                     "MsgAcceptTx" -> {
                                         log.warn("Re-Submit txid to mempool due to rollback: $transactionId, $index/$lastIndex")
@@ -558,16 +587,17 @@ class BlockDaemon(
         // handle metadata updates for CIP-25 or if CIP-68 is minted without/before reference token
         batch.addAll(
             ledgerAssets.filter { it.supply > BigInteger.ZERO }.map { ledgerAsset ->
-                val metadataLedgerAsset = if (ledgerAsset.name.matches(CIP68_USER_TOKEN_REGEX)) {
-                    val name = "$CIP68_REFERENCE_TOKEN_PREFIX${ledgerAsset.name.substring(8)}"
-                    ledgerRepository.queryLedgerAsset(ledgerAsset.policy, name)
-                        ?.copy(txId = ledgerAsset.txId) ?: run {
-                        log.warn("No LedgerAsset found for: '${ledgerAsset.policy}.$name' !")
+                val metadataLedgerAsset =
+                    if (ledgerAsset.name.matches(CIP68_USER_TOKEN_REGEX)) {
+                        val name = "$CIP68_REFERENCE_TOKEN_PREFIX${ledgerAsset.name.substring(8)}"
+                        ledgerRepository.queryLedgerAsset(ledgerAsset.policy, name)
+                            ?.copy(txId = ledgerAsset.txId) ?: run {
+                            log.warn("No LedgerAsset found for: '${ledgerAsset.policy}.$name' !")
+                            ledgerAsset
+                        }
+                    } else {
                         ledgerAsset
                     }
-                } else {
-                    ledgerAsset
-                }
 
                 val ledgerAssetMetadataList =
                     ledgerRepository.queryLedgerAssetMetadataList(metadataLedgerAsset.id!!)
@@ -575,10 +605,11 @@ class BlockDaemon(
                 monitorNativeAssetsResponse {
                     policy = ledgerAsset.policy
                     name = ledgerAsset.name
-                    nativeAssetMetadataJson = ledgerAssetMetadataList.to721Json(
-                        ledgerAsset.policy,
-                        ledgerAsset.name,
-                    )
+                    nativeAssetMetadataJson =
+                        ledgerAssetMetadataList.to721Json(
+                            ledgerAsset.policy,
+                            ledgerAsset.name,
+                        )
                     slot = block.slot
                     this.block = block.height
                     txHash = ledgerAsset.txId
@@ -608,10 +639,11 @@ class BlockDaemon(
                     monitorNativeAssetsResponse {
                         policy = updatedNativeAsset.policy
                         name = updatedNativeAsset.name
-                        nativeAssetMetadataJson = ledgerAssetMetadataList.to721Json(
-                            updatedNativeAsset.policy,
-                            updatedNativeAsset.name
-                        )
+                        nativeAssetMetadataJson =
+                            ledgerAssetMetadataList.to721Json(
+                                updatedNativeAsset.policy,
+                                updatedNativeAsset.name
+                            )
                         slot = block.slot
                         this.block = block.height
                         txHash = ledgerAssets.firstOrNull {
@@ -631,10 +663,11 @@ class BlockDaemon(
                                 monitorNativeAssetsResponse {
                                     this.policy = nativeAsset.policy
                                     this.name = nativeAsset.name
-                                    nativeAssetMetadataJson = ledgerAssetMetadataList.to721Json(
-                                        nativeAsset.policy,
-                                        nativeAsset.name
-                                    )
+                                    nativeAssetMetadataJson =
+                                        ledgerAssetMetadataList.to721Json(
+                                            nativeAsset.policy,
+                                            nativeAsset.name
+                                        )
                                     slot = block.slot
                                     this.block = block.height
                                     txHash = ledgerAssets.firstOrNull {

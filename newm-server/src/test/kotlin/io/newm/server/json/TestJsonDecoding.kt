@@ -11,15 +11,16 @@ import org.junit.jupiter.api.Test
 import java.math.BigDecimal
 
 class TestJsonDecoding {
-
-    val json = Json {
-        ignoreUnknownKeys = true
-        explicitNulls = false
-        isLenient = true
-        serializersModule = SerializersModule {
-            contextual(BigDecimal::class, BigDecimalSerializer)
+    val json =
+        Json {
+            ignoreUnknownKeys = true
+            explicitNulls = false
+            isLenient = true
+            serializersModule =
+                SerializersModule {
+                    contextual(BigDecimal::class, BigDecimalSerializer)
+                }
         }
-    }
 
     @Test
     fun `test BigDecimal json`() {
@@ -40,9 +41,10 @@ class TestJsonDecoding {
 
     @Test
     fun `test SQS message receive`() {
-        val jsonString = """
+        val jsonString =
+            """
             {"songId":"ad2b5937-d9bf-407f-ba9a-74e007cfa718","mintingStatus":"Pending"}
-        """.trimIndent()
+            """.trimIndent()
         val mintingStatusSqsMessage: MintingStatusSqsMessage = json.decodeFromString(jsonString)
         println(mintingStatusSqsMessage.toString())
     }

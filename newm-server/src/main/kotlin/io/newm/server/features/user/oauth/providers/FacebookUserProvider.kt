@@ -29,7 +29,6 @@ private data class FacebookUser(
     override val lastName: String? = null,
     @SerialName("email")
     override val email: String? = null,
-
     override var pictureUrl: String? = null
 ) : OAuthUser {
     override val isEmailVerified: Boolean
@@ -52,35 +51,37 @@ internal class FacebookUserProvider(
     environment: ApplicationEnvironment,
     private val httpClient: HttpClient
 ) : OAuthUserProvider {
-
     private val userInfoUrl = environment.getConfigString("oauth.facebook.userInfoUrl")
 
-    override suspend fun getUser(tokens: OAuthTokens): OAuthUser = coroutineScope {
-        val token = tokens.accessToken ?: throw HttpBadRequestException("Facebook OAuth requires accessToken")
-        val pictureJob = async {
-            httpClient.get("$userInfoUrl/picture") {
-                parameter(key = "type", value = "large")
-                parameter(key = "redirect", value = false)
-                headers {
-                    accept(ContentType.Application.Json)
-                    bearerAuth(token)
+    override suspend fun getUser(tokens: OAuthTokens): OAuthUser =
+        coroutineScope {
+            val token = tokens.accessToken ?: throw HttpBadRequestException("Facebook OAuth requires accessToken")
+            val pictureJob =
+                async {
+                    httpClient.get("$userInfoUrl/picture") {
+                        parameter(key = "type", value = "large")
+                        parameter(key = "redirect", value = false)
+                        headers {
+                            accept(ContentType.Application.Json)
+                            bearerAuth(token)
+                        }
+                    }.checkedBody<Picture>()
                 }
-            }.checkedBody<Picture>()
-        }
-        val userJob = async {
-            httpClient.get(userInfoUrl) {
-                parameter(
-                    key = "fields",
-                    value = "id,first_name,last_name,email"
-                )
-                headers {
-                    accept(ContentType.Application.Json)
-                    bearerAuth(token)
+            val userJob =
+                async {
+                    httpClient.get(userInfoUrl) {
+                        parameter(
+                            key = "fields",
+                            value = "id,first_name,last_name,email"
+                        )
+                        headers {
+                            accept(ContentType.Application.Json)
+                            bearerAuth(token)
+                        }
+                    }.checkedBody<FacebookUser>()
                 }
-            }.checkedBody<FacebookUser>()
+            userJob.await().apply {
+                pictureUrl = pictureJob.await().data?.url.orEmpty()
+            }
         }
-        userJob.await().apply {
-            pictureUrl = pictureJob.await().data?.url.orEmpty()
-        }
-    }
 }

@@ -5,6 +5,7 @@ import io.ktor.server.application.ApplicationEnvironment
 import io.newm.shared.ktx.getConfigString
 import org.koin.dsl.module
 
-val cloudinaryKoinModule = module {
-    single { Cloudinary(get<ApplicationEnvironment>().getConfigString("cloudinary.url")) }
-}
+val cloudinaryKoinModule =
+    module {
+        single { Cloudinary(get<ApplicationEnvironment>().getConfigString("cloudinary.url")) }
+    }

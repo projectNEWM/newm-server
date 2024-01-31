@@ -38,7 +38,6 @@ import java.time.LocalDateTime
 import java.util.UUID
 
 class EvearaDistributionRepositoryTest : BaseApplicationTests() {
-
     @BeforeEach
     fun beforeEach() {
         transaction {
@@ -49,123 +48,125 @@ class EvearaDistributionRepositoryTest : BaseApplicationTests() {
     private lateinit var songId: UUID
 
     private suspend fun setupDatabase() {
-        val primaryArtistId = listOf(
-            User(
-                firstName = "Danketsu",
-                lastName = "",
-                genre = "House",
-                role = "Artist",
-                email = "danketsu@me.com",
-                nickname = "Danketsu",
+        val primaryArtistId =
+            listOf(
+                User(
+                    firstName = "Danketsu",
+                    lastName = "",
+                    genre = "House",
+                    role = "Artist",
+                    email = "danketsu@me.com",
+                    nickname = "Danketsu",
 //                nickname = "ADA Ninjaz", // name on spotify
-                websiteUrl = "https://danketsu.io",
-                instagramUrl = "https://instagram.com/danketsu",
-                twitterUrl = "https://twitter.com/danketsu",
-                // FIXME: This fails at Eveara because their spotify name is "Ada Ninjaz" and not "Danketsu"
-                spotifyProfile = "https://open.spotify.com/artist/4EiSbT0iP4YARJ9MGClRgB",
-            ),
-            User(
-                firstName = "Mirai",
-                lastName = "Music",
-                genre = "House",
-                role = "Artist",
-                email = "mirai@me.com",
-                nickname = "Mirai Music",
-                websiteUrl = "https://miraimusicproductions.com",
-                soundCloudProfile = "https://soundcloud.com/miraimusics",
-            ),
-            User(
-                firstName = "Ashley",
-                lastName = "Nastasia Griffin",
-                genre = "House",
-                role = "Artist",
-                email = "NSTASIA@me.com",
-                nickname = "NSTASIA",
-                websiteUrl = "https://www.nstasia.com",
-                twitterUrl = "https://twitter.com/nstasia",
-                appleMusicProfile = "https://music.apple.com/us/artist/nastasia-griffin/975884342",
-            ),
-            User(
-                firstName = "Bob",
-                lastName = "Ross",
-                role = "Artwork",
-                email = "bob.ross@pbs.org",
-            ),
-            User(
-                firstName = "Aaron",
-                lastName = "Ortiz",
-                role = "Author (Lyrics)",
-                email = "lyrics1@domain.com",
-            ),
-            User(
-                firstName = "Aled",
-                lastName = "Williams",
-                role = "Author (Lyrics)",
-                email = "lyrics2@domain.com",
-            ),
-            User(
-                firstName = "Kahmeil",
-                lastName = "Brown",
-                role = "Author (Lyrics)",
-                email = "lyrics3@domain.com",
-            ),
-            User(
-                firstName = "Elijah",
-                lastName = "Boac",
-                role = "Author (Lyrics)",
-                email = "lyrics4@domain.com",
-            ),
-            User(
-                firstName = "Tommy",
-                lastName = "Bui",
-                role = "Author (Lyrics)",
-                email = "lyrics5@domain.com",
-            ),
-            User(
-                firstName = "Kyle",
-                lastName = "Kim",
-                role = "Author (Lyrics)",
-                email = "lyrics6@domain.com",
-            ),
-            User(
-                firstName = "Riccardo",
-                lastName = "Lovatto",
-                role = "Author (Lyrics)",
-                email = "lyrics7@domain.com",
-            ),
-            User(
-                firstName = "Jeff",
-                lastName = "MacMillan",
-                role = "Synthesizer",
-                email = "jeff@macmillan.io",
-            )
-        ).map { user -> addUserToDatabase(user) }.first()
+                    websiteUrl = "https://danketsu.io",
+                    instagramUrl = "https://instagram.com/danketsu",
+                    twitterUrl = "https://twitter.com/danketsu",
+                    // FIXME: This fails at Eveara because their spotify name is "Ada Ninjaz" and not "Danketsu"
+                    spotifyProfile = "https://open.spotify.com/artist/4EiSbT0iP4YARJ9MGClRgB",
+                ),
+                User(
+                    firstName = "Mirai",
+                    lastName = "Music",
+                    genre = "House",
+                    role = "Artist",
+                    email = "mirai@me.com",
+                    nickname = "Mirai Music",
+                    websiteUrl = "https://miraimusicproductions.com",
+                    soundCloudProfile = "https://soundcloud.com/miraimusics",
+                ),
+                User(
+                    firstName = "Ashley",
+                    lastName = "Nastasia Griffin",
+                    genre = "House",
+                    role = "Artist",
+                    email = "NSTASIA@me.com",
+                    nickname = "NSTASIA",
+                    websiteUrl = "https://www.nstasia.com",
+                    twitterUrl = "https://twitter.com/nstasia",
+                    appleMusicProfile = "https://music.apple.com/us/artist/nastasia-griffin/975884342",
+                ),
+                User(
+                    firstName = "Bob",
+                    lastName = "Ross",
+                    role = "Artwork",
+                    email = "bob.ross@pbs.org",
+                ),
+                User(
+                    firstName = "Aaron",
+                    lastName = "Ortiz",
+                    role = "Author (Lyrics)",
+                    email = "lyrics1@domain.com",
+                ),
+                User(
+                    firstName = "Aled",
+                    lastName = "Williams",
+                    role = "Author (Lyrics)",
+                    email = "lyrics2@domain.com",
+                ),
+                User(
+                    firstName = "Kahmeil",
+                    lastName = "Brown",
+                    role = "Author (Lyrics)",
+                    email = "lyrics3@domain.com",
+                ),
+                User(
+                    firstName = "Elijah",
+                    lastName = "Boac",
+                    role = "Author (Lyrics)",
+                    email = "lyrics4@domain.com",
+                ),
+                User(
+                    firstName = "Tommy",
+                    lastName = "Bui",
+                    role = "Author (Lyrics)",
+                    email = "lyrics5@domain.com",
+                ),
+                User(
+                    firstName = "Kyle",
+                    lastName = "Kim",
+                    role = "Author (Lyrics)",
+                    email = "lyrics6@domain.com",
+                ),
+                User(
+                    firstName = "Riccardo",
+                    lastName = "Lovatto",
+                    role = "Author (Lyrics)",
+                    email = "lyrics7@domain.com",
+                ),
+                User(
+                    firstName = "Jeff",
+                    lastName = "MacMillan",
+                    role = "Synthesizer",
+                    email = "jeff@macmillan.io",
+                )
+            ).map { user -> addUserToDatabase(user) }.first()
 
-        songId = addSongToDatabase(
-            Song(
-                ownerId = primaryArtistId,
-                title = "Daisuke",
-                genres = listOf("Pop", "House", "Tribal"),
-                releaseDate = LocalDate.parse("2023-02-03"),
-                publicationDate = LocalDate.parse("2023-02-03"),
-                // isrc = "QZ-NW7-23-57511",
-                moods = listOf("spiritual"),
-                coverArtUrl = "https://res.cloudinary.com/newm/image/upload/c_fit,w_4000,h_4000/v1683539164/ufshvmlfxbis0ba4bshw.jpg",
-                arweaveCoverArtUrl = "ar://GlMlqHIPjwUtlPUfQxDdX1jWSjlKK1BCTBIekXgA66A",
-                arweaveLyricsUrl = "ar://7vQTHTkgybn8nVLDlukGiBazy2NZVhWP6HZdJdmPH00",
-                arweaveTokenAgreementUrl = "ar://eK8gAPCvJ-9kbiP3PrSMwLGAk38aNyxPDudzzbGypxE",
-                arweaveClipUrl = "ar://QpgjmWmAHNeRVgx_Ylwvh16i3aWd8BBgyq7f16gaUu0",
-                album = "Daisuke",
-                duration = 200000,
-                track = 1,
-                compositionCopyrightOwner = "Mirai Music Publishing",
-                compositionCopyrightYear = 2023,
-                phonographicCopyrightOwner = "Danketsu, Mirai Music, NSTASIA",
-                phonographicCopyrightYear = 2023,
-                originalAudioUrl = "s3://garageaudiotranscoders3s-audiotranscoderinputbuck-873y4j5zz15i/cabb57b8-89f0-476f-8e95-e5c7a7d992c6/Vibrate.flac",
-                mintingStatus = MintingStatus.Pending
+        songId =
+            addSongToDatabase(
+                Song(
+                    ownerId = primaryArtistId,
+                    title = "Daisuke",
+                    genres = listOf("Pop", "House", "Tribal"),
+                    releaseDate = LocalDate.parse("2023-02-03"),
+                    publicationDate = LocalDate.parse("2023-02-03"),
+                    // isrc = "QZ-NW7-23-57511",
+                    moods = listOf("spiritual"),
+                    coverArtUrl = "https://res.cloudinary.com/newm/image/upload/c_fit,w_4000,h_4000/v1683539164/ufshvmlfxbis0ba4bshw.jpg",
+                    arweaveCoverArtUrl = "ar://GlMlqHIPjwUtlPUfQxDdX1jWSjlKK1BCTBIekXgA66A",
+                    arweaveLyricsUrl = "ar://7vQTHTkgybn8nVLDlukGiBazy2NZVhWP6HZdJdmPH00",
+                    arweaveTokenAgreementUrl = "ar://eK8gAPCvJ-9kbiP3PrSMwLGAk38aNyxPDudzzbGypxE",
+                    arweaveClipUrl = "ar://QpgjmWmAHNeRVgx_Ylwvh16i3aWd8BBgyq7f16gaUu0",
+                    album = "Daisuke",
+                    duration = 200000,
+                    track = 1,
+                    compositionCopyrightOwner = "Mirai Music Publishing",
+                    compositionCopyrightYear = 2023,
+                    phonographicCopyrightOwner = "Danketsu, Mirai Music, NSTASIA",
+                    phonographicCopyrightYear = 2023,
+                    originalAudioUrl = "s3://garageaudiotranscoders3s-audiotranscoderinputbuck-873y4j5zz15i/cabb57b8-89f0-476f-8e95-e5c7a7d992c6/Vibrate.flac",
+                    mintingStatus = MintingStatus.Pending
+                )
             )
-        )
 
         listOf(
             Collaboration(
@@ -300,29 +301,30 @@ class EvearaDistributionRepositoryTest : BaseApplicationTests() {
 
     @Test
     @Disabled
-    fun `test distributing a song`() = runBlocking {
-        val root: Logger = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME) as Logger
-        root.level = Level.INFO
+    fun `test distributing a song`() =
+        runBlocking {
+            val root: Logger = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME) as Logger
+            root.level = Level.INFO
 
-        val env = System.getenv()
-        root.info { "AWS_ACCESS_KEY_ID: ${env["AWS_ACCESS_KEY_ID"]}" }
-        root.info { "AWS_SECRET_ACCESS_KEY: ${env["AWS_SECRET_ACCESS_KEY"]}" }
+            val env = System.getenv()
+            root.info { "AWS_ACCESS_KEY_ID: ${env["AWS_ACCESS_KEY_ID"]}" }
+            root.info { "AWS_SECRET_ACCESS_KEY: ${env["AWS_SECRET_ACCESS_KEY"]}" }
 
-        setupDatabase()
+            setupDatabase()
 
-        val configRepository: ConfigRepository = ConfigRepositoryImpl()
-        val songRepository: SongRepository =
-            SongRepositoryImpl(mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk())
-        val applicationEnvironment: ApplicationEnvironment by inject()
-        val collabRepository: CollaborationRepository =
-            CollaborationRepositoryImpl(applicationEnvironment, mockk())
-        val distributionRepository: DistributionRepository =
-            EvearaDistributionRepositoryImpl(collabRepository, configRepository)
+            val configRepository: ConfigRepository = ConfigRepositoryImpl()
+            val songRepository: SongRepository =
+                SongRepositoryImpl(mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk())
+            val applicationEnvironment: ApplicationEnvironment by inject()
+            val collabRepository: CollaborationRepository =
+                CollaborationRepositoryImpl(applicationEnvironment, mockk())
+            val distributionRepository: DistributionRepository =
+                EvearaDistributionRepositoryImpl(collabRepository, configRepository)
 
-        val song = songRepository.get(songId)
+            val song = songRepository.get(songId)
 
-        distributionRepository.distributeSong(song)
-    }
+            distributionRepository.distributeSong(song)
+        }
 
     @Test
     fun `test s3 url parsing`() {

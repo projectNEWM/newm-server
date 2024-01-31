@@ -10,9 +10,10 @@ import org.junit.jupiter.api.Test
 
 class KeyParserTest : BaseApplicationTests() {
     @Test
-    fun testRSAPrivateKeyPcks8() = runBlocking {
-        val environment: ApplicationEnvironment by inject()
-        val pk = environment.getSecureConfigString("aws.cloudFront.audioStream.privateKey")
-        assertThat(KeyParser.parse(pk)).isNotEmpty()
-    }
+    fun testRSAPrivateKeyPcks8() =
+        runBlocking {
+            val environment: ApplicationEnvironment by inject()
+            val pk = environment.getSecureConfigString("aws.cloudFront.audioStream.privateKey")
+            assertThat(KeyParser.parse(pk)).isNotEmpty()
+        }
 }

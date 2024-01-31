@@ -29,14 +29,16 @@ class AudioMessageReceiver : SqsMessageReceiver {
         val duration = msg.durationInMs ?: return
         val fullPath = msg.outputFilePath ?: return
 
-        val shortPath = fullPath
-            .substringAfter("://")
-            .substringAfter('/')
-            .replace("//", "/")
+        val shortPath =
+            fullPath
+                .substringAfter("://")
+                .substringAfter('/')
+                .replace("//", "/")
 
-        val songId = shortPath
-            .substringBefore('/')
-            .toUUID()
+        val songId =
+            shortPath
+                .substringBefore('/')
+                .toUUID()
 
         when (msg.transcodingType) {
             "stream" -> {

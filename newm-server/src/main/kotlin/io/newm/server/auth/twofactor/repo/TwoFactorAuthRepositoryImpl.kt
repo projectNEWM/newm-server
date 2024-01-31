@@ -23,7 +23,6 @@ internal class TwoFactorAuthRepositoryImpl(
     private val environment: ApplicationEnvironment,
     private val emailRepository: EmailRepository
 ) : TwoFactorAuthRepository {
-
     private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
     private val random = SecureRandom()
 
@@ -52,11 +51,15 @@ internal class TwoFactorAuthRepositoryImpl(
         }
     }
 
-    override suspend fun verifyCode(email: String, code: String): Boolean = transaction {
-        TwoFactorAuthEntity.deleteAllExpired()
-        TwoFactorAuthEntity.getByEmail(email)?.takeIf { code.verify(it.codeHash) }?.let { entity ->
-            entity.delete()
-            true
-        } ?: false
-    }
+    override suspend fun verifyCode(
+        email: String,
+        code: String
+    ): Boolean =
+        transaction {
+            TwoFactorAuthEntity.deleteAllExpired()
+            TwoFactorAuthEntity.getByEmail(email)?.takeIf { code.verify(it.codeHash) }?.let { entity ->
+                entity.delete()
+                true
+            } ?: false
+        }
 }

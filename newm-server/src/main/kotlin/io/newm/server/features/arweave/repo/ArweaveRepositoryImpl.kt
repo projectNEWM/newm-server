@@ -103,32 +103,35 @@ class ArweaveRepositoryImpl(
 
     @Suppress("UNCHECKED_CAST")
     private suspend fun calculatePrice(data: Data): Winston {
-        val priceFuture = priceApi.dataTransaction(
-            data,
-            arweaveConfig,
-            future.futureJsonHandlerEncodedStringHandler(executionContext)
-        ) as Future<Winston>
+        val priceFuture =
+            priceApi.dataTransaction(
+                data,
+                arweaveConfig,
+                future.futureJsonHandlerEncodedStringHandler(executionContext)
+            ) as Future<Winston>
 
         return toJava(priceFuture).await()
     }
 
     @Suppress("UNCHECKED_CAST")
     private suspend fun getLastWalletTransaction(): Option<Transaction.Id> {
-        val lastTxFuture = addressApi.lastTx(
-            arweaveWallet().address(),
-            arweaveConfig,
-            future.futureJsonHandlerEncodedStringHandler(executionContext)
-        ) as Future<Option<Transaction.Id>>
+        val lastTxFuture =
+            addressApi.lastTx(
+                arweaveWallet().address(),
+                arweaveConfig,
+                future.futureJsonHandlerEncodedStringHandler(executionContext)
+            ) as Future<Option<Transaction.Id>>
         return toJava(lastTxFuture).await()
     }
 
     @Suppress("UNCHECKED_CAST")
     override suspend fun getWalletARBalance(): BigDecimal {
-        val balanceFuture = addressApi.balance(
-            arweaveWallet().address(),
-            arweaveConfig,
-            future.futureJsonHandlerEncodedStringHandler(executionContext)
-        ) as Future<Winston>
+        val balanceFuture =
+            addressApi.balance(
+                arweaveWallet().address(),
+                arweaveConfig,
+                future.futureJsonHandlerEncodedStringHandler(executionContext)
+            ) as Future<Winston>
         return toJava(balanceFuture).await().amount().toString().toBigDecimal().movePointLeft(12)
     }
 
@@ -163,7 +166,10 @@ class ArweaveRepositoryImpl(
     }
 
     @Suppress("UNCHECKED_CAST")
-    private suspend fun submitAndAwaitTransactionSettlement(bodyBytes: ByteArray, mimeType: String): String {
+    private suspend fun submitAndAwaitTransactionSettlement(
+        bodyBytes: ByteArray,
+        mimeType: String
+    ): String {
         var signedTransactionPair = createSignedArweaveTransaction(bodyBytes, mimeType)
         var signedTransaction = signedTransactionPair.first
         var transactionId = signedTransactionPair.second
@@ -252,67 +258,72 @@ class ArweaveRepositoryImpl(
 
         var arweaveException: Throwable? = null
 
-        val newmWeaveRequest = WeaveRequest(
-            json.encodeToString(
-                WeaveProps(
-                    arweaveWalletJson = environment.getSecureConfigString("arweave.walletJson"),
-                    files = listOfNotNull(
-                        if (song.arweaveCoverArtUrl != null) {
-                            log.info { "Song ${song.id} already has arweave cover art url: ${song.arweaveCoverArtUrl}" }
-                            null
-                        } else {
-                            song.coverArtUrl.asValidUrl().replace(IMAGE_WEBP_REPLACE_REGEX, ".webp") to "image/webp"
-                        },
-                        if (song.arweaveTokenAgreementUrl != null) {
-                            log.info { "Song ${song.id} already has arweave token agreement url: ${song.arweaveTokenAgreementUrl}" }
-                            null
-                        } else {
-                            song.tokenAgreementUrl!! to "application/pdf"
-                        },
-                        if (song.arweaveClipUrl != null) {
-                            log.info { "Song ${song.id} already has arweave clip url: ${song.arweaveClipUrl}" }
-                            null
-                        } else {
-                            song.clipUrl!! to "audio/mpeg"
-                        },
-                        if (song.arweaveLyricsUrl != null) {
-                            log.info { "Song ${song.id} already has arweave lyrics url: ${song.arweaveLyricsUrl}" }
-                            null
-                        } else {
-                            song.lyricsUrl?.let { it to "text/plain" }
-                        },
-                    ).map { (inputUrl, contentType) ->
-                        val downloadUrl = if (inputUrl.startsWith("s3://")) {
-                            val (bucket, key) = inputUrl.toBucketAndKey()
-                            amazonS3.generatePresignedUrl(
-                                bucket,
-                                key,
-                                Date.from(Instant.now().plus(30, ChronoUnit.MINUTES)),
-                                HttpMethod.GET
-                            ).toExternalForm()
-                        } else {
-                            inputUrl
-                        }
-                        WeaveFile(
-                            url = downloadUrl,
-                            contentType = contentType,
-                        )
-                    },
-                    checkAndFund = false,
+        val newmWeaveRequest =
+            WeaveRequest(
+                json.encodeToString(
+                    WeaveProps(
+                        arweaveWalletJson = environment.getSecureConfigString("arweave.walletJson"),
+                        files =
+                            listOfNotNull(
+                                if (song.arweaveCoverArtUrl != null) {
+                                    log.info { "Song ${song.id} already has arweave cover art url: ${song.arweaveCoverArtUrl}" }
+                                    null
+                                } else {
+                                    song.coverArtUrl.asValidUrl().replace(IMAGE_WEBP_REPLACE_REGEX, ".webp") to "image/webp"
+                                },
+                                if (song.arweaveTokenAgreementUrl != null) {
+                                    log.info { "Song ${song.id} already has arweave token agreement url: ${song.arweaveTokenAgreementUrl}" }
+                                    null
+                                } else {
+                                    song.tokenAgreementUrl!! to "application/pdf"
+                                },
+                                if (song.arweaveClipUrl != null) {
+                                    log.info { "Song ${song.id} already has arweave clip url: ${song.arweaveClipUrl}" }
+                                    null
+                                } else {
+                                    song.clipUrl!! to "audio/mpeg"
+                                },
+                                if (song.arweaveLyricsUrl != null) {
+                                    log.info { "Song ${song.id} already has arweave lyrics url: ${song.arweaveLyricsUrl}" }
+                                    null
+                                } else {
+                                    song.lyricsUrl?.let { it to "text/plain" }
+                                },
+                            ).map { (inputUrl, contentType) ->
+                                val downloadUrl =
+                                    if (inputUrl.startsWith("s3://")) {
+                                        val (bucket, key) = inputUrl.toBucketAndKey()
+                                        amazonS3.generatePresignedUrl(
+                                            bucket,
+                                            key,
+                                            Date.from(Instant.now().plus(30, ChronoUnit.MINUTES)),
+                                            HttpMethod.GET
+                                        ).toExternalForm()
+                                    } else {
+                                        inputUrl
+                                    }
+                                WeaveFile(
+                                    url = downloadUrl,
+                                    contentType = contentType,
+                                )
+                            },
+                        checkAndFund = false,
+                    )
                 )
             )
-        )
 
-        val invokeRequest = InvokeRequest()
-            .withFunctionName(environment.getConfigString("arweave.lambdaFunctionName"))
-            .withPayload(json.encodeToString(newmWeaveRequest))
+        val invokeRequest =
+            InvokeRequest()
+                .withFunctionName(environment.getConfigString("arweave.lambdaFunctionName"))
+                .withPayload(json.encodeToString(newmWeaveRequest))
 
         val invokeResult = invokeRequest.await()
-        val weaveResponsItems: List<WeaveResponseItem> = json.decodeFromString(
-            json.decodeFromString<WeaveResponse>(
-                invokeResult.payload.array().decodeToString()
-            ).body
-        )
+        val weaveResponsItems: List<WeaveResponseItem> =
+            json.decodeFromString(
+                json.decodeFromString<WeaveResponse>(
+                    invokeResult.payload.array().decodeToString()
+                ).body
+            )
 
         weaveResponsItems.forEach { weaveResponse ->
             if (weaveResponse.error != null) {
@@ -348,15 +359,16 @@ class ArweaveRepositoryImpl(
         val reward = calculatePrice(arweaveData)
         val lastTx = getLastWalletTransaction()
         val tags = buildTags(mapOf("Content-Type" to mimeType))
-        val transaction = Transaction.apply(
-            lastTx,
-            arweaveWallet().owner(),
-            reward,
-            Option.apply(arweaveData),
-            tags,
-            Option.empty(),
-            Winston.Zero(),
-        )
+        val transaction =
+            Transaction.apply(
+                lastTx,
+                arweaveWallet().owner(),
+                reward,
+                Option.apply(arweaveData),
+                tags,
+                Option.empty(),
+                Winston.Zero(),
+            )
         val signedTransaction = signTransaction(transaction)
         val transactionId = Tx.SignedTransaction(signedTransaction).id().toString()
         return Pair(signedTransaction, transactionId)
@@ -372,29 +384,34 @@ class ArweaveRepositoryImpl(
                 }
             }
 
-        private val evidenceMonad = object : Monad<Future<Any>> {
-            override fun <A : Any, B : Any> flatMap(
-                fa: Future<Any>,
-                f: scala.Function1<A, Future<Any>>
-            ): Future<Any> {
-                return fa
+        private val evidenceMonad =
+            object : Monad<Future<Any>> {
+                override fun <A : Any, B : Any> flatMap(
+                    fa: Future<Any>,
+                    f: scala.Function1<A, Future<Any>>
+                ): Future<Any> {
+                    return fa
+                }
+
+                override fun <A : Any, B : Any> tailRecM(
+                    a: A,
+                    f: scala.Function1<A, Future<Any>>
+                ): Future<Any> {
+                    // dummy unused function
+                    return Future.successful(a)
+                }
+
+                override fun <A : Any> pure(x: A): Future<Any> {
+                    // dummy unused function
+                    return Future.successful(x)
+                }
             }
 
-            override fun <A : Any, B : Any> tailRecM(a: A, f: scala.Function1<A, Future<Any>>): Future<Any> {
-                // dummy unused function
-                return Future.successful(a)
+        private val getTxFunction: FunctionK<*, Future<Any>> =
+            object : FunctionK<Future<Any>, Future<Any>> {
+                override fun <A : Any> apply(fa: Future<Any>): Future<Any> {
+                    return fa
+                }
             }
-
-            override fun <A : Any> pure(x: A): Future<Any> {
-                // dummy unused function
-                return Future.successful(x)
-            }
-        }
-
-        private val getTxFunction: FunctionK<*, Future<Any>> = object : FunctionK<Future<Any>, Future<Any>> {
-            override fun <A : Any> apply(fa: Future<Any>): Future<Any> {
-                return fa
-            }
-        }
     }
 }

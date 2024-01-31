@@ -23,23 +23,28 @@ import java.util.UUID
 class JwtRepositoryImpl(
     private val environment: ApplicationEnvironment
 ) : JwtRepository {
-
     private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
 
-    override suspend fun create(type: JwtType, userId: UUID, admin: Boolean): String {
+    override suspend fun create(
+        type: JwtType,
+        userId: UUID,
+        admin: Boolean
+    ): String {
         logger.debug { "create: type = $type, userId = $userId" }
 
-        val expiresAt = LocalDateTime
-            .now()
-            .plusSeconds(environment.getConfigLong("jwt.${type.name.lowercase()}.timeToLive"))
+        val expiresAt =
+            LocalDateTime
+                .now()
+                .plusSeconds(environment.getConfigLong("jwt.${type.name.lowercase()}.timeToLive"))
 
-        val jwtId = transaction {
-            JwtEntity.deleteAllExpired()
-            JwtEntity.new {
-                this.userId = EntityID(userId, UserTable)
-                this.expiresAt = expiresAt
-            }.id.value
-        }
+        val jwtId =
+            transaction {
+                JwtEntity.deleteAllExpired()
+                JwtEntity.new {
+                    this.userId = EntityID(userId, UserTable)
+                    this.expiresAt = expiresAt
+                }.id.value
+            }
 
         return JWT.create()
             .withJWTId(jwtId.toString())

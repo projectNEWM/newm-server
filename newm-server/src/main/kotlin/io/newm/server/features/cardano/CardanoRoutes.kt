@@ -47,9 +47,9 @@ fun Routing.createCardanoRoutes() {
             }
         }
 
-        /**
-         * Only temporarily uncomment if there's some legal emergency where we need a key to perform a manual transaction.
-         */
+//        /**
+//         * Only temporarily uncomment if there's some legal emergency where we need a key to perform a manual transaction.
+//         */
 //        get("/v1/cardano/key") {
 //            try {
 //                val keyName = request.requiredQueryParam("name")

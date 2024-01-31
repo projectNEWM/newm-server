@@ -68,39 +68,40 @@ internal class GoogleUserProvider(
     environment: ApplicationEnvironment,
     private val httpClient: HttpClient
 ) : OAuthUserProvider {
-
-    private val verifier: JWTVerifier = JWT.require(
-        Algorithm.RSA256(
-            JwkProviderBuilder(environment.getConfigString("oauth.google.publicKeysUrl").toUrl())
-                .build()
-                .toRSAKeyProvider()
-        )
-    ).withAnyOfIssuer(environment.getConfigStrings("oauth.google.issuers"))
-        .withAnyOfAudience(runBlocking { environment.getSecureConfigStrings("oauth.google.audiences") })
-        .withClaimPresence("sub")
-        .withClaimPresence("email")
-        .build()
+    private val verifier: JWTVerifier =
+        JWT.require(
+            Algorithm.RSA256(
+                JwkProviderBuilder(environment.getConfigString("oauth.google.publicKeysUrl").toUrl())
+                    .build()
+                    .toRSAKeyProvider()
+            )
+        ).withAnyOfIssuer(environment.getConfigStrings("oauth.google.issuers"))
+            .withAnyOfAudience(runBlocking { environment.getSecureConfigStrings("oauth.google.audiences") })
+            .withClaimPresence("sub")
+            .withClaimPresence("email")
+            .build()
 
     private val userInfoUrl = environment.getConfigString("oauth.google.userInfoUrl")
 
-    override suspend fun getUser(tokens: OAuthTokens): OAuthUser = tokens.run {
-        idToken?.let {
-            try {
-                GoogleJwtUser(verifier.verify(idToken))
-            } catch (exception: JWTVerificationException) {
-                throw HttpUnauthorizedException("Verification failed: ${exception.message}")
-            }
-        } ?: accessToken?.let {
-            httpClient.get(userInfoUrl) {
-                parameter(
-                    key = "fields",
-                    value = "id,given_name,family_name,picture,email,verified_email"
-                )
-                headers {
-                    accept(ContentType.Application.Json)
-                    bearerAuth(accessToken)
+    override suspend fun getUser(tokens: OAuthTokens): OAuthUser =
+        tokens.run {
+            idToken?.let {
+                try {
+                    GoogleJwtUser(verifier.verify(idToken))
+                } catch (exception: JWTVerificationException) {
+                    throw HttpUnauthorizedException("Verification failed: ${exception.message}")
                 }
-            }.checkedBody<GoogleUser>()
-        } ?: throw HttpBadRequestException("Google OAuth requires idToken or accessToken")
-    }
+            } ?: accessToken?.let {
+                httpClient.get(userInfoUrl) {
+                    parameter(
+                        key = "fields",
+                        value = "id,given_name,family_name,picture,email,verified_email"
+                    )
+                    headers {
+                        accept(ContentType.Application.Json)
+                        bearerAuth(accessToken)
+                    }
+                }.checkedBody<GoogleUser>()
+            } ?: throw HttpBadRequestException("Google OAuth requires idToken or accessToken")
+        }
 }

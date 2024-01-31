@@ -12,7 +12,6 @@ import kotlin.concurrent.getOrSet
 
 // Uses dd-MM-yyyy format
 object DMYLocalDateSerializer : KSerializer<LocalDate> {
-
     private val formatter = ThreadLocal<DateTimeFormatter>()
 
     override val descriptor: SerialDescriptor =
@@ -23,7 +22,10 @@ object DMYLocalDateSerializer : KSerializer<LocalDate> {
         return LocalDate.parse(decoder.decodeString(), formatter)
     }
 
-    override fun serialize(encoder: Encoder, value: LocalDate) {
+    override fun serialize(
+        encoder: Encoder,
+        value: LocalDate
+    ) {
         val formatter = formatter.getOrSet { DateTimeFormatter.ofPattern("dd-MM-yyyy") }
         encoder.encodeString(value.format(formatter))
     }

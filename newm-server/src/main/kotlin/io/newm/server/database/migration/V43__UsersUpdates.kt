@@ -10,9 +10,9 @@ class V43__UsersUpdates : BaseJavaMigration() {
         transaction {
             exec(
                 """
-                    ALTER TABLE users
-                        ADD COLUMN IF NOT EXISTS isni text,
-                        ADD COLUMN IF NOT EXISTS ipi text
+                ALTER TABLE users
+                    ADD COLUMN IF NOT EXISTS isni text,
+                    ADD COLUMN IF NOT EXISTS ipi text
                 """.trimIndent()
             )
         }

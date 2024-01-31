@@ -73,17 +73,18 @@ data class Key(
     fun toCliKeyPair(name: String): CliKeyPair {
         return CliKeyPair(
             name = name,
-            skey = CliKey(
-                type = "PaymentSigningKeyShelley_ed25519",
-                description = "Payment Signing Key",
-                cborHex = CborByteString.create(skey).toCborByteArray().toHexString(),
-            ),
-            vkey = CliKey(
-                type = "PaymentVerificationKeyShelley_ed25519",
-                description = "Payment Verification Key",
-                cborHex = CborByteString.create(vkey).toCborByteArray().toHexString(),
-            )
-
+            skey =
+                CliKey(
+                    type = "PaymentSigningKeyShelley_ed25519",
+                    description = "Payment Signing Key",
+                    cborHex = CborByteString.create(skey).toCborByteArray().toHexString(),
+                ),
+            vkey =
+                CliKey(
+                    type = "PaymentVerificationKeyShelley_ed25519",
+                    description = "Payment Verification Key",
+                    cborHex = CborByteString.create(vkey).toCborByteArray().toHexString(),
+                )
         )
     }
 
@@ -96,11 +97,12 @@ data class Key(
          * Generate a new random keypair
          */
         suspend fun generateNew(): Key {
-            val keyPairGenerator = ed25519KeyPairGenerator.getOrSet {
-                Ed25519KeyPairGenerator().also {
-                    it.init(Ed25519KeyGenerationParameters(SecureRandom.getInstanceStrong()))
+            val keyPairGenerator =
+                ed25519KeyPairGenerator.getOrSet {
+                    Ed25519KeyPairGenerator().also {
+                        it.init(Ed25519KeyGenerationParameters(SecureRandom.getInstanceStrong()))
+                    }
                 }
-            }
             val ed25519KeyPair = keyPairGenerator.generateKeyPair()
             val vkey = (ed25519KeyPair.public as Ed25519PublicKeyParameters).encoded
             val skey = (ed25519KeyPair.private as Ed25519PrivateKeyParameters).encoded
@@ -115,15 +117,17 @@ data class Key(
         }
 
         suspend fun createFromCliKeys(keyPair: CliKeyPair): Key {
-            val skeyBytes = keyPair.skey?.let { skey ->
-                (
-                    CborReader.createFromByteArray(skey.cborHex.hexToByteArray(), 0, 1)
-                        .readDataItem() as CborByteString
+            val skeyBytes =
+                keyPair.skey?.let { skey ->
+                    (
+                        CborReader.createFromByteArray(skey.cborHex.hexToByteArray(), 0, 1)
+                            .readDataItem() as CborByteString
                     ).byteArrayValue()[0]
-            } ?: ByteArray(0)
-            val vkeyBytes = (
-                CborReader.createFromByteArray(keyPair.vkey.cborHex.hexToByteArray(), 0, 1)
-                    .readDataItem() as CborByteString
+                } ?: ByteArray(0)
+            val vkeyBytes =
+                (
+                    CborReader.createFromByteArray(keyPair.vkey.cborHex.hexToByteArray(), 0, 1)
+                        .readDataItem() as CborByteString
                 ).byteArrayValue()[0]
 
             return Key(
@@ -146,13 +150,15 @@ data class Key(
         private fun createMultiSigAllOfScript(vararg keys: Key): ByteArray {
             return CborArray.create(
                 listOf(
-                    CborInteger.create(1L), // allOf
+                    // allOf
+                    CborInteger.create(1L),
                     CborArray.create(
                         keys.map { key ->
                             val keyHash = Blake2b.hash224(key.vkey)
                             CborArray.create(
                                 listOf(
-                                    CborInteger.create(0L), // sig
+                                    // sig
+                                    CborInteger.create(0L),
                                     CborByteString.create(keyHash)
                                 )
                             )

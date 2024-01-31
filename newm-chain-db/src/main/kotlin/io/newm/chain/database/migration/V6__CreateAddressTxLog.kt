@@ -11,10 +11,10 @@ class V6__CreateAddressTxLog : BaseJavaMigration() {
             execInBatch(
                 listOf(
                     """
-                        CREATE TABLE IF NOT EXISTS "address_tx_log" ("id" BIGSERIAL PRIMARY KEY, "address" TEXT NOT NULL, "tx_id" TEXT NOT NULL, "monitor_address_response" BYTEA NOT NULL)
+                    CREATE TABLE IF NOT EXISTS "address_tx_log" ("id" BIGSERIAL PRIMARY KEY, "address" TEXT NOT NULL, "tx_id" TEXT NOT NULL, "monitor_address_response" BYTEA NOT NULL)
                     """.trimIndent(),
                     """
-                        CREATE INDEX IF NOT EXISTS "address_tx_log_address_tx_id_index" ON "address_tx_log" ("address","tx_id")
+                    CREATE INDEX IF NOT EXISTS "address_tx_log_address_tx_id_index" ON "address_tx_log" ("address","tx_id")
                     """.trimIndent(),
                 )
             )

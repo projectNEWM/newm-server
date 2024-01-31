@@ -39,12 +39,13 @@ class PlaylistEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         }
     }
 
-    fun toModel(): Playlist = Playlist(
-        id = id.value,
-        createdAt = createdAt,
-        ownerId = ownerId.value,
-        name = name
-    )
+    fun toModel(): Playlist =
+        Playlist(
+            id = id.value,
+            createdAt = createdAt,
+            ownerId = ownerId.value,
+            name = name
+        )
 
     companion object : UUIDEntityClass<PlaylistEntity>(PlaylistTable) {
         fun all(filters: PlaylistFilters): SizedIterable<PlaylistEntity> {

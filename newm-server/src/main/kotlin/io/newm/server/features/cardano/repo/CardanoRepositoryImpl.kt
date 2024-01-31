@@ -76,16 +76,18 @@ internal class CardanoRepositoryImpl(
     private val kmsKeyId: String,
     private val configRepository: ConfigRepository,
 ) : CardanoRepository {
-
     private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
 
     private val songRepository: SongRepository by inject()
 
-    private var _isMainnet: Boolean? = null
+    private var isMainnet: Boolean? = null
 
-    private var _bytesEncryptor: BytesEncryptor? = null
+    private var bytesEncryptor: BytesEncryptor? = null
 
-    override suspend fun saveKey(key: Key, name: String?): UUID {
+    override suspend fun saveKey(
+        key: Key,
+        name: String?
+    ): UUID {
         logger.debug { "add: key = $key, name: $name" }
         val eSkey = encryptSkey(key.skey)
         return transaction {
@@ -102,9 +104,10 @@ internal class CardanoRepositoryImpl(
 
     override suspend fun getKey(keyId: UUID): Key {
         logger.debug { "get: keyId = $keyId" }
-        val keyEntity = transaction {
-            KeyEntity[keyId]
-        }
+        val keyEntity =
+            transaction {
+                KeyEntity[keyId]
+            }
         return keyEntity.toModel(decryptSkey(keyEntity.skey))
     }
 
@@ -118,34 +121,37 @@ internal class CardanoRepositoryImpl(
     }
 
     override suspend fun isMainnet(): Boolean {
-        if (_isMainnet == null) {
+        if (isMainnet == null) {
             // Check with newm-chain to see whether we're connected to a mainnet or a testnet
-            _isMainnet = client.isMainnet(IsMainnetRequest.getDefaultInstance()).isMainnet
+            isMainnet = client.isMainnet(IsMainnetRequest.getDefaultInstance()).isMainnet
         }
 
-        return _isMainnet!!
+        return isMainnet!!
     }
 
     override suspend fun queryLiveUtxos(address: String): List<Utxo> {
-        val response = client.queryLiveUtxos(
-            queryUtxosRequest {
-                this.address = address
-            }
-        )
+        val response =
+            client.queryLiveUtxos(
+                queryUtxosRequest {
+                    this.address = address
+                }
+            )
         return response.utxosList
     }
 
     override suspend fun buildTransaction(block: TransactionBuilderRequestKt.Dsl.() -> Unit): TransactionBuilderResponse {
-        val request = io.newm.chain.grpc.transactionBuilderRequest {
-            block.invoke(this)
-        }
+        val request =
+            io.newm.chain.grpc.transactionBuilderRequest {
+                block.invoke(this)
+            }
         return client.transactionBuilder(request)
     }
 
     override suspend fun submitTransaction(cborBytes: ByteString): SubmitTransactionResponse {
-        val request = submitTransactionRequest {
-            cbor = cborBytes
-        }
+        val request =
+            submitTransactionRequest {
+                cbor = cborBytes
+            }
         return client.submitTransaction(request)
     }
 
@@ -166,31 +172,36 @@ internal class CardanoRepositoryImpl(
         configRepository.putString(CONFIG_KEY_ENCRYPTION_PASSWORD, cipherPassword)
     }
 
-    override suspend fun queryPublicKeyHashByOutputRef(hash: String, ix: Long): String {
-        val response = client.queryPublicKeyHashByOutputRef(
-            queryUtxosOutputRefRequest {
-                this.hash = hash
-                this.ix = ix
-            }
-        )
+    override suspend fun queryPublicKeyHashByOutputRef(
+        hash: String,
+        ix: Long
+    ): String {
+        val response =
+            client.queryPublicKeyHashByOutputRef(
+                queryUtxosOutputRefRequest {
+                    this.hash = hash
+                    this.ix = ix
+                }
+            )
         require(response.hasPublicKeyHash()) { "Response does not contain a public key hash!" }
         return response.publicKeyHash
     }
 
     override suspend fun queryStreamTokenMinUtxo(): Long {
-        val outputUtxo = client.calculateMinUtxoForOutput(
-            outputUtxo {
-                address = Constants.DUMMY_STAKE_ADDRESS
-                // lovelace = "0" // auto-calculated
-                nativeAssets.add(
-                    nativeAsset {
-                        policy = Constants.DUMMY_TOKEN_POLICY_ID
-                        name = Constants.DUMMY_MAX_TOKEN_NAME
-                        amount = "100000000"
-                    }
-                )
-            }
-        )
+        val outputUtxo =
+            client.calculateMinUtxoForOutput(
+                outputUtxo {
+                    address = Constants.DUMMY_STAKE_ADDRESS
+                    // lovelace = "0" // auto-calculated
+                    nativeAssets.add(
+                        nativeAsset {
+                            policy = Constants.DUMMY_TOKEN_POLICY_ID
+                            name = Constants.DUMMY_MAX_TOKEN_NAME
+                            amount = "100000000"
+                        }
+                    )
+                }
+            )
         return outputUtxo.lovelace.toLong()
     }
 
@@ -201,32 +212,36 @@ internal class CardanoRepositoryImpl(
      */
     override suspend fun queryAdaUSDPrice(): Long {
         val now = System.currentTimeMillis()
-        val oracleUtxoStartTimestamp = oracleUtxoCached?.datumOrNull
-            ?.listOrNull?.getListItem(0)
-            ?.listOrNull?.getListItem(0)
-            ?.mapOrNull?.getMapItem(1)
-            ?.mapItemValueOrNull?.int
-            ?: Long.MAX_VALUE
-        val oracleUtxoEndTimestamp = oracleUtxoCached?.datumOrNull
-            ?.listOrNull?.getListItem(0)
-            ?.listOrNull?.getListItem(0)
-            ?.mapOrNull?.getMapItem(2)
-            ?.mapItemValueOrNull?.int
-            ?: Long.MIN_VALUE
+        val oracleUtxoStartTimestamp =
+            oracleUtxoCached?.datumOrNull
+                ?.listOrNull?.getListItem(0)
+                ?.listOrNull?.getListItem(0)
+                ?.mapOrNull?.getMapItem(1)
+                ?.mapItemValueOrNull?.int
+                ?: Long.MAX_VALUE
+        val oracleUtxoEndTimestamp =
+            oracleUtxoCached?.datumOrNull
+                ?.listOrNull?.getListItem(0)
+                ?.listOrNull?.getListItem(0)
+                ?.mapOrNull?.getMapItem(2)
+                ?.mapItemValueOrNull?.int
+                ?: Long.MIN_VALUE
         if (now < oracleUtxoStartTimestamp || now > oracleUtxoEndTimestamp) {
             // Outside of range. Get a new oracle utxo
-            oracleUtxoCached = client.queryUtxoByNativeAsset(
-                queryByNativeAssetRequest {
-                    policy = CHARLI3_ADA_USD_POLICY
-                    name = CHARLI3_ADA_USD_NAME
-                }
-            )
+            oracleUtxoCached =
+                client.queryUtxoByNativeAsset(
+                    queryByNativeAssetRequest {
+                        policy = CHARLI3_ADA_USD_POLICY
+                        name = CHARLI3_ADA_USD_NAME
+                    }
+                )
         }
-        val usdPrice = oracleUtxoCached?.datumOrNull
-            ?.listOrNull?.getListItem(0)
-            ?.listOrNull?.getListItem(0)
-            ?.mapOrNull?.getMapItem(0)
-            ?.mapItemValueOrNull?.int
+        val usdPrice =
+            oracleUtxoCached?.datumOrNull
+                ?.listOrNull?.getListItem(0)
+                ?.listOrNull?.getListItem(0)
+                ?.mapOrNull?.getMapItem(0)
+                ?.mapItemValueOrNull?.int
         return usdPrice ?: run {
             if (isMainnet()) {
                 throw IllegalStateException("Oracle Utxo does not contain a USD price!")
@@ -256,48 +271,56 @@ internal class CardanoRepositoryImpl(
         }
     }
 
-    override suspend fun getWalletSongs(request: List<String>, offset: Int, limit: Int): GetWalletSongsResponse {
+    override suspend fun getWalletSongs(
+        request: List<String>,
+        offset: Int,
+        limit: Int
+    ): GetWalletSongsResponse {
         logger.debug { "getWalletSongs: request = $request, offset = $offset, limit = $limit" }
         val utxos = request.map { it.cborHexToUtxo() }
         val nativeAssetMap = utxos.map { it.nativeAssetsList }.flatten().toNativeAssetMap()
         val streamTokenNames = nativeAssetMap.values.flatten().map { it.name }
-        val count = songRepository.getAllCount(
-            filters = SongFilters(
-                archived = false,
-                sortOrder = SortOrder.DESC,
-                olderThan = null,
-                newerThan = null,
-                ids = null,
-                ownerIds = null,
-                genres = null,
-                moods = null,
-                mintingStatuses = null,
-                phrase = null,
-                nftNames = streamTokenNames,
+        val count =
+            songRepository.getAllCount(
+                filters =
+                    SongFilters(
+                        archived = false,
+                        sortOrder = SortOrder.DESC,
+                        olderThan = null,
+                        newerThan = null,
+                        ids = null,
+                        ownerIds = null,
+                        genres = null,
+                        moods = null,
+                        mintingStatuses = null,
+                        phrase = null,
+                        nftNames = streamTokenNames,
+                    )
             )
-        )
-        val songs = songRepository.getAll(
-            filters = SongFilters(
-                archived = false,
-                sortOrder = SortOrder.DESC,
-                olderThan = null,
-                newerThan = null,
-                ids = null,
-                ownerIds = null,
-                genres = null,
-                moods = null,
-                mintingStatuses = null,
-                phrase = null,
-                nftNames = streamTokenNames,
-            ),
-            offset = offset,
-            limit = limit,
-        ).map { song: Song ->
-            WalletSong(
-                song = song,
-                tokenAmount = nativeAssetMap[song.nftPolicyId]!!.find { it.name == song.nftName }!!.amount!!.toLong(),
-            )
-        }
+        val songs =
+            songRepository.getAll(
+                filters =
+                    SongFilters(
+                        archived = false,
+                        sortOrder = SortOrder.DESC,
+                        olderThan = null,
+                        newerThan = null,
+                        ids = null,
+                        ownerIds = null,
+                        genres = null,
+                        moods = null,
+                        mintingStatuses = null,
+                        phrase = null,
+                        nftNames = streamTokenNames,
+                    ),
+                offset = offset,
+                limit = limit,
+            ).map { song: Song ->
+                WalletSong(
+                    song = song,
+                    tokenAmount = nativeAssetMap[song.nftPolicyId]!!.find { it.name == song.nftName }!!.amount!!.toLong(),
+                )
+            }
 
         return GetWalletSongsResponse(
             songs = songs,
@@ -307,7 +330,10 @@ internal class CardanoRepositoryImpl(
         )
     }
 
-    override suspend fun getWalletNFTSongs(xpubKey: String, includeLegacy: Boolean): List<NFTSong> {
+    override suspend fun getWalletNFTSongs(
+        xpubKey: String,
+        includeLegacy: Boolean
+    ): List<NFTSong> {
         val assets = getWalletAssets(xpubKey)
         val nftSongs = mutableListOf<NFTSong>()
         for (asset in assets) {
@@ -361,7 +387,10 @@ internal class CardanoRepositoryImpl(
                             continuation.resumeWithException(exception)
                         }
 
-                        override fun onSuccess(request: EncryptRequest, result: EncryptResult) {
+                        override fun onSuccess(
+                            request: EncryptRequest,
+                            result: EncryptResult
+                        ) {
                             val ciphertextBuffer = result.ciphertextBlob.asReadOnlyBuffer()
                             val ciphertextBytes = ByteArray(ciphertextBuffer.remaining())
                             ciphertextBuffer.get(ciphertextBytes)
@@ -397,7 +426,10 @@ internal class CardanoRepositoryImpl(
                             continuation.resumeWithException(exception)
                         }
 
-                        override fun onSuccess(request: DecryptRequest, result: DecryptResult) {
+                        override fun onSuccess(
+                            request: DecryptRequest,
+                            result: DecryptResult
+                        ) {
                             val plaintextBuffer = result.plaintext.asReadOnlyBuffer()
                             val plaintext = ByteArray(plaintextBuffer.remaining())
                             plaintextBuffer.get(plaintext)
@@ -421,15 +453,15 @@ internal class CardanoRepositoryImpl(
     }
 
     private suspend fun getEncryptor(): BytesEncryptor {
-        return _bytesEncryptor ?: run {
+        return bytesEncryptor ?: run {
             require(configRepository.exists(CONFIG_KEY_ENCRYPTION_SALT)) { "$CONFIG_KEY_ENCRYPTION_SALT Not found in db!" }
             require(configRepository.exists(CONFIG_KEY_ENCRYPTION_PASSWORD)) { "$CONFIG_KEY_ENCRYPTION_PASSWORD Not found in db!" }
             val cipherTextSalt = configRepository.getString(CONFIG_KEY_ENCRYPTION_SALT)
             val cipherTextPassword = configRepository.getString(CONFIG_KEY_ENCRYPTION_PASSWORD)
             val salt = String(decryptKmsString(cipherTextSalt), Charsets.UTF_8)
             val password = String(decryptKmsString(cipherTextPassword), Charsets.UTF_8)
-            _bytesEncryptor = Encryptors.stronger(password, salt)
-            _bytesEncryptor!!
+            bytesEncryptor = Encryptors.stronger(password, salt)
+            bytesEncryptor!!
         }
     }
 

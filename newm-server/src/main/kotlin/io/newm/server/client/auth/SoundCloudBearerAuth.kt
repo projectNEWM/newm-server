@@ -15,20 +15,21 @@ import io.newm.server.ktx.getSecureConfigString
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.getConfigString
 
-fun Auth.soundCloudBearer() = bearer {
-    val loader = SoundCloudTokenLoader()
+fun Auth.soundCloudBearer() =
+    bearer {
+        val loader = SoundCloudTokenLoader()
 
-    // Load and refresh tokens without waiting for a 401 first if the host matches
-    sendWithoutRequest { request ->
-        request.url.host == "api.soundcloud.com"
+        // Load and refresh tokens without waiting for a 401 first if the host matches
+        sendWithoutRequest { request ->
+            request.url.host == "api.soundcloud.com"
+        }
+        loadTokens {
+            loader.tokens ?: loader.load()
+        }
+        refreshTokens {
+            loader.load()
+        }
     }
-    loadTokens {
-        loader.tokens ?: loader.load()
-    }
-    refreshTokens {
-        loader.load()
-    }
-}
 
 private class SoundCloudTokenLoader {
     private val environment: ApplicationEnvironment by inject()
@@ -39,16 +40,18 @@ private class SoundCloudTokenLoader {
         val clientId = environment.getSecureConfigString("oauth.soundcloud.clientId")
         val clientSecret = environment.getSecureConfigString("oauth.soundcloud.clientSecret")
         val accessTokenUrl = environment.getConfigString("oauth.soundcloud.accessTokenUrl")
-        val tokenInfo: TokenInfo = httpClient.submitForm(
-            url = accessTokenUrl,
-            formParameters = parameters {
-                append("grant_type", "client_credentials")
-                append("client_id", clientId)
-                append("client_secret", clientSecret)
-            }
-        ) {
-            accept(ContentType.Application.Json)
-        }.checkedBody()
+        val tokenInfo: TokenInfo =
+            httpClient.submitForm(
+                url = accessTokenUrl,
+                formParameters =
+                    parameters {
+                        append("grant_type", "client_credentials")
+                        append("client_id", clientId)
+                        append("client_secret", clientSecret)
+                    }
+            ) {
+                accept(ContentType.Application.Json)
+            }.checkedBody()
         return BearerTokens(tokenInfo.accessToken, tokenInfo.accessToken).also { tokens = it }
     }
 }

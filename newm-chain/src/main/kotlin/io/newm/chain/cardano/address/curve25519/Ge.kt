@@ -7,7 +7,6 @@ package io.newm.chain.cardano.address.curve25519
  */
 @OptIn(ExperimentalUnsignedTypes::class)
 data class Ge(internal val x: Fe, internal val y: Fe, internal val z: Fe, internal val t: Fe) {
-
     operator fun plus(rhs: GePrecomp): GeP1P1 {
         val y1PlusX1 = y + x
         val y1MinusX1 = y - x

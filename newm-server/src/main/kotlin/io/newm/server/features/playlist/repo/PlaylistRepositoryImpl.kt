@@ -18,10 +18,12 @@ import org.koin.core.parameter.parametersOf
 import java.util.*
 
 internal class PlaylistRepositoryImpl : PlaylistRepository {
-
     private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
 
-    override suspend fun add(playlist: Playlist, ownerId: UUID): UUID {
+    override suspend fun add(
+        playlist: Playlist,
+        ownerId: UUID
+    ): UUID {
         logger.debug { "add: playlist = $playlist" }
         val name = playlist.name ?: throw HttpUnprocessableEntityException("missing name")
         playlist.checkFieldLengths()
@@ -33,7 +35,11 @@ internal class PlaylistRepositoryImpl : PlaylistRepository {
         }
     }
 
-    override suspend fun update(playlist: Playlist, playlistId: UUID, requesterId: UUID) {
+    override suspend fun update(
+        playlist: Playlist,
+        playlistId: UUID,
+        requesterId: UUID
+    ) {
         logger.debug { "update: playlist = $playlist" }
         playlist.checkFieldLengths()
         transaction {
@@ -43,7 +49,10 @@ internal class PlaylistRepositoryImpl : PlaylistRepository {
         }
     }
 
-    override suspend fun delete(playlistId: UUID, requesterId: UUID) {
+    override suspend fun delete(
+        playlistId: UUID,
+        requesterId: UUID
+    ) {
         logger.debug { "delete: playlistId = $playlistId" }
         transaction {
             val entity = PlaylistEntity[playlistId]
@@ -59,7 +68,11 @@ internal class PlaylistRepositoryImpl : PlaylistRepository {
         }
     }
 
-    override suspend fun getAll(filters: PlaylistFilters, offset: Int, limit: Int): List<Playlist> {
+    override suspend fun getAll(
+        filters: PlaylistFilters,
+        offset: Int,
+        limit: Int
+    ): List<Playlist> {
         logger.debug { "getAll: filters = $filters, offset = $offset, limit = $limit" }
         return transaction {
             PlaylistEntity.all(filters)
@@ -75,7 +88,11 @@ internal class PlaylistRepositoryImpl : PlaylistRepository {
         }
     }
 
-    override suspend fun addSong(playlistId: UUID, songId: UUID, requesterId: UUID) {
+    override suspend fun addSong(
+        playlistId: UUID,
+        songId: UUID,
+        requesterId: UUID
+    ) {
         logger.debug { "addSong: playlistId = $playlistId, songId = $songId" }
         return transaction {
             val entity = PlaylistEntity[playlistId]
@@ -84,7 +101,11 @@ internal class PlaylistRepositoryImpl : PlaylistRepository {
         }
     }
 
-    override suspend fun deleteSong(playlistId: UUID, songId: UUID, requesterId: UUID) {
+    override suspend fun deleteSong(
+        playlistId: UUID,
+        songId: UUID,
+        requesterId: UUID
+    ) {
         logger.debug { "deleteSong: playlistId = $playlistId, songId = $songId" }
         transaction {
             val entity = PlaylistEntity[playlistId]
@@ -93,7 +114,11 @@ internal class PlaylistRepositoryImpl : PlaylistRepository {
         }
     }
 
-    override suspend fun getSongs(playlistId: UUID, offset: Int, limit: Int): List<Song> {
+    override suspend fun getSongs(
+        playlistId: UUID,
+        offset: Int,
+        limit: Int
+    ): List<Song> {
         logger.debug { "getSongs: playlistId = $playlistId, offset = $offset, limit = $limit" }
         return transaction {
             PlaylistEntity[playlistId].songs.limit(n = limit, offset = offset.toLong()).map(SongEntity::toModel)

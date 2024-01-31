@@ -7,18 +7,17 @@ import io.newm.server.features.song.repo.SongRepositoryImpl
 import org.junit.jupiter.api.Test
 
 class SongRepositoryTest : BaseApplicationTests() {
-
     @Test
     fun `test calculateMintPaymentResponse`() {
         val songRepository = SongRepositoryImpl(mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk())
-        val response = songRepository.calculateMintPaymentResponse(
-
-            dspPriceUsd = 14990000L,
-            usdAdaExchangeRate = "250000".toBigInteger(),
-            minUtxo = 1288690L,
-            numberOfCollaborators = 3,
-            mintCostBase = 2000000L,
-        )
+        val response =
+            songRepository.calculateMintPaymentResponse(
+                dspPriceUsd = 14990000L,
+                usdAdaExchangeRate = "250000".toBigInteger(),
+                minUtxo = 1288690L,
+                numberOfCollaborators = 3,
+                mintCostBase = 2000000L,
+            )
         println(response)
         assertThat(response.cborHex).isEqualTo("1a03fbaf56")
         assertThat(response.adaPrice).isEqualTo("65.826070")

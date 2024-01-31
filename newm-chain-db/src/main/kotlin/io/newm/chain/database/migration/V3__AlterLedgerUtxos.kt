@@ -11,10 +11,10 @@ class V3__AlterLedgerUtxos : BaseJavaMigration() {
             execInBatch(
                 listOf(
                     """
-                        ALTER TABLE "ledger_utxos" ADD COLUMN "datum_hash" TEXT
+                    ALTER TABLE "ledger_utxos" ADD COLUMN "datum_hash" TEXT
                     """.trimIndent(),
                     """
-                        ALTER TABLE "ledger_utxos" ADD COLUMN "datum" TEXT
+                    ALTER TABLE "ledger_utxos" ADD COLUMN "datum" TEXT
                     """.trimIndent(),
                 )
             )

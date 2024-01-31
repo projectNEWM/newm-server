@@ -11,15 +11,15 @@ class V4__SongsUpdates : BaseJavaMigration() {
             execInBatch(
                 listOf(
                     """
-                        UPDATE songs SET minting_status = 0 WHERE minting_status IS NULL
+                    UPDATE songs SET minting_status = 0 WHERE minting_status IS NULL
                     """.trimIndent(),
                     """
-                        UPDATE songs SET marketplace_status = 0 WHERE marketplace_status IS NULL
+                    UPDATE songs SET marketplace_status = 0 WHERE marketplace_status IS NULL
                     """.trimIndent(),
                     """
-                        ALTER TABLE songs
-                            ALTER COLUMN minting_status SET NOT NULL,
-                            ALTER COLUMN marketplace_status SET NOT NULL
+                    ALTER TABLE songs
+                        ALTER COLUMN minting_status SET NOT NULL,
+                        ALTER COLUMN marketplace_status SET NOT NULL
                     """.trimIndent()
                 )
             )

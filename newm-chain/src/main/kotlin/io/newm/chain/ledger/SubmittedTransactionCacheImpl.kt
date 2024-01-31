@@ -12,7 +12,6 @@ import java.time.Duration
  * Temporary storage for submitted transactions so we can look them up when they land on a block
  */
 class SubmittedTransactionCacheImpl : SubmittedTransactionCache {
-
     val cacheMutex = Mutex()
 
     /**
@@ -23,21 +22,25 @@ class SubmittedTransactionCacheImpl : SubmittedTransactionCache {
     /**
      * Hold transactions in case we need to re-submit due to rollbacks
      */
-    private val submittedTransactionCache: Cache<String, ByteArray> = Caffeine.newBuilder()
-        .removalListener(
-            RemovalListener<String, ByteArray> { key, _, cause ->
-                if (cause == RemovalCause.REPLACED) {
-                    return@RemovalListener
+    private val submittedTransactionCache: Cache<String, ByteArray> =
+        Caffeine.newBuilder()
+            .removalListener(
+                RemovalListener<String, ByteArray> { key, _, cause ->
+                    if (cause == RemovalCause.REPLACED) {
+                        return@RemovalListener
+                    }
+                    synchronized(orderedSubmittedTransactionMap) {
+                        orderedSubmittedTransactionMap.remove(key)
+                    }
                 }
-                synchronized(orderedSubmittedTransactionMap) {
-                    orderedSubmittedTransactionMap.remove(key)
-                }
-            }
-        )
-        .expireAfterWrite(Duration.ofHours(48))
-        .build()
+            )
+            .expireAfterWrite(Duration.ofHours(48))
+            .build()
 
-    override fun put(txId: String, txSigned: ByteArray) {
+    override fun put(
+        txId: String,
+        txSigned: ByteArray
+    ) {
         synchronized(orderedSubmittedTransactionMap) {
             orderedSubmittedTransactionMap[txId] = txSigned
             submittedTransactionCache.put(txId, txSigned)
@@ -53,9 +56,10 @@ class SubmittedTransactionCacheImpl : SubmittedTransactionCache {
     }
 
     override val keys: Set<String>
-        get() = synchronized(orderedSubmittedTransactionMap) {
-            orderedSubmittedTransactionMap.keys
-        }
+        get() =
+            synchronized(orderedSubmittedTransactionMap) {
+                orderedSubmittedTransactionMap.keys
+            }
 
     suspend inline fun <T> withLock(action: () -> T): T {
         return cacheMutex.withLock(null, action)

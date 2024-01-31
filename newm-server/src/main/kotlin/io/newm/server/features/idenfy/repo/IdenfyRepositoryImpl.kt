@@ -32,7 +32,6 @@ class IdenfyRepositoryImpl(
     private val httpClient: HttpClient,
     private val emailRepository: EmailRepository,
 ) : IdenfyRepository {
-
     private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
     private val messages: Properties by lazy {
         propertiesFromResource("idenfy-messages.properties")
@@ -62,23 +61,25 @@ class IdenfyRepositoryImpl(
     override suspend fun processSessionResult(result: IdenfySessionResult) {
         logger.debug { "processSessionResult: $result" }
 
-        val status = when {
-            result.isApproved -> UserVerificationStatus.Verified
-            !result.isFinal -> UserVerificationStatus.Pending
-            else -> UserVerificationStatus.Unverified
-        }
+        val status =
+            when {
+                result.isApproved -> UserVerificationStatus.Verified
+                !result.isFinal -> UserVerificationStatus.Pending
+                else -> UserVerificationStatus.Unverified
+            }
         logger.debug { "processRequest: status = $status" }
 
-        val email = transaction {
-            with(UserEntity[result.clientId.toUUID()]) {
-                verificationStatus = status
-                if (status == UserVerificationStatus.Verified) {
-                    result.data.docFirstName?.let { firstName = it }
-                    result.data.docLastName?.let { lastName = it }
+        val email =
+            transaction {
+                with(UserEntity[result.clientId.toUUID()]) {
+                    verificationStatus = status
+                    if (status == UserVerificationStatus.Verified) {
+                        result.data.docFirstName?.let { firstName = it }
+                        result.data.docLastName?.let { lastName = it }
+                    }
+                    email
                 }
-                email
             }
-        }
 
         val messageArgs = mutableMapOf<String, Any>()
         if (status == UserVerificationStatus.Unverified) {
@@ -92,9 +93,10 @@ class IdenfyRepositoryImpl(
                 suspicionReasons?.let { codes += it }
             }
             logger.debug { "processRequest: codes = $codes" }
-            messageArgs += "reasons" to codes.joinToString(separator = "<br>") { code ->
-                "<li>${messages.getProperty(code, code)}</li>"
-            }
+            messageArgs += "reasons" to
+                codes.joinToString(separator = "<br>") { code ->
+                    "<li>${messages.getProperty(code, code)}</li>"
+                }
         }
 
         with(environment.getConfigChild("idenfy.${status.name.lowercase()}Email")) {

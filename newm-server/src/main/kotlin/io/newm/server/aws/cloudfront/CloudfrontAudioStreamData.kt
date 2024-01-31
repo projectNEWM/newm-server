@@ -34,15 +34,16 @@ class CloudfrontAudioStreamData(
         // effectively granting access to the entire "directory"
         val resourceUrl = "${streamUrl.removeRange(streamUrl.lastIndexOf("/"), streamUrl.length)}/*"
 
-        val customRequest = CustomSignerRequest.builder()
-            .resourceUrl(resourceUrl)
-            .privateKey(PrivateKeyReader.readFromString(args.privateKey))
-            .keyPairId(args.keyPairId)
-            .expirationDate(args.expirationDate)
-            // optional
-            //  .activeDate(activeDate)
-            //  .ipRange("192.168.0.1/24")
-            .build()
+        val customRequest =
+            CustomSignerRequest.builder()
+                .resourceUrl(resourceUrl)
+                .privateKey(PrivateKeyReader.readFromString(args.privateKey))
+                .keyPairId(args.keyPairId)
+                .expirationDate(args.expirationDate)
+                // optional
+                //  .activeDate(activeDate)
+                //  .ipRange("192.168.0.1/24")
+                .build()
 
         val cloudFrontUtilities = CloudFrontUtilities.create()
         val signedCookies = cloudFrontUtilities.getCookiesForCustomPolicy(customRequest)
@@ -61,22 +62,24 @@ class CloudfrontAudioStreamData(
         // resource is the "dirname" of the URL with the filename removed,
         // effectively granting access to the entire "directory"
         val resourceUrl = "${streamUrl.removeRange(streamUrl.lastIndexOf("/"), streamUrl.length)}/*"
-        val request = CustomSignerRequest.builder()
-            .resourceUrl(resourceUrl)
-            .privateKey(PrivateKeyReader.readFromString(args.privateKey))
-            .keyPairId(args.keyPairId)
-            .expirationDate(args.expirationDate)
-            // optional
-            //  .activeDate(activeDate)
-            //  .ipRange("192.168.0.1/24")
-            .build()
+        val request =
+            CustomSignerRequest.builder()
+                .resourceUrl(resourceUrl)
+                .privateKey(PrivateKeyReader.readFromString(args.privateKey))
+                .keyPairId(args.keyPairId)
+                .expirationDate(args.expirationDate)
+                // optional
+                //  .activeDate(activeDate)
+                //  .ipRange("192.168.0.1/24")
+                .build()
 
-        val policy = SigningUtils.buildCustomPolicyForSignedUrl(
-            request.resourceUrl(),
-            request.activeDate(),
-            request.expirationDate(),
-            request.ipRange()
-        )
+        val policy =
+            SigningUtils.buildCustomPolicyForSignedUrl(
+                request.resourceUrl(),
+                request.activeDate(),
+                request.expirationDate(),
+                request.ipRange()
+            )
         val signatureBytes =
             SigningUtils.signWithSha1Rsa(policy.toByteArray(StandardCharsets.UTF_8), request.privateKey())
         val urlSafePolicy = SigningUtils.makeStringUrlSafe(policy)
@@ -93,21 +96,26 @@ class CloudfrontAudioStreamData(
                 "&oSignature=" + urlSafeSignature +
                 "&Key-Pair-Id=" + request.keyPairId() +
                 "&oKey-Pair-Id=" + request.keyPairId()
-            )
-        val signedUrl = DefaultSignedUrl.builder().protocol(protocol).domain(domain).encodedPath(encodedPath)
-            .url("$protocol://$domain$encodedPath").build()
+        )
+        val signedUrl =
+            DefaultSignedUrl.builder().protocol(protocol).domain(domain).encodedPath(encodedPath)
+                .url("$protocol://$domain$encodedPath").build()
         return signedUrl.url()
     }
 
-    private fun cookie(name: String, value: String): Cookie = Cookie(
-        name = name,
-        value = value,
-        path = "/",
-        domain = args.cookieDomain,
-        extensions = mapOf("SameSite" to "Lax"),
-        secure = true,
-        httpOnly = true,
-    )
+    private fun cookie(
+        name: String,
+        value: String
+    ): Cookie =
+        Cookie(
+            name = name,
+            value = value,
+            path = "/",
+            domain = args.cookieDomain,
+            extensions = mapOf("SameSite" to "Lax"),
+            secure = true,
+            httpOnly = true,
+        )
 }
 
 fun cloudfrontAudioStreamData(init: CloudfrontAudioStreamArguments.() -> Unit): CloudfrontAudioStreamData =

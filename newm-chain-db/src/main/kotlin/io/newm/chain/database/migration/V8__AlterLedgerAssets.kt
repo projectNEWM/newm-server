@@ -11,13 +11,13 @@ class V8__AlterLedgerAssets : BaseJavaMigration() {
             execInBatch(
                 listOf(
                     """
-                        ALTER TABLE "ledger_assets" DROP COLUMN IF EXISTS "image"
+                    ALTER TABLE "ledger_assets" DROP COLUMN IF EXISTS "image"
                     """.trimIndent(),
                     """
-                        ALTER TABLE "ledger_assets" DROP COLUMN IF EXISTS "description"
+                    ALTER TABLE "ledger_assets" DROP COLUMN IF EXISTS "description"
                     """.trimIndent(),
                     """
-                        ALTER TABLE "ledger_assets" ADD COLUMN IF NOT EXISTS "supply" TEXT DEFAULT '0'
+                    ALTER TABLE "ledger_assets" ADD COLUMN IF NOT EXISTS "supply" TEXT DEFAULT '0'
                     """.trimIndent(),
                 )
             )
