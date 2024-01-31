@@ -12,6 +12,7 @@ import io.newm.server.features.cardano.createCardanoRoutes
 import io.newm.server.features.cloudinary.createCloudinaryRoutes
 import io.newm.server.features.collaboration.createCollaborationRoutes
 import io.newm.server.features.distribution.createDistributionRoutes
+import io.newm.server.features.earnings.createEarningsRoutes
 import io.newm.server.features.idenfy.createIdenfyRoutes
 import io.newm.server.features.playlist.createPlaylistRoutes
 import io.newm.server.features.song.createSongRoutes
@@ -51,6 +52,7 @@ fun Application.module() {
         createCloudinaryRoutes()
         createIdenfyRoutes()
         createDistributionRoutes()
+        createEarningsRoutes()
     }
 
     initializeDaemons()
