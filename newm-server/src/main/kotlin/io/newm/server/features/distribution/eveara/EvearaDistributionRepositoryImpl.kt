@@ -1359,40 +1359,84 @@ class EvearaDistributionRepositoryImpl(
                         log.info { "Updated collab distribution artist ${collabUser.email} with id ${response.artistData?.artistId}: ${response.message}" }
                     }
                 } ?: run {
-                    // FIXME: don't hardcode artist's country
-                    val hardcodedCountry =
-                        getCountries().countries.first { it.countryCode.equals("us", ignoreCase = true) }.countryCode
-                    val response =
-                        addArtist(
-                            AddArtistRequest(
-                                uuid = user.distributionUserId!!,
-                                name = collabUser.stageOrFullName,
-                                country = hardcodedCountry,
-                                outletProfiles =
-                                    listOf(
-                                        OutletProfile(
-                                            id = collabUserOutletProfileNamesMap["Spotify"]!!,
-                                            profileUrl = collabUser.spotifyProfile.orEmpty(),
-                                        ),
-                                        OutletProfile(
-                                            id = collabUserOutletProfileNamesMap["SoundCloud"]!!,
-                                            profileUrl = collabUser.soundCloudProfile.orEmpty(),
-                                        ),
-                                        OutletProfile(
-                                            id = collabUserOutletProfileNamesMap["Apple"]!!,
-                                            profileUrl = collabUser.appleMusicProfile.orEmpty(),
-                                        )
-                                    ).filter { it.profileUrl.isNotBlank() }.takeIf { it.isNotEmpty() },
-                            ).logRequestJson(log)
+                    val artist = getArtist(collabUser).artists.firstOrNull()
+                    if (artist == null) {
+                        // FIXME: don't hardcode artist's country
+                        val hardcodedCountry =
+                            getCountries().countries.first { it.countryCode.equals("us", ignoreCase = true) }.countryCode
+                        val response =
+                            addArtist(
+                                AddArtistRequest(
+                                    uuid = user.distributionUserId!!,
+                                    name = collabUser.stageOrFullName,
+                                    country = hardcodedCountry,
+                                    outletProfiles =
+                                        listOf(
+                                            OutletProfile(
+                                                id = collabUserOutletProfileNamesMap["Spotify"]!!,
+                                                profileUrl = collabUser.spotifyProfile.orEmpty(),
+                                            ),
+                                            OutletProfile(
+                                                id = collabUserOutletProfileNamesMap["SoundCloud"]!!,
+                                                profileUrl = collabUser.soundCloudProfile.orEmpty(),
+                                            ),
+                                            OutletProfile(
+                                                id = collabUserOutletProfileNamesMap["Apple"]!!,
+                                                profileUrl = collabUser.appleMusicProfile.orEmpty(),
+                                            )
+                                        ).filter { it.profileUrl.isNotBlank() }.takeIf { it.isNotEmpty() },
+                                ).logRequestJson(log)
+                            )
+                        log.info { "Created collab distribution artist ${collabUser.email} with id ${response.artistId}: ${response.message}" }
+                        collabRepository.update(
+                            collab.copy(distributionArtistId = response.artistId),
+                            collab.id!!,
+                            user.id,
+                            skipStatusCheck = true
                         )
-                    log.info { "Created collab distribution artist ${collabUser.email} with id ${response.artistId}: ${response.message}" }
-                    collabRepository.update(
-                        collab.copy(distributionArtistId = response.artistId),
-                        collab.id!!,
-                        user.id,
-                        skipStatusCheck = true
-                    )
-                    collabDistributionArtistsNameToIdMap[collabUser.stageOrFullName] = response.artistId
+                        collabDistributionArtistsNameToIdMap[collabUser.stageOrFullName] = response.artistId
+                    } else {
+                        log.info { "Found existing collab distribution artist ${collabUser.email} with id ${artist.artistId}" }
+                        collabRepository.update(
+                            collab.copy(distributionArtistId = artist.artistId),
+                            collab.id!!,
+                            user.id,
+                            skipStatusCheck = true
+                        )
+
+                        val currentOutletsMap =
+                            collabDistributionArtistsMap[artist.artistId]?.outlets?.filter { it.profileUrl.isNotBlank() }
+                                ?.associateBy { it.name }.orEmpty()
+                        if (currentOutletsMap["Spotify"]?.profileUrl != collabUser.spotifyProfile?.orNull() ||
+                            currentOutletsMap["SoundCloud"]?.profileUrl != collabUser.soundCloudProfile?.orNull() ||
+                            currentOutletsMap["Apple"]?.profileUrl != collabUser.appleMusicProfile?.orNull()
+                        ) {
+                            val response =
+                                updateArtist(
+                                    artist.artistId,
+                                    UpdateArtistRequest(
+                                        uuid = user.distributionUserId!!,
+                                        name = collabUser.stageOrFullName,
+                                        outletProfiles =
+                                            listOf(
+                                                OutletProfile(
+                                                    id = collabUserOutletProfileNamesMap["Spotify"]!!,
+                                                    profileUrl = collabUser.spotifyProfile.orEmpty(),
+                                                ),
+                                                OutletProfile(
+                                                    id = collabUserOutletProfileNamesMap["SoundCloud"]!!,
+                                                    profileUrl = collabUser.soundCloudProfile.orEmpty(),
+                                                ),
+                                                OutletProfile(
+                                                    id = collabUserOutletProfileNamesMap["Apple"]!!,
+                                                    profileUrl = collabUser.appleMusicProfile.orEmpty(),
+                                                )
+                                            ).filter { it.profileUrl.isNotBlank() }.takeIf { it.isNotEmpty() },
+                                    )
+                                ).logRequestJson(log)
+                            log.info { "Updated collab distribution artist ${collabUser.email} with id ${response.artistData?.artistId}: ${response.message}" }
+                        }
+                    }
                 }
             }
         }
@@ -1461,35 +1505,75 @@ class EvearaDistributionRepositoryImpl(
                     log.info { "Updated distribution artist ${user.email} with id ${response.artistData?.artistId}: ${response.message}" }
                 }
             } else {
-                // FIXME: don't hardcode artist's country
-                val hardcodedCountry =
-                    getCountries().countries.first { it.countryCode.equals("us", ignoreCase = true) }.countryCode
-                val response =
-                    addArtist(
-                        AddArtistRequest(
-                            uuid = user.distributionUserId!!,
-                            name = user.stageOrFullName,
-                            country = hardcodedCountry,
-                            outletProfiles =
-                                listOf(
-                                    OutletProfile(
-                                        id = collabUserOutletProfileNamesMap["Spotify"]!!,
-                                        profileUrl = user.spotifyProfile.orEmpty(),
-                                    ),
-                                    OutletProfile(
-                                        id = collabUserOutletProfileNamesMap["SoundCloud"]!!,
-                                        profileUrl = user.soundCloudProfile.orEmpty(),
-                                    ),
-                                    OutletProfile(
-                                        id = collabUserOutletProfileNamesMap["Apple"]!!,
-                                        profileUrl = user.appleMusicProfile.orEmpty(),
-                                    )
-                                ).filter { it.profileUrl.isNotBlank() }.takeIf { it.isNotEmpty() },
+                val artist = getArtist(user).artists.firstOrNull()
+                if (artist == null) {
+                    // FIXME: don't hardcode artist's country
+                    val hardcodedCountry =
+                        getCountries().countries.first { it.countryCode.equals("us", ignoreCase = true) }.countryCode
+                    val response =
+                        addArtist(
+                            AddArtistRequest(
+                                uuid = user.distributionUserId!!,
+                                name = user.stageOrFullName,
+                                country = hardcodedCountry,
+                                outletProfiles =
+                                    listOf(
+                                        OutletProfile(
+                                            id = collabUserOutletProfileNamesMap["Spotify"]!!,
+                                            profileUrl = user.spotifyProfile.orEmpty(),
+                                        ),
+                                        OutletProfile(
+                                            id = collabUserOutletProfileNamesMap["SoundCloud"]!!,
+                                            profileUrl = user.soundCloudProfile.orEmpty(),
+                                        ),
+                                        OutletProfile(
+                                            id = collabUserOutletProfileNamesMap["Apple"]!!,
+                                            profileUrl = user.appleMusicProfile.orEmpty(),
+                                        )
+                                    ).filter { it.profileUrl.isNotBlank() }.takeIf { it.isNotEmpty() },
+                            )
                         )
-                    )
-                log.info { "Created distribution artist ${user.email} with id ${response.artistId}: ${response.message}" }
-                user.distributionArtistId = response.artistId
-                userRepository.updateUserData(user.id, user)
+                    log.info { "Created distribution artist ${user.email} with id ${response.artistId}: ${response.message}" }
+                    user.distributionArtistId = response.artistId
+                    userRepository.updateUserData(user.id, user)
+                } else {
+                    log.info { "Found existing distribution artist ${user.email} with id ${artist.artistId}" }
+                    user.distributionArtistId = artist.artistId
+                    userRepository.updateUserData(user.id, user)
+
+                    val currentOutletsMap =
+                        collabDistributionArtistsMap[user.distributionArtistId]?.outlets?.filter { it.profileUrl.isNotBlank() }
+                            ?.associateBy { it.name }.orEmpty()
+                    if (currentOutletsMap["Spotify"]?.profileUrl != user.spotifyProfile?.orNull() ||
+                        currentOutletsMap["SoundCloud"]?.profileUrl != user.soundCloudProfile?.orNull() ||
+                        currentOutletsMap["Apple"]?.profileUrl != user.appleMusicProfile?.orNull()
+                    ) {
+                        val response =
+                            updateArtist(
+                                user.distributionArtistId!!,
+                                UpdateArtistRequest(
+                                    uuid = user.distributionUserId!!,
+                                    name = user.stageOrFullName,
+                                    outletProfiles =
+                                        listOf(
+                                            OutletProfile(
+                                                id = collabUserOutletProfileNamesMap["Spotify"]!!,
+                                                profileUrl = user.spotifyProfile.orEmpty(),
+                                            ),
+                                            OutletProfile(
+                                                id = collabUserOutletProfileNamesMap["SoundCloud"]!!,
+                                                profileUrl = user.soundCloudProfile.orEmpty(),
+                                            ),
+                                            OutletProfile(
+                                                id = collabUserOutletProfileNamesMap["Apple"]!!,
+                                                profileUrl = user.appleMusicProfile.orEmpty(),
+                                            )
+                                        ).filter { it.profileUrl.isNotBlank() }.takeIf { it.isNotEmpty() },
+                                )
+                            ).logRequestJson(log)
+                        log.info { "Updated distribution artist ${user.email} with id ${response.artistData?.artistId}: ${response.message}" }
+                    }
+                }
             }
         } else {
             val artist = getArtist(user).artists.first()
