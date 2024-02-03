@@ -144,7 +144,8 @@ fun String.cborHexToUtxo(): Utxo {
                                         val namesCborMap = (valueCborObject as CborMap).mapValue()
                                         namesCborMap.map { (nameCborObject, amountCborObject) ->
                                             val name =
-                                                (nameCborObject as CborByteString).byteArrayValue()[0].toHexString()
+                                                (nameCborObject as CborByteString)
+                                                    .byteArrayValue().getOrElse(0) { ByteArray(0) }.toHexString()
                                             val amount = (amountCborObject as CborInteger).bigIntegerValue().toString()
                                             nativeAsset {
                                                 this.policy = policy
