@@ -808,9 +808,9 @@ class EvearaDistributionRepositoryImpl(
                     UpdateTrackRequest(
                         uuid = user.distributionUserId!!,
                         name = song.title!!,
-                        // Eveara API expects ISRC without dashes
+                        // Eveara API expects ISRC/ISWC without dashes
                         stereoIsrc = song.isrc?.replace("-", ""),
-                        iswc = song.iswc,
+                        iswc = song.iswc?.replace("-", ""),
                         genre = song.genres?.mapNotNull { songGenreName -> genres.firstOrNull { it.name == songGenreName }?.genreId },
                         language = languages.find { it.name == song.language }?.code,
                         explicit =
@@ -1633,7 +1633,7 @@ class EvearaDistributionRepositoryImpl(
         // Delete any track that already has this song isrc and is associated with this user
         val getTracksResponse = getTracks(user)
         val existingTrack =
-            getTracksResponse.trackData?.firstOrNull { it.stereoIsrc == mutableSong.isrc?.replace("-", "") }
+            getTracksResponse.trackData?.firstOrNull { it.stereoIsrc.equals(mutableSong.isrc?.replace("-", ""), ignoreCase = true) }
         if (existingTrack != null) {
             val getAlbumResponse = getAlbums(user)
             if (getAlbumResponse.totalRecords > 0) {
