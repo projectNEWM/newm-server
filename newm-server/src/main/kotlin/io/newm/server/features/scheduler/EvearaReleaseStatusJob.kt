@@ -89,7 +89,7 @@ class EvearaReleaseStatusJob : Job {
 
                     else -> {
                         log.info {
-                            "Spotify release status for $songId is $spotifyOutletStatusCode, so we will check again at ${
+                            "Eveara's Spotify distribution status for $songId is $spotifyOutletStatusCode, so we will check again at ${
                                 LocalDateTime.ofInstant(
                                     context.nextFireTime.toInstant(),
                                     ZoneOffset.UTC
