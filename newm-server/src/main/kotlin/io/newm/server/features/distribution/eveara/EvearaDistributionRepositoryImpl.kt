@@ -1359,7 +1359,7 @@ class EvearaDistributionRepositoryImpl(
                         log.info { "Updated collab distribution artist ${collabUser.email} with id ${response.artistData?.artistId}: ${response.message}" }
                     }
                 } ?: run {
-                    val artist = getArtist(collabUser).artists.firstOrNull()
+                    val artist = getArtists(collabUser).artists.firstOrNull()
                     if (artist == null) {
                         // FIXME: don't hardcode artist's country
                         val hardcodedCountry =
@@ -1505,7 +1505,7 @@ class EvearaDistributionRepositoryImpl(
                     log.info { "Updated distribution artist ${user.email} with id ${response.artistData?.artistId}: ${response.message}" }
                 }
             } else {
-                val artist = getArtist(user).artists.firstOrNull()
+                val artist = getArtists(user).artists.firstOrNull()
                 if (artist == null) {
                     // FIXME: don't hardcode artist's country
                     val hardcodedCountry =
