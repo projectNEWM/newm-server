@@ -3,6 +3,7 @@ package io.newm.server.json
 import com.google.common.truth.Truth.assertThat
 import io.newm.server.features.collaboration.model.Collaboration
 import io.newm.server.features.distribution.model.DistributionOutletReleaseStatusResponse
+import io.newm.server.features.distribution.model.GetAlbumResponse
 import io.newm.server.features.minting.MintingStatusSqsMessage
 import io.newm.shared.serialization.BigDecimalSerializer
 import kotlinx.serialization.json.Json
@@ -47,5 +48,16 @@ class TestJsonDecoding {
             """.trimIndent()
         val mintingStatusSqsMessage: MintingStatusSqsMessage = json.decodeFromString(jsonString)
         println(mintingStatusSqsMessage.toString())
+    }
+
+    @Test
+    fun `test GetAlbumResponse`() {
+        val jsonString =
+            """
+            {"message":"Currently showing 1 record(s)","success":true,"total_records":1,"data":[{"cover_image":"https://s3.amazonaws.com/eveara-bucket/production/contents/306264/100000688773/album_art/100000688773_THUMB.JPG?AWSAccessKeyId=AKIA56KZMVANEUHP7T5B&Expires=1707611649&Signature=IyFiRcd8iECZUIsdOHl%2Bm4P9AF4%3D","subscription":{"expiration_date":"","subscription_id":312153,"subscription_name":"NEWMUnlimited"},"ean_upc":5063332716402,"is_active":1,"product_format":"Stereo","original_release_date":"31-01-2024","name":"Bosquet Bohemien","release_id":100000688773,"spatial_ean_upc":"","pre_save_link":"","tracks":[{"album_track_id":666654,"participant":[{"participant_id":256028,"participant_name":"NEWM","roles":[{"role_id":5,"role_name":"Publisher"}],"payout_share_percentage":100},{"participant_id":256029,"participant_name":"L'alchimiste","roles":[{"role_id":6,"role_name":"Artist"}],"payout_share_percentage":0}],"iswc":"","featured_artists":[],"spatial_isrc":"","artists":[{"id":312819,"name":"L'alchimiste"}],"isrc":"IEWNY2405094","preview":{"start_at":0,"duration":30},"outlets":[{"outlet_name":"Apple Music","outlet_id":"1726731390"}],"track_id":678294,"name":"Bosquet Bohemien"}],"product_type":"Single","album_status":{"status_code":1023,"status_name":"Released"},"artist":[{"artist_id":312819,"artist_name":"L'alchimiste"}],"spatial_product_code_type":"","disapprove_message":"","product_code_type":"EAN","outlets":[{"outlet_name":"Apple Music","outlet_id":"1726731389"}],"removable":"false","track_count":1}]}
+            """.trimIndent()
+
+        val response: GetAlbumResponse = json.decodeFromString(jsonString)
+        println(response.toString())
     }
 }
