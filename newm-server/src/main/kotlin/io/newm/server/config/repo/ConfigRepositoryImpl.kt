@@ -38,6 +38,10 @@ internal class ConfigRepositoryImpl : ConfigRepository {
 
     override suspend fun getBooleans(id: String): List<Boolean> = getStrings(id).map(String::toBoolean)
 
+    override suspend fun getDouble(id: String): Double = getString(id).toDouble()
+
+    override suspend fun getDoubles(id: String): List<Double> = getStrings(id).map(String::toDouble)
+
     override suspend fun putString(
         id: String,
         value: String

@@ -6,6 +6,7 @@ import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.application.log
 import io.ktor.server.plugins.cors.routing.CORS
+import io.newm.server.recaptcha.RecaptchaHeaders
 import io.newm.shared.ktx.getConfigSplitStrings
 
 fun Application.installCORS() {
@@ -14,6 +15,8 @@ fun Application.installCORS() {
         allowMethod(HttpMethod.Patch)
         allowMethod(HttpMethod.Delete)
         allowHeader(HttpHeaders.Authorization)
+        allowHeader(RecaptchaHeaders.Platform)
+        allowHeader(RecaptchaHeaders.Token)
         allowCredentials = true
         allowNonSimpleContentTypes = true
 

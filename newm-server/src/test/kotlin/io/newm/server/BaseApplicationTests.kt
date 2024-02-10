@@ -36,6 +36,7 @@ import io.newm.server.features.user.oauth.providers.GoogleUserProvider
 import io.newm.server.features.user.oauth.providers.LinkedInUserProvider
 import io.newm.server.features.user.verify.OutletProfileUrlVerifier
 import io.newm.server.ktx.asValidUrl
+import io.newm.server.recaptcha.repo.RecaptchaRepository
 import io.newm.shared.auth.Password
 import io.newm.shared.serialization.BigDecimalSerializer
 import io.newm.shared.serialization.BigIntegerSerializer
@@ -148,6 +149,7 @@ open class BaseApplicationTests {
                 single { mockk<LinkedInUserProvider>(relaxed = true) }
                 single { mockk<AppleUserProvider>(relaxed = true) }
                 single { mockk<AmazonS3>(relaxed = true) }
+                single { mockk<RecaptchaRepository>(relaxed = true) }
                 single<OutletProfileUrlVerifier>(QUALIFIER_SPOTIFY_PROFILE_URL_VERIFIER) {
                     mockk<OutletProfileUrlVerifier>(relaxed = true)
                 }
