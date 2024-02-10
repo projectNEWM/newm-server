@@ -20,7 +20,7 @@ data class TrackX(
     @SerialName("preview")
     val preview: Preview,
     @SerialName("outlets")
-    val outlets: List<Long>,
+    val outlets: List<Outlet>,
     @SerialName("track_id")
     val trackId: Long,
     @SerialName("name")
