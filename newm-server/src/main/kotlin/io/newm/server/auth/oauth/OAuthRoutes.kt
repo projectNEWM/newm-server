@@ -12,14 +12,18 @@ import io.newm.server.auth.password.createLoginResponse
 import io.newm.shared.koin.inject
 import io.newm.shared.exception.HttpBadRequestException
 import io.newm.server.features.user.repo.UserRepository
+import io.newm.server.recaptcha.repo.RecaptchaRepository
 import io.newm.shared.ktx.post
 
 fun Routing.createOAuthRoutes(type: OAuthType) {
+    val recaptchaRepository: RecaptchaRepository by inject()
     val userRepository: UserRepository by inject()
     val oAuthRepository: OAuthRepository by inject()
     val jwtRepository: JwtRepository by inject()
 
-    post("$AUTH_PATH/login/${type.name.lowercase()}") {
+    val typeName = type.name.lowercase()
+    post("$AUTH_PATH/login/$typeName") {
+        recaptchaRepository.verify("login_$typeName", request)
         val req = receive<OAuthLoginRequest>()
         val oauthTokens =
             req.oauthTokens ?: req.code?.let { code ->

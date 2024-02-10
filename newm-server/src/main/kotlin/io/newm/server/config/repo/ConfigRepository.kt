@@ -19,6 +19,10 @@ interface ConfigRepository {
 
     suspend fun getBooleans(id: String): List<Boolean>
 
+    suspend fun getDouble(id: String): Double
+
+    suspend fun getDoubles(id: String): List<Double>
+
     suspend fun putString(
         id: String,
         value: String
@@ -47,5 +51,7 @@ interface ConfigRepository {
         const val CONFIG_KEY_EMAIL_WHITELIST = "email.whitelist"
         const val CONFIG_KEY_DISTRIBUTION_PRICE_USD = "distribution.price.usd"
         const val CONFIG_KEY_OUTLET_STATUS_CHECK_MINUTES = "outlet.statusCheckMinutes"
+        const val CONFIG_KEY_RECAPTCHA_ENABLED = "recaptcha.enabled"
+        const val CONFIG_KEY_RECAPTCHA_MIN_SCORE = "recaptcha.minScore"
     }
 }
