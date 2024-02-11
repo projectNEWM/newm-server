@@ -3,7 +3,6 @@ package io.newm.server
 import com.google.common.truth.Truth.assertThat
 import io.ktor.client.call.body
 import io.ktor.client.request.bearerAuth
-import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -31,8 +30,6 @@ class SongsTest {
             assertThat(createSongResponse.status).isEqualTo(HttpStatusCode.OK)
             val resp = createSongResponse.body<SongIdBody>()
             assertThat(resp.songId).isNotNull()
-
-            cleanUpSong(createSongResponse)
         }
 
     @Test
@@ -45,8 +42,6 @@ class SongsTest {
                     )
                 )
             assertThat(createSongResponse.status).isEqualTo(HttpStatusCode.UnprocessableEntity)
-
-            cleanUpSong(createSongResponse)
         }
 
     @Test
@@ -72,8 +67,6 @@ class SongsTest {
             val song = getSongResponse.body<Song>()
             assertThat(song.title).isEqualTo(title)
             assertThat(song.genres).containsExactly("Synthwave", "Synthpop")
-
-            cleanUpSong(createSongResponse)
         }
 
     @Test
@@ -95,20 +88,4 @@ class SongsTest {
             setBody(song)
         }
     }
-
-    private suspend fun deleteSong(songId: String): HttpResponse {
-        return TestContext.client.delete("${TestContext.baseUrl}/v1/songs/$songId") {
-            bearerAuth(TestContext.loginResponse.accessToken)
-            contentType(ContentType.Application.Json)
-        }
-    }
-
-    private suspend fun cleanUpSong(songId: String) {
-        try {
-            deleteSong(songId)
-        } catch (_: Exception) {
-        }
-    }
-
-    private suspend fun cleanUpSong(httpResponse: HttpResponse) = cleanUpSong(httpResponse.body<SongIdBody>().songId.toString())
 }
