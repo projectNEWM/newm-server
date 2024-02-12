@@ -3,6 +3,7 @@ package io.newm.server
 import com.google.common.truth.Truth.assertThat
 import io.ktor.client.call.body
 import io.ktor.client.request.bearerAuth
+import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -14,9 +15,46 @@ import io.newm.server.features.model.CountResponse
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongIdBody
 import kotlinx.coroutines.runBlocking
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 
+const val SONGS_PAGE_LIMIT = 25
+
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SongsTest {
+    @BeforeAll
+    fun beforeAllTests() {
+        runBlocking {
+            // purge data from prior test runs if requested via newm.integTest.clearTestData property
+            var offset = 0
+
+            val clearTestDataOption = (System.getProperty("newm.integTest.clearTestData") ?: "false").toBoolean()
+            if (clearTestDataOption) {
+                println("System property 'newm.integTest.clearTestData' is true, clearning test data")
+                while (true) {
+                    val getSongsResponse =
+                        TestContext.client.get("${TestContext.baseUrl}/v1/songs?ownerIds=me&offset=$offset&limit=$SONGS_PAGE_LIMIT") {
+                            bearerAuth(TestContext.loginResponse.accessToken)
+                        }
+                    val songs = getSongsResponse.body<List<Song>>()
+                    if (songs.isEmpty()) {
+                        break
+                    }
+                    songs.forEach { song ->
+                        print("Deleting song: ${song.id} ${song.title?.take(20)}...")
+                        val deleteSongResponse =
+                            TestContext.client.delete("${TestContext.baseUrl}/v1/songs/${song.id}") {
+                                bearerAuth(TestContext.loginResponse.accessToken)
+                            }
+                        println(deleteSongResponse.status)
+                    }
+                    offset += SONGS_PAGE_LIMIT
+                }
+            }
+        }
+    }
+
     @Test
     fun `Add a new song`(): Unit =
         runBlocking {

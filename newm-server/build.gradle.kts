@@ -186,6 +186,7 @@ fun Test.configTest(instance: String) {
     if ("NEWM_BASEURL" in System.getenv()) {
         environment("NEWM_BASEURL", System.getenv()["NEWM_BASEURL"] as String)
     }
+    systemProperties(System.getProperties().toMap() as Map<String, Object>)
     systemProperty("newm.env", instance.toLowerCaseAsciiOnly())
 }
 tasks.register<Test>("integTestGarage") {
