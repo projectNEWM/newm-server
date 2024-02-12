@@ -53,5 +53,6 @@ interface ConfigRepository {
         const val CONFIG_KEY_OUTLET_STATUS_CHECK_MINUTES = "outlet.statusCheckMinutes"
         const val CONFIG_KEY_RECAPTCHA_ENABLED = "recaptcha.enabled"
         const val CONFIG_KEY_RECAPTCHA_MIN_SCORE = "recaptcha.minScore"
+        const val CONFIG_KEY_NFTCDN_ENABLED = "nftcdn.enabled"
     }
 }

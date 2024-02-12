@@ -5,9 +5,21 @@ import com.google.iot.cbor.CborInteger
 import com.google.iot.cbor.CborMap
 import io.newm.chain.grpc.NativeAsset
 import io.newm.chain.grpc.copy
+import io.newm.chain.util.Bech32
+import io.newm.chain.util.Blake2b
 import io.newm.chain.util.hexToByteArray
 import java.math.BigInteger
-import java.util.*
+import java.util.SortedMap
+
+/**
+ * Computes the NativeAsset fingerprint
+ * Based on: https://cips.cardano.org/cip/CIP-14
+ */
+fun NativeAsset.fingerprint(): String =
+    Bech32.encode(
+        prefix = "asset",
+        bytes = Blake2b.hash160(policy.hexToByteArray() + name.hexToByteArray())
+    )
 
 /**
  * Convert a list of NativeAssets into a map where like-assets are combined and the ordering is canonical cbor.
@@ -34,7 +46,9 @@ fun List<NativeAsset>.toNativeAssetCborMap(): CborMap? {
             CborByteString.create(key.hexToByteArray()) to
                 CborMap.create(
                     value.sortedWithCanonicalCbor().associate { nativeAsset ->
-                        CborByteString.create(nativeAsset.name.hexToByteArray()) to CborInteger.create(nativeAsset.amount.toBigInteger())
+                        CborByteString.create(
+                            nativeAsset.name.hexToByteArray()
+                        ) to CborInteger.create(nativeAsset.amount.toBigInteger())
                     }
                 )
         }

@@ -8,6 +8,7 @@ import java.util.UUID
 data class NFTSong(
     @Serializable(with = UUIDSerializer::class)
     val id: UUID,
+    val fingerprint: String,
     val policyId: String,
     val assetName: String,
     val amount: Long,

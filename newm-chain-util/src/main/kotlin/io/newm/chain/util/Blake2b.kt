@@ -6,6 +6,7 @@ import kotlin.concurrent.getOrSet
 object Blake2b {
     private val blake2b224Container = ThreadLocal<Blake2bDigest>()
     private val blake2b256Container = ThreadLocal<Blake2bDigest>()
+    private val blake2b160Container = ThreadLocal<Blake2bDigest>()
 
     /**
      * Blake2b224 hash
@@ -26,6 +27,17 @@ object Blake2b {
         blake2b256.update(input, 0, input.size)
         val hash = ByteArray(32)
         blake2b256.doFinal(hash, 0)
+        return hash
+    }
+
+    /**
+     * Blake2b160 hash
+     */
+    fun hash160(input: ByteArray): ByteArray {
+        val blake2b160 = blake2b160Container.getOrSet { Blake2bDigest(160) }
+        blake2b160.update(input, 0, input.size)
+        val hash = ByteArray(20)
+        blake2b160.doFinal(hash, 0)
         return hash
     }
 }

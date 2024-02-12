@@ -1,24 +1,46 @@
 package io.newm.server.features.cardano.parser
 
+import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.utils.io.core.toByteArray
 import io.newm.chain.grpc.LedgerAssetMetadataItem
 import io.newm.chain.grpc.NativeAsset
 import io.newm.chain.util.hexStringToAssetName
 import io.newm.server.features.cardano.model.NFTSong
+import io.newm.server.ktx.getSecureConfigString
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.debug
 import io.newm.shared.ktx.warn
+import io.newm.txbuilder.ktx.fingerprint
+import kotlinx.coroutines.runBlocking
 import org.koin.core.parameter.parametersOf
 import org.slf4j.Logger
+import java.util.Base64
 import java.util.UUID
+import javax.crypto.Mac
+import javax.crypto.spec.SecretKeySpec
+import kotlin.concurrent.getOrSet
 import kotlin.time.Duration
 
 private val logger: Logger by inject { parametersOf("NFTSongParser") }
+private val environment: ApplicationEnvironment by inject()
+
+private val nftCdnSubdomain: String by lazy {
+    runBlocking { environment.getSecureConfigString("nftCdn.subdomain") }
+}
+
+private val nftCdnSecretKey: ByteArray by lazy {
+    Base64.getDecoder().decode(runBlocking { environment.getSecureConfigString("nftCdn.secretKey") })
+}
+
+private val nftCdnMacContainer = ThreadLocal<Mac>()
 
 // Used to remove numeric prefixes on legacy SickCity NFT fields ( e.g., "1. Artist Name" and "02. Song Title")
 private val legacyPrefixRegex = "^\\d+\\.\\s*".toRegex()
 
-fun List<LedgerAssetMetadataItem>.toNFTSongs(asset: NativeAsset): List<NFTSong> {
+fun List<LedgerAssetMetadataItem>.toNFTSongs(
+    asset: NativeAsset,
+    nftCdnEnabled: Boolean
+): List<NFTSong> {
     val assetName = asset.name.hexStringToAssetName()
     logger.debug { "Parsing PolicyID: ${asset.policy}, assetName: $assetName" }
 
@@ -87,6 +109,7 @@ fun List<LedgerAssetMetadataItem>.toNFTSongs(asset: NativeAsset): List<NFTSong> 
             else -> parseSongItem(item)
         }
     }
+    val fingerprint = asset.fingerprint()
     return files.mapNotNull { file ->
         val title = file.songTitle ?: songTitle ?: file.name
         if (title == null || file.src == null || image == null) {
@@ -95,12 +118,21 @@ fun List<LedgerAssetMetadataItem>.toNFTSongs(asset: NativeAsset): List<NFTSong> 
         } else {
             NFTSong(
                 id = UUID.nameUUIDFromBytes(file.src.toByteArray()),
+                fingerprint = fingerprint,
                 policyId = asset.policy,
                 assetName = assetName,
                 amount = asset.amount.toLong(),
                 title = title,
-                audioUrl = file.src.toResourceUrl(),
-                imageUrl = image.toResourceUrl(),
+                audioUrl =
+                    file.src.takeUnless { nftCdnEnabled }?.toResourceUrl() ?: buildNftCdnUrl(
+                        fingerprint = fingerprint,
+                        path = "files/${file.index}"
+                    ),
+                imageUrl =
+                    image.takeUnless { nftCdnEnabled }?.toResourceUrl() ?: buildNftCdnUrl(
+                        fingerprint = fingerprint,
+                        path = "image"
+                    ),
                 duration = (file.songDuration ?: songDuration)?.let { Duration.parse(it).inWholeSeconds } ?: -1L,
                 artists = file.artists ?: artists.toList(),
                 genres = file.genres ?: genres.toList(),
@@ -121,13 +153,21 @@ private fun LedgerAssetMetadataItem.artists(): List<String> =
         .ifEmpty { values() }
         .ifEmpty { value?.let(::listOf) }.orEmpty()
 
-private fun LedgerAssetMetadataItem.audioFiles(): List<File> =
-    childrenList?.filter { it.isAudioFile }?.map { it.childrenList.toFile() }.orEmpty()
+private fun LedgerAssetMetadataItem.audioFiles(): List<File> {
+    val files = mutableListOf<File>()
+    childrenList?.forEachIndexed { index, child ->
+        if (child.isAudioFile) {
+            files += child.childrenList.toFile(index)
+        }
+    }
+    return files
+}
 
 private val LedgerAssetMetadataItem.isAudioFile: Boolean
     get() = childrenList.value("mediaType")?.startsWith("audio/") == true
 
 private data class File(
+    val index: Int,
     val name: String?,
     val src: String?,
     var songTitle: String?,
@@ -137,10 +177,11 @@ private data class File(
     val mood: String?
 )
 
-private fun List<LedgerAssetMetadataItem>.toFile(): File {
+private fun List<LedgerAssetMetadataItem>.toFile(index: Int): File {
     // "song" only available if CIP60-V2 or above
     val song = this["song"]?.childrenList ?: this
     return File(
+        index = index,
         name = value("name"),
         src = value("src"),
         songTitle = song.value("song_title"),
@@ -160,3 +201,24 @@ internal fun String.toResourceUrl(): String =
             this
         }
     }
+
+internal fun buildNftCdnUrl(
+    fingerprint: String,
+    path: String,
+): String {
+    val url = buildNftCdnUrl(fingerprint, path, "")
+    val mac =
+        nftCdnMacContainer.getOrSet {
+            Mac.getInstance("HmacSHA256").apply {
+                init(SecretKeySpec(nftCdnSecretKey, "HmacSHA256"))
+            }
+        }
+    val token = Base64.getUrlEncoder().encodeToString(mac.doFinal(url.toByteArray())).trimEnd('=')
+    return buildNftCdnUrl(fingerprint, path, token)
+}
+
+internal fun buildNftCdnUrl(
+    fingerprint: String,
+    path: String,
+    token: String
+): String = "https://$fingerprint.$nftCdnSubdomain.nftcdn.io/$path?tk=$token"

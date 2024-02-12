@@ -39,6 +39,7 @@ class NFTSongParserTests : BaseApplicationTests() {
             val expectedSong =
                 NFTSong(
                     id = "ar://P141o0RDAjSYlVQgTDgHNAORQTkMYIVCprmD_dKMVss".toId(),
+                    fingerprint = "asset19dx98tjqckn26yk5hcse4zm6m0aj4gf7z0z378",
                     policyId = "46e607b3046a34c95e7c29e47047618dbf5e10de777ba56c590cfd5c",
                     assetName = "NEWM_0",
                     amount = 1,
@@ -50,7 +51,31 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = listOf("Hip Hop", "Rap"),
                     moods = listOf("Feel Good")
                 )
-            val actualSongs = newmChainClient.queryNFTSongs(expectedSong.policyId, expectedSong.assetName)
+            val actualSongs = newmChainClient.queryNFTSongs(expectedSong.policyId, expectedSong.assetName, false)
+            assertThat(actualSongs.size).isEqualTo(1)
+            assertThat(actualSongs.first()).isEqualTo(expectedSong)
+        }
+
+    @Test
+    fun `NEWM_0 - MURS Bigger Dreams, CIP-60 V1, Single, NFTCDN`() =
+        runBlocking {
+            val fingerprint = "asset19dx98tjqckn26yk5hcse4zm6m0aj4gf7z0z378"
+            val expectedSong =
+                NFTSong(
+                    id = "ar://P141o0RDAjSYlVQgTDgHNAORQTkMYIVCprmD_dKMVss".toId(),
+                    fingerprint = fingerprint,
+                    policyId = "46e607b3046a34c95e7c29e47047618dbf5e10de777ba56c590cfd5c",
+                    assetName = "NEWM_0",
+                    amount = 1,
+                    title = "Bigger Dreams",
+                    imageUrl = buildNftCdnUrl(fingerprint, "image"),
+                    audioUrl = buildNftCdnUrl(fingerprint, "files/0"),
+                    duration = 240,
+                    artists = listOf("MURS"),
+                    genres = listOf("Hip Hop", "Rap"),
+                    moods = listOf("Feel Good")
+                )
+            val actualSongs = newmChainClient.queryNFTSongs(expectedSong.policyId, expectedSong.assetName, true)
             assertThat(actualSongs.size).isEqualTo(1)
             assertThat(actualSongs.first()).isEqualTo(expectedSong)
         }
@@ -61,6 +86,7 @@ class NFTSongParserTests : BaseApplicationTests() {
             val expectedSong =
                 NFTSong(
                     id = "ar://QpgjmWmAHNeRVgx_Ylwvh16i3aWd8BBgyq7f16gaUu0".toId(),
+                    fingerprint = "asset1effvlkkw02m9ft3ymlkfld8mhlq05wc2hal5du",
                     policyId = "46e607b3046a34c95e7c29e47047618dbf5e10de777ba56c590cfd5c",
                     assetName = "NEWM_5",
                     amount = 1,
@@ -72,7 +98,31 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = listOf("Pop", "House", "Tribal"),
                     moods = listOf("Spiritual")
                 )
-            val actualSongs = newmChainClient.queryNFTSongs(expectedSong.policyId, expectedSong.assetName)
+            val actualSongs = newmChainClient.queryNFTSongs(expectedSong.policyId, expectedSong.assetName, false)
+            assertThat(actualSongs.size).isEqualTo(1)
+            assertThat(actualSongs.first()).isEqualTo(expectedSong)
+        }
+
+    @Test
+    fun `NEWM_5 - Daisuke, CIP-60 V1, Single, NFTCDN`() =
+        runBlocking {
+            val fingerprint = "asset1effvlkkw02m9ft3ymlkfld8mhlq05wc2hal5du"
+            val expectedSong =
+                NFTSong(
+                    id = "ar://QpgjmWmAHNeRVgx_Ylwvh16i3aWd8BBgyq7f16gaUu0".toId(),
+                    fingerprint = fingerprint,
+                    policyId = "46e607b3046a34c95e7c29e47047618dbf5e10de777ba56c590cfd5c",
+                    assetName = "NEWM_5",
+                    amount = 1,
+                    title = "Daisuke",
+                    imageUrl = buildNftCdnUrl(fingerprint, "image"),
+                    audioUrl = buildNftCdnUrl(fingerprint, "files/0"),
+                    duration = 200,
+                    artists = listOf("Danketsu", "Mirai Music", "NSTASIA"),
+                    genres = listOf("Pop", "House", "Tribal"),
+                    moods = listOf("Spiritual")
+                )
+            val actualSongs = newmChainClient.queryNFTSongs(expectedSong.policyId, expectedSong.assetName, true)
             assertThat(actualSongs.size).isEqualTo(1)
             assertThat(actualSongs.first()).isEqualTo(expectedSong)
         }
@@ -83,6 +133,7 @@ class NFTSongParserTests : BaseApplicationTests() {
             val expectedSong =
                 NFTSong(
                     id = "ipfs://QmaiQ2mHc2LhkApA5cXPk8WfV6923ndgVDQoAtdHsSkXWE".toId(),
+                    fingerprint = "asset13ht8rn89zwvchfd4d34707xvcrr3clzkgdgj6p",
                     policyId = "7ad9d1ddb00adee7939f8027e5258a561878fff8761993afb311e56f",
                     assetName = "OSSDREAMLOFI",
                     amount = 1,
@@ -94,7 +145,31 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = listOf("lofi", "electronic"),
                     moods = emptyList()
                 )
-            val actualSongs = newmChainClient.queryNFTSongs(expectedSong.policyId, expectedSong.assetName)
+            val actualSongs = newmChainClient.queryNFTSongs(expectedSong.policyId, expectedSong.assetName, false)
+            assertThat(actualSongs.size).isEqualTo(1)
+            assertThat(actualSongs.first()).isEqualTo(expectedSong)
+        }
+
+    @Test
+    fun `OddShapeShadow, CIP-60 V1, Single, NFTCDN`() =
+        runBlocking {
+            val fingerprint = "asset13ht8rn89zwvchfd4d34707xvcrr3clzkgdgj6p"
+            val expectedSong =
+                NFTSong(
+                    id = "ipfs://QmaiQ2mHc2LhkApA5cXPk8WfV6923ndgVDQoAtdHsSkXWE".toId(),
+                    fingerprint = fingerprint,
+                    policyId = "7ad9d1ddb00adee7939f8027e5258a561878fff8761993afb311e56f",
+                    assetName = "OSSDREAMLOFI",
+                    amount = 1,
+                    title = "Smoke and Fire - Dream Lofi",
+                    imageUrl = buildNftCdnUrl(fingerprint, "image"),
+                    audioUrl = buildNftCdnUrl(fingerprint, "files/0"),
+                    duration = 154,
+                    artists = listOf("OddShapeShadow"),
+                    genres = listOf("lofi", "electronic"),
+                    moods = emptyList()
+                )
+            val actualSongs = newmChainClient.queryNFTSongs(expectedSong.policyId, expectedSong.assetName, true)
             assertThat(actualSongs.size).isEqualTo(1)
             assertThat(actualSongs.first()).isEqualTo(expectedSong)
         }
@@ -105,6 +180,7 @@ class NFTSongParserTests : BaseApplicationTests() {
             val expectedSong =
                 NFTSong(
                     id = "ipfs://QmNPg1BTnyouUL1uiHyWc4tQZXH5anEz4jmua7iidwEbiE".toId(),
+                    fingerprint = "asset1w90kz4y6zpgndgk8a837g3f2n4ujtlx0mgpdhw",
                     policyId = "123da5e4ef337161779c6729d2acd765f7a33a833b2a21a063ef65a5",
                     assetName = "SickCity442",
                     amount = 1,
@@ -116,7 +192,31 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = listOf("rap", "hip hop"),
                     moods = emptyList()
                 )
-            val actualSongs = newmChainClient.queryNFTSongs(expectedSong.policyId, expectedSong.assetName)
+            val actualSongs = newmChainClient.queryNFTSongs(expectedSong.policyId, expectedSong.assetName, false)
+            assertThat(actualSongs.size).isEqualTo(1)
+            assertThat(actualSongs.first()).isEqualTo(expectedSong)
+        }
+
+    @Test
+    fun `SickCity442, CIP-60 V2, Single, NFTCDN`() =
+        runBlocking {
+            val fingerprint = "asset1w90kz4y6zpgndgk8a837g3f2n4ujtlx0mgpdhw"
+            val expectedSong =
+                NFTSong(
+                    id = "ipfs://QmNPg1BTnyouUL1uiHyWc4tQZXH5anEz4jmua7iidwEbiE".toId(),
+                    fingerprint = fingerprint,
+                    policyId = "123da5e4ef337161779c6729d2acd765f7a33a833b2a21a063ef65a5",
+                    assetName = "SickCity442",
+                    amount = 1,
+                    title = "Paper Route",
+                    imageUrl = buildNftCdnUrl(fingerprint, "image"),
+                    audioUrl = buildNftCdnUrl(fingerprint, "files/0"),
+                    duration = 225,
+                    artists = listOf("Mikey Mo the MC"),
+                    genres = listOf("rap", "hip hop"),
+                    moods = emptyList()
+                )
+            val actualSongs = newmChainClient.queryNFTSongs(expectedSong.policyId, expectedSong.assetName, true)
             assertThat(actualSongs.size).isEqualTo(1)
             assertThat(actualSongs.first()).isEqualTo(expectedSong)
         }
@@ -127,6 +227,7 @@ class NFTSongParserTests : BaseApplicationTests() {
             val expectedSong =
                 NFTSong(
                     id = "ipfs://QmcBtkxaKsFK3wvNHxULhuRhzaabqoX6Ryor4PvnaqcUSb".toId(),
+                    fingerprint = "asset1twzjexu7m9drdznjrz47f3320jxry7erhnx3e3",
                     policyId = "123da5e4ef337161779c6729d2acd765f7a33a833b2a21a063ef65a5",
                     assetName = "SickCity343",
                     amount = 1,
@@ -138,7 +239,31 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = listOf("Pop-Rock", "Alternative"),
                     moods = emptyList()
                 )
-            val actualSongs = newmChainClient.queryNFTSongs(expectedSong.policyId, expectedSong.assetName)
+            val actualSongs = newmChainClient.queryNFTSongs(expectedSong.policyId, expectedSong.assetName, false)
+            assertThat(actualSongs.size).isEqualTo(1)
+            assertThat(actualSongs.first()).isEqualTo(expectedSong)
+        }
+
+    @Test
+    fun `SickCity343, Legacy, Single, NFTCDN`() =
+        runBlocking {
+            val fingerprint = "asset1twzjexu7m9drdznjrz47f3320jxry7erhnx3e3"
+            val expectedSong =
+                NFTSong(
+                    id = "ipfs://QmcBtkxaKsFK3wvNHxULhuRhzaabqoX6Ryor4PvnaqcUSb".toId(),
+                    fingerprint = fingerprint,
+                    policyId = "123da5e4ef337161779c6729d2acd765f7a33a833b2a21a063ef65a5",
+                    assetName = "SickCity343",
+                    amount = 1,
+                    title = "It Gets Better",
+                    imageUrl = buildNftCdnUrl(fingerprint, "image"),
+                    audioUrl = buildNftCdnUrl(fingerprint, "files/0"),
+                    duration = -1L,
+                    artists = listOf("Memellionaires"),
+                    genres = listOf("Pop-Rock", "Alternative"),
+                    moods = emptyList()
+                )
+            val actualSongs = newmChainClient.queryNFTSongs(expectedSong.policyId, expectedSong.assetName, true)
             assertThat(actualSongs.size).isEqualTo(1)
             assertThat(actualSongs.first()).isEqualTo(expectedSong)
         }
@@ -149,6 +274,7 @@ class NFTSongParserTests : BaseApplicationTests() {
             val expectedSong =
                 NFTSong(
                     id = "ipfs://QmY9LRJoKMgPbEc2hvvREWP7UBzYuZaqaWacAkp3HKFUzb".toId(),
+                    fingerprint = "asset163r3tg4qggphswslxmfezu2gfevs35433pqz3e",
                     policyId = "123da5e4ef337161779c6729d2acd765f7a33a833b2a21a063ef65a5",
                     assetName = "SickCity344",
                     amount = 1,
@@ -160,7 +286,31 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = listOf("R&B", "Soul"),
                     moods = emptyList()
                 )
-            val actualSongs = newmChainClient.queryNFTSongs(expectedSong.policyId, expectedSong.assetName)
+            val actualSongs = newmChainClient.queryNFTSongs(expectedSong.policyId, expectedSong.assetName, false)
+            assertThat(actualSongs.size).isEqualTo(1)
+            assertThat(actualSongs.first()).isEqualTo(expectedSong)
+        }
+
+    @Test
+    fun `SickCity344, Legacy, Single, NFTCDN`() =
+        runBlocking {
+            val fingerprint = "asset163r3tg4qggphswslxmfezu2gfevs35433pqz3e"
+            val expectedSong =
+                NFTSong(
+                    id = "ipfs://QmY9LRJoKMgPbEc2hvvREWP7UBzYuZaqaWacAkp3HKFUzb".toId(),
+                    fingerprint = fingerprint,
+                    policyId = "123da5e4ef337161779c6729d2acd765f7a33a833b2a21a063ef65a5",
+                    assetName = "SickCity344",
+                    amount = 1,
+                    title = "4EVR",
+                    imageUrl = buildNftCdnUrl(fingerprint, "image"),
+                    audioUrl = buildNftCdnUrl(fingerprint, "files/0"),
+                    duration = -1L,
+                    artists = listOf("Irie Reyna"),
+                    genres = listOf("R&B", "Soul"),
+                    moods = emptyList()
+                )
+            val actualSongs = newmChainClient.queryNFTSongs(expectedSong.policyId, expectedSong.assetName, true)
             assertThat(actualSongs.size).isEqualTo(1)
             assertThat(actualSongs.first()).isEqualTo(expectedSong)
         }
@@ -171,6 +321,7 @@ class NFTSongParserTests : BaseApplicationTests() {
             val expectedSong =
                 NFTSong(
                     id = "ipfs://QmczfeP54gZgjMVnbe2mLrBjQbkQu3zuA1zYKpgSVzzKBr".toId(),
+                    fingerprint = "asset1n8jsja05t2dlsy3e7wzjcr2a8724qmgmnwv669",
                     policyId = "123da5e4ef337161779c6729d2acd765f7a33a833b2a21a063ef65a5",
                     assetName = "SickCity349",
                     amount = 1,
@@ -182,7 +333,31 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = listOf("Singer-Songwriter", "Folk Pop"),
                     moods = emptyList()
                 )
-            val actualSongs = newmChainClient.queryNFTSongs(expectedSong.policyId, expectedSong.assetName)
+            val actualSongs = newmChainClient.queryNFTSongs(expectedSong.policyId, expectedSong.assetName, false)
+            assertThat(actualSongs.size).isEqualTo(1)
+            assertThat(actualSongs.first()).isEqualTo(expectedSong)
+        }
+
+    @Test
+    fun `SickCity349, Legacy, Single, NFTCDN`() =
+        runBlocking {
+            val fingerprint = "asset1n8jsja05t2dlsy3e7wzjcr2a8724qmgmnwv669"
+            val expectedSong =
+                NFTSong(
+                    id = "ipfs://QmczfeP54gZgjMVnbe2mLrBjQbkQu3zuA1zYKpgSVzzKBr".toId(),
+                    fingerprint = fingerprint,
+                    policyId = "123da5e4ef337161779c6729d2acd765f7a33a833b2a21a063ef65a5",
+                    assetName = "SickCity349",
+                    amount = 1,
+                    title = "You, I, and The Ocean",
+                    imageUrl = buildNftCdnUrl(fingerprint, "image"),
+                    audioUrl = buildNftCdnUrl(fingerprint, "files/0"),
+                    duration = -1L,
+                    artists = listOf("Sam Katman"),
+                    genres = listOf("Singer-Songwriter", "Folk Pop"),
+                    moods = emptyList()
+                )
+            val actualSongs = newmChainClient.queryNFTSongs(expectedSong.policyId, expectedSong.assetName, true)
             assertThat(actualSongs.size).isEqualTo(1)
             assertThat(actualSongs.first()).isEqualTo(expectedSong)
         }
@@ -192,10 +367,12 @@ class NFTSongParserTests : BaseApplicationTests() {
         runBlocking {
             val policyId = "fb818dd32539209755211ab01cde517b044a742f1bc52e5cc57b25d9"
             val assetName = "JamisonDanielStudioLife218"
+            val fingerprint = "asset1njl2quag7haj4xcwfckn4rqprrvcwlr08z34ua"
             val expectedSongs =
                 listOf(
                     NFTSong(
                         id = "ipfs://QmduC7pkR14K3mhmvEazoyzGsMWVF4ji45HZ1XfEracKLv".toId(),
+                        fingerprint = fingerprint,
                         policyId = policyId,
                         assetName = assetName,
                         amount = 1,
@@ -209,6 +386,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     ),
                     NFTSong(
                         id = "ipfs://QmW9sHugSArzf29JPuEC2MqjtbsNkDjd9xNUxZFLDXSDUY".toId(),
+                        fingerprint = fingerprint,
                         policyId = policyId,
                         assetName = assetName,
                         amount = 1,
@@ -222,6 +400,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     ),
                     NFTSong(
                         id = "ipfs://Qmb8fm7CkzscjjoJGVp3p7qjSVMknsk27d3cwjqM26ELVB".toId(),
+                        fingerprint = fingerprint,
                         policyId = policyId,
                         assetName = assetName,
                         amount = 1,
@@ -235,6 +414,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     ),
                     NFTSong(
                         id = "ipfs://QmTwvwpgE9Fx6QZsjbXe5STHb3WVmaDuxFzafqCPueCmqc".toId(),
+                        fingerprint = fingerprint,
                         policyId = policyId,
                         assetName = assetName,
                         amount = 1,
@@ -248,6 +428,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     ),
                     NFTSong(
                         id = "ipfs://QmTETraR8WvExCaanc5aGT8EAUgCojyN8YSZYbGgmzVfja".toId(),
+                        fingerprint = fingerprint,
                         policyId = policyId,
                         assetName = assetName,
                         amount = 1,
@@ -261,6 +442,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     ),
                     NFTSong(
                         id = "ipfs://Qmdfr4PvuiZhi3a6EaDupGN6R33PKSy5kntwgFEzLQnPLR".toId(),
+                        fingerprint = fingerprint,
                         policyId = policyId,
                         assetName = assetName,
                         amount = 1,
@@ -274,6 +456,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     ),
                     NFTSong(
                         id = "ipfs://QmSp4Cn7qrhLTovezS1ii7ct1VAPK6Gotd2GnxnBc6ngSv".toId(),
+                        fingerprint = fingerprint,
                         policyId = policyId,
                         assetName = assetName,
                         amount = 1,
@@ -287,6 +470,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     ),
                     NFTSong(
                         id = "ipfs://QmV8ihv8R6cCKsFJyFP8fhnnQjeKjS7HAAjmxMgUPftmw6".toId(),
+                        fingerprint = fingerprint,
                         policyId = policyId,
                         assetName = assetName,
                         amount = 1,
@@ -300,6 +484,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     ),
                     NFTSong(
                         id = "ipfs://QmWux5UpX6BtYQ7pjugqRh6ySa2vVJN12iSC2AB1cAQynU".toId(),
+                        fingerprint = fingerprint,
                         policyId = policyId,
                         assetName = assetName,
                         amount = 1,
@@ -313,7 +498,150 @@ class NFTSongParserTests : BaseApplicationTests() {
                     ),
                 )
 
-            val actualSongs = newmChainClient.queryNFTSongs(policyId, assetName)
+            val actualSongs = newmChainClient.queryNFTSongs(policyId, assetName, false)
+            assertThat(actualSongs.size).isEqualTo(9)
+            assertThat(actualSongs).isEqualTo(expectedSongs)
+        }
+
+    @Test
+    fun `Jamison Daniel-Studio Life, Legacy, Multiple, NFTCDN`() =
+        runBlocking {
+            val fingerprint = "asset1njl2quag7haj4xcwfckn4rqprrvcwlr08z34ua"
+            val policyId = "fb818dd32539209755211ab01cde517b044a742f1bc52e5cc57b25d9"
+            val assetName = "JamisonDanielStudioLife218"
+            // NOTE: notice that "files/0" is an image file, so 1st audio file is at "files/1"
+            // https://cexplorer.io/asset/asset1njl2quag7haj4xcwfckn4rqprrvcwlr08z34ua/metadata#data
+            val expectedSongs =
+                listOf(
+                    NFTSong(
+                        id = "ipfs://QmduC7pkR14K3mhmvEazoyzGsMWVF4ji45HZ1XfEracKLv".toId(),
+                        fingerprint = fingerprint,
+                        policyId = policyId,
+                        assetName = assetName,
+                        amount = 1,
+                        title = "Finally (Master 2021)",
+                        imageUrl = buildNftCdnUrl(fingerprint, "image"),
+                        audioUrl = buildNftCdnUrl(fingerprint, "files/1"),
+                        duration = -1L,
+                        artists = emptyList(),
+                        genres = emptyList(),
+                        moods = emptyList()
+                    ),
+                    NFTSong(
+                        id = "ipfs://QmW9sHugSArzf29JPuEC2MqjtbsNkDjd9xNUxZFLDXSDUY".toId(),
+                        fingerprint = fingerprint,
+                        policyId = policyId,
+                        assetName = assetName,
+                        amount = 1,
+                        title = "Funky Squirrel (Master 2021)",
+                        imageUrl = buildNftCdnUrl(fingerprint, "image"),
+                        audioUrl = buildNftCdnUrl(fingerprint, "files/2"),
+                        duration = -1L,
+                        artists = emptyList(),
+                        genres = emptyList(),
+                        moods = emptyList()
+                    ),
+                    NFTSong(
+                        id = "ipfs://Qmb8fm7CkzscjjoJGVp3p7qjSVMknsk27d3cwjqM26ELVB".toId(),
+                        fingerprint = fingerprint,
+                        policyId = policyId,
+                        assetName = assetName,
+                        amount = 1,
+                        title = "Weekend Ride (Master 2021)",
+                        imageUrl = buildNftCdnUrl(fingerprint, "image"),
+                        audioUrl = buildNftCdnUrl(fingerprint, "files/3"),
+                        duration = -1L,
+                        artists = emptyList(),
+                        genres = emptyList(),
+                        moods = emptyList()
+                    ),
+                    NFTSong(
+                        id = "ipfs://QmTwvwpgE9Fx6QZsjbXe5STHb3WVmaDuxFzafqCPueCmqc".toId(),
+                        fingerprint = fingerprint,
+                        policyId = policyId,
+                        assetName = assetName,
+                        amount = 1,
+                        title = "Rave Culture (Master 2021)",
+                        imageUrl = buildNftCdnUrl(fingerprint, "image"),
+                        audioUrl = buildNftCdnUrl(fingerprint, "files/4"),
+                        duration = -1L,
+                        artists = emptyList(),
+                        genres = emptyList(),
+                        moods = emptyList()
+                    ),
+                    NFTSong(
+                        id = "ipfs://QmTETraR8WvExCaanc5aGT8EAUgCojyN8YSZYbGgmzVfja".toId(),
+                        fingerprint = fingerprint,
+                        policyId = policyId,
+                        assetName = assetName,
+                        amount = 1,
+                        title = "Vibrate (Master 2021)",
+                        imageUrl = buildNftCdnUrl(fingerprint, "image"),
+                        audioUrl = buildNftCdnUrl(fingerprint, "files/5"),
+                        duration = -1L,
+                        artists = emptyList(),
+                        genres = emptyList(),
+                        moods = emptyList()
+                    ),
+                    NFTSong(
+                        id = "ipfs://Qmdfr4PvuiZhi3a6EaDupGN6R33PKSy5kntwgFEzLQnPLR".toId(),
+                        fingerprint = fingerprint,
+                        policyId = policyId,
+                        assetName = assetName,
+                        amount = 1,
+                        title = "Top 40's (Master 2021)",
+                        imageUrl = buildNftCdnUrl(fingerprint, "image"),
+                        audioUrl = buildNftCdnUrl(fingerprint, "files/6"),
+                        duration = -1L,
+                        artists = emptyList(),
+                        genres = emptyList(),
+                        moods = emptyList()
+                    ),
+                    NFTSong(
+                        id = "ipfs://QmSp4Cn7qrhLTovezS1ii7ct1VAPK6Gotd2GnxnBc6ngSv".toId(),
+                        fingerprint = fingerprint,
+                        policyId = policyId,
+                        assetName = assetName,
+                        amount = 1,
+                        title = "Acid Trip (Master 2021)",
+                        imageUrl = buildNftCdnUrl(fingerprint, "image"),
+                        audioUrl = buildNftCdnUrl(fingerprint, "files/7"),
+                        duration = -1L,
+                        artists = emptyList(),
+                        genres = emptyList(),
+                        moods = emptyList()
+                    ),
+                    NFTSong(
+                        id = "ipfs://QmV8ihv8R6cCKsFJyFP8fhnnQjeKjS7HAAjmxMgUPftmw6".toId(),
+                        fingerprint = fingerprint,
+                        policyId = policyId,
+                        assetName = assetName,
+                        amount = 1,
+                        title = "For The Win (Master 2021)",
+                        imageUrl = buildNftCdnUrl(fingerprint, "image"),
+                        audioUrl = buildNftCdnUrl(fingerprint, "files/8"),
+                        duration = -1L,
+                        artists = emptyList(),
+                        genres = emptyList(),
+                        moods = emptyList()
+                    ),
+                    NFTSong(
+                        id = "ipfs://QmWux5UpX6BtYQ7pjugqRh6ySa2vVJN12iSC2AB1cAQynU".toId(),
+                        fingerprint = fingerprint,
+                        policyId = policyId,
+                        assetName = assetName,
+                        amount = 1,
+                        title = "Sunday Sermon (Master 2021)",
+                        imageUrl = buildNftCdnUrl(fingerprint, "image"),
+                        audioUrl = buildNftCdnUrl(fingerprint, "files/9"),
+                        duration = -1L,
+                        artists = emptyList(),
+                        genres = emptyList(),
+                        moods = emptyList()
+                    ),
+                )
+
+            val actualSongs = newmChainClient.queryNFTSongs(policyId, assetName, true)
             assertThat(actualSongs.size).isEqualTo(9)
             assertThat(actualSongs).isEqualTo(expectedSongs)
         }
@@ -322,7 +650,8 @@ class NFTSongParserTests : BaseApplicationTests() {
 
     private suspend fun NewmChainCoroutineStub.queryNFTSongs(
         policyId: String,
-        assetName: String
+        assetName: String,
+        nftCdnEnabled: Boolean
     ): List<NFTSong> {
         val assetNameHex = assetName.assetNameToHexString()
         val asset =
@@ -336,7 +665,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                 policy = policyId
                 name = assetNameHex
             }
-        ).ledgerAssetMetadataList.toNFTSongs(asset)
+        ).ledgerAssetMetadataList.toNFTSongs(asset, nftCdnEnabled)
     }
 
     private fun buildClient(): NewmChainCoroutineStub {
