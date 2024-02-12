@@ -8,8 +8,10 @@ import org.jetbrains.exposed.sql.Table
 import java.util.UUID
 
 object SongsInPlaylistsTable : Table(name = "songs_in_playlists") {
-    val songId: Column<EntityID<UUID>> = reference("song_id", SongTable, onDelete = ReferenceOption.CASCADE)
-    val playlistId: Column<EntityID<UUID>> = reference("playlist_id", PlaylistTable, onDelete = ReferenceOption.CASCADE)
+    val songId: Column<EntityID<UUID>> =
+        reference("song_id", SongTable, onUpdate = ReferenceOption.NO_ACTION, onDelete = ReferenceOption.NO_ACTION)
+    val playlistId: Column<EntityID<UUID>> =
+        reference("playlist_id", PlaylistTable, onUpdate = ReferenceOption.NO_ACTION, onDelete = ReferenceOption.NO_ACTION)
 
     override val primaryKey = PrimaryKey(songId, playlistId)
 }

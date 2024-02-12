@@ -11,7 +11,7 @@ import java.util.UUID
 
 object SongReceiptTable : UUIDTable(name = "song_receipts") {
     val createdAt: Column<LocalDateTime> = datetime("created_at").defaultExpression(CurrentDateTime)
-    val songId: Column<EntityID<UUID>> = reference("song_id", SongTable, onDelete = ReferenceOption.CASCADE)
+    val songId: Column<EntityID<UUID>> = reference("song_id", SongTable, onDelete = ReferenceOption.NO_ACTION)
     val adaPrice: Column<Long> = long("ada_price")
     val usdPrice: Column<Long> = long("usd_price")
     val adaDspPrice: Column<Long> = long("ada_dsp_price")

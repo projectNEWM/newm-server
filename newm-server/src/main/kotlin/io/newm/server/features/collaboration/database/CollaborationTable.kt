@@ -13,7 +13,7 @@ import java.util.UUID
 
 object CollaborationTable : UUIDTable(name = "collaborations") {
     val createdAt: Column<LocalDateTime> = datetime("created_at").defaultExpression(CurrentDateTime)
-    val songId: Column<EntityID<UUID>> = reference("song_id", SongTable, onDelete = ReferenceOption.CASCADE)
+    val songId: Column<EntityID<UUID>> = reference("song_id", SongTable, onDelete = ReferenceOption.NO_ACTION)
     val email: Column<String> = text("email")
     val role: Column<String?> = text("role").nullable()
     val royaltyRate: Column<Float?> = float("royalty_rate").nullable()

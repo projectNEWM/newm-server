@@ -21,7 +21,7 @@ import java.util.UUID
 object SongTable : UUIDTable(name = "songs") {
     val archived: Column<Boolean> = bool("archived").default(false)
     val createdAt: Column<LocalDateTime> = datetime("created_at").defaultExpression(CurrentDateTime)
-    val ownerId: Column<EntityID<UUID>> = reference("owner_id", UserTable, onDelete = ReferenceOption.CASCADE)
+    val ownerId: Column<EntityID<UUID>> = reference("owner_id", UserTable, onDelete = ReferenceOption.NO_ACTION)
     val title: Column<String> = text("title")
     val genres: Column<Array<String>> = textArray("genres")
     val moods: Column<Array<String>?> = textArray("moods").nullable()
