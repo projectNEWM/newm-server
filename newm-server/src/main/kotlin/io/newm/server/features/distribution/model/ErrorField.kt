@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class ErrorField(
     @SerialName("fields")
-    val fields: String,
+    val fields: String? = null,
     @SerialName("message")
-    val message: String,
+    val message: String? = null,
 )
