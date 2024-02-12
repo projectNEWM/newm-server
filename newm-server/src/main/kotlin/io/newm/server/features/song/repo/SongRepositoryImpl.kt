@@ -36,6 +36,7 @@ import io.newm.server.features.song.model.AudioStreamData
 import io.newm.server.features.song.model.AudioUploadReport
 import io.newm.server.features.song.model.MintPaymentResponse
 import io.newm.server.features.song.model.MintingStatus
+import io.newm.server.features.song.model.RefundPaymentResponse
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongFilters
 import io.newm.server.features.user.database.UserEntity
@@ -541,6 +542,54 @@ internal class SongRepositoryImpl(
         update(songId, Song(paymentKeyId = keyId))
         updateSongMintingStatus(songId, MintingStatus.MintingPaymentRequested)
         return transaction.transactionCbor.toByteArray().toHexString()
+    }
+
+    override suspend fun refundMintingPayment(
+        songId: UUID,
+        walletAddress: String
+    ): RefundPaymentResponse {
+        logger.debug { "refundMintingPayment: songId = $songId" }
+
+        val song = get(songId)
+        val keyId = song.paymentKeyId ?: throw HttpUnprocessableEntityException("missing paymentKeyId")
+        val cashRegisterKey =
+            requireNotNull(cardanoRepository.getKeyByName("cashRegister")) { "cashRegister key not defined!" }
+        val cashRegisterUtxos =
+            cardanoRepository.queryLiveUtxos(cashRegisterKey.address)
+                .filter { it.nativeAssetsCount == 0 }
+                .sortedByDescending { it.lovelace.toLong() }
+                .take(5)
+        require(cashRegisterUtxos.isNotEmpty()) { "cashRegister has no utxos!" }
+        val paymentKey = cardanoRepository.getKey(keyId)
+        val paymentKeyUtxos = cardanoRepository.queryLiveUtxos(paymentKey.address)
+        val transaction =
+            cardanoRepository.buildTransaction {
+                with(sourceUtxos) {
+                    addAll(paymentKeyUtxos)
+                    addAll(cashRegisterUtxos)
+                }
+
+                with(outputUtxos) {
+                    add(
+                        outputUtxo {
+                            address = walletAddress
+                            lovelace = song.mintCostLovelace.toString()
+                        }
+                    )
+                }
+
+                changeAddress = cashRegisterKey.address
+                with(signingKeys) {
+                    add(paymentKey.toSigningKey())
+                    add(cashRegisterKey.toSigningKey())
+                }
+            }
+        val submitTransactionResponse = cardanoRepository.submitTransaction(transaction.transactionCbor)
+        if (submitTransactionResponse.result != "MsgAcceptTx") {
+            throw HttpUnprocessableEntityException("Failed to submit transaction: $submitTransactionResponse")
+        }
+        update(songId, Song(mintingStatus = MintingStatus.Declined, mintingTxId = submitTransactionResponse.txId))
+        return RefundPaymentResponse(submitTransactionResponse.txId, submitTransactionResponse.result)
     }
 
     override suspend fun updateSongMintingStatus(

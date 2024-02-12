@@ -7,6 +7,7 @@ import io.newm.server.features.song.model.AudioStreamData
 import io.newm.server.features.song.model.AudioUploadReport
 import io.newm.server.features.song.model.MintPaymentResponse
 import io.newm.server.features.song.model.MintingStatus
+import io.newm.server.features.song.model.RefundPaymentResponse
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongFilters
 import java.util.UUID
@@ -75,6 +76,11 @@ interface SongRepository {
         sourceUtxos: List<Utxo>,
         changeAddress: String
     ): String
+
+    suspend fun refundMintingPayment(
+        songId: UUID,
+        walletAddress: String
+    ): RefundPaymentResponse
 
     suspend fun processCollaborations(songId: UUID)
 

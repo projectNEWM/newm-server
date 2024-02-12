@@ -6,6 +6,9 @@ import com.google.iot.cbor.CborArray
 import com.google.iot.cbor.CborByteString
 import com.google.iot.cbor.CborInteger
 import com.google.iot.cbor.CborReader
+import com.google.protobuf.ByteString
+import io.newm.chain.grpc.SigningKey
+import io.newm.chain.grpc.signingKey
 import io.newm.chain.util.Bech32
 import io.newm.chain.util.Blake2b
 import io.newm.chain.util.Constants.PAYMENT_ADDRESS_PREFIX_MAINNET
@@ -86,6 +89,13 @@ data class Key(
                     cborHex = CborByteString.create(vkey).toCborByteArray().toHexString(),
                 )
         )
+    }
+
+    fun toSigningKey(): SigningKey {
+        return signingKey {
+            this.skey = ByteString.copyFrom(this@Key.skey)
+            this.vkey = ByteString.copyFrom(this@Key.vkey)
+        }
     }
 
     companion object {
