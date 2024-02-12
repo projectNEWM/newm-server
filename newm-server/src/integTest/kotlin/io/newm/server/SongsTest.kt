@@ -31,7 +31,7 @@ class SongsTest {
 
             val clearTestDataOption = (System.getProperty("newm.integTest.clearTestData") ?: "false").toBoolean()
             if (clearTestDataOption) {
-                println("System property 'newm.integTest.clearTestData' is true, clearning test data")
+                println("System property 'newm.integTest.clearTestData' is true, cleaning test data")
                 while (true) {
                     val getSongsResponse =
                         TestContext.client.get("${TestContext.baseUrl}/v1/songs?ownerIds=me&offset=$offset&limit=$SONGS_PAGE_LIMIT") {
