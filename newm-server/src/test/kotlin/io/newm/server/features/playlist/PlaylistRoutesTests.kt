@@ -46,9 +46,10 @@ class PlaylistRoutesTests : BaseApplicationTests() {
     @BeforeEach
     fun beforeEach() {
         transaction {
+            SongsInPlaylistsTable.deleteAll()
             PlaylistTable.deleteAll()
-            SongTable.deleteAll()
             UserTable.deleteWhere { id neq testUserId }
+            SongTable.deleteAll()
         }
     }
 

@@ -12,6 +12,6 @@ import java.util.UUID
 
 object PlaylistTable : UUIDTable(name = "playlists") {
     val createdAt: Column<LocalDateTime> = datetime("created_at").defaultExpression(CurrentDateTime)
-    val ownerId: Column<EntityID<UUID>> = reference("owner_id", UserTable, onDelete = ReferenceOption.CASCADE)
+    val ownerId: Column<EntityID<UUID>> = reference("owner_id", UserTable, onDelete = ReferenceOption.NO_ACTION)
     val name: Column<String> = text("name")
 }

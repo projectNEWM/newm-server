@@ -84,8 +84,8 @@ class SongRoutesTests : BaseApplicationTests() {
     @BeforeEach
     fun beforeEach() {
         transaction {
-            SongTable.deleteAll()
             SongReceiptTable.deleteAll()
+            SongTable.deleteAll()
             KeyTable.deleteAll()
             UserTable.deleteWhere { id neq testUserId }
         }

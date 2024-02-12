@@ -10,6 +10,6 @@ import java.time.LocalDateTime
 import java.util.UUID
 
 object JwtTable : UUIDTable(name = "jwts") {
-    val userId: Column<EntityID<UUID>> = reference("user_id", UserTable, onDelete = ReferenceOption.CASCADE)
+    val userId: Column<EntityID<UUID>> = reference("user_id", UserTable, onDelete = ReferenceOption.NO_ACTION)
     val expiresAt: Column<LocalDateTime> = datetime("expires_at")
 }
