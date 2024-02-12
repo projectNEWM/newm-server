@@ -22,6 +22,7 @@ import io.newm.server.ktx.requiredQueryParam
 import io.newm.shared.ktx.error
 import io.newm.shared.ktx.get
 import io.newm.shared.ktx.post
+import io.newm.shared.ktx.toUUID
 import org.koin.core.parameter.parametersOf
 import org.koin.ktor.ext.inject
 import org.slf4j.Logger
@@ -60,6 +61,17 @@ fun Routing.createCardanoRoutes() {
 //                throw e
 //            }
 //        }
+
+        get("/v1/cardano/key/{keyId}") {
+            try {
+                val keyId = request.call.parameters["keyId"]?.toUUID() ?: throw IllegalArgumentException("Invalid key id!")
+                val key = requireNotNull(cardanoRepository.getKey(keyId)) { "Key with id '$keyId' not found!" }
+                respond(key.toCliKeyPair(keyId.toString()))
+            } catch (e: Exception) {
+                log.error("Failed to get key!", e)
+                throw e
+            }
+        }
 
         post("/v1/cardano/encryption") {
             try {

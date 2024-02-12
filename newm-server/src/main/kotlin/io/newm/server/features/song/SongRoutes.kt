@@ -7,6 +7,7 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.Routing
 import io.ktor.server.routing.route
 import io.newm.server.auth.jwt.AUTH_JWT
+import io.newm.server.auth.jwt.AUTH_JWT_ADMIN
 import io.newm.server.features.model.CountResponse
 import io.newm.server.features.song.model.AudioStreamResponse
 import io.newm.server.features.song.model.MintPaymentRequest
@@ -36,6 +37,17 @@ fun Routing.createSongRoutes() {
     val songRepository: SongRepository by inject()
     val userRepository: UserRepository by inject()
 
+    authenticate(AUTH_JWT_ADMIN) {
+        route(SONGS_PATH) {
+            route("{songId}") {
+                post("refund") {
+                    val song = songRepository.get(songId)
+                    val walletAddress = userRepository.get(song.ownerId!!).walletAddress!!
+                    respond(songRepository.refundMintingPayment(songId, walletAddress))
+                }
+            }
+        }
+    }
     authenticate(AUTH_JWT) {
         route(SONGS_PATH) {
             post {
