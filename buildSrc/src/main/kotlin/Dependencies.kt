@@ -132,7 +132,7 @@ object Dependencies {
     }
 
     object FlywayDB {
-        private const val VERSION = "10.7.1"
+        private const val VERSION = "10.7.2"
 
         const val CORE = "org.flywaydb:flyway-core:$VERSION"
         const val POSTGRES = "org.flywaydb:flyway-database-postgresql:$VERSION"
@@ -159,7 +159,7 @@ object Dependencies {
     }
 
     object ApacheCommonsCodec {
-        private const val VERSION = "1.16.0"
+        private const val VERSION = "1.16.1"
 
         const val ALL = "commons-codec:commons-codec:$VERSION"
     }
@@ -208,8 +208,8 @@ object Dependencies {
     }
 
     object Aws {
-        private const val VERSION = "1.12.648"
-        private const val VERSION2 = "2.23.14"
+        private const val VERSION = "1.12.658"
+        private const val VERSION2 = "2.24.2"
         private const val JAXB_VERSION = "2.3.1"
 
         const val BOM = "com.amazonaws:aws-java-sdk-bom:$VERSION"
@@ -237,7 +237,7 @@ object Dependencies {
     }
 
     object JUnit {
-        private const val VERSION = "5.10.1"
+        private const val VERSION = "5.10.2"
 
         const val JUPITER = "org.junit.jupiter:junit-jupiter:$VERSION"
     }
@@ -255,7 +255,7 @@ object Dependencies {
     }
 
     object GoogleTruth {
-        private const val VERSION = "1.3.0"
+        private const val VERSION = "1.4.0"
 
         const val TRUTH = "com.google.truth:truth:$VERSION"
     }
@@ -268,13 +268,13 @@ object Dependencies {
     }
 
     object Newm {
-        private const val VERSION = "2.0.0"
+        private const val VERSION = "2.0.1"
 
         const val KOGMIOS = "io.newm:kogmios:$VERSION"
     }
 
     object Grpc {
-        private const val VERSION = "1.61.0"
+        private const val VERSION = "1.61.1"
 
         const val STUB = "io.grpc:grpc-stub:$VERSION"
         const val API = "io.grpc:grpc-api:$VERSION"
@@ -305,14 +305,14 @@ object Dependencies {
     }
 
     object SSLKickstart {
-        private const val VERSION = "8.3.0"
+        private const val VERSION = "8.3.1"
 
         const val PEM = "io.github.hakky54:sslcontext-kickstart-for-pem:$VERSION"
         const val NETTY = "io.github.hakky54:sslcontext-kickstart-for-netty:$VERSION"
     }
 
     object TestContainers {
-        private const val VERSION = "1.19.4"
+        private const val VERSION = "1.19.5"
 
         const val CORE = "org.testcontainers:testcontainers:$VERSION"
         const val JUINT = "org.testcontainers:junit-jupiter:$VERSION"
