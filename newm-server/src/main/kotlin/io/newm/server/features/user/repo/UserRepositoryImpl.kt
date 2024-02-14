@@ -1,6 +1,7 @@
 package io.newm.server.features.user.repo
 
 import io.ktor.util.logging.Logger
+import io.newm.server.auth.jwt.database.JwtTable
 import io.newm.server.auth.oauth.model.OAuthTokens
 import io.newm.server.auth.oauth.model.OAuthType
 import io.newm.server.auth.twofactor.repo.TwoFactorAuthRepository
@@ -34,6 +35,8 @@ import io.newm.shared.ktx.existsHavingId
 import io.newm.shared.ktx.isValidPassword
 import io.newm.shared.ktx.orNull
 import io.newm.shared.ktx.warn
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf
@@ -332,6 +335,7 @@ internal class UserRepositoryImpl(
     override suspend fun delete(userId: UUID) {
         logger.debug { "delete: userId = $userId" }
         transaction {
+            JwtTable.deleteWhere { JwtTable.userId eq userId }
             UserEntity[userId].delete()
         }
     }
