@@ -923,45 +923,34 @@ class MintingRepositoryImpl(
         mapItemKey = "artists".toPlutusData()
         mapItemValue =
             plutusData {
+                val primaryArtistEmails =
+                    collabs.filter { it.role.equals("Artist", ignoreCase = true) && it.credited == true }.map { it.email!! }.toMutableSet()
+                if (primaryArtistEmails.isEmpty()) {
+                    primaryArtistEmails.add(user.email!!)
+                }
                 list =
                     plutusDataList {
                         with(listItem) {
-                            add(
-                                plutusData {
-                                    map =
-                                        plutusDataMap {
-                                            with(mapItem) {
-                                                add(
-                                                    plutusDataMapItem {
-                                                        mapItemKey = "name".toPlutusData()
-                                                        mapItemValue = user.stageOrFullName.toPlutusData()
-                                                    }
-                                                )
-                                            }
-                                        }
-                                }
-                            )
                             transaction {
-                                collabs.filter { it.role.equals("Artist", ignoreCase = true) && it.credited == true }
-                                    .forEach { collab ->
-                                        add(
-                                            plutusData {
-                                                map =
-                                                    plutusDataMap {
-                                                        with(mapItem) {
-                                                            add(
-                                                                plutusDataMapItem {
-                                                                    mapItemKey = "name".toPlutusData()
-                                                                    mapItemValue =
-                                                                        UserEntity.getByEmail(collab.email!!)!!
-                                                                            .toModel(false).stageOrFullName.toPlutusData()
-                                                                }
-                                                            )
-                                                        }
+                                primaryArtistEmails.forEach { email ->
+                                    add(
+                                        plutusData {
+                                            map =
+                                                plutusDataMap {
+                                                    with(mapItem) {
+                                                        add(
+                                                            plutusDataMapItem {
+                                                                mapItemKey = "name".toPlutusData()
+                                                                mapItemValue =
+                                                                    UserEntity.getByEmail(email)!!
+                                                                        .toModel(false).stageOrFullName.toPlutusData()
+                                                            }
+                                                        )
                                                     }
-                                            }
-                                        )
-                                    }
+                                                }
+                                        }
+                                    )
+                                }
                             }
                         }
                     }

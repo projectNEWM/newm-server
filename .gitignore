@@ -36,6 +36,7 @@ startServer.sh
 stopServer.sh
 *_localhost.sh
 *_garage.sh
+*_studio.sh
 
 .elasticbeanstalk
 

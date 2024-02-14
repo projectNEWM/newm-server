@@ -76,7 +76,22 @@ class EvearaReleaseStatusJob : Job {
 
                     OutletStatusCode.DISAPPROVED -> {
                         // At least spotify is rejected, so we can mark the song as rejected
-                        songRepository.updateSongMintingStatus(songId, MintingStatus.Declined)
+                        val albumsResponse = distributionRepository.getAlbums(user)
+                        if (!albumsResponse.success) {
+                            songRepository.updateSongMintingStatus(
+                                songId,
+                                MintingStatus.Declined,
+                                "Failed to get album disapproveMessage: ${albumsResponse.message}"
+                            )
+                        } else {
+                            albumsResponse.albumData.firstOrNull { it.releaseId == song.distributionReleaseId }?.let {
+                                songRepository.updateSongMintingStatus(songId, MintingStatus.Declined, it.disapproveMessage)
+                            } ?: songRepository.updateSongMintingStatus(
+                                songId,
+                                MintingStatus.Declined,
+                                "Failed to get album disapproveMessage"
+                            )
+                        }
 
                         // Cancel this job's future executions
                         context.scheduler.deleteJob(
