@@ -16,7 +16,10 @@ fun Routing.createTwoFactorAuthRoutes() {
 
     get("$AUTH_PATH/code") {
         recaptchaRepository.verify("auth_code", request)
-        twoFactorAuthRepository.sendCode(request.requiredQueryParam("email"))
+        twoFactorAuthRepository.sendCode(
+            email = request.requiredQueryParam("email"),
+            mustExists = request.queryParameters["mustExists"]?.toBoolean() ?: false
+        )
         respond(HttpStatusCode.NoContent)
     }
 }

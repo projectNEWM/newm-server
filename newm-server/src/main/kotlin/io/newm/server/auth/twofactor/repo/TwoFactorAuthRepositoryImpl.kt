@@ -14,6 +14,7 @@ import io.newm.shared.ktx.getString
 import io.newm.shared.ktx.nextDigitCode
 import io.newm.shared.ktx.toHash
 import io.newm.shared.ktx.verify
+import io.newm.shared.ktx.warn
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf
 import java.security.SecureRandom
@@ -26,9 +27,17 @@ internal class TwoFactorAuthRepositoryImpl(
     private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
     private val random = SecureRandom()
 
-    override suspend fun sendCode(email: String) {
+    override suspend fun sendCode(
+        email: String,
+        mustExists: Boolean
+    ) {
         logger.debug { "sendCode: $email" }
-        val emailType = if (transaction { UserEntity.existsByEmail(email) }) "resetEmail" else "joinEmail"
+        val exists = transaction { UserEntity.existsByEmail(email) }
+        if (mustExists && !exists) {
+            logger.warn { "Ignoring 2fa auth-code request for non-existing user $email" }
+            return
+        }
+        val emailType = if (exists) "resetEmail" else "joinEmail"
         with(environment.getConfigChild("twoFactorAuth")) {
             val code = random.nextDigitCode(getInt("codeSize"))
             emailRepository.send(
