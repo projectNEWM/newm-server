@@ -10,6 +10,7 @@ import io.newm.chain.config.Config
 import io.newm.chain.database.repository.LedgerRepository
 import io.newm.chain.ledger.SubmittedTransactionCache
 import io.newm.chain.model.toNativeAssetMap
+import io.newm.chain.util.Bech32
 import io.newm.chain.util.Constants.ROLE_CHANGE
 import io.newm.chain.util.Constants.ROLE_PAYMENT
 import io.newm.chain.util.Constants.ROLE_STAKING
@@ -488,6 +489,9 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
 
     override suspend fun queryWalletControlledLiveUtxos(request: WalletRequest): QueryWalletControlledUtxosResponse {
         try {
+            // attempt decoding to ensure it's a valid bech32 xpub
+            require(Bech32.decode(request.accountXpubKey).bytes.size == 64) { "Invalid accountXpubKey: ${request.accountXpubKey}" }
+
             val rootAccountPk = BIP32PublicKey(bech32XPub = request.accountXpubKey)
             val stakePk = rootAccountPk.derive(ROLE_STAKING).derive(0u)
             val stakeCredential = AddressCredential.fromKey(stakePk)
@@ -521,8 +525,10 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
             }
         } catch (e: Throwable) {
             Sentry.addBreadcrumb(request.toString(), "NewmChainService")
-            log.error("queryWalletControlledUtxos error!", e)
-            throw e
+            log.error("queryWalletControlledLiveUtxos error!", e)
+            return queryWalletControlledUtxosResponse {
+                errorMessage = e.message ?: "queryWalletControlledLiveUtxos error!: $e"
+            }
         }
     }
 
