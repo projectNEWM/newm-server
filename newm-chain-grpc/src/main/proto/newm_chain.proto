@@ -331,6 +331,7 @@ message Address {
 
 message QueryWalletControlledUtxosResponse {
   repeated AddressUtxos address_utxos = 1;
+  optional string error_message = 2;
 }
 
 message AddressUtxos {

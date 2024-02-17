@@ -358,11 +358,15 @@ internal class CardanoRepositoryImpl(
     }
 
     private suspend fun getWalletAssets(xpubKey: String): List<NativeAsset> {
-        return client.queryWalletControlledLiveUtxos(
-            walletRequest {
-                accountXpubKey = xpubKey
-            }
-        ).addressUtxosList.flatMap {
+        val response =
+            client.queryWalletControlledLiveUtxos(
+                walletRequest {
+                    accountXpubKey = xpubKey
+                }
+            )
+        require(!response.hasErrorMessage()) { "Error querying wallet controlled utxos: ${response.errorMessage}" }
+
+        return response.addressUtxosList.flatMap {
             it.utxosList.flatMap(Utxo::getNativeAssetsList)
         }.mergeAmounts()
     }
