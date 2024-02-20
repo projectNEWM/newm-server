@@ -38,9 +38,7 @@ class V45__CreateEarnings : BaseJavaMigration() {
                         failed_earnings_ids uuid ARRAY,
                         transaction_id text,
                         created_at timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                        CONSTRAINT fk_claim_orders_key_id__id FOREIGN KEY (key_id) REFERENCES keys (id) ON UPDATE RESTRICT ON DELETE RESTRICT,
-                        CONSTRAINT fk_claim_orders_earnings_ids__id FOREIGN KEY (earnings_ids) REFERENCES earnings (id) ON UPDATE RESTRICT ON DELETE RESTRICT,
-                        CONSTRAINT fk_claim_orders_failed_earnings_ids__id FOREIGN KEY (failed_earnings_ids) REFERENCES earnings (id) ON UPDATE RESTRICT ON DELETE RESTRICT
+                        CONSTRAINT fk_claim_orders_key_id__id FOREIGN KEY (key_id) REFERENCES keys (id) ON UPDATE RESTRICT ON DELETE RESTRICT
                     )
                     """.trimIndent(),
                 )
