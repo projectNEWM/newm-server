@@ -41,7 +41,7 @@ object Dependencies {
     }
 
     object KotlinXSerialization {
-        private const val VERSION = "1.6.2"
+        private const val VERSION = "1.6.3"
 
         const val JSON = "org.jetbrains.kotlinx:kotlinx-serialization-json:$VERSION"
     }
@@ -53,7 +53,7 @@ object Dependencies {
     }
 
     object Coroutines {
-        private const val VERSION = "1.7.3"
+        private const val VERSION = "1.8.0"
 
         const val CORE = "org.jetbrains.kotlinx:kotlinx-coroutines-core:$VERSION"
         const val JDK8 = "org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:$VERSION"
@@ -91,7 +91,7 @@ object Dependencies {
     }
 
     object LogBack {
-        private const val VERSION = "1.4.14"
+        private const val VERSION = "1.5.0"
 
         const val CLASSIC = "ch.qos.logback:logback-classic:$VERSION"
     }
@@ -120,7 +120,7 @@ object Dependencies {
     }
 
     object PostgreSQL {
-        private const val VERSION = "42.7.1"
+        private const val VERSION = "42.7.2"
 
         const val ALL = "org.postgresql:postgresql:$VERSION"
     }
@@ -132,7 +132,7 @@ object Dependencies {
     }
 
     object FlywayDB {
-        private const val VERSION = "10.7.2"
+        private const val VERSION = "10.8.1"
 
         const val CORE = "org.flywaydb:flyway-core:$VERSION"
         const val POSTGRES = "org.flywaydb:flyway-database-postgresql:$VERSION"
@@ -195,21 +195,21 @@ object Dependencies {
     }
 
     object SpringSecurity {
-        private const val VERSION = "6.2.1"
+        private const val VERSION = "6.2.2"
 
         const val CORE = "org.springframework.security:spring-security-core:$VERSION"
     }
 
     // https://github.com/cloudinary/cloudinary_java
     object Cloudinary {
-        private const val VERSION = "1.37.0"
+        private const val VERSION = "1.38.0"
 
         const val ALL = "com.cloudinary:cloudinary-http44:$VERSION"
     }
 
     object Aws {
-        private const val VERSION = "1.12.658"
-        private const val VERSION2 = "2.24.2"
+        private const val VERSION = "1.12.662"
+        private const val VERSION2 = "2.24.6"
         private const val JAXB_VERSION = "2.3.1"
 
         const val BOM = "com.amazonaws:aws-java-sdk-bom:$VERSION"
@@ -255,7 +255,7 @@ object Dependencies {
     }
 
     object GoogleTruth {
-        private const val VERSION = "1.4.0"
+        private const val VERSION = "1.4.1"
 
         const val TRUTH = "com.google.truth:truth:$VERSION"
     }
@@ -291,7 +291,7 @@ object Dependencies {
     }
 
     object Protobuf {
-        private const val VERSION = "3.25.2"
+        private const val VERSION = "3.25.3"
 
         const val JAVA_UTIL = "com.google.protobuf:protobuf-java-util:$VERSION"
         const val KOTLIN = "com.google.protobuf:protobuf-kotlin:$VERSION"
