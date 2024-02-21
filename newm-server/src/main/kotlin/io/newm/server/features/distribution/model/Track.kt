@@ -14,5 +14,7 @@ data class Track(
     @SerialName("preview")
     val preview: Preview?,
     @SerialName("participant")
-    val participants: List<Participant>
+    val participants: List<Participant>,
+    @SerialName("instrumental")
+    val instrumental: Boolean,
 )
