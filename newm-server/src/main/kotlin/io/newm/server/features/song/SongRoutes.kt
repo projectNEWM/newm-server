@@ -20,6 +20,7 @@ import io.newm.server.features.user.model.User
 import io.newm.server.features.user.repo.UserRepository
 import io.newm.server.ktx.collaborators
 import io.newm.server.ktx.limit
+import io.newm.server.ktx.mintingStatus
 import io.newm.server.ktx.myUserId
 import io.newm.server.ktx.offset
 import io.newm.server.ktx.songId
@@ -44,6 +45,11 @@ fun Routing.createSongRoutes() {
                     val song = songRepository.get(songId)
                     val walletAddress = userRepository.get(song.ownerId!!).walletAddress!!
                     respond(songRepository.refundMintingPayment(songId, walletAddress))
+                }
+                post("reprocess/{mintingStatus}") {
+                    val song = songRepository.get(songId)
+                    songRepository.updateSongMintingStatus(songId, mintingStatus)
+                    respond(HttpStatusCode.Accepted)
                 }
             }
         }

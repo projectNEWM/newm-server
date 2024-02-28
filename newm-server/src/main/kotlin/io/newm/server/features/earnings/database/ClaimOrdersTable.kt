@@ -22,10 +22,10 @@ object ClaimOrdersTable : UUIDTable(name = "claim_orders") {
     val status: Column<String> = text("status")
 
     // The IDs of the earnings that are being claimed
-    val earningsIds: Column<Array<UUID>> = uuidArray("earnings_ids")
+    val earningsIds: Column<List<UUID>> = uuidArray("earnings_ids")
 
     // The IDs of the earnings that failed to be claimed (bucket ran dry or some other error)
-    val failedEarningsIds: Column<Array<UUID>?> = uuidArray("failed_earnings_ids").nullable()
+    val failedEarningsIds: Column<List<UUID>?> = uuidArray("failed_earnings_ids").nullable()
 
     // The transaction ID of the claiming transaction
     val transactionId: Column<String?> = text("transaction_id").nullable()

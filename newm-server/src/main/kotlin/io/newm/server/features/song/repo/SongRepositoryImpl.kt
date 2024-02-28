@@ -107,8 +107,8 @@ internal class SongRepositoryImpl(
                 archived = song.archived ?: false
                 this.ownerId = EntityID(ownerId, UserTable)
                 this.title = title
-                this.genres = genres.toTypedArray()
-                moods = song.moods?.toTypedArray()
+                this.genres = genres
+                moods = song.moods
                 coverArtUrl = song.coverArtUrl?.asValidUrl()
                 description = song.description
                 album = song.album
@@ -124,7 +124,7 @@ internal class SongRepositoryImpl(
                 barcodeNumber = song.barcodeNumber
                 isrc = song.isrc
                 iswc = song.iswc
-                ipis = song.ipis?.toTypedArray()
+                ipis = song.ipis
                 releaseDate = song.releaseDate
                 publicationDate = song.publicationDate
                 lyricsUrl = song.lyricsUrl?.asValidUrl()
@@ -150,8 +150,8 @@ internal class SongRepositoryImpl(
                     }
                     entity.title = it
                 }
-                genres?.let { entity.genres = it.toTypedArray() }
-                moods?.let { entity.moods = it.toTypedArray() }
+                genres?.let { entity.genres = it }
+                moods?.let { entity.moods = it }
                 coverArtUrl?.let { entity.coverArtUrl = it.orNull()?.asValidUrl() }
                 description?.let { entity.description = it.orNull() }
                 album?.let { entity.album = it.orNull() }
@@ -167,7 +167,7 @@ internal class SongRepositoryImpl(
                 barcodeNumber?.let { entity.barcodeNumber = it }
                 isrc?.let { entity.isrc = it.orNull() }
                 iswc?.let { entity.iswc = it.orNull() }
-                ipis?.let { entity.ipis = it.toTypedArray() }
+                ipis?.let { entity.ipis = it }
                 releaseDate?.let { entity.releaseDate = it }
                 publicationDate?.let { entity.publicationDate = it }
                 lyricsUrl?.let { entity.lyricsUrl = it.orNull()?.asValidUrl() }

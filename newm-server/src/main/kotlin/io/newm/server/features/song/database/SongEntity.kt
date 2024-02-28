@@ -38,8 +38,8 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     val createdAt: LocalDateTime by SongTable.createdAt
     var ownerId: EntityID<UUID> by SongTable.ownerId
     var title: String by SongTable.title
-    var genres: Array<String> by SongTable.genres
-    var moods: Array<String>? by SongTable.moods
+    var genres: List<String> by SongTable.genres
+    var moods: List<String>? by SongTable.moods
     var coverArtUrl: String? by SongTable.coverArtUrl
     var description: String? by SongTable.description
     var album: String? by SongTable.album
@@ -55,7 +55,7 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var barcodeNumber: String? by SongTable.barcodeNumber
     var isrc: String? by SongTable.isrc
     var iswc: String? by SongTable.iswc
-    var ipis: Array<String>? by SongTable.ipis
+    var ipis: List<String>? by SongTable.ipis
     var releaseDate: LocalDate? by SongTable.releaseDate
     var publicationDate: LocalDate? by SongTable.publicationDate
     var lyricsUrl: String? by SongTable.lyricsUrl
@@ -195,10 +195,10 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                 ops += SongTable.ownerId inList it
             }
             genres?.let {
-                ops += SongTable.genres overlaps it.toTypedArray()
+                ops += SongTable.genres overlaps it
             }
             moods?.let {
-                ops += SongTable.moods overlaps it.toTypedArray()
+                ops += SongTable.moods overlaps it
             }
             mintingStatuses?.let {
                 ops += SongTable.mintingStatus inList it
