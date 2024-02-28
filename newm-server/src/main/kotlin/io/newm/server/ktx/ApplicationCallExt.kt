@@ -42,6 +42,9 @@ val ApplicationCall.userId: UUID
 val ApplicationCall.songId: UUID
     get() = parameters["songId"]!!.toUUID()
 
+val ApplicationCall.mintingStatus: MintingStatus
+    get() = parameters["mintingStatus"]!!.let(MintingStatus::valueOf)
+
 val ApplicationCall.playlistId: UUID
     get() = parameters["playlistId"]!!.toUUID()
 

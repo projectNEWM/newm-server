@@ -744,7 +744,7 @@ class SongRoutesTests : BaseApplicationTests() {
                         SongEntity.new {
                             this.ownerId = EntityID(ownerId, UserTable)
                             title = "title_${genre}_$i"
-                            this.genres = arrayOf(genre)
+                            this.genres = listOf(genre)
                         }
                     }
                 }
@@ -801,7 +801,7 @@ class SongRoutesTests : BaseApplicationTests() {
                         SongEntity.new {
                             this.ownerId = EntityID(ownerId1, UserTable)
                             title = "title_${genre}_$i"
-                            this.genres = arrayOf(genre)
+                            this.genres = listOf(genre)
                         }
                     }
                 }
@@ -811,7 +811,7 @@ class SongRoutesTests : BaseApplicationTests() {
                         SongEntity.new {
                             this.ownerId = EntityID(ownerId2, UserTable)
                             title = "title_${genre}_$i"
-                            this.genres = arrayOf(genre)
+                            this.genres = listOf(genre)
                         }
                     }
                 }
@@ -861,7 +861,7 @@ class SongRoutesTests : BaseApplicationTests() {
                     SongEntity.new {
                         this.ownerId = EntityID(testUserId, UserTable)
                         title = "song$count"
-                        genres = arrayOf("genre")
+                        genres = listOf("genre")
                     }
                 }
             }
@@ -886,7 +886,7 @@ class SongRoutesTests : BaseApplicationTests() {
                     SongEntity.new {
                         this.ownerId = EntityID(testUserId, UserTable)
                         title = "song$count"
-                        genres = arrayOf("genre$count")
+                        genres = listOf("genre$count")
                     }
                 }
             }
@@ -1030,8 +1030,8 @@ fun addSongToDatabase(
             description = "description$offset ${phraseOrBlank(offset, 4)} blah blah"
             album = "album$offset ${phraseOrBlank(offset, 5)} blah blah"
             nftName = "nftName$offset ${phraseOrBlank(offset, 6)} blah blah"
-            genres = arrayOf("genre${offset}_0", "genre${offset}_1")
-            moods = arrayOf("mood${offset}_0", "mood${offset}_1")
+            genres = listOf("genre${offset}_0", "genre${offset}_1")
+            moods = listOf("mood${offset}_0", "mood${offset}_1")
             coverArtUrl = "https://newm.io/cover$offset"
             track = offset
             language = "language$offset"
@@ -1045,7 +1045,7 @@ fun addSongToDatabase(
             barcodeNumber = "barcodeNumber$offset"
             isrc = "isrc$offset"
             iswc = "iswc$offset"
-            ipis = arrayOf("ipi${offset}_0", "ipi${offset}_1")
+            ipis = listOf("ipi${offset}_0", "ipi${offset}_1")
             releaseDate = LocalDate.of(2023, 1, offset % 31 + 1)
             publicationDate = LocalDate.of(2023, 1, offset % 31 + 1)
             lyricsUrl = "https://newm.io/lyrics$offset"

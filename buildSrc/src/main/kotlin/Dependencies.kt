@@ -91,7 +91,7 @@ object Dependencies {
     }
 
     object LogBack {
-        private const val VERSION = "1.5.0"
+        private const val VERSION = "1.5.1"
 
         const val CLASSIC = "ch.qos.logback:logback-classic:$VERSION"
     }
@@ -105,7 +105,7 @@ object Dependencies {
     }
 
     object Exposed {
-        private const val VERSION = "0.47.0"
+        private const val VERSION = "0.48.0"
 
         const val CORE = "org.jetbrains.exposed:exposed-core:$VERSION"
         const val DAO = "org.jetbrains.exposed:exposed-dao:$VERSION"
@@ -208,8 +208,8 @@ object Dependencies {
     }
 
     object Aws {
-        private const val VERSION = "1.12.662"
-        private const val VERSION2 = "2.24.6"
+        private const val VERSION = "1.12.668"
+        private const val VERSION2 = "2.24.12"
         private const val JAXB_VERSION = "2.3.1"
 
         const val BOM = "com.amazonaws:aws-java-sdk-bom:$VERSION"
@@ -249,7 +249,7 @@ object Dependencies {
     }
 
     object Mockk {
-        private const val VERSION = "1.13.9"
+        private const val VERSION = "1.13.10"
 
         const val MOCKK = "io.mockk:mockk:$VERSION"
     }
@@ -261,7 +261,7 @@ object Dependencies {
     }
 
     object Sentry {
-        private const val VERSION = "7.3.0"
+        private const val VERSION = "7.4.0"
 
         const val CORE = "io.sentry:sentry:$VERSION"
         const val LOGBACK = "io.sentry:sentry-logback:$VERSION"
@@ -274,7 +274,7 @@ object Dependencies {
     }
 
     object Grpc {
-        private const val VERSION = "1.61.1"
+        private const val VERSION = "1.62.2"
 
         const val STUB = "io.grpc:grpc-stub:$VERSION"
         const val API = "io.grpc:grpc-api:$VERSION"
@@ -305,14 +305,14 @@ object Dependencies {
     }
 
     object SSLKickstart {
-        private const val VERSION = "8.3.1"
+        private const val VERSION = "8.3.2"
 
         const val PEM = "io.github.hakky54:sslcontext-kickstart-for-pem:$VERSION"
         const val NETTY = "io.github.hakky54:sslcontext-kickstart-for-netty:$VERSION"
     }
 
     object TestContainers {
-        private const val VERSION = "1.19.5"
+        private const val VERSION = "1.19.6"
 
         const val CORE = "org.testcontainers:testcontainers:$VERSION"
         const val JUINT = "org.testcontainers:junit-jupiter:$VERSION"
