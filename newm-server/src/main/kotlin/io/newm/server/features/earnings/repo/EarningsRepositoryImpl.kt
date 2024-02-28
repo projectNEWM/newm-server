@@ -35,8 +35,8 @@ class EarningsRepositoryImpl : EarningsRepository {
                 this.stakeAddress = claimOrder.stakeAddress
                 this.keyId = EntityID(claimOrder.keyId, KeyTable)
                 this.status = claimOrder.status.name
-                this.earningsIds = claimOrder.earningsIds
-                this.failedEarningsIds = claimOrder.failedEarningsIds
+                this.earningsIds = claimOrder.earningsIds.toTypedArray()
+                this.failedEarningsIds = claimOrder.failedEarningsIds?.toTypedArray()
                 this.transactionId = claimOrder.transactionId
                 this.createdAt = claimOrder.createdAt
             }.id.value

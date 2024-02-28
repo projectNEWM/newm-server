@@ -20,38 +20,38 @@ import java.sql.Array as SQLArray
 fun Table.integerArray(
     name: String,
     size: Int? = null
-): Column<List<Int>> = array(name, IntegerColumnType(), size)
+): Column<Array<Int>> = array(name, IntegerColumnType(), size)
 
 fun Table.longArray(
     name: String,
     size: Int? = null
-): Column<List<Int>> = array(name, LongColumnType(), size)
+): Column<Array<Int>> = array(name, LongColumnType(), size)
 
 fun Table.floatArray(
     name: String,
     size: Int? = null
-): Column<List<Float>> = array(name, FloatColumnType(), size)
+): Column<Array<Float>> = array(name, FloatColumnType(), size)
 
 fun Table.doubleArray(
     name: String,
     size: Int? = null
-): Column<List<Double>> = array(name, DoubleColumnType(), size)
+): Column<Array<Double>> = array(name, DoubleColumnType(), size)
 
 fun Table.uuidArray(
     name: String,
     size: Int? = null
-): Column<List<UUID>> = array(name, UUIDColumnType(), size)
+): Column<Array<UUID>> = array(name, UUIDColumnType(), size)
 
 fun Table.textArray(
     name: String,
     size: Int? = null
-): Column<List<String>> = array(name, TextColumnType(), size)
+): Column<Array<String>> = array(name, TextColumnType(), size)
 
 fun <T> Table.array(
     name: String,
     elementType: IColumnType,
     size: Int?
-) = registerColumn<List<T>>(name, ArrayColumnType(elementType, size))
+) = registerColumn<Array<T>>(name, ArrayColumnType(elementType, size))
 
 /**
  * Implementation of [ColumnType] for the SQL `ARRAY` type.
@@ -99,10 +99,10 @@ class ArrayColumnType(
  * Invokes the `ANY` function on an expression.
  */
 @JvmName("any")
-fun <T> ExpressionWithColumnType<List<T>>.any(): ExpressionWithColumnType<T> = anyFunc()
+fun <T> ExpressionWithColumnType<Array<T>>.any(): ExpressionWithColumnType<T> = anyFunc()
 
 @JvmName("any2")
-fun <T> ExpressionWithColumnType<List<T>?>.any(): ExpressionWithColumnType<T> = anyFunc()
+fun <T> ExpressionWithColumnType<Array<T>?>.any(): ExpressionWithColumnType<T> = anyFunc()
 
 private fun <A, E> ExpressionWithColumnType<A>.anyFunc(): ExpressionWithColumnType<E> = CustomFunction("ANY", columnType, this)
 
@@ -117,19 +117,19 @@ private fun <A, E> ExpressionWithColumnType<A>.anyFunc(): ExpressionWithColumnTy
  * @see any
  */
 @JvmName("eqAny")
-infix fun <T> T.eqAny(other: ExpressionWithColumnType<List<T>>): EqOp = EqOp(other.asLiteral(this), other.any())
+infix fun <T> T.eqAny(other: ExpressionWithColumnType<Array<T>>): EqOp = EqOp(other.asLiteral(this), other.any())
 
 @JvmName("eqAny2")
-infix fun <T> T.eqAny(other: ExpressionWithColumnType<List<T>?>): EqOp = EqOp(other.asLiteral(this), other.any())
+infix fun <T> T.eqAny(other: ExpressionWithColumnType<Array<T>?>): EqOp = EqOp(other.asLiteral(this), other.any())
 
 /***
  * Invokes the `UNNEST` function on an expression.
  */
 @JvmName("unnest")
-fun <T> ExpressionWithColumnType<List<T>>.unnest(): ExpressionWithColumnType<T> = unnestFunc()
+fun <T> ExpressionWithColumnType<Array<T>>.unnest(): ExpressionWithColumnType<T> = unnestFunc()
 
 @JvmName("unnest2")
-fun <T> ExpressionWithColumnType<List<T>?>.unnest(): ExpressionWithColumnType<T> = unnestFunc()
+fun <T> ExpressionWithColumnType<Array<T>?>.unnest(): ExpressionWithColumnType<T> = unnestFunc()
 
 private fun <A, E> ExpressionWithColumnType<A>.unnestFunc(): ExpressionWithColumnType<E> = CustomFunction("UNNEST", columnType, this)
 
@@ -138,32 +138,32 @@ private fun <A, E> ExpressionWithColumnType<A>.unnestFunc(): ExpressionWithColum
  * https://www.postgresql.org/docs/current/functions-array.html
  */
 @JvmName("contains")
-infix fun <T> ExpressionWithColumnType<List<T>>.contains(array: List<T>): Op<Boolean> = arrayOp(array, "@>")
+infix fun <T> ExpressionWithColumnType<Array<T>>.contains(array: Array<T>): Op<Boolean> = arrayOp(array, "@>")
 
 @JvmName("contains2")
-infix fun <T> ExpressionWithColumnType<List<T>?>.contains(array: List<T>): Op<Boolean> = arrayOp(array, "@>")
+infix fun <T> ExpressionWithColumnType<Array<T>?>.contains(array: Array<T>): Op<Boolean> = arrayOp(array, "@>")
 
 /***
  * Invokes the `<@` (contained) operator
  * https://www.postgresql.org/docs/current/functions-array.html
  */
 @JvmName("contained")
-infix fun <T> ExpressionWithColumnType<List<T>>.contained(array: List<T>): Op<Boolean> = arrayOp(array, "<@")
+infix fun <T> ExpressionWithColumnType<Array<T>>.contained(array: Array<T>): Op<Boolean> = arrayOp(array, "<@")
 
 @JvmName("contained2")
-infix fun <T> ExpressionWithColumnType<List<T>?>.contained(array: List<T>): Op<Boolean> = arrayOp(array, "<@")
+infix fun <T> ExpressionWithColumnType<Array<T>?>.contained(array: Array<T>): Op<Boolean> = arrayOp(array, "<@")
 
 /***
  * Invokes the `&&` (overlap) operator
  * https://www.postgresql.org/docs/current/functions-array.html
  */
 @JvmName("overlaps")
-infix fun <T> ExpressionWithColumnType<List<T>>.overlaps(array: List<T>): Op<Boolean> = arrayOp(array, "&&")
+infix fun <T> ExpressionWithColumnType<Array<T>>.overlaps(array: Array<T>): Op<Boolean> = arrayOp(array, "&&")
 
 @JvmName("overlaps2")
-infix fun <T> ExpressionWithColumnType<List<T>?>.overlaps(array: List<T>): Op<Boolean> = arrayOp(array, "&&")
+infix fun <T> ExpressionWithColumnType<Array<T>?>.overlaps(array: Array<T>): Op<Boolean> = arrayOp(array, "&&")
 
 private fun <A, E> ExpressionWithColumnType<A>.arrayOp(
-    array: List<E>,
+    array: Array<E>,
     opSign: String
 ): Op<Boolean> = object : ComparisonOp(this@arrayOp, QueryParameter(array, columnType), opSign) {}

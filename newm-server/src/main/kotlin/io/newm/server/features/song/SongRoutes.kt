@@ -47,7 +47,6 @@ fun Routing.createSongRoutes() {
                     respond(songRepository.refundMintingPayment(songId, walletAddress))
                 }
                 post("reprocess/{mintingStatus}") {
-                    val song = songRepository.get(songId)
                     songRepository.updateSongMintingStatus(songId, mintingStatus)
                     respond(HttpStatusCode.Accepted)
                 }
