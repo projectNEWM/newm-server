@@ -60,7 +60,7 @@ class CollaborationRoutesTests : BaseApplicationTests() {
                     SongEntity.new {
                         ownerId = EntityID(testUserId, UserTable)
                         title = "Song"
-                        genres = listOf("Genre")
+                        genres = arrayOf("Genre")
                     }.id.value
                 }
 
@@ -932,7 +932,7 @@ private fun addCollaborationToDatabase(
             SongEntity.new {
                 this.ownerId = ownerEntityId
                 title = "Song$offset"
-                genres = listOf("Genre$offset")
+                genres = arrayOf("Genre$offset")
             }.id
         }
     return transaction {

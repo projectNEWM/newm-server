@@ -215,8 +215,8 @@ open class BaseApplicationTests {
             SongEntity.new {
                 ownerId = EntityID(song.ownerId!!, UserTable)
                 title = song.title!!
-                genres = song.genres!!
-                moods = song.moods
+                genres = song.genres!!.toTypedArray()
+                moods = song.moods?.toTypedArray()
                 coverArtUrl = song.coverArtUrl?.asValidUrl()
                 description = song.description
                 album = song.album
@@ -229,7 +229,7 @@ open class BaseApplicationTests {
                 parentalAdvisory = song.parentalAdvisory
                 isrc = song.isrc
                 iswc = song.iswc
-                ipis = song.ipis
+                ipis = song.ipis?.toTypedArray()
                 releaseDate = song.releaseDate
                 lyricsUrl = song.lyricsUrl?.asValidUrl()
                 arweaveClipUrl = song.arweaveClipUrl

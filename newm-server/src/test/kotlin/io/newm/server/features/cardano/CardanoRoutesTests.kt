@@ -330,8 +330,8 @@ fun addSongToDatabase(
             description = "description$offset ${phraseOrBlank(offset, 1)} blah blah"
             album = "album$offset ${phraseOrBlank(offset, 2)} blah blah"
             this.nftName = nftName
-            genres = listOf("genre${offset}_0", "genre${offset}_1")
-            moods = listOf("mood${offset}_0", "mood${offset}_1")
+            genres = arrayOf("genre${offset}_0", "genre${offset}_1")
+            moods = arrayOf("mood${offset}_0", "mood${offset}_1")
             coverArtUrl = "https://newm.io/cover$offset"
             track = offset
             language = "language$offset"
@@ -344,7 +344,7 @@ fun addSongToDatabase(
             barcodeNumber = "barcodeNumber$offset"
             isrc = "isrc$offset"
             iswc = "iswc$offset"
-            ipis = listOf("ipi${offset}_0", "ipi${offset}_1")
+            ipis = arrayOf("ipi${offset}_0", "ipi${offset}_1")
             releaseDate = LocalDate.of(2023, 1, offset % 31 + 1)
             publicationDate = LocalDate.of(2023, 1, offset % 31 + 1)
             lyricsUrl = "https://newm.io/lyrics$offset"
