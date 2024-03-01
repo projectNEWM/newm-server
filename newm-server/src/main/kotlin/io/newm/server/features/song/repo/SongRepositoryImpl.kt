@@ -72,7 +72,7 @@ import org.koin.core.parameter.parametersOf
 import java.math.BigDecimal
 import java.math.BigInteger
 import java.math.RoundingMode
-import java.net.URL
+import java.net.URI
 import java.time.LocalDateTime
 import java.util.Properties
 import java.util.UUID
@@ -128,6 +128,7 @@ internal class SongRepositoryImpl(
                 releaseDate = song.releaseDate
                 publicationDate = song.publicationDate
                 lyricsUrl = song.lyricsUrl?.asValidUrl()
+                instrumental = song.instrumental ?: song.genres.contains("Instrumental")
             }.id.value
         }
     }
@@ -171,6 +172,8 @@ internal class SongRepositoryImpl(
                 releaseDate?.let { entity.releaseDate = it }
                 publicationDate?.let { entity.publicationDate = it }
                 lyricsUrl?.let { entity.lyricsUrl = it.orNull()?.asValidUrl() }
+                instrumental?.let { entity.instrumental = it }
+
                 if (requesterId == null) {
                     // don't allow updating these fields when invoked from REST API
                     tokenAgreementUrl?.let { entity.tokenAgreementUrl = it.orNull()?.asValidUrl() }
@@ -330,8 +333,8 @@ internal class SongRepositoryImpl(
             throw HttpUnprocessableEntityException("streamUrl is null")
         }
 
-        val songStreamUrl = URL(song.streamUrl)
-        val mediaHostUrl = URL(environment.getConfigString("aws.cloudFront.audioStream.hostUrl"))
+        val songStreamUrl = URI.create(song.streamUrl).toURL()
+        val mediaHostUrl = URI.create(environment.getConfigString("aws.cloudFront.audioStream.hostUrl")).toURL()
         val kpid = environment.getSecureConfigString("aws.cloudFront.audioStream.keyPairId")
         val pk = environment.getSecureConfigString("aws.cloudFront.audioStream.privateKey")
         val cookieDom = environment.getConfigString("ktor.deployment.cookieDomain")
