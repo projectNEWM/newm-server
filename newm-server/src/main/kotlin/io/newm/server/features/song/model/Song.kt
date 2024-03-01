@@ -72,4 +72,5 @@ data class Song(
     @Transient
     val forceDistributed: Boolean? = null,
     val errorMessage: String? = null,
+    val instrumental: Boolean? = null,
 )

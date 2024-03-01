@@ -992,7 +992,13 @@ class EvearaDistributionRepositoryImpl(
                                                 payoutSharePercentage = 0,
                                             )
                                         ),
-                                    instrumental = song.genres?.any { it.equals("Instrumental", ignoreCase = true) } ?: false,
+                                    instrumental =
+                                        song.instrumental ?: song.genres?.any {
+                                            it.equals(
+                                                "Instrumental",
+                                                ignoreCase = true
+                                            )
+                                        } ?: false,
                                 )
                             ),
                     ).logRequestJson(log)
@@ -1115,7 +1121,13 @@ class EvearaDistributionRepositoryImpl(
                                                 payoutSharePercentage = 0,
                                             )
                                         ),
-                                    instrumental = song.genres?.any { it.equals("Instrumental", ignoreCase = true) } ?: false,
+                                    instrumental =
+                                        song.instrumental ?: song.genres?.any {
+                                            it.equals(
+                                                "Instrumental",
+                                                ignoreCase = true
+                                            )
+                                        } ?: false,
                                 )
                             ),
                     )
