@@ -1,5 +1,6 @@
 package io.newm.server.features.distribution
 
+import io.newm.server.features.collaboration.model.Collaboration
 import io.newm.server.features.distribution.model.AddAlbumResponse
 import io.newm.server.features.distribution.model.AddArtistRequest
 import io.newm.server.features.distribution.model.AddArtistResponse
@@ -87,9 +88,17 @@ interface DistributionRepository {
 
     suspend fun getArtistOutletProfileNames(user: User): GetOutletProfileNamesResponse
 
-    suspend fun addParticipant(user: User): AddParticipantResponse
+    suspend fun addParticipant(
+        user: User,
+        collabUser: User? = null,
+        collab: Collaboration? = null,
+    ): AddParticipantResponse
 
-    suspend fun updateParticipant(user: User): EvearaSimpleResponse
+    suspend fun updateParticipant(
+        user: User,
+        collabUser: User? = null,
+        collab: Collaboration? = null,
+    ): EvearaSimpleResponse
 
     suspend fun getParticipants(user: User): GetParticipantsResponse
 
@@ -129,7 +138,6 @@ interface DistributionRepository {
 
     suspend fun updateAlbum(
         user: User,
-        trackId: Long,
         song: Song
     ): EvearaSimpleResponse
 

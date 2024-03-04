@@ -42,6 +42,7 @@ class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var featured: Boolean by CollaborationTable.featured
     var status: CollaborationStatus by CollaborationTable.status
     var distributionArtistId: Long? by CollaborationTable.distributionArtistId
+    var distributionParticipantId: Long? by CollaborationTable.distributionParticipantId
 
     fun toModel(): Collaboration =
         Collaboration(
@@ -55,6 +56,7 @@ class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             featured = featured,
             status = status,
             distributionArtistId = distributionArtistId,
+            distributionParticipantId = distributionParticipantId
         )
 
     companion object : UUIDEntityClass<CollaborationEntity>(CollaborationTable) {
