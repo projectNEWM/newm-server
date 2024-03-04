@@ -24,4 +24,5 @@ data class Collaboration(
     val featured: Boolean? = null,
     val status: CollaborationStatus? = null,
     val distributionArtistId: Long? = null,
+    val distributionParticipantId: Long? = null,
 )

@@ -22,4 +22,5 @@ object CollaborationTable : UUIDTable(name = "collaborations") {
     val status: Column<CollaborationStatus> =
         enumeration("status", CollaborationStatus::class).default(CollaborationStatus.Editing)
     val distributionArtistId: Column<Long?> = long("distribution_artist_id").nullable()
+    val distributionParticipantId: Column<Long?> = long("distribution_participant_id").nullable()
 }
