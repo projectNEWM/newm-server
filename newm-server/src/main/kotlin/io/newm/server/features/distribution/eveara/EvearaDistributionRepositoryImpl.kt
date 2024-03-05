@@ -1623,7 +1623,7 @@ class EvearaDistributionRepositoryImpl(
         requireNotNull(user.id) { "User.id must not be null!" }
 
         // Create the newm participant if they don't exist yet
-        val getParticipantsResponse = getParticipants(user)
+        var getParticipantsResponse = getParticipants(user)
         if (getParticipantsResponse.totalRecords > 0 && getParticipantsResponse.participantData.any { it.name == "NEWM" }) {
             val existingNewmParticipant = getParticipantsResponse.participantData.first { it.name == "NEWM" }
             log.info { "Found existing distribution participant NEWM with id ${existingNewmParticipant.participantId}" }
@@ -1643,6 +1643,7 @@ class EvearaDistributionRepositoryImpl(
             log.info { "Created NEWM participant with id ${response.participantId}: ${response.message}" }
             user.distributionNewmParticipantId = response.participantId
             userRepository.updateUserData(user.id, user)
+            getParticipantsResponse = getParticipants(user)
         }
 
         // Create/Update the user participant (will pay to newm any royalties)
@@ -1657,6 +1658,7 @@ class EvearaDistributionRepositoryImpl(
                     }
                     val response = updateParticipant(user)
                     log.info { "Updated distribution participant ${user.email} with id ${user.distributionUserId}: ${response.message}" }
+                    getParticipantsResponse = getParticipants(user)
                 }
             } else {
                 // See if we can find a participant where the name matches and then update the user record
@@ -1672,6 +1674,7 @@ class EvearaDistributionRepositoryImpl(
                     log.info { "Created distribution participant ${user.email} with id ${response.participantId}: ${response.message}" }
                     user.distributionParticipantId = response.participantId
                     userRepository.updateUserData(user.id, user)
+                    getParticipantsResponse = getParticipants(user)
                 }
             }
         } else {
@@ -1682,28 +1685,41 @@ class EvearaDistributionRepositoryImpl(
             log.info { "Created distribution participant ${user.email} with id ${response.participantId}: ${response.message}" }
             user.distributionParticipantId = response.participantId
             userRepository.updateUserData(user.id, user)
+            getParticipantsResponse = getParticipants(user)
         }
 
         // Create/Update the participantId for each collaborator (will pay to newm any royalties)
         val collabsToUpdate = mutableListOf<Collaboration>()
         collabs.forEach { collab ->
             val collabUser = userRepository.findByEmail(collab.email!!)
-            val collabParticipant = getParticipantsResponse.participantData.firstOrNull { it.name == collabUser.stageOrFullName }
+            val collabParticipant = getParticipantsResponse.participantData.firstOrNull { it.participantId == collab.distributionParticipantId }
             if (collabParticipant != null) {
                 log.info { "Found existing distribution collab participant ${collabUser.email} with id ${collabParticipant.participantId}" }
                 if (collabParticipant.name != collabUser.stageOrFullName) {
                     log.info {
                         "Updating distribution collab participant ${collabUser.email} with id ${collabParticipant.participantId}, name ${collabParticipant.name} -> ${collabUser.stageOrFullName}"
                     }
-                    val response = updateParticipant(collabUser, collabUser, collab)
+                    val response = updateParticipant(user, collabUser, collab)
                     log.info { "Updated distribution collab participant ${collabUser.email} with id ${collabParticipant.participantId}: ${response.message}" }
                     collabsToUpdate.add(collab.copy(distributionParticipantId = collabParticipant.participantId))
+                    getParticipantsResponse = getParticipants(user)
                 }
             } else {
-                log.info { "No existing distribution participant ${collabUser.email} found by name match" }
-                val response = addParticipant(collabUser, collabUser, collab)
-                log.info { "Created distribution collab participant ${collabUser.email} with id ${response.participantId}: ${response.message}" }
-                collabsToUpdate.add(collab.copy(distributionParticipantId = response.participantId))
+                // See if we can find a participant where the name matches and then update the user record
+                val existingParticipantNameMatch =
+                    getParticipantsResponse.participantData.firstOrNull { it.name == collabUser.stageOrFullName }
+                if (existingParticipantNameMatch != null) {
+                    collabsToUpdate.add(collab.copy(distributionParticipantId = existingParticipantNameMatch.participantId))
+                    log.info {
+                        "Found existing distribution participant ${collabUser.email} with id ${existingParticipantNameMatch.participantId} by name match"
+                    }
+                } else {
+                    log.info { "No existing distribution participant ${collabUser.email} found by name match" }
+                    val response = addParticipant(user, collabUser, collab)
+                    log.info { "Created distribution collab participant ${collabUser.email} with id ${response.participantId}: ${response.message}" }
+                    collabsToUpdate.add(collab.copy(distributionParticipantId = response.participantId))
+                    getParticipantsResponse = getParticipants(user)
+                }
             }
         }
         if (collabsToUpdate.isNotEmpty()) {
