@@ -56,6 +56,7 @@ internal class CollaborationRepositoryImpl(
                 collaboration.credited?.let { this.credited = it }
                 collaboration.featured?.let { this.featured = it }
                 collaboration.distributionArtistId?.let { this.distributionArtistId = it }
+                collaboration.distributionParticipantId?.let { this.distributionParticipantId = it }
             }.id.value
         }
     }
@@ -85,6 +86,7 @@ internal class CollaborationRepositoryImpl(
                     collaboration.credited?.let { credited = it }
                     collaboration.featured?.let { featured = it }
                     collaboration.distributionArtistId?.let { distributionArtistId = it }
+                    collaboration.distributionParticipantId?.let { distributionParticipantId = it }
                 }
             }
 
