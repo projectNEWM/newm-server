@@ -18,6 +18,7 @@ import io.newm.server.features.user.oauth.providers.GoogleUserProvider
 import io.newm.server.features.user.oauth.providers.LinkedInUserProvider
 import io.newm.server.features.user.verify.OutletProfileUrlVerificationException
 import io.newm.server.features.user.verify.OutletProfileUrlVerifier
+import io.newm.server.ktx.asUrlWithHost
 import io.newm.server.ktx.asValidEmail
 import io.newm.server.ktx.asValidUrl
 import io.newm.server.ktx.checkLength
@@ -63,13 +64,13 @@ internal class UserRepositoryImpl(
         val email = user.email.asValidEmail().asVerifiedEmail(user.authCode)
         val passwordHash = user.newPassword.asValidPassword(user.confirmPassword).toHash()
         try {
-            user.spotifyProfile?.let {
+            user.spotifyProfile.asUrlWithHost("open.spotify.com")?.let {
                 spotifyProfileUrlVerifier.verify(it, user.stageOrFullName)
             }
-            user.appleMusicProfile?.let {
+            user.appleMusicProfile.asUrlWithHost("music.apple.com")?.let {
                 appleMusicProfileUrlVerifier.verify(it, user.stageOrFullName)
             }
-            user.soundCloudProfile?.let {
+            user.soundCloudProfile.asUrlWithHost("soundcloud.com")?.let {
                 soundCloudProfileUrlVerifier.verify(it, user.stageOrFullName)
             }
         } catch (exception: OutletProfileUrlVerificationException) {
@@ -89,9 +90,9 @@ internal class UserRepositoryImpl(
                 this.websiteUrl = user.websiteUrl?.asValidUrl()
                 this.twitterUrl = user.twitterUrl?.asValidUrl()
                 this.instagramUrl = user.instagramUrl?.asValidUrl()
-                this.spotifyProfile = user.spotifyProfile?.substringBefore("?")
-                this.soundCloudProfile = user.soundCloudProfile?.substringBefore("?")
-                this.appleMusicProfile = user.appleMusicProfile?.substringBefore("?")
+                this.spotifyProfile = user.spotifyProfile.asUrlWithHost("open.spotify.com")
+                this.soundCloudProfile = user.soundCloudProfile.asUrlWithHost("soundcloud.com")
+                this.appleMusicProfile = user.appleMusicProfile.asUrlWithHost("music.apple.com")
                 this.location = user.location
                 this.role = user.role
                 this.genre = user.genre
@@ -228,21 +229,18 @@ internal class UserRepositoryImpl(
             try {
                 user.spotifyProfile?.let {
                     entity.spotifyProfile =
-                        it.substringBefore("?").orNull()?.also { profile ->
-                            spotifyProfileUrlVerifier.verify(profile, entity.stageOrFullName)
-                        }
+                        it.asUrlWithHost("open.spotify.com")
+                            ?.also { profile -> spotifyProfileUrlVerifier.verify(profile, entity.stageOrFullName) }
                 }
                 user.soundCloudProfile?.let {
                     entity.soundCloudProfile =
-                        it.substringBefore("?").orNull()?.also { profile ->
-                            soundCloudProfileUrlVerifier.verify(profile, entity.stageOrFullName)
-                        }
+                        it.asUrlWithHost("soundcloud.com")
+                            ?.also { profile -> soundCloudProfileUrlVerifier.verify(profile, entity.stageOrFullName) }
                 }
                 user.appleMusicProfile?.let {
                     entity.appleMusicProfile =
-                        it.substringBefore("?").orNull()?.also { profile ->
-                            appleMusicProfileUrlVerifier.verify(profile, entity.stageOrFullName)
-                        }
+                        it.asUrlWithHost("music.apple.com")
+                            ?.also { profile -> appleMusicProfileUrlVerifier.verify(profile, entity.stageOrFullName) }
                 }
             } catch (exception: OutletProfileUrlVerificationException) {
                 val message = exception.message ?: exception.toString()

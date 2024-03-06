@@ -41,6 +41,16 @@ fun String?.asValidUrl(): String {
     return this
 }
 
+fun String?.asUrlWithHost(host: String): String? {
+    if (isNullOrBlank()) return null
+    if (!isValidUrl()) throw HttpUnprocessableEntityException("Invalid url: $this")
+    val updatedUrl = replace(Regex("^(http://|https://)"), "")
+    if (!updatedUrl.startsWith(host, ignoreCase = true)) {
+        throw HttpUnprocessableEntityException("Invalid url: $this, expected $host")
+    }
+    return "https://${updatedUrl.substringBefore('?')}"
+}
+
 /**
  * Converts an s3://url into a bucket and key pair.
  */
