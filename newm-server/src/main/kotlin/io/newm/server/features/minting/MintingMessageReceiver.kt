@@ -174,7 +174,7 @@ class MintingMessageReceiver : SqsMessageReceiver {
 
                     quartzSchedulerDaemon.scheduleJob(jobDetail, trigger)
 
-                    if (!cardanoRepository.isMainnet()) {
+                    if (!cardanoRepository.isMainnet() && song.title?.contains("[NoForce]", true) != true) {
                         // If we are on testnet, pretend that the song is already successfully distributed
                         songRepository.update(song.id!!, Song(forceDistributed = true))
                     }
