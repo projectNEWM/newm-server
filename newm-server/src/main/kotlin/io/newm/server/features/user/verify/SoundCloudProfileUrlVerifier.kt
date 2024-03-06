@@ -16,6 +16,7 @@ import kotlinx.serialization.Serializable
 import org.jsoup.HttpStatusException
 import org.jsoup.Jsoup
 import org.koin.core.parameter.parametersOf
+import java.net.URI
 
 class SoundCloudProfileUrlVerifier(
     private val httpClient: HttpClient,
@@ -26,6 +27,15 @@ class SoundCloudProfileUrlVerifier(
         outletProfileUrl: String,
         stageOrFullName: String
     ) {
+        // URL Checks
+        val url = URI.create(outletProfileUrl).toURL()
+        if (url.protocol != "https") {
+            throw OutletProfileUrlVerificationException("SoundCloud profile URL must be https")
+        }
+        if (url.host?.equals("soundcloud.com", true) == false) {
+            throw OutletProfileUrlVerificationException("SoundCloud profile URL must be from soundcloud.com")
+        }
+
         val doc =
             withContext(Dispatchers.IO) {
                 try {

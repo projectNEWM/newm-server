@@ -12,6 +12,7 @@ import io.newm.shared.ktx.info
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.koin.core.parameter.parametersOf
+import java.net.URI
 
 class SpotifyProfileUrlVerifier(
     private val httpClient: HttpClient,
@@ -22,6 +23,15 @@ class SpotifyProfileUrlVerifier(
         outletProfileUrl: String,
         stageOrFullName: String
     ) {
+        // URL Checks
+        val url = URI.create(outletProfileUrl).toURL()
+        if (url.protocol != "https") {
+            throw OutletProfileUrlVerificationException("Spotify profile URL must be https")
+        }
+        if (url.host?.equals("open.spotify.com", true) == false) {
+            throw OutletProfileUrlVerificationException("Spotify profile URL must be from open.spotify.com")
+        }
+
         val spotifyProfileId = outletProfileUrl.substringAfterLast("/").substringBefore("?")
         val response =
             httpClient.get(

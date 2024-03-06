@@ -12,6 +12,7 @@ import io.newm.shared.ktx.info
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.koin.core.parameter.parametersOf
+import java.net.URI
 
 class AppleMusicProfileUrlVerifier(
     private val httpClient: HttpClient,
@@ -22,6 +23,15 @@ class AppleMusicProfileUrlVerifier(
         outletProfileUrl: String,
         stageOrFullName: String
     ) {
+        // URL Checks
+        val url = URI.create(outletProfileUrl).toURL()
+        if (url.protocol != "https") {
+            throw OutletProfileUrlVerificationException("Apple Music profile URL must be https")
+        }
+        if (url.host?.equals("music.apple.com", true) == false) {
+            throw OutletProfileUrlVerificationException("Apple Music profile URL must be from music.apple.com")
+        }
+
         val appleProfileId = outletProfileUrl.substringAfterLast("/").substringBefore("?")
         val response =
             httpClient.get(
