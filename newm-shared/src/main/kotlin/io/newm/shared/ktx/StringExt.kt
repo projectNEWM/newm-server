@@ -4,7 +4,9 @@ import at.favre.lib.crypto.bcrypt.BCrypt
 import java.net.URL
 import java.net.URLConnection
 import java.net.URLStreamHandler
+import java.time.Duration
 import java.time.LocalDateTime
+import java.time.format.DateTimeParseException
 import java.util.UUID
 
 /**
@@ -71,6 +73,15 @@ fun String.verify(hash: String): Boolean = BCrypt.verifyer().verify(toCharArray(
 fun String.splitAndTrim(): List<String> = split(',').map { it.trim() }
 
 fun String.toLocalDateTime(): LocalDateTime = LocalDateTime.parse(this)
+
+fun String.toDuration(): Duration = Duration.parse(this)
+
+fun String.toDurationOrNull(): Duration? =
+    try {
+        toDuration()
+    } catch (_: DateTimeParseException) {
+        null
+    }
 
 /**
  * Formats a String with curly brace delimited arguments.
