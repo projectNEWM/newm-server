@@ -9,6 +9,7 @@ import io.newm.server.features.cardano.model.NFTSong
 import io.newm.server.ktx.getSecureConfigString
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.debug
+import io.newm.shared.ktx.toDurationOrNull
 import io.newm.shared.ktx.warn
 import io.newm.txbuilder.ktx.fingerprint
 import kotlinx.coroutines.runBlocking
@@ -19,7 +20,6 @@ import java.util.UUID
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 import kotlin.concurrent.getOrSet
-import kotlin.time.Duration
 
 private val logger: Logger by inject { parametersOf("NFTSongParser") }
 private val environment: ApplicationEnvironment by inject()
@@ -133,7 +133,7 @@ fun List<LedgerAssetMetadataItem>.toNFTSongs(
                         fingerprint = fingerprint,
                         path = "image"
                     ),
-                duration = (file.songDuration ?: songDuration)?.let { Duration.parse(it).inWholeSeconds } ?: -1L,
+                duration = (file.songDuration ?: songDuration)?.toDurationOrNull()?.toSeconds() ?: -1L,
                 artists = file.artists ?: artists.toList(),
                 genres = file.genres ?: genres.toList(),
                 moods = file.mood?.let(::listOf) ?: moods.toList()
