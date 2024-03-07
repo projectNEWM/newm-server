@@ -28,6 +28,7 @@ import io.newm.server.features.distribution.DistributionRepository
 import io.newm.server.features.email.repo.EmailRepository
 import io.newm.server.features.minting.MintingStatusSqsMessage
 import io.newm.server.features.song.database.SongEntity
+import io.newm.server.features.song.database.SongErrorHistoryTable
 import io.newm.server.features.song.database.SongReceiptEntity
 import io.newm.server.features.song.database.SongReceiptTable
 import io.newm.server.features.song.database.SongTable
@@ -62,7 +63,6 @@ import io.newm.shared.ktx.orZero
 import io.newm.shared.ktx.propertiesFromResource
 import io.newm.shared.ktx.toTempFile
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -70,6 +70,7 @@ import org.apache.tika.Tika
 import org.jaudiotagger.audio.AudioFileIO
 import org.jetbrains.annotations.VisibleForTesting
 import org.jetbrains.exposed.dao.id.EntityID
+import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf
 import java.math.BigDecimal
@@ -286,13 +287,8 @@ internal class SongRepositoryImpl(
 
             checkRequester(songId, requesterId)
             val config = environment.getConfigChild("aws.s3.audio")
-            val (file, bytesWritten) = data.toTempFile()
+            val file = data.toTempFile()
             try {
-                // enforce file size
-                while (file.length() != bytesWritten) {
-                    logger.debug { "Waiting for file to be written to disk" }
-                    delay(100L)
-                }
                 val size = file.length()
                 val minSize = config.getLong("minFileSize")
                 if (size < minSize) throw HttpUnprocessableEntityException("File is too small: $size bytes")
@@ -618,6 +614,19 @@ internal class SongRepositoryImpl(
                 errorMessage = errorMessage,
             )
         )
+
+        if (errorMessage.isNotBlank()) {
+            // We want to record a history of errors so that they are not lost even after a song is reprocessed and
+            // the error is cleared.
+            transaction {
+                SongErrorHistoryTable.insert { row ->
+                    row[this.id] = UUID.randomUUID()
+                    row[this.createdAt] = LocalDateTime.now()
+                    row[this.songId] = songId
+                    row[this.errorMessage] = errorMessage
+                }
+            }
+        }
 
         when (mintingStatus) {
             MintingStatus.MintingPaymentSubmitted,
