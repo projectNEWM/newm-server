@@ -61,6 +61,9 @@ import io.newm.shared.ktx.orNull
 import io.newm.shared.ktx.orZero
 import io.newm.shared.ktx.propertiesFromResource
 import io.newm.shared.ktx.toTempFile
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.apache.tika.Tika
@@ -277,53 +280,60 @@ internal class SongRepositoryImpl(
         requesterId: UUID,
         data: ByteReadChannel
     ): AudioUploadReport {
-        logger.debug { "uploadAudio: songId = $songId" }
+        // File I/O is blocking so make sure we're on the IO dispatcher
+        return withContext(Dispatchers.IO) {
+            logger.debug { "uploadAudio: songId = $songId" }
 
-        checkRequester(songId, requesterId)
-        val config = environment.getConfigChild("aws.s3.audio")
-        val file = data.toTempFile()
-        try {
-            // enforce file size
-            val size = file.length()
-            val minSize = config.getLong("minFileSize")
-            if (size < minSize) throw HttpUnprocessableEntityException("File is too small: $size bytes")
-            val maxSize = config.getLong("maxFileSize")
-            if (size > maxSize) throw HttpUnprocessableEntityException("File is too large: $size bytes")
-
-            // enforce supported format
-            val type = Tika().detect(file)
-            val ext =
-                mimeTypes.getProperty(type)
-                    ?: throw HttpUnprocessableEntityException("Unsupported media type: $type")
-
-            // enforce duration
-            val header = AudioFileIO.readAs(file, ext).audioHeader
-            val duration = header.trackLength
-            val minDuration = config.getInt("minDuration")
-            if (duration < minDuration) throw HttpUnprocessableEntityException("Duration is too short: $duration secs")
-
-            // enforce sampling rate
-            val sampleRate = header.sampleRateAsNumber
-            val minSampleRate = config.getInt("minSampleRate")
-            if (sampleRate < minSampleRate) throw HttpUnprocessableEntityException("Sample rate is too low: $sampleRate Hz")
-
-            val bucket = config.getString("bucketName")
-            val key = "$songId/audio.$ext"
-            s3.putObject(bucket, key, file)
-
-            val url = s3UrlStringOf(bucket, key)
-            transaction {
-                with(SongEntity[songId]) {
-                    originalAudioUrl = url
-                    audioEncodingStatus = AudioEncodingStatus.Started
+            checkRequester(songId, requesterId)
+            val config = environment.getConfigChild("aws.s3.audio")
+            val (file, bytesWritten) = data.toTempFile()
+            try {
+                // enforce file size
+                while (file.length() != bytesWritten) {
+                    logger.debug { "Waiting for file to be written to disk" }
+                    delay(100L)
                 }
+                val size = file.length()
+                val minSize = config.getLong("minFileSize")
+                if (size < minSize) throw HttpUnprocessableEntityException("File is too small: $size bytes")
+                val maxSize = config.getLong("maxFileSize")
+                if (size > maxSize) throw HttpUnprocessableEntityException("File is too large: $size bytes")
+
+                // enforce supported format
+                val type = Tika().detect(file)
+                val ext =
+                    mimeTypes.getProperty(type)
+                        ?: throw HttpUnprocessableEntityException("Unsupported media type: $type")
+
+                // enforce duration
+                val header = AudioFileIO.readAs(file, ext).audioHeader
+                val duration = header.trackLength
+                val minDuration = config.getInt("minDuration")
+                if (duration < minDuration) throw HttpUnprocessableEntityException("Duration is too short: $duration secs")
+
+                // enforce sampling rate
+                val sampleRate = header.sampleRateAsNumber
+                val minSampleRate = config.getInt("minSampleRate")
+                if (sampleRate < minSampleRate) throw HttpUnprocessableEntityException("Sample rate is too low: $sampleRate Hz")
+
+                val bucket = config.getString("bucketName")
+                val key = "$songId/audio.$ext"
+                s3.putObject(bucket, key, file)
+
+                val url = s3UrlStringOf(bucket, key)
+                transaction {
+                    with(SongEntity[songId]) {
+                        originalAudioUrl = url
+                        audioEncodingStatus = AudioEncodingStatus.Started
+                    }
+                }
+                AudioUploadReport(url, type, size, duration, sampleRate)
+            } catch (throwable: Throwable) {
+                transaction { SongEntity[songId].audioEncodingStatus = AudioEncodingStatus.Failed }
+                throw throwable
+            } finally {
+                file.delete()
             }
-            return AudioUploadReport(url, type, size, duration, sampleRate)
-        } catch (throwable: Throwable) {
-            transaction { SongEntity[songId].audioEncodingStatus = AudioEncodingStatus.Failed }
-            throw throwable
-        } finally {
-            file.delete()
         }
     }
 
