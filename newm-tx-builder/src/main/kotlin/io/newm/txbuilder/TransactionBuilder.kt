@@ -430,7 +430,7 @@ class TransactionBuilder(
                 TX_KEY_UTXO_INPUTS to sourceUtxos!!.toCborObject(),
                 // Utxo outputs
                 TX_KEY_UTXO_OUTPUTS to createOutputUtxos(),
-                TX_KEY_FEE to (fee?.let { CborInteger.create(it) } ?: CborInteger.create(3000000L)),
+                TX_KEY_FEE to (fee?.let { CborInteger.create(it) } ?: CborInteger.create(DUMMY_TX_FEE)),
                 TX_KEY_TTL to ttlAbsoluteSlot?.let { CborInteger.create(it) },
                 // TODO: Implement posting certificates to chain
                 TX_KEY_CERTIFICATES to null,
@@ -492,9 +492,7 @@ class TransactionBuilder(
             }
         }
 
-        if (fee != null) {
-            changeLovelace -= fee!!
-        }
+        changeLovelace -= (fee ?: DUMMY_TX_FEE)
 
         val changeUtxos =
             if (changeLovelace > 0) {
@@ -773,6 +771,7 @@ class TransactionBuilder(
 
         internal const val AUX_DATA_TAG = 259
 
+        private const val DUMMY_TX_FEE = 2000000L // 2 ada
         private const val DUMMY_TOTAL_COLLATERAL = 4000000L // 4 ada
     }
 }
