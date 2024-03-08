@@ -20,6 +20,7 @@ import io.newm.server.features.user.verify.OutletProfileUrlVerificationException
 import io.newm.server.features.user.verify.OutletProfileUrlVerifier
 import io.newm.server.ktx.asUrlWithHost
 import io.newm.server.ktx.asValidEmail
+import io.newm.server.ktx.asValidName
 import io.newm.server.ktx.asValidUrl
 import io.newm.server.ktx.checkLength
 import io.newm.shared.auth.Password
@@ -82,8 +83,8 @@ internal class UserRepositoryImpl(
         return transaction {
             email.checkEmailUnique()
             UserEntity.new {
-                this.firstName = user.firstName
-                this.lastName = user.lastName
+                this.firstName = user.firstName?.asValidName()
+                this.lastName = user.lastName?.asValidName()
                 this.nickname = user.nickname
                 this.pictureUrl = user.pictureUrl?.asValidUrl()
                 this.bannerUrl = user.bannerUrl?.asValidUrl()
@@ -154,8 +155,8 @@ internal class UserRepositoryImpl(
         return transaction {
             val entity =
                 UserEntity.getByEmail(email) ?: UserEntity.new {
-                    this.firstName = user.firstName
-                    this.lastName = user.lastName
+                    this.firstName = user.firstName?.asValidName()
+                    this.lastName = user.lastName?.asValidName()
                     this.pictureUrl = user.pictureUrl?.asValidUrl()
                     this.email = email
                 }
@@ -214,11 +215,11 @@ internal class UserRepositoryImpl(
             val entity = UserEntity[userId]
             user.firstName?.let {
                 entity.checkNameModifiable(it, entity.firstName)
-                entity.firstName = it.orNull()
+                entity.firstName = it.orNull()?.asValidName()
             }
             user.lastName?.let {
                 entity.checkNameModifiable(it, entity.lastName)
-                entity.lastName = it.orNull()
+                entity.lastName = it.orNull()?.asValidName()
             }
             user.nickname?.let { entity.nickname = it.orNull() }
             user.pictureUrl?.let { entity.pictureUrl = it.orNull()?.asValidUrl() }

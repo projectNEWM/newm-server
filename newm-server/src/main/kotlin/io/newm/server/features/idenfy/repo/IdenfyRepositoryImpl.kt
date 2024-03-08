@@ -20,6 +20,7 @@ import io.newm.shared.ktx.debug
 import io.newm.shared.ktx.getConfigChild
 import io.newm.shared.ktx.getString
 import io.newm.shared.ktx.propertiesFromResource
+import io.newm.shared.ktx.sanitizeName
 import io.newm.shared.ktx.toUUID
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf
@@ -74,8 +75,8 @@ class IdenfyRepositoryImpl(
                 with(UserEntity[result.clientId.toUUID()]) {
                     verificationStatus = status
                     if (status == UserVerificationStatus.Verified) {
-                        result.data.docFirstName?.let { firstName = it }
-                        result.data.docLastName?.let { lastName = it }
+                        result.data.docFirstName?.let { firstName = it.sanitizeName() }
+                        result.data.docLastName?.let { lastName = it.sanitizeName() }
                     }
                     email
                 }
