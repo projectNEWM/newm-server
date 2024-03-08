@@ -18,6 +18,7 @@ import io.newm.chain.util.hexToByteArray
 import io.newm.shared.exception.HttpBadRequestException
 import io.newm.shared.exception.HttpUnprocessableEntityException
 import io.newm.shared.ktx.isValidEmail
+import io.newm.shared.ktx.isValidName
 import io.newm.shared.ktx.isValidUrl
 import io.newm.shared.ktx.toHexString
 import io.newm.txbuilder.ktx.toNativeAssetMap
@@ -27,6 +28,12 @@ fun String.checkLength(
     max: Int = 64
 ) {
     if (length > max) throw HttpUnprocessableEntityException("Field $name exceeds $max chars limit")
+}
+
+fun String?.asValidName(): String {
+    if (isNullOrBlank()) throw HttpBadRequestException("Missing name")
+    if (!isValidName()) throw HttpUnprocessableEntityException("Invalid name: $this")
+    return this
 }
 
 fun String?.asValidEmail(): String {

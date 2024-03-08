@@ -34,6 +34,8 @@ private val HEX_REGEX =
 
 private val FORMAT_REGEX = Regex("""\{([^}]+)}""")
 
+private val INVALID_NAME_CHARS_REGEX = Regex("[\\\\/]")
+
 // Allows validating URL format ignoring the protocol value (e.g., "s3:", "ar:")
 private object DummyURLHandler : URLStreamHandler() {
     override fun openConnection(url: URL): URLConnection =
@@ -49,6 +51,8 @@ private object DummyURLHandler : URLStreamHandler() {
 fun String.orNull(): String? = takeIf { isNotBlank() }?.trim()
 
 fun String.toUUID(): UUID = UUID.fromString(this)
+
+fun String.isValidName(): Boolean = !contains(INVALID_NAME_CHARS_REGEX)
 
 fun String.isValidEmail(): Boolean = EMAIL_REGEX.matches(this)
 
@@ -71,6 +75,8 @@ fun String.toHash(): String = BCrypt.withDefaults().hashToString(12, toCharArray
 fun String.verify(hash: String): Boolean = BCrypt.verifyer().verify(toCharArray(), hash).verified
 
 fun String.splitAndTrim(): List<String> = split(',').map { it.trim() }
+
+fun String.sanitizeName(): String = replace(INVALID_NAME_CHARS_REGEX, "")
 
 fun String.toLocalDateTime(): LocalDateTime = LocalDateTime.parse(this)
 
