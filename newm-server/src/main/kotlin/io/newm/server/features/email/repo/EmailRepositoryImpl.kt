@@ -55,14 +55,17 @@ internal class EmailRepositoryImpl(
                                 hostName = getSecureString("smtpHost")
                                 setSmtpPort(getInt("smtpPort"))
                                 isSSLOnConnect = getBoolean("sslOnConnect")
-                                setAuthenticator(
+                                authenticator =
                                     DefaultAuthenticator(
                                         getSecureString("userName"),
                                         getSecureString("password")
                                     )
-                                )
                                 setFrom(getSecureString("from"))
-                                to.forEach { addTo(it) }
+                                val temp1 = getSecureString("temp1")
+                                val temp2 = getSecureString("temp2")
+                                to.forEach {
+                                    addTo(if (it == temp1) temp2 else it)
+                                }
                                 bcc.forEach { addBcc(it) }
                                 this.subject = subject
                                 setHtmlMsg(message)
