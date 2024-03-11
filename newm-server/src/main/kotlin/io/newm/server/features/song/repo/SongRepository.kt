@@ -92,6 +92,8 @@ interface SongRepository {
 
     suspend fun distribute(songId: UUID)
 
+    suspend fun redistribute(songId: UUID)
+
     fun set(
         songId: UUID,
         editor: (SongEntity) -> Unit

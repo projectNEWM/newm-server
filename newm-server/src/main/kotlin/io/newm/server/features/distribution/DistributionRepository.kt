@@ -174,5 +174,7 @@ interface DistributionRepository {
 
     suspend fun distributeSong(song: Song)
 
+    suspend fun redistributeSong(song: Song)
+
     suspend fun getEarliestReleaseDate(userId: UUID): LocalDate
 }
