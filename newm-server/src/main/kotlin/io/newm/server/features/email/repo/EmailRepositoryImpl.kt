@@ -61,11 +61,7 @@ internal class EmailRepositoryImpl(
                                         getSecureString("password")
                                     )
                                 setFrom(getSecureString("from"))
-                                val temp1 = getSecureString("temp1")
-                                val temp2 = getSecureString("temp2")
-                                to.forEach {
-                                    addTo(if (it == temp1) temp2 else it)
-                                }
+                                to.forEach { addTo(it) }
                                 bcc.forEach { addBcc(it) }
                                 this.subject = subject
                                 setHtmlMsg(message)
