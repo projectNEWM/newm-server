@@ -774,6 +774,12 @@ internal class SongRepositoryImpl(
         distributionRepository.distributeSong(song)
     }
 
+    override suspend fun redistribute(songId: UUID) {
+        val song = get(songId)
+
+        distributionRepository.redistributeSong(song)
+    }
+
     private fun checkRequester(
         songId: UUID,
         requesterId: UUID,

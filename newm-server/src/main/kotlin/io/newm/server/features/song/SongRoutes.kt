@@ -12,7 +12,6 @@ import io.newm.server.features.model.CountResponse
 import io.newm.server.features.song.model.AudioStreamResponse
 import io.newm.server.features.song.model.MintPaymentRequest
 import io.newm.server.features.song.model.MintPaymentResponse
-import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.SongIdBody
 import io.newm.server.features.song.model.StreamTokenAgreementRequest
 import io.newm.server.features.song.model.songFilters
@@ -114,12 +113,7 @@ fun Routing.createSongRoutes() {
                     )
                 }
                 post("redistribute") {
-                    val song = songRepository.get(songId)
-                    require(song.mintingStatus == MintingStatus.Declined) {
-                        "Song must be in a declined status to redistribute!"
-                    }
-                    // Check a second time that they actually paid for the minting.
-                    songRepository.updateSongMintingStatus(songId, MintingStatus.MintingPaymentRequested)
+                    songRepository.redistribute(songId)
                     respond(HttpStatusCode.NoContent)
                 }
                 route("mint/payment") {

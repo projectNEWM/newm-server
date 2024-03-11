@@ -76,6 +76,7 @@ import io.newm.server.features.distribution.model.GetUserLabelResponse
 import io.newm.server.features.distribution.model.GetUserResponse
 import io.newm.server.features.distribution.model.GetUserSubscriptionResponse
 import io.newm.server.features.distribution.model.OutletProfile
+import io.newm.server.features.distribution.model.OutletStatusCode
 import io.newm.server.features.distribution.model.OutletsDetail
 import io.newm.server.features.distribution.model.Participant
 import io.newm.server.features.distribution.model.Preview
@@ -88,6 +89,7 @@ import io.newm.server.features.distribution.model.UpdateUserLabelRequest
 import io.newm.server.features.distribution.model.UpdateUserLabelResponse
 import io.newm.server.features.distribution.model.UpdateUserRequest
 import io.newm.server.features.distribution.model.ValidateAlbumResponse
+import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongBarcodeType
 import io.newm.server.features.song.model.toSongBarcodeType
@@ -1297,6 +1299,28 @@ class EvearaDistributionRepositoryImpl(
         }
 
         mutableSong = distributeAlbumRelease(user, mutableSong)
+    }
+
+    override suspend fun redistributeSong(song: Song) {
+        requireNotNull(song.id) { "Song.id must not be null!" }
+        requireNotNull(song.ownerId) { "Song.ownerId must not be null!" }
+        val user = userRepository.get(song.ownerId)
+        requireNotNull(user.id) { "User.id must not be null!" }
+
+        val distributionReleaseStatusResponse = distributionOutletReleaseStatus(user, song.distributionReleaseId!!)
+        val spotifyOutletStatusCode =
+            distributionReleaseStatusResponse.outletReleaseStatuses?.find {
+                it.storeName.equals(
+                    "Spotify",
+                    ignoreCase = true
+                )
+            }?.outletStatus?.statusCode
+
+        require(spotifyOutletStatusCode == OutletStatusCode.DISAPPROVED) {
+            "Song must be in a disapproved status to redistribute!"
+        }
+        // Check a second time that they actually paid for the minting and then re-distribute
+        songRepository.updateSongMintingStatus(song.id, MintingStatus.MintingPaymentRequested)
     }
 
     override suspend fun getEarliestReleaseDate(userId: UUID): LocalDate {
