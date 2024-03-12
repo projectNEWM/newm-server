@@ -671,7 +671,8 @@ class SongRoutesTests : BaseApplicationTests() {
             assertThat(song2.barcodeNumber).isEqualTo(testSong2.barcodeNumber)
             assertThat(song2.isrc).isEqualTo(testSong2.isrc)
             assertThat(song2.ipis).isEqualTo(testSong2.ipis)
-            assertThat(song2.releaseDate).isEqualTo(testSong2.releaseDate)
+            // releaseDate should not be updated so check against song1.
+            assertThat(song2.releaseDate).isEqualTo(testSong1.releaseDate)
             assertThat(song2.publicationDate).isEqualTo(testSong2.publicationDate)
             assertThat(song2.lyricsUrl).isEqualTo(testSong2.lyricsUrl)
             assertThat(song2.audioEncodingStatus).isEqualTo(AudioEncodingStatus.NotStarted)

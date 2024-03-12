@@ -70,4 +70,5 @@ object SongTable : UUIDTable(name = "songs") {
     val forceDistributed: Column<Boolean?> = bool("force_distributed").nullable()
     val errorMessage: Column<String?> = text("error_message").nullable()
     val instrumental: Column<Boolean> = bool("instrumental").default(false)
+    val hasSubmittedForDistribution: Column<Boolean> = bool("has_submitted_for_distribution").default(false)
 }

@@ -133,6 +133,7 @@ internal class SongRepositoryImpl(
                 publicationDate = song.publicationDate
                 lyricsUrl = song.lyricsUrl?.asValidUrl()
                 instrumental = song.instrumental ?: song.genres.contains("Instrumental")
+                hasSubmittedForDistribution = song.hasSubmittedForDistribution ?: false
             }.id.value
         }
     }
@@ -173,7 +174,11 @@ internal class SongRepositoryImpl(
                 isrc?.let { entity.isrc = it.orNull() }
                 iswc?.let { entity.iswc = it.orNull() }
                 ipis?.let { entity.ipis = it.toTypedArray() }
-                releaseDate?.let { entity.releaseDate = it }
+                hasSubmittedForDistribution?.let { entity.hasSubmittedForDistribution = it }
+                // only allow updating release date if we have never submitted for distribution
+                if (!entity.hasSubmittedForDistribution) {
+                    releaseDate?.let { entity.releaseDate = it }
+                }
                 publicationDate?.let { entity.publicationDate = it }
                 lyricsUrl?.let { entity.lyricsUrl = it.orNull()?.asValidUrl() }
                 instrumental?.let { entity.instrumental = it }

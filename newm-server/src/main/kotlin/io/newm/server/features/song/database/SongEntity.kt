@@ -81,6 +81,7 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var forceDistributed: Boolean? by SongTable.forceDistributed
     var errorMessage: String? by SongTable.errorMessage
     var instrumental: Boolean by SongTable.instrumental
+    var hasSubmittedForDistribution: Boolean by SongTable.hasSubmittedForDistribution
 
     fun toModel(): Song =
         Song(
@@ -131,7 +132,8 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             mintCostLovelace = mintCostLovelace,
             forceDistributed = forceDistributed,
             errorMessage = errorMessage,
-            instrumental = instrumental
+            instrumental = instrumental,
+            hasSubmittedForDistribution = hasSubmittedForDistribution,
         )
 
     companion object : UUIDEntityClass<SongEntity>(SongTable) {
