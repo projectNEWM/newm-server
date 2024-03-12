@@ -73,4 +73,5 @@ data class Song(
     val forceDistributed: Boolean? = null,
     val errorMessage: String? = null,
     val instrumental: Boolean? = null,
+    val hasSubmittedForDistribution: Boolean? = null,
 )

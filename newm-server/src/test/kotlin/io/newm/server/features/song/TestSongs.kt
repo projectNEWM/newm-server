@@ -56,4 +56,5 @@ val testSong2 =
         releaseDate = LocalDate.of(2023, 2, 2),
         publicationDate = LocalDate.of(2023, 2, 3),
         lyricsUrl = "https://projectnewm.io/lirycs2.txt",
+        hasSubmittedForDistribution = true,
     )
