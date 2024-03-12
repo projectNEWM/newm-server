@@ -1289,7 +1289,14 @@ class EvearaDistributionRepositoryImpl(
         var mutableSong = createDistributionTrack(user, song)
 
         // Add or Update Distribution Album
-        mutableSong = createDistributionAlbum(user, mutableSong)
+        val (createUpdateSong, isUpdate) = createDistributionAlbum(user, mutableSong)
+        mutableSong = createUpdateSong
+
+        if (isUpdate) {
+            // if we're updating, distribute right away instead of validating so outlet start dates are updated to
+            // match what we set the album to.
+            mutableSong = distributeAlbumRelease(user, mutableSong)
+        }
 
         // Validate Distribution Album
         val validateReleaseResponse = validateAlbum(user, mutableSong.distributionReleaseId!!)
@@ -1298,7 +1305,9 @@ class EvearaDistributionRepositoryImpl(
             "Validated distribution album ${mutableSong.title} with id ${mutableSong.distributionReleaseId}: ${validateReleaseResponse.message}"
         }
 
-        mutableSong = distributeAlbumRelease(user, mutableSong)
+        if (!isUpdate) {
+            mutableSong = distributeAlbumRelease(user, mutableSong)
+        }
     }
 
     override suspend fun redistributeSong(song: Song) {
@@ -1320,7 +1329,7 @@ class EvearaDistributionRepositoryImpl(
             "Song must be in a disapproved status to redistribute!"
         }
         // Check a second time that they actually paid for the minting and then re-distribute
-        songRepository.updateSongMintingStatus(song.id, MintingStatus.MintingPaymentRequested)
+        songRepository.updateSongMintingStatus(song.id, MintingStatus.MintingPaymentSubmitted)
     }
 
     override suspend fun getEarliestReleaseDate(userId: UUID): LocalDate {
@@ -1886,8 +1895,9 @@ class EvearaDistributionRepositoryImpl(
     private suspend fun createDistributionAlbum(
         user: User,
         song: Song
-    ): Song {
+    ): Pair<Song, Boolean> {
         var mutableSong = song
+        var isUpdate = false
         val getAlbumResponse = getAlbums(user)
         val existingAlbum =
             if (getAlbumResponse.totalRecords > 0) {
@@ -1927,9 +1937,10 @@ class EvearaDistributionRepositoryImpl(
                 }
             }
             val response = updateAlbum(user, mutableSong)
+            isUpdate = true
             log.info { "Updated distribution album ${mutableSong.title} with id ${existingAlbum.releaseId}: ${response.message}" }
         }
-        return mutableSong
+        return mutableSong to isUpdate
     }
 
     private suspend fun distributeAlbumRelease(

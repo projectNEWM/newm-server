@@ -79,9 +79,12 @@ class MintingMessageReceiver : SqsMessageReceiver {
                                     configRepository.getLong(
                                         CONFIG_KEY_MINT_MONITOR_PAYMENT_ADDRESS_TIMEOUT_MIN
                                     ).minutes.inWholeMilliseconds
+                            }.also {
+                                log.info { "Awaiting payment for song: ${song.id} on address: ${it.address} for ${it.lovelace} lovelace." }
                             }
                         )
                     if (response.success) {
+                        log.info { "Payment received for song: ${song.id}" }
                         // We got paid!!! Move -> MintingPaymentReceived
                         songRepository.updateSongMintingStatus(
                             songId = mintingStatusSqsMessage.songId,
