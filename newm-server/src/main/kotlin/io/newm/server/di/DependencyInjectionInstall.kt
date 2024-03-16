@@ -18,6 +18,7 @@ import io.newm.server.features.email.emailKoinModule
 import io.newm.server.features.idenfy.idenfyKoinModule
 import io.newm.server.features.minting.mintingKoinModule
 import io.newm.server.features.playlist.playlistKoinModule
+import io.newm.server.features.walletconnection.walletConnectionKoinModule
 import io.newm.server.features.release.releaseKoinModule
 import io.newm.server.features.song.songKoinModule
 import io.newm.server.features.user.userKoinModule
@@ -58,6 +59,7 @@ fun Application.installDependencyInjection() {
             mintingKoinModule,
             releaseKoinModule,
             earningsKoinModule,
+            walletConnectionKoinModule,
         )
     }
 }
