@@ -4,6 +4,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.install
+import io.ktor.server.plugins.BadRequestException
 import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.response.respond
 import io.newm.server.logging.captureToSentry
@@ -21,6 +22,7 @@ fun Application.installStatusPages() {
             when (cause) {
                 is HttpStatusException -> call.respondStatus(cause.statusCode, cause)
                 is EntityNotFoundException -> call.respondStatus(HttpStatusCode.NotFound, cause)
+                is BadRequestException -> call.respondStatus(HttpStatusCode.BadRequest, cause)
                 is IllegalArgumentException,
                 is ExposedSQLException -> {
                     logger.error(cause.message, cause)

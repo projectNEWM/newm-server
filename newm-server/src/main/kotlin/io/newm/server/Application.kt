@@ -15,6 +15,7 @@ import io.newm.server.features.distribution.createDistributionRoutes
 import io.newm.server.features.earnings.createEarningsRoutes
 import io.newm.server.features.idenfy.createIdenfyRoutes
 import io.newm.server.features.playlist.createPlaylistRoutes
+import io.newm.server.features.walletconnection.createWalletConnectionRoutes
 import io.newm.server.features.song.createSongRoutes
 import io.newm.server.features.user.createUserRoutes
 import io.newm.server.forwarder.installForwarder
@@ -53,6 +54,7 @@ fun Application.module() {
         createIdenfyRoutes()
         createDistributionRoutes()
         createEarningsRoutes()
+        createWalletConnectionRoutes()
     }
 
     initializeDaemons()

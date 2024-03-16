@@ -111,6 +111,7 @@ dependencies {
     implementation(Dependencies.ApacheTika.CORE)
     implementation(Dependencies.JAudioTagger.ALL)
     implementation(Dependencies.JSoup.ALL)
+    implementation(Dependencies.QRCodeKotlin.ALL)
 
     testImplementation(Dependencies.Ktor.CLIENT_LOGGING)
     testImplementation(Dependencies.JUnit.JUPITER)

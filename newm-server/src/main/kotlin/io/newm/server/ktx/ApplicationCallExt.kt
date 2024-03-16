@@ -104,6 +104,9 @@ val ApplicationCall.mintingStatuses: List<MintingStatus>?
 val ApplicationCall.nftNames: List<String>?
     get() = parameters["nftNames"]?.splitAndTrim()
 
+val ApplicationCall.connectionId: UUID
+    get() = parameters["connectionId"]!!.toUUID()
+
 suspend inline fun ApplicationCall.identifyUser(crossinline body: suspend ApplicationCall.(UUID, Boolean) -> Unit) {
     val uid = userId
     body(uid, uid == myUserId)

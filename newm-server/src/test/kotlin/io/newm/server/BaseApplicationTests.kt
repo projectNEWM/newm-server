@@ -35,6 +35,8 @@ import io.newm.server.features.user.oauth.providers.FacebookUserProvider
 import io.newm.server.features.user.oauth.providers.GoogleUserProvider
 import io.newm.server.features.user.oauth.providers.LinkedInUserProvider
 import io.newm.server.features.user.verify.OutletProfileUrlVerifier
+import io.newm.server.features.walletconnection.database.WalletConnectionChallengeTable
+import io.newm.server.features.walletconnection.database.WalletConnectionTable
 import io.newm.server.ktx.asValidUrl
 import io.newm.server.recaptcha.repo.RecaptchaRepository
 import io.newm.shared.auth.Password
@@ -139,6 +141,8 @@ open class BaseApplicationTests {
                 PlaylistTable,
                 SongsInPlaylistsTable,
                 SongReceiptTable,
+                WalletConnectionChallengeTable,
+                WalletConnectionTable,
             )
         }
         application.start()

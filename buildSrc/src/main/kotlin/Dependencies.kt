@@ -323,4 +323,10 @@ object Dependencies {
         private const val VERSION = "1.4.3"
         const val CONFIG = "com.typesafe:config:$VERSION"
     }
+
+    object QRCodeKotlin {
+        private const val VERSION = "4.1.1"
+
+        const val ALL = "io.github.g0dkar:qrcode-kotlin:$VERSION"
+    }
 }
