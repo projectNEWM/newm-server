@@ -21,11 +21,14 @@ import io.newm.server.features.distribution.model.GetLanguagesResponse
 import io.newm.server.features.distribution.model.GetOutletProfileNamesResponse
 import io.newm.server.features.distribution.model.GetOutletsResponse
 import io.newm.server.features.distribution.model.GetParticipantsResponse
+import io.newm.server.features.distribution.model.GetPayoutBalanceResponse
+import io.newm.server.features.distribution.model.GetPayoutHistoryResponse
 import io.newm.server.features.distribution.model.GetRolesResponse
 import io.newm.server.features.distribution.model.GetTracksResponse
 import io.newm.server.features.distribution.model.GetUserLabelResponse
 import io.newm.server.features.distribution.model.GetUserResponse
 import io.newm.server.features.distribution.model.GetUserSubscriptionResponse
+import io.newm.server.features.distribution.model.InitiatePayoutResponse
 import io.newm.server.features.distribution.model.UpdateArtistRequest
 import io.newm.server.features.distribution.model.UpdateArtistResponse
 import io.newm.server.features.distribution.model.UpdateUserLabelResponse
@@ -177,4 +180,10 @@ interface DistributionRepository {
     suspend fun redistributeSong(song: Song)
 
     suspend fun getEarliestReleaseDate(userId: UUID): LocalDate
+
+    suspend fun getPayoutBalance(userId: UUID): GetPayoutBalanceResponse
+
+    suspend fun getPayoutHistory(userId: UUID): GetPayoutHistoryResponse
+
+    suspend fun initiatePayout(userId: UUID): InitiatePayoutResponse
 }

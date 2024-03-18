@@ -69,12 +69,15 @@ import io.newm.server.features.distribution.model.GetLanguagesResponse
 import io.newm.server.features.distribution.model.GetOutletProfileNamesResponse
 import io.newm.server.features.distribution.model.GetOutletsResponse
 import io.newm.server.features.distribution.model.GetParticipantsResponse
+import io.newm.server.features.distribution.model.GetPayoutBalanceResponse
+import io.newm.server.features.distribution.model.GetPayoutHistoryResponse
 import io.newm.server.features.distribution.model.GetRolesResponse
 import io.newm.server.features.distribution.model.GetTrackStatusResponse
 import io.newm.server.features.distribution.model.GetTracksResponse
 import io.newm.server.features.distribution.model.GetUserLabelResponse
 import io.newm.server.features.distribution.model.GetUserResponse
 import io.newm.server.features.distribution.model.GetUserSubscriptionResponse
+import io.newm.server.features.distribution.model.InitiatePayoutResponse
 import io.newm.server.features.distribution.model.OutletProfile
 import io.newm.server.features.distribution.model.OutletStatusCode
 import io.newm.server.features.distribution.model.OutletsDetail
@@ -1334,6 +1337,63 @@ class EvearaDistributionRepositoryImpl(
             getOutlets(user).outlets.maxOfOrNull { it.processDurationDates }
                 ?: throw HttpServiceUnavailableException("No Distribution Outlets available - retry later")
         return maxDays.toReleaseDate()
+    }
+
+    override suspend fun getPayoutBalance(userId: UUID): GetPayoutBalanceResponse {
+        val user = userRepository.get(userId)
+        requireNotNull(user.distributionUserId) { "User.distributionUserId must not be null!" }
+        val response =
+            httpClient.get("$evearaApiBaseUrl/payout/${user.distributionUserId}/balance") {
+                accept(ContentType.Application.Json)
+                bearerAuth(getEvearaApiToken())
+            }
+        if (!response.status.isSuccess()) {
+            throw ServerResponseException(response, "Error getting payout balance!: ${response.bodyAsText()}")
+        }
+        val getPayoutBalanceResponse: GetPayoutBalanceResponse = response.body()
+        if (!getPayoutBalanceResponse.success) {
+            throw ServerResponseException(response, "Error getting payout balance! success==false")
+        }
+
+        return getPayoutBalanceResponse
+    }
+
+    override suspend fun getPayoutHistory(userId: UUID): GetPayoutHistoryResponse {
+        val user = userRepository.get(userId)
+        requireNotNull(user.distributionUserId) { "User.distributionUserId must not be null!" }
+        val response =
+            httpClient.get("$evearaApiBaseUrl/payout/${user.distributionUserId}/history") {
+                accept(ContentType.Application.Json)
+                bearerAuth(getEvearaApiToken())
+            }
+        if (!response.status.isSuccess()) {
+            throw ServerResponseException(response, "Error getting payout history!: ${response.bodyAsText()}")
+        }
+        val getPayoutHistoryResponse: GetPayoutHistoryResponse = response.body()
+        if (!getPayoutHistoryResponse.success) {
+            throw ServerResponseException(response, "Error getting payout history! success==false")
+        }
+
+        return getPayoutHistoryResponse
+    }
+
+    override suspend fun initiatePayout(userId: UUID): InitiatePayoutResponse {
+        val user = userRepository.get(userId)
+        requireNotNull(user.distributionUserId) { "User.distributionUserId must not be null!" }
+        val response =
+            httpClient.post("$evearaApiBaseUrl/payout/${user.distributionUserId}") {
+                accept(ContentType.Application.Json)
+                bearerAuth(getEvearaApiToken())
+            }
+        if (!response.status.isSuccess()) {
+            throw ServerResponseException(response, "Error initiating payout!: ${response.bodyAsText()}")
+        }
+        val initiatePayoutResponse: InitiatePayoutResponse = response.body()
+        if (!initiatePayoutResponse.success) {
+            throw ServerResponseException(response, "Error initiating payout! success==false")
+        }
+
+        return initiatePayoutResponse
     }
 
     private suspend fun createDistributionUserIfNeeded(user: User) {
