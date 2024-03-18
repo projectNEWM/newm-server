@@ -364,7 +364,7 @@ internal class CardanoRepositoryImpl(
                     accountXpubKey = xpubKey
                 }
             )
-        require(!response.hasErrorMessage()) { "Error querying wallet controlled utxos: ${response.errorMessage}" }
+        require(!response.hasErrorMessage()) { "Error querying wallet controlled utxos: ${response.errorMessage}, xpubKey: $xpubKey" }
 
         return response.addressUtxosList.flatMap {
             it.utxosList.flatMap(Utxo::getNativeAssetsList)
