@@ -15,7 +15,7 @@ object Dependencies {
     }
 
     object KotlinPlugin {
-        const val VERSION = "1.9.22"
+        const val VERSION = "1.9.23"
         const val JVM_ID = "jvm"
         const val SERIALIZATION_ID = "plugin.serialization"
     }
@@ -61,11 +61,11 @@ object Dependencies {
     }
 
     object KtLint {
-        const val VERSION = "1.1.1"
+        const val VERSION = "1.2.1"
     }
 
     object Ktor {
-        private const val VERSION = "2.3.8"
+        private const val VERSION = "2.3.9"
 
         const val SERVER_CORE = "io.ktor:ktor-server-core:$VERSION"
         const val SERVER_CIO = "io.ktor:ktor-server-cio:$VERSION"
@@ -91,7 +91,7 @@ object Dependencies {
     }
 
     object LogBack {
-        private const val VERSION = "1.5.1"
+        private const val VERSION = "1.5.3"
 
         const val CLASSIC = "ch.qos.logback:logback-classic:$VERSION"
     }
@@ -120,7 +120,7 @@ object Dependencies {
     }
 
     object PostgreSQL {
-        private const val VERSION = "42.7.2"
+        private const val VERSION = "42.7.3"
 
         const val ALL = "org.postgresql:postgresql:$VERSION"
     }
@@ -132,7 +132,7 @@ object Dependencies {
     }
 
     object FlywayDB {
-        private const val VERSION = "10.8.1"
+        private const val VERSION = "10.10.0"
 
         const val CORE = "org.flywaydb:flyway-core:$VERSION"
         const val POSTGRES = "org.flywaydb:flyway-database-postgresql:$VERSION"
@@ -195,7 +195,7 @@ object Dependencies {
     }
 
     object SpringSecurity {
-        private const val VERSION = "6.2.2"
+        private const val VERSION = "6.2.3"
 
         const val CORE = "org.springframework.security:spring-security-core:$VERSION"
     }
@@ -208,8 +208,8 @@ object Dependencies {
     }
 
     object Aws {
-        private const val VERSION = "1.12.668"
-        private const val VERSION2 = "2.24.12"
+        private const val VERSION = "1.12.682"
+        private const val VERSION2 = "2.25.12"
         private const val JAXB_VERSION = "2.3.1"
 
         const val BOM = "com.amazonaws:aws-java-sdk-bom:$VERSION"
@@ -255,20 +255,20 @@ object Dependencies {
     }
 
     object GoogleTruth {
-        private const val VERSION = "1.4.1"
+        private const val VERSION = "1.4.2"
 
         const val TRUTH = "com.google.truth:truth:$VERSION"
     }
 
     object Sentry {
-        private const val VERSION = "7.4.0"
+        private const val VERSION = "7.6.0"
 
         const val CORE = "io.sentry:sentry:$VERSION"
         const val LOGBACK = "io.sentry:sentry-logback:$VERSION"
     }
 
     object Newm {
-        private const val VERSION = "2.0.1"
+        private const val VERSION = "2.1.0"
 
         const val KOGMIOS = "io.newm:kogmios:$VERSION"
     }
@@ -291,7 +291,7 @@ object Dependencies {
     }
 
     object Protobuf {
-        private const val VERSION = "3.25.3"
+        private const val VERSION = "4.26.0"
 
         const val JAVA_UTIL = "com.google.protobuf:protobuf-java-util:$VERSION"
         const val KOTLIN = "com.google.protobuf:protobuf-kotlin:$VERSION"
@@ -305,14 +305,14 @@ object Dependencies {
     }
 
     object SSLKickstart {
-        private const val VERSION = "8.3.2"
+        private const val VERSION = "8.3.3"
 
         const val PEM = "io.github.hakky54:sslcontext-kickstart-for-pem:$VERSION"
         const val NETTY = "io.github.hakky54:sslcontext-kickstart-for-netty:$VERSION"
     }
 
     object TestContainers {
-        private const val VERSION = "1.19.6"
+        private const val VERSION = "1.19.7"
 
         const val CORE = "org.testcontainers:testcontainers:$VERSION"
         const val JUINT = "org.testcontainers:junit-jupiter:$VERSION"

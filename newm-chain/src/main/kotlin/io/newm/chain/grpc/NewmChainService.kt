@@ -1,6 +1,5 @@
 package io.newm.chain.grpc
 
-import com.github.benmanes.caffeine.cache.Caffeine
 import com.google.iot.cbor.CborArray
 import com.google.iot.cbor.CborByteString
 import com.google.iot.cbor.CborInteger
@@ -293,8 +292,6 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
         }
     }
 
-    private val evaluateTxCache = Caffeine.newBuilder().maximumSize(1000).build<Long, EvaluateTxResult>()
-
     override suspend fun transactionBuilder(request: TransactionBuilderRequest): TransactionBuilderResponse {
         return try {
             txSubmitClientPool.useInstance { txSubmitClient ->
@@ -302,18 +299,7 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                 val protocolParams = stateQueryClient.protocolParameters().result
                 val calculateTxExecutionUnits: suspend (ByteArray) -> EvaluateTxResult = { cborBytes ->
                     // FIXME: We should use PlutoK, Aiken, or some other way to calculate the execution units without relying on Ogmios.
-                    // FIXME: Ogmios does not consider valid utxos from the mempool and will fail at transaction chaining.
-                    val transaction = CborReader.createFromByteArray(cborBytes).readDataItem() as CborArray
-                    val txBody = transaction.elementAt(0) as CborMap
-                    val utxoInputSize = txBody.get(CborInteger.create(0)).toCborByteArray().size
-                    val referenceInputBytes = txBody.get(CborInteger.create(18))?.toCborByteArray() ?: ByteArray(0)
-                    val key: Long = 31L * utxoInputSize.toLong() + referenceInputBytes.contentHashCode()
-
-                    evaluateTxCache.getIfPresent(key) ?: run {
-                        val result = txSubmitClient.evaluate(cborBytes.toHexString()).result
-                        evaluateTxCache.put(key, result)
-                        result
-                    }
+                    txSubmitClient.evaluate(cborBytes.toHexString()).result
                 }
 
                 val updatedRequest =

@@ -17,7 +17,7 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
       - run: |
-          curl -sSLO https://github.com/pinterest/ktlint/releases/download/1.1.1/ktlint && chmod a+x ktlint && sudo mv ktlint /usr/local/bin/
+          curl -sSLO https://github.com/pinterest/ktlint/releases/download/1.2.1/ktlint && chmod a+x ktlint && sudo mv ktlint /usr/local/bin/
       - name: run ktlint
         run: |
           ktlint --reporter=checkstyle,output=build/ktlint-report.xml '**/*.kt*' '!**/generated/**'
