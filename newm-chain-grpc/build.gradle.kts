@@ -22,8 +22,8 @@ if (!project.hasProperty("isGithubActions")) {
     apply<MavenRepoAuthPlugin>()
 }
 
-java.sourceCompatibility = JavaVersion.VERSION_17
-java.targetCompatibility = JavaVersion.VERSION_17
+java.sourceCompatibility = JavaVersion.VERSION_21
+java.targetCompatibility = JavaVersion.VERSION_21
 
 ktlint {
     version.set(Dependencies.KtLint.VERSION)

@@ -2,8 +2,10 @@ package io.newm.txbuildertest
 
 import com.google.common.truth.Truth.assertThat
 import com.google.iot.cbor.CborArray
+import com.google.iot.cbor.CborByteString
 import com.google.iot.cbor.CborInteger
 import com.google.iot.cbor.CborMap
+import com.google.iot.cbor.CborReader
 import com.google.iot.cbor.CborTextString
 import com.google.protobuf.ByteString
 import io.newm.chain.grpc.RedeemerTag
@@ -20,11 +22,20 @@ import io.newm.chain.util.hexToByteArray
 import io.newm.chain.util.toHexString
 import io.newm.kogmios.StateQueryClient
 import io.newm.kogmios.createTxSubmitClient
+import io.newm.kogmios.protocols.model.Ada
+import io.newm.kogmios.protocols.model.Lovelace
+import io.newm.kogmios.protocols.model.ParamsUtxoByAddresses
+import io.newm.kogmios.protocols.model.Transaction
+import io.newm.kogmios.protocols.model.UtxoOutputValue
 import io.newm.kogmios.protocols.model.result.EvaluateTxResult
+import io.newm.kogmios.protocols.model.result.UtxoResultItem
 import io.newm.txbuilder.TransactionBuilder
 import io.newm.txbuilder.TransactionBuilder.Companion.transactionBuilder
 import io.newm.txbuilder.ktx.toCborObject
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
@@ -39,6 +50,212 @@ class TransactionBuilderTest {
 //        private const val TEST_PORT = 1337
 //        private const val TEST_SECURE = true
     }
+
+    @Test
+    fun `test chaining of smart contracts`() =
+        runBlocking {
+            createTxSubmitClient(
+                websocketHost = TEST_HOST,
+                websocketPort = TEST_PORT,
+                secure = TEST_SECURE,
+            ).use { client ->
+                val connectResult = client.connect()
+                assertThat(connectResult).isTrue()
+                assertThat(client.isConnected).isTrue()
+
+                val protocolParametersResponse = (client as StateQueryClient).protocolParameters()
+                val protocolParams = protocolParametersResponse.result
+
+                val json = Json { ignoreUnknownKeys = true }
+
+                val contractAddress = "addr_test1wqgscwtjkdj6warzfhytl3wgk95vdfv0exdnulh5vl94wuc46cwh3"
+
+                // get the funds address from contract_chaining_preprod_test.addr
+                val fundsAddress = javaClass.getResource("/contract_chaining_preprod_test.addr")!!.readText()
+
+                // get the vkey for funds address
+                val fundsVkey = javaClass.getResource("/contract_chaining_preprod_test.vkey")!!.readText()
+                val fundsVkeyJsonElement = json.parseToJsonElement(fundsVkey)
+                val fundsVkeyCbor = fundsVkeyJsonElement.jsonObject["cborHex"]!!.jsonPrimitive.content.hexToByteArray()
+                val fundsVkeyBytes = (CborReader.createFromByteArray(fundsVkeyCbor).readDataItem() as CborByteString).byteArrayValue()[0]
+
+                // get the skey for funds address
+                val fundsSkey = javaClass.getResource("/contract_chaining_preprod_test.skey")!!.readText()
+                val fundsSkeyJsonElement = json.parseToJsonElement(fundsSkey)
+                val fundsSkeyCbor = fundsSkeyJsonElement.jsonObject["cborHex"]!!.jsonPrimitive.content.hexToByteArray()
+                val fundsSkeyBytes = (CborReader.createFromByteArray(fundsSkeyCbor).readDataItem() as CborByteString).byteArrayValue()[0]
+
+                val utxosResponse =
+                    (client as StateQueryClient).utxo(
+                        params =
+                            ParamsUtxoByAddresses(
+                                addresses = listOf(fundsAddress),
+                            )
+                    )
+                // ada-only utxos as srcInputs
+                var srcUtxos =
+                    utxosResponse.result.filter {
+                        it.value.assets.isNullOrEmpty() && it.datum == null && it.datumHash == null && it.script == null
+                    }
+                assertThat(srcUtxos).isNotEmpty()
+
+                // get the contract utxos and choose the first one with 3 ada on it
+                val contractUtxosResponse =
+                    (client as StateQueryClient).utxo(
+                        params =
+                            ParamsUtxoByAddresses(
+                                addresses = listOf(contractAddress),
+                            )
+                    )
+                var contractUtxo =
+                    contractUtxosResponse.result.first {
+                        it.value.assets.isNullOrEmpty() && it.value.ada.ada.lovelace == 3_000_000.toBigInteger() && it.datum == "d87980"
+                    }
+
+                val calculateTxExecutionUnits: suspend (ByteArray) -> EvaluateTxResult = { cborBytes ->
+                    val evaluateResponse = client.evaluate(cborBytes.toHexString())
+                    println("evaluateResponse: ${evaluateResponse.result}")
+                    evaluateResponse.result
+                }
+
+                repeat(2) {
+                    val sourceUtxosSorted = sortedSetOf<String>()
+
+                    val (txId, cborBytes) =
+                        transactionBuilder(protocolParams, calculateTxExecutionUnits) {
+                            sourceUtxos {
+                                addAll(
+                                    srcUtxos.map {
+                                        utxo {
+                                            hash = it.transaction.id
+                                            ix = it.index.toLong()
+                                            lovelace = it.value.ada.ada.lovelace.toString()
+                                        }.also { sourceUtxosSorted.add("${it.hash}${it.ix.toHexString()}") }
+                                    }
+                                )
+                                add(
+                                    utxo {
+                                        hash = contractUtxo.transaction.id
+                                        ix = contractUtxo.index.toLong()
+                                        lovelace = contractUtxo.value.ada.ada.lovelace.toString()
+                                    }.also { sourceUtxosSorted.add("${it.hash}${it.ix.toHexString()}") }
+                                )
+                            }
+
+                            outputUtxos {
+                                add(
+                                    outputUtxo {
+                                        address = contractAddress
+                                        lovelace = "3000000"
+                                        datum = "d87980"
+                                    }
+                                )
+                            }
+
+                            changeAddress = fundsAddress
+
+                            referenceInputs {
+                                add(
+                                    utxo {
+                                        hash = "3999f5bc08a427688fbf0c5eb972c6242b5f8c1c296b612436232decdfee03f7"
+                                        ix = 1L
+                                    }
+                                )
+                            }
+
+                            collateralUtxos {
+                                add(
+                                    srcUtxos.first().let {
+                                        utxo {
+                                            hash = it.transaction.id
+                                            ix = it.index.toLong()
+                                            lovelace = it.value.ada.ada.lovelace.toString()
+                                        }
+                                    }
+                                )
+                            }
+                            collateralReturnAddress = fundsAddress
+
+                            redeemers {
+                                add(
+                                    redeemer {
+                                        tag = RedeemerTag.SPEND
+                                        index =
+                                            sourceUtxosSorted.indexOf("${contractUtxo.transaction.id}${contractUtxo.index.toHexString()}")
+                                                .toLong()
+                                        data =
+                                            plutusData {
+                                                constr = 0
+                                                list = plutusDataList { }
+                                            }
+                                        // will be auto-calculated
+                                        // exUnits = exUnits {
+                                        //    mem = 166733L
+                                        //    steps = 61712050L
+                                        // }
+                                    }
+                                )
+                            }
+
+                            signingKeys {
+                                add(
+                                    signingKey {
+                                        skey = ByteString.copyFrom(fundsSkeyBytes)
+                                        vkey = ByteString.copyFrom(fundsVkeyBytes)
+                                    }
+                                )
+                            }
+                        }
+
+                    println("txId: $txId")
+                    println("cborBytes: ${cborBytes.toHexString()}")
+                    // submit the tx
+                    val submitTxResponse = client.submit(cborBytes.toHexString())
+                    println("submitTxResponse: ${submitTxResponse.result}")
+                    assertThat(submitTxResponse.result.transaction.id).isEqualTo(txId)
+
+                    // Use the output of this tx as the input into the next one
+                    val changeAmount =
+                        (
+                            (
+                                (
+                                    (
+                                        (
+                                            CborReader.createFromByteArray(
+                                                cborBytes
+                                            ).readDataItem() as CborArray
+                                        ).elementAt(
+                                            0
+                                        ) as CborMap
+                                    )[
+                                        CborInteger.create(
+                                            1
+                                        )
+                                    ] as CborArray
+                                ).elementAt(1) as CborMap
+                            )[CborInteger.create(1)] as CborInteger
+                        ).bigIntegerValue()
+
+                    srcUtxos =
+                        listOf(
+                            UtxoResultItem(
+                                transaction = Transaction(txId),
+                                index = 1,
+                                address = fundsAddress,
+                                value = UtxoOutputValue(Ada(Lovelace(changeAmount))),
+                            )
+                        )
+                    contractUtxo =
+                        UtxoResultItem(
+                            transaction = Transaction(txId),
+                            index = 0,
+                            address = contractAddress,
+                            value = UtxoOutputValue(Ada(Lovelace(3_000_000.toBigInteger()))),
+                            datum = "d87980",
+                        )
+                }
+            }
+        }
 
     @Test
     fun `test evaluateTx`() =

@@ -59,7 +59,7 @@ subprojects {
         val service = project.extensions.getByType<JavaToolchainService>()
         val customLauncher =
             service.launcherFor {
-                this.languageVersion.set(JavaLanguageVersion.of(JavaVersion.VERSION_17.majorVersion))
+                this.languageVersion.set(JavaLanguageVersion.of(JavaVersion.VERSION_21.majorVersion))
             }
 
         this.kotlinJavaToolchain.toolchain.use(customLauncher)
@@ -72,7 +72,7 @@ subprojects {
                     "-Xjsr305=strict",
                     "-opt-in=kotlin.RequiresOptIn",
                 )
-            jvmTarget = "17"
+            jvmTarget = "21"
         }
     }
 
