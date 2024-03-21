@@ -2,9 +2,12 @@ package io.newm.chain.grpc
 
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.google.iot.cbor.CborArray
+import com.google.iot.cbor.CborByteString
 import com.google.iot.cbor.CborInteger
 import com.google.iot.cbor.CborMap
 import com.google.iot.cbor.CborReader
+import com.google.iot.cbor.CborSimple
+import com.google.iot.cbor.CborTextString
 import com.google.protobuf.kotlin.toByteString
 import io.newm.chain.cardano.address.Address
 import io.newm.chain.cardano.address.AddressCredential
@@ -16,9 +19,13 @@ import io.newm.chain.database.repository.LedgerRepository
 import io.newm.chain.ledger.SubmittedTransactionCache
 import io.newm.chain.model.toNativeAssetMap
 import io.newm.chain.util.Bech32
+import io.newm.chain.util.Blake2b
+import io.newm.chain.util.Constants
 import io.newm.chain.util.Constants.ROLE_CHANGE
 import io.newm.chain.util.Constants.ROLE_PAYMENT
 import io.newm.chain.util.Constants.ROLE_STAKING
+import io.newm.chain.util.Constants.stakeAddressFinderRegex
+import io.newm.chain.util.elementToByteArray
 import io.newm.chain.util.hexToByteArray
 import io.newm.chain.util.toCreatedUtxoMap
 import io.newm.chain.util.toHexString
@@ -32,6 +39,7 @@ import io.newm.shared.ktx.warn
 import io.newm.txbuilder.TransactionBuilder
 import io.newm.txbuilder.ktx.cborHexToPlutusData
 import io.newm.txbuilder.ktx.toNativeAssetMap
+import io.newm.txbuilder.ktx.verify
 import io.newm.txbuilder.ktx.withMinUtxo
 import io.sentry.Sentry
 import kotlinx.coroutines.CancellationException
@@ -667,6 +675,107 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
             Sentry.addBreadcrumb(request.toString(), "NewmChainService")
             log.error("queryLedgerAssetMetadataListByNativeAsset error!", e)
             throw e
+        }
+    }
+
+    override suspend fun verifySignData(request: VerifySignDataRequest): VerifySignDataResponse {
+        try {
+            // process the COSE_Sign1 data
+            val sigData = CborReader.createFromByteArray(request.signatureHex.hexToByteArray()).readDataItem() as CborArray
+            require(sigData.size() == 4) { "Invalid COSE_Sign1 data! It must be an array of size 4" }
+
+            // process the COSE_Sign1 protected header
+            val protectedHeader = CborReader.createFromByteArray(sigData.elementToByteArray(0)).readDataItem() as CborMap
+            val protectedHeaderAlgorithm = protectedHeader.get(CborInteger.create(1)) as CborInteger
+            require(protectedHeaderAlgorithm.intValueExact() == -8) { "Invalid COSE_Sign1 algorithm! It must be -8 (EdDSA)" }
+            val protectedHeaderStakeAddressBytes = (protectedHeader.get("address") as CborByteString).byteArrayValue()[0]
+            require(
+                protectedHeaderStakeAddressBytes[0] == Constants.STAKE_ADDRESS_KEY_PREFIX_TESTNET || protectedHeaderStakeAddressBytes[0] == Constants.STAKE_ADDRESS_KEY_PREFIX_MAINNET
+            ) {
+                "Invalid stake address prefix! : ${protectedHeaderStakeAddressBytes.sliceArray(0..0).toHexString()}"
+            }
+            val protectedHeaderStakeAddress =
+                if (protectedHeaderStakeAddressBytes[0] == Constants.STAKE_ADDRESS_KEY_PREFIX_TESTNET) {
+                    Bech32.encode("stake_test", protectedHeaderStakeAddressBytes)
+                } else {
+                    Bech32.encode("stake", protectedHeaderStakeAddressBytes)
+                }
+
+            // process the COSE_Sign1 unprotected header
+            val unprotectedHeader = sigData.elementAt(1) as CborMap
+            val hashed = unprotectedHeader.get("hashed") as CborSimple
+            require(hashed.equals(CborSimple.TRUE) || hashed.equals(CborSimple.FALSE)) {
+                "Invalid COSE_Sign1 unprotected header! hashed must be boolean!"
+            }
+
+            // process the COSE_Sign1 payload
+            val messageBytes = sigData.elementToByteArray(2)
+            val messageString = String(messageBytes, Charsets.UTF_8)
+            val messageStakeAddress =
+                requireNotNull(stakeAddressFinderRegex.find(messageString)?.value) { "No stake address found in message!" }
+            require(
+                messageStakeAddress == protectedHeaderStakeAddress
+            ) { "Stake address mismatch!, message: $messageStakeAddress, header: $protectedHeaderStakeAddress" }
+
+            val signature1Payload =
+                CborArray.create().apply {
+                    // context
+                    add(CborTextString.create("Signature1"))
+                    // protected header cbor
+                    add(CborByteString.create(sigData.elementToByteArray(0)))
+                    // sign protected (not present in this case)
+                    add(CborByteString.create(ByteArray(0)))
+                    // payload data bytes
+                    add(CborByteString.create(messageBytes))
+                }.toCborByteArray()
+
+            // process the COSE_Sign1 key
+            val coseKey = CborReader.createFromByteArray(request.publicKeyHex.hexToByteArray()).readDataItem() as CborMap
+            val kty = coseKey.get(CborInteger.create(1)) as CborInteger
+            require(kty.intValueExact() == 1) { "Invalid COSE_Sign1 key! kty must be 1 (OKP)" }
+            val alg = coseKey.get(CborInteger.create(3)) as CborInteger
+            require(alg.intValueExact() == -8) { "Invalid COSE_Sign1 key! alg must be -8 (EdDSA)" }
+            val crv = coseKey.get(CborInteger.create(-1)) as CborInteger
+            require(crv.intValueExact() == 6) { "Invalid COSE_Sign1 key! crv must be 6 (Ed25519)" }
+            val x = (coseKey.get(CborInteger.create(-2)) as CborByteString).byteArrayValue()[0]
+            require(x.size == 32) { "Invalid COSE_Sign1 key! x must be 32 bytes" }
+
+            val stakeAddressFromPublicKey =
+                if (messageStakeAddress.startsWith("stake_test", ignoreCase = true)) {
+                    // testnet stake key
+                    Bech32.encode(
+                        "stake_test",
+                        ByteArray(1) { Constants.STAKE_ADDRESS_KEY_PREFIX_TESTNET } + Blake2b.hash224(x)
+                    )
+                } else {
+                    // mainnet stake key
+                    Bech32.encode(
+                        "stake",
+                        ByteArray(1) { Constants.STAKE_ADDRESS_KEY_PREFIX_MAINNET } + Blake2b.hash224(x)
+                    )
+                }
+            require(protectedHeaderStakeAddress == stakeAddressFromPublicKey) {
+                "Stake address mismatch!, header: $protectedHeaderStakeAddress, calculated: $stakeAddressFromPublicKey"
+            }
+
+            // verify the signature
+            val publicKey =
+                signingKey {
+                    vkey = x.toByteString()
+                }
+            val signatureBytes = sigData.elementToByteArray(3)
+            val isVerified = publicKey.verify(signature1Payload, signatureBytes)
+            return verifySignDataResponse {
+                verified = isVerified
+                message = stakeAddressFromPublicKey
+            }
+        } catch (e: Throwable) {
+            Sentry.addBreadcrumb(request.toString(), "NewmChainService")
+            log.error("verifySignData error!", e)
+            return verifySignDataResponse {
+                verified = false
+                message = "verifySignData error!: $e"
+            }
         }
     }
 }
