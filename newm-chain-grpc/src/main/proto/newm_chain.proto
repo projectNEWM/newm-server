@@ -29,6 +29,7 @@ service NewmChain {
   rpc ReleaseMutex (ReleaseMutexRequest) returns (MutexResponse);
   rpc Ping (PingRequest) returns (PongResponse);
   rpc QueryLedgerAssetMetadataListByNativeAsset (QueryByNativeAssetRequest) returns (LedgerAssetMetadataListResponse);
+  rpc VerifySignData (VerifySignDataRequest) returns (VerifySignDataResponse);
 }
 
 message SubmitTransactionRequest {
@@ -377,4 +378,14 @@ message LedgerAssetMetadataItem {
   string value = 4;
   int32 nest_level = 5;
   repeated LedgerAssetMetadataItem children = 6;
+}
+
+message VerifySignDataRequest {
+  string public_key_hex = 1;
+  string signature_hex = 2;
+}
+
+message VerifySignDataResponse {
+  bool verified = 1;
+  string message = 2;
 }

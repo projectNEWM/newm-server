@@ -62,6 +62,7 @@ object Constants {
 
     val receiveAddressRegex = Regex(RECEIVE_ADDRESS_PATTERN)
     val stakeAddressRegex = Regex(STAKE_ADDRESS_PATTERN)
+    val stakeAddressFinderRegex = Regex(STAKE_ADDRESS_PATTERN.drop(1).dropLast(1))
 
     val NONCE_VRF_HEADER = ByteArray(1) { 0x4E.toByte() } // 'N'
     val LEADER_VRF_HEADER = ByteArray(1) { 0x4C.toByte() } // 'L'
