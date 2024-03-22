@@ -695,13 +695,13 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
             }
 
             // process the COSE_Sign1 payload
-            val messageBytes = sigData.elementToByteArray(2)
-            val messageString = String(messageBytes, Charsets.UTF_8)
-            val messageStakeAddress =
-                requireNotNull(stakeAddressFinderRegex.find(messageString)?.value) { "No stake address found in message!" }
+            val challengeBytes = sigData.elementToByteArray(2)
+            val challengeString = String(challengeBytes, Charsets.UTF_8)
+            val challengeStakeAddress =
+                requireNotNull(stakeAddressFinderRegex.find(challengeString)?.value) { "No stake address found in challenge!" }
             require(
-                messageStakeAddress == protectedHeaderStakeAddress
-            ) { "Stake address mismatch!, message: $messageStakeAddress, header: $protectedHeaderStakeAddress" }
+                challengeStakeAddress == protectedHeaderStakeAddress
+            ) { "Stake address mismatch!, challenge: $challengeStakeAddress, header: $protectedHeaderStakeAddress" }
 
             val signature1Payload =
                 CborArray.create().apply {
@@ -712,7 +712,7 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                     // sign protected (not present in this case)
                     add(CborByteString.create(ByteArray(0)))
                     // payload data bytes
-                    add(CborByteString.create(messageBytes))
+                    add(CborByteString.create(challengeBytes))
                 }.toCborByteArray()
 
             // process the COSE_Sign1 key
@@ -727,7 +727,7 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
             require(x.size == 32) { "Invalid COSE_Sign1 key! x must be 32 bytes" }
 
             val stakeAddressFromPublicKey =
-                if (messageStakeAddress.startsWith("stake_test", ignoreCase = true)) {
+                if (challengeStakeAddress.startsWith("stake_test", ignoreCase = true)) {
                     // testnet stake key
                     Bech32.encode(
                         "stake_test",
@@ -753,14 +753,15 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
             val isVerified = publicKey.verify(signature1Payload, signatureBytes)
             return verifySignDataResponse {
                 verified = isVerified
-                message = stakeAddressFromPublicKey
+                challenge = challengeString
             }
         } catch (e: Throwable) {
             Sentry.addBreadcrumb(request.toString(), "NewmChainService")
             log.error("verifySignData error!", e)
             return verifySignDataResponse {
                 verified = false
-                message = "verifySignData error!: $e"
+                challenge = ""
+                errorMessage = "verifySignData error!: $e"
             }
         }
     }
