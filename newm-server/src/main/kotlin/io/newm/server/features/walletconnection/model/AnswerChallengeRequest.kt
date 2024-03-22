@@ -8,6 +8,6 @@ import java.util.UUID
 data class AnswerChallengeRequest(
     @Serializable(with = UUIDSerializer::class)
     val challengeId: UUID,
-    // data_signature or cbor<transaction_witness_set> (depending on GenerateChallengeRequest.method)
+    // data_signature or cbor<signed_transaction> (depending on GenerateChallengeRequest.method)
     val payload: String
 )

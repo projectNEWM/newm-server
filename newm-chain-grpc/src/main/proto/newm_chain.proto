@@ -30,6 +30,7 @@ service NewmChain {
   rpc Ping (PingRequest) returns (PongResponse);
   rpc QueryLedgerAssetMetadataListByNativeAsset (QueryByNativeAssetRequest) returns (LedgerAssetMetadataListResponse);
   rpc VerifySignData (VerifySignDataRequest) returns (VerifySignDataResponse);
+  rpc VerifySignTransaction (SubmitTransactionRequest) returns (VerifySignDataResponse);
 }
 
 message SubmitTransactionRequest {

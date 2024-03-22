@@ -77,7 +77,7 @@ class WalletConnectionRoutesTest : BaseApplicationTests() {
             Truth.assertThat(entity.createdAt).isAtLeast(startTime)
             Truth.assertThat(entity.method).isEqualTo(ChallengeMethod.SignedData)
             Truth.assertThat(entity.stakeAddress).isEqualTo(TEST_STAKE_ADDRESS)
-            val expectedPayload = """{ "connectTo": "NEWM Mobile ${entity.id.value}" }""".toByteArray().toHexString()
+            val expectedPayload = """{"connectTo":"NEWM Mobile ${entity.id.value}","stakeAddress":"$TEST_STAKE_ADDRESS"}""".toByteArray().toHexString()
             Truth.assertThat(entity.payload).isEqualTo(expectedPayload)
 
             // verify response body values

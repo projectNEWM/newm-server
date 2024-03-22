@@ -11,6 +11,7 @@ import com.google.protobuf.kotlin.toByteString
 import io.newm.chain.cardano.address.Address
 import io.newm.chain.cardano.address.AddressCredential
 import io.newm.chain.cardano.address.BIP32PublicKey
+import io.newm.chain.cardano.calculateTransactionId
 import io.newm.chain.cardano.getCurrentEpoch
 import io.newm.chain.cardano.toLedgerAssetMetadataItem
 import io.newm.chain.config.Config
@@ -57,6 +58,7 @@ import org.koin.core.qualifier.named
 import org.slf4j.Logger
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.experimental.and
 
 class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
     private val log: Logger by inject { parametersOf("NewmChainService") }
@@ -667,14 +669,17 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
     override suspend fun verifySignData(request: VerifySignDataRequest): VerifySignDataResponse {
         try {
             // process the COSE_Sign1 data
-            val sigData = CborReader.createFromByteArray(request.signatureHex.hexToByteArray()).readDataItem() as CborArray
+            val sigData =
+                CborReader.createFromByteArray(request.signatureHex.hexToByteArray()).readDataItem() as CborArray
             require(sigData.size() == 4) { "Invalid COSE_Sign1 data! It must be an array of size 4" }
 
             // process the COSE_Sign1 protected header
-            val protectedHeader = CborReader.createFromByteArray(sigData.elementToByteArray(0)).readDataItem() as CborMap
+            val protectedHeader =
+                CborReader.createFromByteArray(sigData.elementToByteArray(0)).readDataItem() as CborMap
             val protectedHeaderAlgorithm = protectedHeader.get(CborInteger.create(1)) as CborInteger
             require(protectedHeaderAlgorithm.intValueExact() == -8) { "Invalid COSE_Sign1 algorithm! It must be -8 (EdDSA)" }
-            val protectedHeaderStakeAddressBytes = (protectedHeader.get("address") as CborByteString).byteArrayValue()[0]
+            val protectedHeaderStakeAddressBytes =
+                (protectedHeader.get("address") as CborByteString).byteArrayValue()[0]
             require(
                 protectedHeaderStakeAddressBytes[0] == Constants.STAKE_ADDRESS_KEY_PREFIX_TESTNET || protectedHeaderStakeAddressBytes[0] == Constants.STAKE_ADDRESS_KEY_PREFIX_MAINNET
             ) {
@@ -716,7 +721,8 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                 }.toCborByteArray()
 
             // process the COSE_Sign1 key
-            val coseKey = CborReader.createFromByteArray(request.publicKeyHex.hexToByteArray()).readDataItem() as CborMap
+            val coseKey =
+                CborReader.createFromByteArray(request.publicKeyHex.hexToByteArray()).readDataItem() as CborMap
             val kty = coseKey.get(CborInteger.create(1)) as CborInteger
             require(kty.intValueExact() == 1) { "Invalid COSE_Sign1 key! kty must be 1 (OKP)" }
             val alg = coseKey.get(CborInteger.create(3)) as CborInteger
@@ -762,6 +768,88 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                 verified = false
                 challenge = ""
                 errorMessage = "verifySignData error!: $e"
+            }
+        }
+    }
+
+    override suspend fun verifySignTransaction(request: SubmitTransactionRequest): VerifySignDataResponse {
+        try {
+            val cbor = request.cbor.toByteArray()
+            val tx = CborReader.createFromByteArray(cbor).readDataItem() as CborArray
+            val txBody = tx.elementAt(0) as CborMap
+            val txId = calculateTransactionId(txBody)
+            val txAuxDataHash = (txBody.get(CborInteger.create(7)) as CborByteString).byteArrayValue()[0].toHexString()
+            val txAuxData = tx.elementAt(3) as? CborMap
+            requireNotNull(txAuxData) { "Invalid transaction! txAuxData is missing!" }
+            require(txAuxData.tag == 259) { "Invalid aux data tag! It must be 259" }
+            require(
+                Blake2b.hash256(txAuxData.toCborByteArray()).toHexString() == txAuxDataHash
+            ) { "Invalid aux data hash!" }
+
+            // extract the challengeString from the metadata so we can return it later
+            val txMetadata = txAuxData.get(CborInteger.create(0)) as? CborMap
+            requireNotNull(txMetadata) { "Invalid transaction! txMetadata is missing!" }
+            val challengeString =
+                (txMetadata.get(CborInteger.create(674)) as? CborMap)?.let { metadataMap ->
+                    (metadataMap.get("msg") as? CborArray)?.let { msgArray ->
+                        msgArray.joinToString("") { (it as CborTextString).stringValue() }
+                    }
+                }
+            requireNotNull(challengeString) { "Invalid transaction! challengeString is missing!" }
+
+            val challengeStakeAddress =
+                requireNotNull(stakeAddressFinderRegex.find(challengeString)?.value) { "No stake address found in challenge!" }
+            val challengeStakeAddressHeaderByte = Bech32.decode(challengeStakeAddress).bytes[0]
+            val isMainnet = (challengeStakeAddressHeaderByte and 0x01.toByte() == 0x01.toByte())
+
+            // process the required signer stake address
+            val requiredSignerBytes = (txBody.get(CborInteger.create(14)) as? CborArray)?.elementToByteArray(0)
+            requireNotNull(requiredSignerBytes) { "Invalid transaction! required signer bytes are missing!" }
+            val requiredSignerStakeAddress =
+                Bech32.encode(
+                    if (isMainnet) {
+                        "stake"
+                    } else {
+                        "stake_test"
+                    },
+                    byteArrayOf(challengeStakeAddressHeaderByte) + requiredSignerBytes
+                )
+            require(requiredSignerStakeAddress == challengeStakeAddress) {
+                "Stake address mismatch!, challenge: $challengeStakeAddress, required signer: $requiredSignerStakeAddress"
+            }
+
+            // process the signatures
+            val signatures = (tx.elementAt(1) as? CborMap)?.get(CborInteger.create(0)) as? CborArray
+            requireNotNull(signatures) { "Invalid transaction! signatures are missing!" }
+            var foundSignature = false
+            var isVerified = false
+            signatures.forEach {
+                val pubKey = (it as CborArray).elementToByteArray(0)
+                val signature = it.elementToByteArray(1)
+                val pkh = Blake2b.hash224(pubKey)
+                if (pkh.contentEquals(requiredSignerBytes)) {
+                    // check our stake key's signature
+                    foundSignature = true
+                    val publicKey =
+                        signingKey {
+                            vkey = pubKey.toByteString()
+                        }
+                    isVerified = publicKey.verify(txId.hexToByteArray(), signature)
+                    return@forEach
+                }
+            }
+            require(foundSignature) { "Invalid transaction! required signer signature is missing!" }
+            return verifySignDataResponse {
+                verified = isVerified
+                challenge = challengeString
+            }
+        } catch (e: Throwable) {
+            Sentry.addBreadcrumb(request.toString(), "NewmChainService")
+            log.error("verifySignTransaction error!", e)
+            return verifySignDataResponse {
+                verified = false
+                challenge = ""
+                errorMessage = "verifySignTransaction error!: $e"
             }
         }
     }
