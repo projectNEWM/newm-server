@@ -387,5 +387,6 @@ message VerifySignDataRequest {
 
 message VerifySignDataResponse {
   bool verified = 1;
-  string message = 2;
+  string challenge = 2;
+  optional string error_message = 3;
 }

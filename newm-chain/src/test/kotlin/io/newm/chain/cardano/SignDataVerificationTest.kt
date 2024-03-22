@@ -53,16 +53,31 @@ class SignDataVerificationTest {
         runBlocking {
             val service = NewmChainService()
             // this signature is the result of the user signing the json message string bytes with their wallet
-            // by calling: await walletApi.signData(stakeAddressHex, messageBytesHex);
-            // where the pre-hexed message is:
-            // {"newm_account": "stake_test1upfa42cuzftdzkg4pmfx80kqsln2vyymgedsz58fuwa5y6gjft7zv"}
+            // Example:
+            // const api = await window.cardano.eternl.enable();
+            // await api.getRewardAddresses();
+            // ['e053daab1c1256d159150ed263bec087e6a6109b465b0150e9e3bb4269']
+            // const stakeAddressHex = 'e053daab1c1256d159150ed263bec087e6a6109b465b0150e9e3bb4269';
+            // const stakeAddressBech32 = 'stake_test1upfa42cuzftdzkg4pmfx80kqsln2vyymgedsz58fuwa5y6gjft7zv';
+            // const challengeUtf8 = `{"newm_account": "${stakeAddressBech32}", "uuid": "4bf6c35b-747d-48da-830b-9dfce57b15e4"}`;
+            // console.log(challengeUtf8);
+            // {"newm_account": "stake_test1upfa42cuzftdzkg4pmfx80kqsln2vyymgedsz58fuwa5y6gjft7zv", "uuid": "4bf6c35b-747d-48da-830b-9dfce57b15e4"}
+            // const challengeHex = "7b226e65776d5f6163636f756e74223a20227374616b655f746573743175706661343263757a6674647a6b6734706d667838306b71736c6e327679796d676564737a353866757761357936676a6674377a76222c202275756964223a202234626636633335622d373437642d343864612d383330622d396466636535376231356534227d";
+            // const result = await api.signData(stakeAddressHex, challengeHex);
+            // console.log(JSON.stringify(result));
+            // {
+            //   "signature":"84582aa201276761646472657373581de053daab1c1256d159150ed263bec087e6a6109b465b0150e9e3bb4269a166686173686564f458847b226e65776d5f6163636f756e74223a20227374616b655f746573743175706661343263757a6674647a6b6734706d667838306b71736c6e327679796d676564737a353866757761357936676a6674377a76222c202275756964223a202234626636633335622d373437642d343864612d383330622d396466636535376231356534227d58408a3a8a8772bfd890a1c30f30f86f0f756c2969ef6367c2c97385a6673a4c88d98a494025eeeefb65357a1cec4676c7b08c3ed1e31bb6277dd7ec92fc8ba97907",
+            //   "key":"a4010103272006215820155720fbed788992fe8c3b9a30efa4508b33eb73af473b48f15d6fae6feba60a"
+            //  }
+            val expectedChallenge = """{"newm_account": "stake_test1upfa42cuzftdzkg4pmfx80kqsln2vyymgedsz58fuwa5y6gjft7zv", "uuid": "4bf6c35b-747d-48da-830b-9dfce57b15e4"}"""
             val request =
                 verifySignDataRequest {
                     publicKeyHex = "a4010103272006215820155720fbed788992fe8c3b9a30efa4508b33eb73af473b48f15d6fae6feba60a"
-                    signatureHex = "84582aa201276761646472657373581de053daab1c1256d159150ed263bec087e6a6109b465b0150e9e3bb4269a166686173686564f458557b226e65776d5f6163636f756e74223a20227374616b655f746573743175706661343263757a6674647a6b6734706d667838306b71736c6e327679796d676564737a353866757761357936676a6674377a76227d0a5840c0e1a7e359a0c89d53f3c8fcf28b173a9cf4458b0bc275dd44e8879dc52bb1892b865a78c64f755ed5449079bee115f390dc247ceee012044c907f4f3a4ab902"
+                    signatureHex = "84582aa201276761646472657373581de053daab1c1256d159150ed263bec087e6a6109b465b0150e9e3bb4269a166686173686564f458847b226e65776d5f6163636f756e74223a20227374616b655f746573743175706661343263757a6674647a6b6734706d667838306b71736c6e327679796d676564737a353866757761357936676a6674377a76222c202275756964223a202234626636633335622d373437642d343864612d383330622d396466636535376231356534227d58408a3a8a8772bfd890a1c30f30f86f0f756c2969ef6367c2c97385a6673a4c88d98a494025eeeefb65357a1cec4676c7b08c3ed1e31bb6277dd7ec92fc8ba97907"
                 }
             val response = service.verifySignData(request)
             assertThat(response.verified).isTrue()
-            assertThat(response.message).isEqualTo("stake_test1upfa42cuzftdzkg4pmfx80kqsln2vyymgedsz58fuwa5y6gjft7zv")
+            assertThat(response.challenge).isEqualTo(expectedChallenge)
+            assertThat(response.hasErrorMessage()).isFalse()
         }
 }
