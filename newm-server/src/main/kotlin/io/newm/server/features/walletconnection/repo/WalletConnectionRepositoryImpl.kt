@@ -1,9 +1,16 @@
 package io.newm.server.features.walletconnection.repo
 
+import com.google.iot.cbor.CborArray
+import com.google.iot.cbor.CborInteger
+import com.google.iot.cbor.CborMap
+import com.google.iot.cbor.CborTextString
+import com.google.protobuf.kotlin.toByteString
 import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.utils.io.core.toByteArray
-import io.newm.chain.grpc.NewmChainGrpcKt.NewmChainCoroutineStub
+import io.newm.chain.util.Bech32
+import io.newm.chain.util.Constants
 import io.newm.chain.util.toHexString
+import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.user.database.UserTable
 import io.newm.server.features.walletconnection.database.WalletConnectionChallengeEntity
 import io.newm.server.features.walletconnection.database.WalletConnectionEntity
@@ -15,7 +22,6 @@ import io.newm.server.features.walletconnection.model.ChallengeMethod
 import io.newm.server.features.walletconnection.model.ConnectResponse
 import io.newm.shared.exception.HttpForbiddenException
 import io.newm.shared.exception.HttpNotFoundException
-import io.newm.shared.exception.HttpUnprocessableEntityException
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.debug
 import io.newm.shared.ktx.existsHavingId
@@ -30,7 +36,7 @@ import java.util.UUID
 
 internal class WalletConnectionRepositoryImpl(
     private val environment: ApplicationEnvironment,
-    private val client: NewmChainCoroutineStub
+    private val cardanoRepository: CardanoRepository,
 ) : WalletConnectionRepository {
     private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
     private val challengeTimeToLive: Long by lazy {
@@ -46,17 +52,60 @@ internal class WalletConnectionRepositoryImpl(
     override suspend fun generateChallenge(request: GenerateChallengeRequest): GenerateChallengeResponse {
         logger.debug { "generateChallenge: $request" }
 
+        requireNotNull(Constants.stakeAddressRegex.matchEntire(request.stakeAddress)) {
+            "Invalid stake address: ${request.stakeAddress}"
+        }
         val challengeId = UUID.randomUUID()
+        val challengeString = """{"connectTo":"NEWM Mobile $challengeId","stakeAddress":"${request.stakeAddress}"}"""
         val payload =
             when (request.method) {
                 ChallengeMethod.SignedData -> {
-                    """{ "connectTo": "NEWM Mobile $challengeId" }""".toByteArray().toHexString()
+                    challengeString.toByteArray().toHexString()
                 }
 
                 ChallengeMethod.SignedTransaction -> {
-                    // TODO: call newm-chain, passing request.utxos to generate challenge transaction and
-                    // then encode returned transaction as cbor hex string
-                    throw HttpUnprocessableEntityException("SignedTransaction method not supported yet!!!")
+                    requireNotNull(request.utxoCborHexList) { "Missing utxoCborHexList" }
+                    requireNotNull(request.changeAddress) { "Missing changeAddress" }
+                    val transactionBuilderResponse =
+                        cardanoRepository.buildTransaction {
+                            // add input utxos
+                            sourceUtxos.addAll(request.utxos)
+
+                            // change address
+                            changeAddress = request.changeAddress
+
+                            // ensures this tx is expired because of 1 time to live
+                            ttlAbsoluteSlot = 1
+
+                            // require the stake key to sign the transaction
+                            requiredSigners.add(Bech32.decode(request.stakeAddress).bytes.copyOfRange(1, 29).toByteString())
+
+                            // put the challenge into the transaction metadata so it is displayed in the wallet
+                            transactionMetadataCbor =
+                                CborMap.create(
+                                    mapOf(
+                                        CborInteger.create(674) to
+                                            CborMap.create(
+                                                mapOf(
+                                                    CborTextString.create("msg") to
+                                                        CborArray.create().apply {
+                                                            challengeString.chunked(64).forEach {
+                                                                add(CborTextString.create(it))
+                                                            }
+                                                        }
+                                                )
+                                            )
+                                    )
+                                ).toCborByteArray().toByteString()
+                        }
+
+                    require(!transactionBuilderResponse.hasErrorMessage()) {
+                        "Failed to build challenge transaction: ${transactionBuilderResponse.errorMessage}"
+                    }
+                    logger.debug {
+                        "Generated challenge transactionId: ${transactionBuilderResponse.transactionId}, cbor: ${transactionBuilderResponse.transactionCbor.toByteArray().toHexString()}"
+                    }
+                    transactionBuilderResponse.transactionCbor.toByteArray().toHexString()
                 }
             }
 

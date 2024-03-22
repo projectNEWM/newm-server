@@ -1,6 +1,7 @@
 package io.newm.shared.ktx
 
 import at.favre.lib.crypto.bcrypt.BCrypt
+import java.net.URI
 import java.net.URL
 import java.net.URLConnection
 import java.net.URLStreamHandler
@@ -62,13 +63,13 @@ fun String.isValidHex(): Boolean = HEX_REGEX.matches(this)
 
 fun String.isValidUrl(): Boolean =
     try {
-        URL(null, this, DummyURLHandler).toURI()
+        URL.of(URI.create(this), DummyURLHandler).toURI()
         true
     } catch (_: Exception) {
         false
     }
 
-fun String.toUrl(): URL = EMAIL_REGEX.javaClass.getResource(this) ?: URL(this)
+fun String.toUrl(): URL = EMAIL_REGEX.javaClass.getResource(this) ?: URI.create(this).toURL()
 
 fun String.toHash(): String = BCrypt.withDefaults().hashToString(12, toCharArray())
 

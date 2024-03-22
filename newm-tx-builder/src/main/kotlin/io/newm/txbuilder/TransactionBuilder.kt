@@ -236,12 +236,6 @@ class TransactionBuilder(
         if (changeAddress == null) {
             require(!outputUtxos.isNullOrEmpty()) { "outputUtxos or changeAddress must be defined!" }
         }
-        if (signingKeys == null) {
-            require(!signatures.isNullOrEmpty()) { "signingKeys or signatures must be defined!" }
-        }
-        if (signatures == null) {
-            require(!signingKeys.isNullOrEmpty()) { "signingKeys or signatures must be defined!" }
-        }
         if (!redeemers.isNullOrEmpty() || !referenceInputs.isNullOrEmpty()) {
             // There's some type of smart contract here. We must have collateral defined
             require(!collateralUtxos.isNullOrEmpty()) { "collateralUtxos must be defined!" }
@@ -467,7 +461,7 @@ class TransactionBuilder(
 
         val changeNativeAssetMap = changeNativeAssets.toNativeAssetMap()
 
-        outputUtxos!!.forEach { outputUtxo ->
+        outputUtxos.orEmpty().forEach { outputUtxo ->
             changeLovelace -= outputUtxo.withMinUtxo(utxoCostPerByte).lovelace.toLong()
             outputUtxo.nativeAssetsList.forEach { nativeAsset ->
                 val changePolicyNativeAssets = changeNativeAssetMap[nativeAsset.policy]?.toMutableList()
@@ -510,7 +504,7 @@ class TransactionBuilder(
             }
 
         return CborArray.create(
-            (outputUtxos!! + changeUtxos)
+            (outputUtxos.orEmpty() + changeUtxos)
                 .map { outputUtxo -> outputUtxo.withMinUtxo(utxoCostPerByte) }
                 .map { it.toCborObject() }
         )

@@ -1,5 +1,6 @@
 package io.newm.chain.cardano
 
+import com.google.iot.cbor.CborMap
 import io.newm.chain.config.Config
 import io.newm.chain.util.Blake2b
 import io.newm.chain.util.Constants.BYRON_TO_SHELLEY_EPOCHS_GUILD
@@ -174,10 +175,10 @@ fun getInstantAtSlot(absoluteSlot: Long): Instant {
     return Instant.ofEpochSecond(epochSecond)
 }
 
-// fun calculateTransactionId(txBody: CborMap): String {
-//    val txBodyCborBytes = txBody.toCborByteArray()
-//    return calculateTransactionId(txBodyCborBytes)
-// }
+fun calculateTransactionId(txBody: CborMap): String {
+    val txBodyCborBytes = txBody.toCborByteArray()
+    return calculateTransactionId(txBodyCborBytes)
+}
 
 fun calculateTransactionId(txBodyCborBytes: ByteArray): String {
     return Blake2b.hash256(txBodyCborBytes).toHexString()

@@ -17,6 +17,7 @@ import io.newm.chain.grpc.redeemer
 import io.newm.chain.grpc.signature
 import io.newm.chain.grpc.signingKey
 import io.newm.chain.grpc.utxo
+import io.newm.chain.util.Bech32
 import io.newm.chain.util.Blake2b
 import io.newm.chain.util.hexToByteArray
 import io.newm.chain.util.toHexString
@@ -38,6 +39,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
+import java.util.UUID
 
 @Disabled("Disabled until we get demeter working again.")
 class TransactionBuilderTest {
@@ -50,6 +52,73 @@ class TransactionBuilderTest {
 //        private const val TEST_PORT = 1337
 //        private const val TEST_SECURE = true
     }
+
+    @Test
+    fun `test create challenge transaction`() =
+        runBlocking {
+            createTxSubmitClient(
+                websocketHost = TEST_HOST,
+                websocketPort = TEST_PORT,
+                secure = TEST_SECURE,
+            ).use { client ->
+                val connectResult = client.connect()
+                assertThat(connectResult).isTrue()
+                assertThat(client.isConnected).isTrue()
+
+                val protocolParametersResponse = (client as StateQueryClient).protocolParameters()
+                val protocolParams = protocolParametersResponse.result
+
+                val stakeAddress = "stake_test1upfa42cuzftdzkg4pmfx80kqsln2vyymgedsz58fuwa5y6gjft7zv"
+                val challengeId = UUID.randomUUID()
+
+                val challengeString = """{"connectTo":"NEWM Mobile $challengeId","stakeAddress":"$stakeAddress"}"""
+
+                val (txId, cborBytes) =
+                    transactionBuilder(protocolParams) {
+                        // input utxo
+                        sourceUtxos {
+                            add(
+                                utxo {
+                                    hash = "6a6b53d93e01a597e825844d2e524479c17cc4cf2285e0ca819177566a9015cc"
+                                    ix = 1
+                                    lovelace = "50885953403"
+                                }
+                            )
+                        }
+
+                        // dummy change address
+                        changeAddress = "addr_test1qqa9e0qfjgge2r39lxrh4dat6c7s2m23t0tysga9m6pacfjnm243cyjk69v32rkjvwlvpplx5cgfk3jmq9gwncamgf5sg8turc"
+
+                        // ensures this tx is expired because of 1 time to live
+                        ttlAbsoluteSlot = 1L
+
+                        // require the stake key to sign the transaction
+                        requiredSigners {
+                            add(Bech32.decode(stakeAddress).bytes.copyOfRange(1, 29))
+                        }
+
+                        transactionMetadata =
+                            CborMap.create(
+                                mapOf(
+                                    CborInteger.create(674) to
+                                        CborMap.create(
+                                            mapOf(
+                                                CborTextString.create("msg") to
+                                                    CborArray.create().apply {
+                                                        challengeString.chunked(64).forEach {
+                                                            add(CborTextString.create(it))
+                                                        }
+                                                    }
+                                            )
+                                        )
+                                )
+                            )
+                    }
+
+                println("txId: $txId")
+                println("cborBytes: ${cborBytes.toHexString()}")
+            }
+        }
 
     @Test
     fun `test chaining of smart contracts`() =

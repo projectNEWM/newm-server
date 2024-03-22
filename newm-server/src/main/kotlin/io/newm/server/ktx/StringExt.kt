@@ -92,6 +92,10 @@ fun String.toReferenceUtxo(): Utxo {
     }
 }
 
+fun List<String>?.cborHexToUtxos(): List<Utxo> {
+    return this?.map { it.cborHexToUtxo() }.orEmpty()
+}
+
 /**
  * Converts a CBOR hex string from a CIP-30 wallet into a Utxo.
  * Example with NativeAssets
