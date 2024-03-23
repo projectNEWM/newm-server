@@ -13,7 +13,6 @@ class WalletConnectionChallengeEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     val createdAt: LocalDateTime by WalletConnectionChallengeTable.createdAt
     var method: ChallengeMethod by WalletConnectionChallengeTable.method
     var stakeAddress: String by WalletConnectionChallengeTable.stakeAddress
-    var payload: String by WalletConnectionChallengeTable.payload
 
     companion object : UUIDEntityClass<WalletConnectionChallengeEntity>(WalletConnectionChallengeTable) {
         fun deleteAllExpired(timeToLiveSeconds: Long) {

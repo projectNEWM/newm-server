@@ -11,5 +11,4 @@ object WalletConnectionChallengeTable : UUIDTable(name = "wallet_connection_chal
     val createdAt: Column<LocalDateTime> = datetime("created_at").defaultExpression(CurrentDateTime)
     val method: Column<ChallengeMethod> = enumeration("method")
     val stakeAddress: Column<String> = text("stake_address")
-    val payload: Column<String> = text("payload")
 }

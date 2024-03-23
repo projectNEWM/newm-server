@@ -9,5 +9,7 @@ data class AnswerChallengeRequest(
     @Serializable(with = UUIDSerializer::class)
     val challengeId: UUID,
     // data_signature or cbor<signed_transaction> (depending on GenerateChallengeRequest.method)
-    val payload: String
+    val payload: String,
+    // key only needed if method = SignedData
+    val key: String? = null
 )
