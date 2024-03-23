@@ -1,6 +1,7 @@
 package io.newm.server.features.walletconnection
 
 import com.google.common.truth.Truth
+import com.google.protobuf.ByteString
 import io.ktor.client.call.body
 import io.ktor.client.request.accept
 import io.ktor.client.request.bearerAuth
@@ -13,9 +14,13 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentLength
 import io.ktor.http.contentType
-import io.ktor.utils.io.core.toByteArray
-import io.newm.chain.util.toHexString
+import io.mockk.coEvery
+import io.mockk.every
+import io.mockk.mockk
+import io.newm.chain.grpc.TransactionBuilderResponse
+import io.newm.chain.grpc.verifySignDataResponse
 import io.newm.server.BaseApplicationTests
+import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
 import io.newm.server.features.walletconnection.database.WalletConnectionChallengeEntity
@@ -29,20 +34,37 @@ import io.newm.server.features.walletconnection.model.ConnectResponse
 import io.newm.server.features.walletconnection.model.GenerateChallengeRequest
 import io.newm.server.features.walletconnection.model.GenerateChallengeResponse
 import io.newm.shared.ktx.existsHavingId
+import io.newm.shared.ktx.toHexString
 import io.newm.shared.ktx.toTempFile
 import kotlinx.coroutines.runBlocking
 import org.apache.tika.Tika
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.deleteAll
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
+import org.koin.core.context.GlobalContext.loadKoinModules
+import org.koin.dsl.module
 import java.time.LocalDateTime
+import java.util.UUID
 
-private const val TEST_STAKE_ADDRESS = "stake_test17rd6aqx9mutz9r24ttk2ezwvel9tgf9sp7s389rexjgk9kssedugy"
+private const val TEST_STAKE_ADDRESS = "stake_test1upfa42cuzftdzkg4pmfx80kqsln2vyymgedsz58fuwa5y6gjft7zv"
+private const val TEST_CHANGE_ADDRESS =
+    "addr_test1qqfam8majz3desfm82qvd28yzfrg4etfas4acf4kkggaq6slhc0vy4v22ml5mrq8q40wvj648xvyllld92w6lpk2y97q04cqhl"
 
 class WalletConnectionRoutesTest : BaseApplicationTests() {
+    private val cardanoRepository = mockk<CardanoRepository>(relaxed = true)
+
+    @BeforeAll
+    fun beforeAllLocal() {
+        loadKoinModules(
+            module {
+                single { cardanoRepository }
+            }
+        )
+    }
+
     @BeforeEach
     fun beforeEach() {
         transaction {
@@ -77,21 +99,14 @@ class WalletConnectionRoutesTest : BaseApplicationTests() {
             Truth.assertThat(entity.createdAt).isAtLeast(startTime)
             Truth.assertThat(entity.method).isEqualTo(ChallengeMethod.SignedData)
             Truth.assertThat(entity.stakeAddress).isEqualTo(TEST_STAKE_ADDRESS)
-            val expectedPayload = """{"connectTo":"NEWM Mobile ${entity.id.value}","stakeAddress":"$TEST_STAKE_ADDRESS"}""".toByteArray().toHexString()
-            Truth.assertThat(entity.payload).isEqualTo(expectedPayload)
 
             // verify response body values
             val body = response.body<GenerateChallengeResponse>()
             Truth.assertThat(body.challengeId).isEqualTo(entity.id.value)
             Truth.assertThat(body.expiresAt).isEqualTo(entity.createdAt.plusSeconds(60))
+            val expectedPayload = buildChallengeString(entity.id.value).toByteArray().toHexString()
             Truth.assertThat(body.payload).isEqualTo(expectedPayload)
         }
-
-    @Test
-    @Disabled
-    fun testGenerateSignedTransactionChallenge() {
-        // TODO
-    }
 
     @Test
     fun testAnswerSignedDataChallenge() =
@@ -102,8 +117,15 @@ class WalletConnectionRoutesTest : BaseApplicationTests() {
                     WalletConnectionChallengeEntity.new {
                         method = ChallengeMethod.SignedData
                         stakeAddress = TEST_STAKE_ADDRESS
-                        payload = "NOTHING"
                     }.id.value
+                }
+
+            val expectedSignature = "7b22636f6e6e656374546f223a224e45574d204d6f62696c652066343238333539302d3461"
+            val expectedKey = "d343865392d613933382d313366653864303836663735222c227374616b6541646472657373"
+            coEvery { cardanoRepository.verifySignData(expectedSignature, expectedKey) } returns
+                verifySignDataResponse {
+                    verified = true
+                    challenge = buildChallengeString(challengeId)
                 }
 
             val response =
@@ -113,13 +135,16 @@ class WalletConnectionRoutesTest : BaseApplicationTests() {
                     setBody(
                         AnswerChallengeRequest(
                             challengeId = challengeId,
-                            payload = "TODO"
+                            payload = expectedSignature,
+                            key = expectedKey
                         )
                     )
                 }
             Truth.assertThat(response.status).isEqualTo(HttpStatusCode.OK)
 
             // verify database values
+            val challengeExists = transaction { WalletConnectionChallengeEntity.existsHavingId(challengeId) }
+            Truth.assertThat(challengeExists).isFalse()
             val entity =
                 transaction {
                     WalletConnectionEntity.all().first()
@@ -135,10 +160,94 @@ class WalletConnectionRoutesTest : BaseApplicationTests() {
         }
 
     @Test
-    @Disabled
-    fun testAnswerSignedTransactionChallenge() {
-        // TODO
-    }
+    fun testGenerateSignedTransactionChallenge() =
+        runBlocking {
+            val expectedPayload = "7b22636f6e6e656374546f223a224e45574d204d6f62696c652066343238333539302d3461"
+            val transactionBuilderResponse = mockk<TransactionBuilderResponse>(relaxed = true)
+            every { transactionBuilderResponse.transactionCbor } returns ByteString.fromHex(expectedPayload)
+            coEvery { cardanoRepository.buildTransaction(any()) } returns transactionBuilderResponse
+
+            val startTime = LocalDateTime.now()
+            val response =
+                client.post("v1/wallet-connections/challenges/generate") {
+                    contentType(ContentType.Application.Json)
+                    accept(ContentType.Application.Json)
+                    setBody(
+                        GenerateChallengeRequest(
+                            method = ChallengeMethod.SignedTransaction,
+                            stakeAddress = TEST_STAKE_ADDRESS,
+                            changeAddress = TEST_CHANGE_ADDRESS,
+                            utxoCborHexList = listOf("utxo1", "utxo2")
+                        )
+                    )
+                }
+            Truth.assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+
+            // verify database values
+            val entity =
+                transaction {
+                    WalletConnectionChallengeEntity.all().first()
+                }
+
+            Truth.assertThat(entity.createdAt).isAtLeast(startTime)
+            Truth.assertThat(entity.method).isEqualTo(ChallengeMethod.SignedTransaction)
+            Truth.assertThat(entity.stakeAddress).isEqualTo(TEST_STAKE_ADDRESS)
+
+            // verify response body values
+            val body = response.body<GenerateChallengeResponse>()
+            Truth.assertThat(body.challengeId).isEqualTo(entity.id.value)
+            Truth.assertThat(body.expiresAt).isEqualTo(entity.createdAt.plusSeconds(60))
+            Truth.assertThat(body.payload).isEqualTo(expectedPayload)
+        }
+
+    @Test
+    fun testAnswerSignedTransactionChallenge() =
+        runBlocking {
+            val startTime = LocalDateTime.now()
+            val challengeId =
+                transaction {
+                    WalletConnectionChallengeEntity.new {
+                        method = ChallengeMethod.SignedTransaction
+                        stakeAddress = TEST_STAKE_ADDRESS
+                    }.id.value
+                }
+
+            val expectedSignature = "7b22636f6e6e656374546f223a224e45574d204d6f62696c652066343238333539302d3461"
+            coEvery { cardanoRepository.verifySignTransaction(expectedSignature) } returns
+                verifySignDataResponse {
+                    verified = true
+                    challenge = buildChallengeString(challengeId)
+                }
+
+            val response =
+                client.post("v1/wallet-connections/challenges/answer") {
+                    contentType(ContentType.Application.Json)
+                    accept(ContentType.Application.Json)
+                    setBody(
+                        AnswerChallengeRequest(
+                            challengeId = challengeId,
+                            payload = expectedSignature
+                        )
+                    )
+                }
+            Truth.assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+
+            // verify database values
+            val challengeExists = transaction { WalletConnectionChallengeEntity.existsHavingId(challengeId) }
+            Truth.assertThat(challengeExists).isFalse()
+            val entity =
+                transaction {
+                    WalletConnectionEntity.all().first()
+                }
+            Truth.assertThat(entity.createdAt).isAtLeast(startTime)
+            Truth.assertThat(entity.stakeAddress).isEqualTo(TEST_STAKE_ADDRESS)
+            Truth.assertThat(entity.userId).isNull()
+
+            // verify response body values
+            val body = response.body<AnswerChallengeResponse>()
+            Truth.assertThat(body.connectionId).isEqualTo(entity.id.value)
+            Truth.assertThat(body.expiresAt).isEqualTo(entity.createdAt.plusSeconds(300))
+        }
 
     @Test
     fun testGenerateQRCode() =
@@ -233,4 +342,7 @@ class WalletConnectionRoutesTest : BaseApplicationTests() {
             val exists = transaction { WalletConnectionEntity.existsHavingId(userId) }
             Truth.assertThat(exists).isFalse()
         }
+
+    private fun buildChallengeString(challengeId: UUID): String =
+        """{"connectTo":"NEWM Mobile $challengeId","stakeAddress":"$TEST_STAKE_ADDRESS"}"""
 }

@@ -56,7 +56,7 @@ internal class WalletConnectionRepositoryImpl(
             "Invalid stake address: ${request.stakeAddress}"
         }
         val challengeId = UUID.randomUUID()
-        val challengeString = """{"connectTo":"NEWM Mobile $challengeId","stakeAddress":"${request.stakeAddress}"}"""
+        val challengeString = buildChallengeString(challengeId, request.stakeAddress)
         val payload =
             when (request.method) {
                 ChallengeMethod.SignedData -> {
@@ -78,7 +78,9 @@ internal class WalletConnectionRepositoryImpl(
                             ttlAbsoluteSlot = 1
 
                             // require the stake key to sign the transaction
-                            requiredSigners.add(Bech32.decode(request.stakeAddress).bytes.copyOfRange(1, 29).toByteString())
+                            requiredSigners.add(
+                                Bech32.decode(request.stakeAddress).bytes.copyOfRange(1, 29).toByteString()
+                            )
 
                             // put the challenge into the transaction metadata so it is displayed in the wallet
                             transactionMetadataCbor =
@@ -103,7 +105,9 @@ internal class WalletConnectionRepositoryImpl(
                         "Failed to build challenge transaction: ${transactionBuilderResponse.errorMessage}"
                     }
                     logger.debug {
-                        "Generated challenge transactionId: ${transactionBuilderResponse.transactionId}, cbor: ${transactionBuilderResponse.transactionCbor.toByteArray().toHexString()}"
+                        "Generated challenge transactionId: ${transactionBuilderResponse.transactionId}, cbor: ${
+                            transactionBuilderResponse.transactionCbor.toByteArray().toHexString()
+                        }"
                     }
                     transactionBuilderResponse.transactionCbor.toByteArray().toHexString()
                 }
@@ -114,7 +118,6 @@ internal class WalletConnectionRepositoryImpl(
                 WalletConnectionChallengeEntity.new(challengeId) {
                     method = request.method
                     stakeAddress = request.stakeAddress
-                    this.payload = payload
                 }
             }
 
@@ -128,27 +131,35 @@ internal class WalletConnectionRepositoryImpl(
     override suspend fun answerChallenge(request: AnswerChallengeRequest): AnswerChallengeResponse {
         logger.debug { "answerChallenge: $request" }
 
-        val challenge =
+        val (challengeId, method, stakeAddress) =
             transaction {
                 WalletConnectionChallengeEntity.deleteAllExpired(challengeTimeToLive)
-                WalletConnectionChallengeEntity[request.challengeId]
+                WalletConnectionChallengeEntity[request.challengeId].run {
+                    Triple(id.value, method, stakeAddress).also { delete() }
+                }
             }
 
-        when (challenge.method) {
-            ChallengeMethod.SignedData -> {
-                // TODO: call newm-chain to verify signed data, if verification fails throw HttpForbiddenException
+        val response =
+            when (method) {
+                ChallengeMethod.SignedData -> {
+                    requireNotNull(request.key) { "Missing key" }
+                    cardanoRepository.verifySignData(request.payload, request.key)
+                }
+
+                ChallengeMethod.SignedTransaction -> {
+                    cardanoRepository.verifySignTransaction(request.payload)
+                }
             }
 
-            ChallengeMethod.SignedTransaction -> {
-                // TODO: call newm-chain to verify signed transaction, if verification fails throw HttpForbiddenException
-            }
+        if (!response.verified || response.challenge != buildChallengeString(challengeId, stakeAddress)) {
+            throw HttpForbiddenException("Challenge signature verification failed")
         }
 
         // we're ready to connect!!!
         val connection =
             transaction {
                 WalletConnectionEntity.new {
-                    stakeAddress = challenge.stakeAddress
+                    this.stakeAddress = stakeAddress
                 }
             }
         return AnswerChallengeResponse(
@@ -202,4 +213,9 @@ internal class WalletConnectionRepositoryImpl(
             }
         }
     }
+
+    private fun buildChallengeString(
+        challengeId: UUID,
+        stakeAddress: String
+    ): String = """{"connectTo":"NEWM Mobile $challengeId","stakeAddress":"$stakeAddress"}"""
 }

@@ -18,6 +18,7 @@ import io.newm.chain.grpc.SubmitTransactionResponse
 import io.newm.chain.grpc.TransactionBuilderRequestKt
 import io.newm.chain.grpc.TransactionBuilderResponse
 import io.newm.chain.grpc.Utxo
+import io.newm.chain.grpc.VerifySignDataResponse
 import io.newm.chain.grpc.acquireMutexRequest
 import io.newm.chain.grpc.datumOrNull
 import io.newm.chain.grpc.listOrNull
@@ -30,6 +31,7 @@ import io.newm.chain.grpc.queryUtxosOutputRefRequest
 import io.newm.chain.grpc.queryUtxosRequest
 import io.newm.chain.grpc.releaseMutexRequest
 import io.newm.chain.grpc.submitTransactionRequest
+import io.newm.chain.grpc.verifySignDataRequest
 import io.newm.chain.grpc.walletRequest
 import io.newm.chain.util.Constants
 import io.newm.chain.util.b64ToByteArray
@@ -270,6 +272,26 @@ internal class CardanoRepositoryImpl(
                 }
             )
         }
+    }
+
+    override suspend fun verifySignData(
+        signatureHex: String,
+        publicKeyHex: String
+    ): VerifySignDataResponse {
+        return client.verifySignData(
+            verifySignDataRequest {
+                this.signatureHex = signatureHex
+                this.publicKeyHex = publicKeyHex
+            }
+        )
+    }
+
+    override suspend fun verifySignTransaction(cborHex: String): VerifySignDataResponse {
+        return client.verifySignTransaction(
+            submitTransactionRequest {
+                cbor = ByteString.fromHex(cborHex)
+            }
+        )
     }
 
     override suspend fun getWalletSongs(

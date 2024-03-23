@@ -7,6 +7,7 @@ import io.newm.chain.grpc.SubmitTransactionResponse
 import io.newm.chain.grpc.TransactionBuilderRequestKt
 import io.newm.chain.grpc.TransactionBuilderResponse
 import io.newm.chain.grpc.Utxo
+import io.newm.chain.grpc.VerifySignDataResponse
 import io.newm.server.features.cardano.model.EncryptionRequest
 import io.newm.server.features.cardano.model.GetWalletSongsResponse
 import io.newm.server.features.cardano.model.Key
@@ -45,6 +46,13 @@ interface CardanoRepository {
     suspend fun queryAdaUSDPrice(): Long
 
     suspend fun <T> withLock(block: suspend () -> T): T
+
+    suspend fun verifySignData(
+        signatureHex: String,
+        publicKeyHex: String
+    ): VerifySignDataResponse
+
+    suspend fun verifySignTransaction(cborHex: String): VerifySignDataResponse
 
     suspend fun getWalletSongs(
         request: List<String>,
