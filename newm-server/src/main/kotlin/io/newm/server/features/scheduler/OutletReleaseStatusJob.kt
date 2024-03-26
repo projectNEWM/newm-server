@@ -1,5 +1,6 @@
 package io.newm.server.features.scheduler
 
+import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.release.repo.OutletReleaseRepository
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.repo.SongRepository
@@ -21,6 +22,7 @@ class OutletReleaseStatusJob : Job {
     private val log: Logger by inject { parametersOf(javaClass.simpleName) }
     private val songRepository: SongRepository by inject()
     private val outletReleaseRepository: OutletReleaseRepository by inject()
+    private val cardanoRepository: CardanoRepository by inject()
 
     override fun execute(context: JobExecutionContext) {
         log.info {
@@ -35,7 +37,11 @@ class OutletReleaseStatusJob : Job {
             val songId = context.mergedJobDataMap.getString("songId").toUUID()
             try {
                 val song = songRepository.get(songId)
-                if (outletReleaseRepository.isSongReleased(songId) || song.forceDistributed == true) {
+                // if we're force distributing or we're on testnet and at this point, it doesn't make sense to check
+                // spotify because the song will never actually go there. Just assume it's released.
+                if (song.forceDistributed == true || !cardanoRepository.isMainnet() ||
+                    outletReleaseRepository.isSongReleased(songId)
+                ) {
                     songRepository.updateSongMintingStatus(songId, MintingStatus.Released)
 
                     // Cancel this job's future executions

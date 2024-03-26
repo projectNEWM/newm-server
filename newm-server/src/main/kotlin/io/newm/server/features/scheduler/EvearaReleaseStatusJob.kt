@@ -1,5 +1,6 @@
 package io.newm.server.features.scheduler
 
+import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.distribution.DistributionRepository
 import io.newm.server.features.distribution.model.OutletStatusCode
 import io.newm.server.features.song.model.MintingStatus
@@ -22,6 +23,7 @@ import java.time.ZoneOffset
 class EvearaReleaseStatusJob : Job {
     private val log: Logger by inject { parametersOf(javaClass.simpleName) }
     private val distributionRepository: DistributionRepository by inject()
+    private val cardanoRepository: CardanoRepository by inject()
     private val userRepository: UserRepository by inject()
     private val songRepository: SongRepository by inject()
 
@@ -85,7 +87,11 @@ class EvearaReleaseStatusJob : Job {
                             )
                         } else {
                             albumsResponse.albumData.firstOrNull { it.releaseId == song.distributionReleaseId }?.let {
-                                songRepository.updateSongMintingStatus(songId, MintingStatus.Declined, it.disapproveMessage)
+                                songRepository.updateSongMintingStatus(
+                                    songId,
+                                    MintingStatus.Declined,
+                                    it.disapproveMessage
+                                )
                             } ?: songRepository.updateSongMintingStatus(
                                 songId,
                                 MintingStatus.Declined,
@@ -100,6 +106,24 @@ class EvearaReleaseStatusJob : Job {
                                 context.jobDetail.key.group
                             )
                         )
+                    }
+
+                    OutletStatusCode.DISTRIBUTE_INITIATED -> {
+                        if (!cardanoRepository.isMainnet()) {
+                            // We're on testnet, so we can simulate distribution
+                            log.info { "Simulating distribution for $songId on testnet" }
+                            val response =
+                                distributionRepository.simulateDistributeRelease(user, song.distributionReleaseId)
+                            log.info { "Simulated distribution response: $response" }
+                        }
+                        log.info {
+                            "Eveara's Spotify distribution status for $songId is $spotifyOutletStatusCode, so we will check again at ${
+                                LocalDateTime.ofInstant(
+                                    context.nextFireTime.toInstant(),
+                                    ZoneOffset.UTC
+                                )
+                            }"
+                        }
                     }
 
                     else -> {
