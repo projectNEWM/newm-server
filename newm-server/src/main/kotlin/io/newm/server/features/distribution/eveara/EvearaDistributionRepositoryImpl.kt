@@ -60,6 +60,7 @@ import io.newm.server.features.distribution.model.DistributeFutureReleaseRequest
 import io.newm.server.features.distribution.model.DistributeReleaseRequest
 import io.newm.server.features.distribution.model.DistributeReleaseResponse
 import io.newm.server.features.distribution.model.DistributionOutletReleaseStatusResponse
+import io.newm.server.features.distribution.model.EvearaErrorResponse
 import io.newm.server.features.distribution.model.EvearaSimpleResponse
 import io.newm.server.features.distribution.model.GetAlbumResponse
 import io.newm.server.features.distribution.model.GetArtistResponse
@@ -119,6 +120,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import org.koin.core.parameter.parametersOf
 import org.slf4j.Logger
 import java.io.File
@@ -136,6 +138,7 @@ class EvearaDistributionRepositoryImpl(
     private val configRepository: ConfigRepository,
 ) : DistributionRepository {
     private val log: Logger by inject { parametersOf(javaClass.simpleName) }
+    private val json: Json by inject()
     private val userRepository: UserRepository by inject()
     private val songRepository: SongRepository by inject()
     private val httpClient: HttpClient by inject()
@@ -1177,12 +1180,12 @@ class EvearaDistributionRepositoryImpl(
 
     override suspend fun distributeReleaseToOutlets(
         user: User,
-        releaseStartDate: LocalDate,
-        releaseId: Long
+        song: Song,
+        allowRetry: Boolean,
     ): DistributeReleaseResponse {
         requireNotNull(user.distributionUserId) { "User.distributionUserId must not be null!" }
         val response =
-            httpClient.patch("$evearaApiBaseUrl/outlets/$releaseId/distribute") {
+            httpClient.patch("$evearaApiBaseUrl/outlets/${song.distributionReleaseId!!}/distribute") {
                 contentType(ContentType.Application.Json)
                 accept(ContentType.Application.Json)
                 bearerAuth(getEvearaApiToken())
@@ -1193,14 +1196,32 @@ class EvearaDistributionRepositoryImpl(
                             getOutlets(user).outlets.map { evearaOutlet ->
                                 OutletsDetail(
                                     storeId = evearaOutlet.storeId,
-                                    releaseStartDate = releaseStartDate,
+                                    releaseStartDate = song.releaseDate!!,
                                 )
                             }
                     ).logRequestJson(log)
                 )
             }
         if (!response.status.isSuccess()) {
-            throw ServerResponseException(response, "Error distributing release to outlets!: ${response.bodyAsText()}")
+            val bodyAsString = response.bodyAsText()
+            if (allowRetry) {
+                try {
+                    json.decodeFromString<EvearaErrorResponse>(bodyAsString)
+                } catch (e: Throwable) {
+                    log.error("Error parsing response body as EvearaErrorResponse: $bodyAsString", e)
+                    null
+                }?.let { evearaErrorResponse ->
+                    if (evearaErrorResponse.errors?.find { it.code == 8018 } != null) {
+                        // invalid release start date. Try it again one more time with a different date
+                        val earliestReleaseDate = getEarliestReleaseDate(user.id!!)
+                        val updatedSong = song.copy(releaseDate = earliestReleaseDate)
+                        songRepository.update(song.id!!, Song(releaseDate = earliestReleaseDate))
+                        // retry it once
+                        return distributeReleaseToOutlets(user, updatedSong, false)
+                    }
+                }
+            }
+            throw ServerResponseException(response, "Error distributing release to outlets!: $bodyAsString")
         }
         val distributeReleaseResponse: DistributeReleaseResponse = response.body()
         if (!distributeReleaseResponse.success) {
@@ -1443,7 +1464,8 @@ class EvearaDistributionRepositoryImpl(
 
         val collabDistributionArtists = getArtists(user).artists
         val collabDistributionArtistsMap = collabDistributionArtists.associateBy { it.artistId }
-        val collabDistributionArtistsNameToIdMap = collabDistributionArtists.associate { it.name to it.artistId }.toMutableMap()
+        val collabDistributionArtistsNameToIdMap =
+            collabDistributionArtists.associate { it.name to it.artistId }.toMutableMap()
         val collabUserOutletProfileNamesMap =
             getArtistOutletProfileNames(user).outletProfileNames.associate { it.name to it.id }
         collabs.forEach { collab ->
@@ -1780,7 +1802,8 @@ class EvearaDistributionRepositoryImpl(
         val collabsToUpdate = mutableListOf<Collaboration>()
         collabs.forEach { collab ->
             val collabUser = userRepository.findByEmail(collab.email!!)
-            val collabParticipant = getParticipantsResponse.participantData.firstOrNull { it.participantId == collab.distributionParticipantId }
+            val collabParticipant =
+                getParticipantsResponse.participantData.firstOrNull { it.participantId == collab.distributionParticipantId }
             if (collabParticipant != null) {
                 log.info { "Found existing distribution collab participant ${collabUser.email} with id ${collabParticipant.participantId}" }
                 if (collabParticipant.name != collabUser.stageOrFullName) {
@@ -2014,7 +2037,7 @@ class EvearaDistributionRepositoryImpl(
         }
 
         // Distribute the release to outlets
-        val distributeReleaseResponse = distributeReleaseToOutlets(user, mutableSong.releaseDate!!, mutableSong.distributionReleaseId!!)
+        val distributeReleaseResponse = distributeReleaseToOutlets(user, mutableSong)
         require(
             distributeReleaseResponse.releaseData?.errorFields.isNullOrEmpty()
         ) { "Error distributing release: $distributeReleaseResponse" }
@@ -2023,7 +2046,8 @@ class EvearaDistributionRepositoryImpl(
         }
 
         // Distribute the release to future outlets
-        val distributeFutureReleaseResponse = distributeReleaseToFutureOutlets(user, mutableSong.distributionReleaseId!!)
+        val distributeFutureReleaseResponse =
+            distributeReleaseToFutureOutlets(user, mutableSong.distributionReleaseId!!)
         log.info {
             "Distributed release ${mutableSong.title} with id ${mutableSong.distributionReleaseId} to future outlets: ${distributeFutureReleaseResponse.message}"
         }
@@ -2035,7 +2059,12 @@ class EvearaDistributionRepositoryImpl(
         collabs: List<Collaboration>
     ): List<Long> =
         listOf(user.distributionArtistId!!) +
-            collabs.filter { it.role.equals("Artist", ignoreCase = true) && it.featured == false && it.email != user.email }
+            collabs.filter {
+                it.role.equals(
+                    "Artist",
+                    ignoreCase = true
+                ) && it.featured == false && it.email != user.email
+            }
                 .map { it.distributionArtistId!! }.distinct()
 
     private fun collectFeaturedArtistIdsList(
