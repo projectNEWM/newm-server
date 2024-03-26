@@ -161,8 +161,8 @@ interface DistributionRepository {
 
     suspend fun distributeReleaseToOutlets(
         user: User,
-        releaseStartDate: LocalDate,
-        releaseId: Long
+        song: Song,
+        allowRetry: Boolean = true,
     ): DistributeReleaseResponse
 
     suspend fun distributeReleaseToFutureOutlets(
