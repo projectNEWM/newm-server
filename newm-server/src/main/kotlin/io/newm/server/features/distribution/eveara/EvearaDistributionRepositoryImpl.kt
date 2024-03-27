@@ -1514,15 +1514,13 @@ class EvearaDistributionRepositoryImpl(
                         log.info { "Updated collab distribution artist ${collabUser.email} with id ${response.artistData?.artistId}: ${response.message}" }
                     }
                 } ?: run {
-                    // FIXME: don't hardcode artist's country
-                    val hardcodedCountry =
-                        getCountries().countries.first { it.countryCode.equals("us", ignoreCase = true) }.countryCode
+                    val countryCode = getUserCountryCode(user)
                     val response =
                         addArtist(
                             AddArtistRequest(
                                 uuid = user.distributionUserId!!,
                                 name = collabUser.stageOrFullName,
-                                country = hardcodedCountry,
+                                country = countryCode,
                                 outletProfiles =
                                     listOf(
                                         OutletProfile(
@@ -1595,15 +1593,13 @@ class EvearaDistributionRepositoryImpl(
             } else {
                 val artist = getArtists(user).artists.firstOrNull()
                 if (artist == null) {
-                    // FIXME: don't hardcode artist's country
-                    val hardcodedCountry =
-                        getCountries().countries.first { it.countryCode.equals("us", ignoreCase = true) }.countryCode
+                    val countryCode = getUserCountryCode(user)
                     val response =
                         addArtist(
                             AddArtistRequest(
                                 uuid = user.distributionUserId!!,
                                 name = user.stageOrFullName,
-                                country = hardcodedCountry,
+                                country = countryCode,
                                 outletProfiles =
                                     listOf(
                                         OutletProfile(
@@ -2113,6 +2109,17 @@ class EvearaDistributionRepositoryImpl(
         ).distinctBy { "${it.id}|${it.roleId}" }
 
     private fun Long.toReleaseDate() = LocalDate.now().plusDays(this + 2)
+
+    private suspend fun getUserCountryCode(user: User): String {
+        val countryCode =
+            getCountries().countries.firstOrNull {
+                it.countryCode.equals(user.location, ignoreCase = true) ||
+                    it.countryName.equals(user.location, ignoreCase = true)
+            }?.countryCode
+
+        requireNotNull(countryCode) { "Country code for profile location ${user.location} not found!" }
+        return countryCode
+    }
 
     @Serializable
     private data class EvearaApiGetTokenRequest(

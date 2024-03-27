@@ -19,6 +19,7 @@ import io.newm.shared.koin.inject
 import io.newm.shared.ktx.debug
 import io.newm.shared.ktx.getConfigChild
 import io.newm.shared.ktx.getString
+import io.newm.shared.ktx.orNull
 import io.newm.shared.ktx.propertiesFromResource
 import io.newm.shared.ktx.sanitizeName
 import io.newm.shared.ktx.toUUID
@@ -77,6 +78,10 @@ class IdenfyRepositoryImpl(
                     if (status == UserVerificationStatus.Verified) {
                         result.data.docFirstName?.let { firstName = it.sanitizeName() }
                         result.data.docLastName?.let { lastName = it.sanitizeName() }
+                        (
+                            result.data.selectedCountry?.orNull() ?: result.data.docIssuingCountry?.orNull()
+                                ?: result.data.docNationality?.orNull() ?: result.data.orgNationality?.orNull()
+                        )?.let { location = it.take(2) }
                     }
                     email
                 }
