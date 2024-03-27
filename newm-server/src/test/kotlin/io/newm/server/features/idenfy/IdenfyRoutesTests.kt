@@ -47,6 +47,10 @@ class IdenfyRoutesTests : BaseApplicationTests() {
             val t = currentTimeMillis()
             val docFirstName = "DocFirstName@$t"
             val docLastName = "DocLastName@$t"
+            val selectedCountry = "SelectedCountry@$t"
+            val docIssuingCountry = "DocIssuingCountry@$t"
+            val docNationality = "DocNationality@$t"
+            val orgNationality = "OrgNationality@$t"
             val request =
                 json.encodeToString(
                     IdenfySessionResult(
@@ -66,7 +70,11 @@ class IdenfyRoutesTests : BaseApplicationTests() {
                         data =
                             IdenfySessionResult.Data(
                                 docFirstName = docFirstName,
-                                docLastName = docLastName
+                                docLastName = docLastName,
+                                selectedCountry = selectedCountry,
+                                docIssuingCountry = docIssuingCountry,
+                                docNationality = docNationality,
+                                orgNationality = orgNationality,
                             )
                     )
                 )
@@ -114,7 +122,11 @@ class IdenfyRoutesTests : BaseApplicationTests() {
                         data =
                             IdenfySessionResult.Data(
                                 docFirstName = null,
-                                docLastName = null
+                                docLastName = null,
+                                selectedCountry = null,
+                                docIssuingCountry = null,
+                                docNationality = null,
+                                orgNationality = null,
                             )
                     )
                 )
@@ -163,7 +175,11 @@ class IdenfyRoutesTests : BaseApplicationTests() {
                         data =
                             IdenfySessionResult.Data(
                                 docFirstName = null,
-                                docLastName = null
+                                docLastName = null,
+                                selectedCountry = null,
+                                docIssuingCountry = null,
+                                docNationality = null,
+                                orgNationality = null,
                             )
                     )
                 )

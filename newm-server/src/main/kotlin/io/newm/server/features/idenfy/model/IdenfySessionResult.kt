@@ -41,8 +41,16 @@ data class IdenfySessionResult(
     @Serializable
     data class Data(
         @SerialName("docFirstName")
-        val docFirstName: String?,
+        val docFirstName: String? = null,
         @SerialName("docLastName")
-        val docLastName: String?
+        val docLastName: String? = null,
+        @SerialName("selectedCountry")
+        val selectedCountry: String? = null,
+        @SerialName("docIssuingCountry")
+        val docIssuingCountry: String? = null,
+        @SerialName("docNationality")
+        val docNationality: String? = null,
+        @SerialName("orgNationality")
+        val orgNationality: String? = null,
     )
 }
