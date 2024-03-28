@@ -4,7 +4,7 @@
 NEWM-CHAIN is a gRPC interface for communicating with the Cardano Blockchain. Because it uses gRPC, it is possible to use any language that supports gRPC to communicate with the Cardano Blockchain. While some apis are specific to the NEWM project, most of the apis are useful to any project.
 
 ## Building
-NEWM-CHAIN uses [Gradle](https://gradle.org/) as its build system. Java JDK 17 is required. To build the project, run the following command:
+NEWM-CHAIN uses [Gradle](https://gradle.org/) as its build system. Java JDK 21 is required. To build the project, run the following command:
 ```
 ./gradlew shadowJar
 ```

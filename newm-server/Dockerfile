@@ -2,7 +2,7 @@
 # Build
 #
 
-FROM gradle:7-jdk17 AS build
+FROM gradle:7-jdk21 AS build
 
 RUN mkdir -p /home/gradle/newm-server
 COPY --chown=gradle:gradle . /home/gradle/newm-server
@@ -12,7 +12,7 @@ RUN ./gradlew :newm-server:shadowJar --no-daemon
 #
 # Run
 #
-FROM amazoncorretto:17-alpine
+FROM amazoncorretto:21-alpine
 
 RUN adduser -D -h /home/newm-server -g '' newm-server
 RUN mkdir -p /opt/newm/newm-server  \
