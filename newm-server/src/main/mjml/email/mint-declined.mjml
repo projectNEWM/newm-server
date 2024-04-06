@@ -1,6 +1,6 @@
 <mjml>
   <mj-head>
-    <mj-preview>An error has occurred...</mj-preview>
+    <mj-preview>Song distribution declined...</mj-preview>
     <mj-font name="Inter" href="https://fonts.googleapis.com/css?family=Inter" />
     <mj-attributes>
       <mj-section padding="0 40px" />
@@ -25,12 +25,14 @@
           Hi {owner},
         </mj-text>
         <mj-text padding-top="24px" color="#FFF" align="left" font-family="Inter,sans-serif" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
-          Minting for the following song submission could not be completed:<br><br>
+          Distribution and minting for the following song submission could not be completed due to the listed error(s):<br><br>
           "{song}"<br>
-          <ul style="padding-left:0;list-style-position:inside">{collabs}</ul>
+          <ul style="padding-left:0;list-style-position:inside">{collabs}</ul><br>
+          {errors}
         </mj-text>
         <mj-text padding-top="40px" color="#FFF" align="left" font-family="Inter,sans-serif" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
-          In order to troubleshoot this issue, please create a support ticket via our <a href="https://forms.clickup.com/24371401/f/q7r69-16220/410BQW62PPVQ51RI2B" style="color: #FFF">support form</a> or reach out to <a href="mailto:support@newm.io" style="color: #FFF">support@newm.io</a> for additional assistance.<br><br>
+          In order to update the impacted song details and resubmit the song for distribution and minting, please visit <a href="{webAppUrl}" style="color: #DC3CAA;text-decoration: none;font-weight: 700">newm.studio</a> and make the necessary changes to correct the error outlined in the above report. Once you have done so, be sure to verify that all song details have been entered correctly before resubmitting.<br><br>
+          <span style="color: #8E8E93">If you would like further information or assistance, please create a support ticket via our <a href="https://forms.clickup.com/24371401/f/q7r69-16220/410BQW62PPVQ51RI2B" style="color: #8E8E93">support form</a> or send your questions to <a href="mailto:support@newm.io" style="color: #8E8E93">support@newm.io</a> for assistance.</span>
         </mj-text>
         <mj-text padding="40px 0 60px 0" color="#636366" align="center" font-family="Inter,sans-serif" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
           PLEASE DO NOT REPLY TO THIS MESSAGE
