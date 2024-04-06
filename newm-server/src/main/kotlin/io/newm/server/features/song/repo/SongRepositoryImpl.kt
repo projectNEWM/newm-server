@@ -674,9 +674,20 @@ internal class SongRepositoryImpl(
                 sendMintingNotification("succeeded", songId)
             }
 
-            MintingStatus.Declined -> {
-                logger.info { "Declined song $songId FAILED!" }
+            MintingStatus.MintingPaymentTimeout,
+            MintingStatus.MintingPaymentException,
+            MintingStatus.DistributionException,
+            MintingStatus.SubmittedForDistributionException,
+            MintingStatus.ArweaveUploadException,
+            MintingStatus.MintingException,
+            MintingStatus.ReleaseCheckException -> {
+                logger.info { "Minting song $songId FAILED with $mintingStatus" }
                 sendMintingNotification("failed", songId)
+            }
+
+            MintingStatus.Declined -> {
+                logger.info { "Minting song $songId DECLINED!" }
+                sendMintingNotification("declined", songId)
             }
 
             MintingStatus.Released -> {
@@ -768,7 +779,8 @@ internal class SongRepositoryImpl(
                                 collaborators.firstOrNull { it.email.equals(collaboration.email, ignoreCase = true) }
                                     ?.user?.stageOrFullName ?: collaboration.email
                             }: ${collaboration.royaltyRate}%</li>"
-                        }
+                        },
+                    "errors" to song.errorMessage.orEmpty()
                 )
         )
     }
