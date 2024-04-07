@@ -53,6 +53,7 @@ import io.newm.server.features.cardano.parser.toResourceUrl
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongFilters
 import io.newm.server.features.song.repo.SongRepository
+import io.newm.server.features.walletconnection.database.WalletConnectionEntity
 import io.newm.server.ktx.cborHexToUtxo
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.debug
@@ -353,6 +354,7 @@ internal class CardanoRepositoryImpl(
         )
     }
 
+    // TODO: remove xpubKey support after client migrate to new Wallet Connection method
     override suspend fun getWalletNFTSongs(
         xpubKey: String,
         includeLegacy: Boolean
@@ -369,6 +371,7 @@ internal class CardanoRepositoryImpl(
         return nftSongs
     }
 
+    // TODO: remove xpubKey support after client migrate to new Wallet Connection method
     override suspend fun getWalletImages(xpubKey: String): List<String> {
         val assets = getWalletAssets(xpubKey)
         val images = mutableSetOf<String>()
@@ -379,6 +382,7 @@ internal class CardanoRepositoryImpl(
         return images.map(String::toResourceUrl)
     }
 
+    // TODO: remove xpubKey support after client migrate to new Wallet Connection method
     private suspend fun getWalletAssets(xpubKey: String): List<NativeAsset> {
         val response =
             client.queryWalletControlledLiveUtxos(
@@ -391,6 +395,47 @@ internal class CardanoRepositoryImpl(
         return response.addressUtxosList.flatMap {
             it.utxosList.flatMap(Utxo::getNativeAssetsList)
         }.mergeAmounts()
+    }
+
+    override suspend fun getWalletNFTSongs(
+        userId: UUID,
+        includeLegacy: Boolean
+    ): List<NFTSong> {
+        val assets = getWalletAssets(userId)
+        val nftSongs = mutableListOf<NFTSong>()
+        val nftCdnEnabled = configRepository.getBoolean(CONFIG_KEY_NFTCDN_ENABLED)
+        for (asset in assets) {
+            val metadata = getAssetMetadata(asset)
+            if (includeLegacy || metadata.any { it.key.equals("music_metadata_version", true) }) {
+                nftSongs += metadata.toNFTSongs(asset, nftCdnEnabled)
+            }
+        }
+        return nftSongs
+    }
+
+    override suspend fun getWalletImages(userId: UUID): List<String> {
+        val assets = getWalletAssets(userId)
+        val images = mutableSetOf<String>()
+        for (asset in assets) {
+            val metadata = getAssetMetadata(asset)
+            metadata.firstOrNull { it.key == "image" }?.let { images.add(it.value) }
+        }
+        return images.map(String::toResourceUrl)
+    }
+
+    private suspend fun getWalletAssets(userId: UUID): List<NativeAsset> {
+        val nativeAssets = mutableListOf<NativeAsset>()
+        val stakeAddresses = transaction { WalletConnectionEntity.getAllByUserId(userId).map { it.stakeAddress } }
+        for (stakeAddress in stakeAddresses) {
+            val response =
+                client.queryUtxosByStakeAddress(
+                    queryUtxosRequest {
+                        address = stakeAddress
+                    }
+                )
+            nativeAssets += response.utxosList.flatMap(Utxo::getNativeAssetsList)
+        }
+        return nativeAssets.mergeAmounts()
     }
 
     private suspend fun getAssetMetadata(asset: NativeAsset): List<LedgerAssetMetadataItem> {

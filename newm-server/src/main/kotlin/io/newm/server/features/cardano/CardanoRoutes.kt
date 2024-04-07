@@ -17,8 +17,8 @@ import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.ktx.limit
+import io.newm.server.ktx.myUserId
 import io.newm.server.ktx.offset
-import io.newm.server.ktx.requiredQueryParam
 import io.newm.shared.ktx.error
 import io.newm.shared.ktx.get
 import io.newm.shared.ktx.post
@@ -111,10 +111,18 @@ fun Routing.createCardanoRoutes() {
         get("/v1/cardano/nft/songs") {
             try {
                 respond(
-                    cardanoRepository.getWalletNFTSongs(
-                        xpubKey = request.requiredQueryParam("xpub"),
-                        includeLegacy = parameters["legacy"]?.toBoolean() ?: false
-                    )
+                    request.queryParameters["xpub"]?.let { xpubKey ->
+                        // TODO: remove xpubKey support after client migrate to new Wallet Connection method
+                        cardanoRepository.getWalletNFTSongs(
+                            xpubKey = xpubKey,
+                            includeLegacy = parameters["legacy"]?.toBoolean() ?: false
+                        )
+                    } ?: run {
+                        cardanoRepository.getWalletNFTSongs(
+                            userId = myUserId,
+                            includeLegacy = parameters["legacy"]?.toBoolean() ?: false
+                        )
+                    }
                 )
             } catch (e: Exception) {
                 log.error(e) { "Failed to get NFT Songs" }
@@ -125,9 +133,12 @@ fun Routing.createCardanoRoutes() {
         get("/v1/cardano/images") {
             try {
                 respond(
-                    cardanoRepository.getWalletImages(
-                        xpubKey = request.requiredQueryParam("xpub")
-                    )
+                    request.queryParameters["xpub"]?.let { xpubKey ->
+                        // TODO: remove xpubKey support after client migrate to new Wallet Connection method
+                        cardanoRepository.getWalletImages(xpubKey)
+                    } ?: run {
+                        cardanoRepository.getWalletImages(myUserId)
+                    }
                 )
             } catch (e: Exception) {
                 log.error(e) { "Failed to get images" }

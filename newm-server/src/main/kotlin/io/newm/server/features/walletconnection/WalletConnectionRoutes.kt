@@ -35,15 +35,18 @@ fun Routing.createWalletConnectionRoutes() {
             respond(walletConnectionRepository.answerChallenge(receive()))
         }
 
-        route("{connectionId}") {
-            get("qrcode") {
-                recaptchaRepository.verify("qrcode", request)
-                respondBytes(ContentType.Image.PNG) {
-                    walletConnectionRepository.generateQRCode(connectionId)
-                }
+        get("{connectionId}/qrcode") {
+            recaptchaRepository.verify("qrcode", request)
+            respondBytes(ContentType.Image.PNG) {
+                walletConnectionRepository.generateQRCode(connectionId)
             }
+        }
 
-            authenticate(AUTH_JWT) {
+        authenticate(AUTH_JWT) {
+            get {
+                respond(walletConnectionRepository.getUserConnections(myUserId))
+            }
+            route("{connectionId}") {
                 get {
                     respond(walletConnectionRepository.connect(connectionId, myUserId))
                 }

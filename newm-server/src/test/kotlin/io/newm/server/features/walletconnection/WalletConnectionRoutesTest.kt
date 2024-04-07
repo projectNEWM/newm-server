@@ -30,7 +30,7 @@ import io.newm.server.features.walletconnection.database.WalletConnectionTable
 import io.newm.server.features.walletconnection.model.AnswerChallengeRequest
 import io.newm.server.features.walletconnection.model.AnswerChallengeResponse
 import io.newm.server.features.walletconnection.model.ChallengeMethod
-import io.newm.server.features.walletconnection.model.ConnectResponse
+import io.newm.server.features.walletconnection.model.WalletConnection
 import io.newm.server.features.walletconnection.model.GenerateChallengeRequest
 import io.newm.server.features.walletconnection.model.GenerateChallengeResponse
 import io.newm.shared.ktx.existsHavingId
@@ -310,9 +310,10 @@ class WalletConnectionRoutesTest : BaseApplicationTests() {
             Truth.assertThat(entity.userId?.value).isEqualTo(userId)
 
             // verify response body values
-            val body = response.body<ConnectResponse>()
-            Truth.assertThat(body.connectionId).isEqualTo(connectionId)
-            Truth.assertThat(body.stakeAddress).isEqualTo(entity.stakeAddress)
+            val connection = response.body<WalletConnection>()
+            Truth.assertThat(connection.id).isEqualTo(connectionId)
+            Truth.assertThat(connection.createdAt).isEqualTo(entity.createdAt)
+            Truth.assertThat(connection.stakeAddress).isEqualTo(entity.stakeAddress)
         }
 
     @Test
@@ -341,6 +342,35 @@ class WalletConnectionRoutesTest : BaseApplicationTests() {
             // verify that it's gone in the database
             val exists = transaction { WalletConnectionEntity.existsHavingId(userId) }
             Truth.assertThat(exists).isFalse()
+        }
+
+    @Test
+    fun testGetWalletConnectionsFromMobile() =
+        runBlocking {
+            val userId =
+                transaction {
+                    UserEntity.new {
+                        email = "testuser@newm.io"
+                    }.id
+                }
+            val expectedConnections = mutableListOf<WalletConnection>()
+            for (i in 0..4)
+                expectedConnections +=
+                    transaction {
+                        WalletConnectionEntity.new {
+                            stakeAddress = TEST_STAKE_ADDRESS + i
+                            this.userId = userId
+                        }
+                    }.toModel()
+
+            val response =
+                client.get("v1/wallet-connections") {
+                    bearerAuth(userId.toString())
+                    accept(ContentType.Application.Json)
+                }
+            Truth.assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+            val actualConnections = response.body<List<WalletConnection>>()
+            Truth.assertThat(actualConnections).isEqualTo(expectedConnections)
         }
 
     private fun buildChallengeString(challengeId: UUID): String =
