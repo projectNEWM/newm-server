@@ -19,7 +19,7 @@ import io.newm.server.features.walletconnection.model.AnswerChallengeResponse
 import io.newm.server.features.walletconnection.model.GenerateChallengeRequest
 import io.newm.server.features.walletconnection.model.GenerateChallengeResponse
 import io.newm.server.features.walletconnection.model.ChallengeMethod
-import io.newm.server.features.walletconnection.model.ConnectResponse
+import io.newm.server.features.walletconnection.model.WalletConnection
 import io.newm.shared.exception.HttpForbiddenException
 import io.newm.shared.exception.HttpNotFoundException
 import io.newm.shared.koin.inject
@@ -185,20 +185,16 @@ internal class WalletConnectionRepositoryImpl(
     override suspend fun connect(
         connectionId: UUID,
         userId: UUID
-    ): ConnectResponse {
+    ): WalletConnection {
         logger.debug { "connect: connectionId = $connectionId, userId = $userId" }
-        val connection =
-            transaction {
-                WalletConnectionEntity.deleteAllExpired(connectionTimeToLive)
-                WalletConnectionEntity[connectionId].apply {
-                    if (this.userId != null) throw HttpForbiddenException("Already connected")
-                    this.userId = EntityID(userId, UserTable)
-                }
+        return transaction {
+            WalletConnectionEntity.deleteAllExpired(connectionTimeToLive)
+            WalletConnectionEntity[connectionId].also {
+                if (it.userId != null) throw HttpForbiddenException("Already connected to another User")
+                it.userId = EntityID(userId, UserTable)
+                WalletConnectionEntity.deleteAllDuplicates(it)
             }
-        return ConnectResponse(
-            connectionId = connectionId,
-            stakeAddress = connection.stakeAddress
-        )
+        }.toModel()
     }
 
     override suspend fun disconnect(
@@ -211,6 +207,13 @@ internal class WalletConnectionRepositoryImpl(
                 if (this.userId?.value != userId) throw HttpForbiddenException("User doesn't own connection")
                 delete()
             }
+        }
+    }
+
+    override suspend fun getUserConnections(userId: UUID): List<WalletConnection> {
+        logger.debug { "getUserConnections: userId = $userId" }
+        return transaction {
+            WalletConnectionEntity.getAllByUserId(userId).map(WalletConnectionEntity::toModel)
         }
     }
 

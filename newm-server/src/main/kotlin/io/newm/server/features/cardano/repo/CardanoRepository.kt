@@ -61,9 +61,18 @@ interface CardanoRepository {
     ): GetWalletSongsResponse
 
     suspend fun getWalletNFTSongs(
+        userId: UUID,
+        includeLegacy: Boolean
+    ): List<NFTSong>
+
+    suspend fun getWalletImages(userId: UUID): List<String>
+
+    // TODO: remove xpubKey support after client migrate to new Wallet Connection method
+    suspend fun getWalletNFTSongs(
         xpubKey: String,
         includeLegacy: Boolean
     ): List<NFTSong>
 
+    // TODO: remove xpubKey support after client migrate to new Wallet Connection method
     suspend fun getWalletImages(xpubKey: String): List<String>
 }
