@@ -65,7 +65,7 @@ object Dependencies {
     }
 
     object Ktor {
-        private const val VERSION = "2.3.9"
+        private const val VERSION = "2.3.10"
 
         const val SERVER_CORE = "io.ktor:ktor-server-core:$VERSION"
         const val SERVER_CIO = "io.ktor:ktor-server-cio:$VERSION"
@@ -91,13 +91,13 @@ object Dependencies {
     }
 
     object LogBack {
-        private const val VERSION = "1.5.3"
+        private const val VERSION = "1.5.4"
 
         const val CLASSIC = "ch.qos.logback:logback-classic:$VERSION"
     }
 
     object Koin {
-        private const val VERSION = "3.5.3"
+        private const val VERSION = "3.5.4"
 
         const val KTOR = "io.insert-koin:koin-ktor:$VERSION"
         const val TEST = "io.insert-koin:koin-test:$VERSION"
@@ -132,7 +132,7 @@ object Dependencies {
     }
 
     object FlywayDB {
-        private const val VERSION = "10.10.0"
+        private const val VERSION = "10.11.0"
 
         const val CORE = "org.flywaydb:flyway-core:$VERSION"
         const val POSTGRES = "org.flywaydb:flyway-database-postgresql:$VERSION"
@@ -171,7 +171,7 @@ object Dependencies {
     }
 
     object ApacheTika {
-        private const val VERSION = "2.9.1"
+        private const val VERSION = "2.9.2"
 
         const val CORE = "org.apache.tika:tika-core:$VERSION"
     }
@@ -208,8 +208,8 @@ object Dependencies {
     }
 
     object Aws {
-        private const val VERSION = "1.12.682"
-        private const val VERSION2 = "2.25.12"
+        private const val VERSION = "1.12.697"
+        private const val VERSION2 = "2.25.27"
         private const val JAXB_VERSION = "2.3.1"
 
         const val BOM = "com.amazonaws:aws-java-sdk-bom:$VERSION"
@@ -261,7 +261,7 @@ object Dependencies {
     }
 
     object Sentry {
-        private const val VERSION = "7.6.0"
+        private const val VERSION = "7.8.0"
 
         const val CORE = "io.sentry:sentry:$VERSION"
         const val LOGBACK = "io.sentry:sentry-logback:$VERSION"
@@ -274,7 +274,7 @@ object Dependencies {
     }
 
     object Grpc {
-        private const val VERSION = "1.62.2"
+        private const val VERSION = "1.63.0"
 
         const val STUB = "io.grpc:grpc-stub:$VERSION"
         const val API = "io.grpc:grpc-api:$VERSION"
@@ -291,7 +291,7 @@ object Dependencies {
     }
 
     object Protobuf {
-        private const val VERSION = "4.26.0"
+        private const val VERSION = "4.26.1"
 
         const val JAVA_UTIL = "com.google.protobuf:protobuf-java-util:$VERSION"
         const val KOTLIN = "com.google.protobuf:protobuf-kotlin:$VERSION"
@@ -305,7 +305,7 @@ object Dependencies {
     }
 
     object SSLKickstart {
-        private const val VERSION = "8.3.3"
+        private const val VERSION = "8.3.4"
 
         const val PEM = "io.github.hakky54:sslcontext-kickstart-for-pem:$VERSION"
         const val NETTY = "io.github.hakky54:sslcontext-kickstart-for-netty:$VERSION"
