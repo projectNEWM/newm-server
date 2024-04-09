@@ -5,5 +5,5 @@ import org.koin.dsl.module
 
 val earningsKoinModule =
     module {
-        single { EarningsRepositoryImpl() }
+        single { EarningsRepositoryImpl(get(), get(), get()) }
     }

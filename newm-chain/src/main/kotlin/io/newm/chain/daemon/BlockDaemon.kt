@@ -48,10 +48,7 @@ import io.newm.kogmios.protocols.model.result.ShelleyGenesisConfigResult
 import io.newm.shared.daemon.Daemon
 import io.newm.shared.daemon.Daemon.Companion.RETRY_DELAY_MILLIS
 import io.newm.shared.koin.inject
-import io.newm.shared.ktx.debug
-import io.newm.shared.ktx.getConfigBoolean
-import io.newm.shared.ktx.getConfigInt
-import io.newm.shared.ktx.getConfigString
+import io.newm.shared.ktx.*
 import io.newm.txbuilder.ktx.cborHexToPlutusData
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.TimeoutCancellationException
@@ -592,7 +589,9 @@ class BlockDaemon(
                         val name = "$CIP68_REFERENCE_TOKEN_PREFIX${ledgerAsset.name.substring(8)}"
                         ledgerRepository.queryLedgerAsset(ledgerAsset.policy, name)
                             ?.copy(txId = ledgerAsset.txId) ?: run {
-                            log.warn("No LedgerAsset found for: '${ledgerAsset.policy}.$name' !")
+                            log.warn {
+                                "No LedgerAsset REF Token found for: '${ledgerAsset.policy}.${ledgerAsset.name}' -> '${ledgerAsset.policy}.$name' !"
+                            }
                             ledgerAsset
                         }
                     } else {

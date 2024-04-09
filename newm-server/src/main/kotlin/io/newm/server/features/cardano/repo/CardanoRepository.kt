@@ -1,18 +1,12 @@
 package io.newm.server.features.cardano.repo
 
 import com.google.protobuf.ByteString
-import io.newm.chain.grpc.MonitorPaymentAddressRequest
-import io.newm.chain.grpc.MonitorPaymentAddressResponse
-import io.newm.chain.grpc.SubmitTransactionResponse
-import io.newm.chain.grpc.TransactionBuilderRequestKt
-import io.newm.chain.grpc.TransactionBuilderResponse
-import io.newm.chain.grpc.Utxo
-import io.newm.chain.grpc.VerifySignDataResponse
+import io.newm.chain.grpc.*
 import io.newm.server.features.cardano.model.EncryptionRequest
 import io.newm.server.features.cardano.model.GetWalletSongsResponse
 import io.newm.server.features.cardano.model.Key
 import io.newm.server.features.cardano.model.NFTSong
-import java.util.UUID
+import java.util.*
 
 interface CardanoRepository {
     suspend fun saveKey(
@@ -75,4 +69,9 @@ interface CardanoRepository {
 
     // TODO: remove xpubKey support after client migrate to new Wallet Connection method
     suspend fun getWalletImages(xpubKey: String): List<String>
+
+    suspend fun snapshotToken(
+        policyId: String,
+        name: String
+    ): SnapshotNativeAssetsResponse
 }
