@@ -6,6 +6,7 @@ import io.newm.server.features.distribution.model.OutletStatusCode
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.features.user.repo.UserRepository
+import io.newm.shared.exception.HttpStatusException
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.info
 import io.newm.shared.ktx.toUUID
@@ -16,6 +17,7 @@ import org.quartz.Job
 import org.quartz.JobExecutionContext
 import org.quartz.JobKey
 import org.slf4j.Logger
+import java.io.EOFException
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 
@@ -140,19 +142,22 @@ class EvearaReleaseStatusJob : Job {
             } catch (e: Exception) {
                 val errorMessage = "Error in EvearaReleaseStatusJob: ${context.mergedJobDataMap}"
                 log.error(errorMessage, e)
-                songRepository.updateSongMintingStatus(
-                    songId = songId,
-                    mintingStatus = MintingStatus.SubmittedForDistributionException,
-                    errorMessage = "$errorMessage: ${e.message}",
-                )
-
-                // Cancel this job's future executions
-                context.scheduler.deleteJob(
-                    JobKey.jobKey(
-                        context.jobDetail.key.name,
-                        context.jobDetail.key.group
+                if (e !is EOFException && e !is HttpStatusException) {
+                    songRepository.updateSongMintingStatus(
+                        songId = songId,
+                        mintingStatus = MintingStatus.SubmittedForDistributionException,
+                        errorMessage = "$errorMessage: ${e.message}",
                     )
-                )
+
+                    // Cancel this job's future executions
+                    context.scheduler.deleteJob(
+                        JobKey.jobKey(
+                            context.jobDetail.key.name,
+                            context.jobDetail.key.group
+                        )
+                    )
+                }
+                Unit
             }
         }
     }

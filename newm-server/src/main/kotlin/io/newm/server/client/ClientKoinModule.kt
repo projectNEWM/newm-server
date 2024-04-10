@@ -27,8 +27,8 @@ val clientKoinModule =
                 }
                 install(HttpTimeout) {
                     requestTimeoutMillis = 2.minutes.inWholeMilliseconds
-                    connectTimeoutMillis = 10.seconds.inWholeMilliseconds
-                    socketTimeoutMillis = 30.seconds.inWholeMilliseconds
+                    connectTimeoutMillis = 30.seconds.inWholeMilliseconds
+                    socketTimeoutMillis = 1.minutes.inWholeMilliseconds
                 }
             }
         }
