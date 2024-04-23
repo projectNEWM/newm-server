@@ -91,7 +91,7 @@ object Dependencies {
     }
 
     object LogBack {
-        private const val VERSION = "1.5.4"
+        private const val VERSION = "1.5.6"
 
         const val CLASSIC = "ch.qos.logback:logback-classic:$VERSION"
     }
@@ -243,7 +243,7 @@ object Dependencies {
     }
 
     object Cbor {
-        private const val VERSION = "0.01.08-NEWM"
+        private const val VERSION = "0.2.1-NEWM"
 
         const val CBOR = "io.newm:com.google.iot.cbor:$VERSION"
     }

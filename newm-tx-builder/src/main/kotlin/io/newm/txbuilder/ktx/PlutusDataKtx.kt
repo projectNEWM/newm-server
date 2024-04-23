@@ -57,7 +57,7 @@ fun CborObject.toPlutusData(cborHex: String? = null): PlutusData {
                     map =
                         PlutusDataMap.newBuilder().apply {
                             addAllMapItem(
-                                fields.mapValue().entries.map { (k, v) ->
+                                fields.mapValue().map { (k, v) ->
                                     PlutusDataMapItem.newBuilder().apply {
                                         mapItemKey = k.toPlutusData()
                                         mapItemValue = v.toPlutusData()
