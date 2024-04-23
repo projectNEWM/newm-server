@@ -1,9 +1,9 @@
 package io.newm.server.features.song.model
 
 enum class SongBarcodeType {
-    Upc, // Universal Product Codes (UPC)
-    Ean, // International Article Number (EAN)
-    Jan, // Japanese Article Number (JAN)
+    Upc, // Universal Product Codes (UPC) - 0
+    Ean, // International Article Number (EAN) - 1
+    Jan, // Japanese Article Number (JAN) - 2
 }
 
 fun String.toSongBarcodeType(): SongBarcodeType {
