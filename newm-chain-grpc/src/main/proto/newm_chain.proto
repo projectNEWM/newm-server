@@ -130,6 +130,7 @@ message MonitorAddressResponse {
   map<string, Redeemer> redeemers = 5;
   repeated Utxo created_utxos = 6;
   repeated Utxo spent_utxos = 7;
+  uint64 timestamp = 8;
 }
 
 message Redeemer {
