@@ -168,11 +168,13 @@ fun getSlotInEpoch(): Long = shelleyGenesis.epochLength - getTimeUntilNextEpoch(
 fun getTimeUntilNextEpoch(): Long =
     shelleyGenesis.epochLength - (Instant.now().epochSecond - genesisStartTimeSec) + (getCurrentEpoch() * shelleyGenesis.epochLength)
 
-fun getInstantAtSlot(absoluteSlot: Long): Instant {
+fun getInstantAtSlot(absoluteSlot: Long): Instant = Instant.ofEpochSecond(getEpochSecondAtSlot(absoluteSlot))
+
+fun getEpochSecondAtSlot(absoluteSlot: Long): Long {
     val transTimeEnd = genesisStartTimeSec + byronToShelleyEpochs * shelleyGenesis.epochLength
     val transSlots = byronToShelleyEpochs * shelleyGenesis.epochLength / 20
     val epochSecond = transTimeEnd + ((absoluteSlot - transSlots) * (shelleyGenesis.slotLength.milliseconds.toLong() / 1000L))
-    return Instant.ofEpochSecond(epochSecond)
+    return epochSecond
 }
 
 fun calculateTransactionId(txBody: CborMap): String {
