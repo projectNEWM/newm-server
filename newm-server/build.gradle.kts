@@ -129,6 +129,10 @@ dependencies {
     "integTestImplementation"(Dependencies.JUnit.JUPITER)
     "integTestRuntimeOnly"("org.junit.platform:junit-platform-launcher")
     "integTestImplementation"(Dependencies.Typesafe.CONFIG)
+
+    runtimeOnly("com.pinterest.ktlint:ktlint-core:0.49.1")
+    runtimeOnly("com.pinterest.ktlint:ktlint-ruleset-standard:1.2.1")
+    testImplementation("org.mockito:mockito-core:5.11.0")
 }
 
 tasks {
@@ -198,4 +202,9 @@ tasks.register<Test>("integTestGarage") {
 
 tasks.register<Test>("integTestStudio") {
     configTest("Studio")
+}
+
+tasks.register<Wrapper>("wrapper") {
+    gradleVersion = "8.7"
+    validateDistributionUrl = false
 }
