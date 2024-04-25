@@ -8,28 +8,20 @@ import co.upvest.arweave4s.adt.Tag
 import co.upvest.arweave4s.adt.Transaction
 import co.upvest.arweave4s.adt.Wallet
 import co.upvest.arweave4s.adt.Winston
-import com.amazonaws.HttpMethod
 import com.amazonaws.services.lambda.model.InvokeRequest
-import com.amazonaws.services.s3.AmazonS3
 import com.softwaremill.sttp.Response
 import com.softwaremill.sttp.SttpBackendOptions
 import com.softwaremill.sttp.Uri
 import com.softwaremill.sttp.asynchttpclient.future.AsyncHttpClientFutureBackend
-import io.ktor.client.HttpClient
 import io.ktor.server.application.ApplicationEnvironment
 import io.newm.chain.util.b64ToByteArray
-import io.newm.server.features.arweave.model.WeaveFile
-import io.newm.server.features.arweave.model.WeaveProps
-import io.newm.server.features.arweave.model.WeaveRequest
 import io.newm.server.features.arweave.model.WeaveResponse
 import io.newm.server.features.arweave.model.WeaveResponseItem
 import io.newm.server.features.email.repo.EmailRepository
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.repo.SongRepository
-import io.newm.server.ktx.asValidUrl
 import io.newm.server.ktx.await
 import io.newm.server.ktx.getSecureConfigString
-import io.newm.server.ktx.toBucketAndKey
 import io.newm.shared.coroutine.SupervisorScope
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.getConfigBigDecimal
@@ -57,7 +49,6 @@ import java.math.BigDecimal
 import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
-import java.util.Date
 import java.util.concurrent.Executors
 import co.upvest.arweave4s.adt.`Signable$`.`MODULE$` as signableApi
 import co.upvest.arweave4s.adt.Tag.`Custom$`.`MODULE$` as tagApi
@@ -74,10 +65,8 @@ class ArweaveRepositoryImpl(
     private val emailRepository: EmailRepository,
 ) : ArweaveRepository, SupervisorScope {
     override val log: Logger by inject { parametersOf(javaClass.simpleName) }
-    private val amazonS3: AmazonS3 by inject()
     private val json: Json by inject()
     private val songRepository: SongRepository by inject()
-    private val httpClient: HttpClient by inject()
     private val arweaveUri by lazy {
         Uri.apply(environment.getConfigString("arweave.scheme"), environment.getConfigString("arweave.host"))
     }
@@ -258,59 +247,7 @@ class ArweaveRepositoryImpl(
 
         var arweaveException: Throwable? = null
 
-        val newmWeaveRequest =
-            WeaveRequest(
-                json.encodeToString(
-                    WeaveProps(
-                        arweaveWalletJson = environment.getSecureConfigString("arweave.walletJson"),
-                        files =
-                            listOfNotNull(
-                                if (song.arweaveCoverArtUrl != null) {
-                                    log.info { "Song ${song.id} already has arweave cover art url: ${song.arweaveCoverArtUrl}" }
-                                    null
-                                } else {
-                                    song.coverArtUrl.asValidUrl().replace(IMAGE_WEBP_REPLACE_REGEX, ".webp") to "image/webp"
-                                },
-                                if (song.arweaveTokenAgreementUrl != null) {
-                                    log.info { "Song ${song.id} already has arweave token agreement url: ${song.arweaveTokenAgreementUrl}" }
-                                    null
-                                } else {
-                                    song.tokenAgreementUrl!! to "application/pdf"
-                                },
-                                if (song.arweaveClipUrl != null) {
-                                    log.info { "Song ${song.id} already has arweave clip url: ${song.arweaveClipUrl}" }
-                                    null
-                                } else {
-                                    song.clipUrl!! to "audio/mpeg"
-                                },
-                                if (song.arweaveLyricsUrl != null) {
-                                    log.info { "Song ${song.id} already has arweave lyrics url: ${song.arweaveLyricsUrl}" }
-                                    null
-                                } else {
-                                    song.lyricsUrl?.let { it to "text/plain" }
-                                },
-                            ).map { (inputUrl, contentType) ->
-                                val downloadUrl =
-                                    if (inputUrl.startsWith("s3://")) {
-                                        val (bucket, key) = inputUrl.toBucketAndKey()
-                                        amazonS3.generatePresignedUrl(
-                                            bucket,
-                                            key,
-                                            Date.from(Instant.now().plus(30, ChronoUnit.MINUTES)),
-                                            HttpMethod.GET
-                                        ).toExternalForm()
-                                    } else {
-                                        inputUrl
-                                    }
-                                WeaveFile(
-                                    url = downloadUrl,
-                                    contentType = contentType,
-                                )
-                            },
-                        checkAndFund = false,
-                    )
-                )
-            )
+        val newmWeaveRequest = Util.weaveRequest(song)
 
         val invokeRequest =
             InvokeRequest()
@@ -375,8 +312,6 @@ class ArweaveRepositoryImpl(
     }
 
     companion object {
-        private val IMAGE_WEBP_REPLACE_REGEX = Regex("\\.(png|jpg|jpeg|bmp|gif|tiff)\$", RegexOption.IGNORE_CASE)
-
         private val handlerFunction: Function1<Future<Any>, Future<Any>> =
             object : Function1<Future<Any>, Future<Any>> {
                 override fun invoke(p1: Future<Any>): Future<Any> {
