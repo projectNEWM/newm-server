@@ -258,24 +258,24 @@ class ArweaveRepositoryImpl(
                     WeaveProps(
                         arweaveWalletJson = environment.getSecureConfigString("arweave.walletJson"),
                         files =
-                            song.toFiles().map { (inputUrl, contentType) ->
-                                val downloadUrl =
-                                    if (inputUrl.startsWith("s3://")) {
-                                        val (bucket, key) = inputUrl.toBucketAndKey()
-                                        amazonS3.generatePresignedUrl(
-                                            bucket,
-                                            key,
-                                            Date.from(Instant.now().plus(30, ChronoUnit.MINUTES)),
-                                            HttpMethod.GET
-                                        ).toExternalForm()
-                                    } else {
-                                        inputUrl
-                                    }
-                                WeaveFile(
-                                    url = downloadUrl,
-                                    contentType = contentType,
-                                )
-                            },
+                        song.toFiles().map { (inputUrl, contentType) ->
+                            val downloadUrl =
+                                if (inputUrl.startsWith("s3://")) {
+                                    val (bucket, key) = inputUrl.toBucketAndKey()
+                                    amazonS3.generatePresignedUrl(
+                                        bucket,
+                                        key,
+                                        Date.from(Instant.now().plus(30, ChronoUnit.MINUTES)),
+                                        HttpMethod.GET
+                                    ).toExternalForm()
+                                } else {
+                                    inputUrl
+                                }
+                            WeaveFile(
+                                url = downloadUrl,
+                                contentType = contentType,
+                            )
+                        },
                         checkAndFund = false,
                     )
                 )
