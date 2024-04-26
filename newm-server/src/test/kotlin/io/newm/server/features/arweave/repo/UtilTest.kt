@@ -5,12 +5,14 @@ import com.google.common.truth.Truth.assertThat
 import io.ktor.server.application.*
 import io.ktor.server.config.*
 import io.mockk.mockk
+import io.newm.server.features.arweave.model.WeaveFile
+import io.newm.server.features.arweave.model.WeaveProps
 import io.newm.server.features.arweave.model.WeaveRequest
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.repo.SongRepository
-import io.newm.server.ktx.*
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
@@ -18,12 +20,12 @@ import org.junit.jupiter.api.Test
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.dsl.module
-import org.koin.dsl.single
 import org.koin.test.KoinTest
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.LocalDate
 import java.util.UUID
+import kotlin.math.exp
 
 class UtilTest : KoinTest {
     companion object {
@@ -36,7 +38,13 @@ class UtilTest : KoinTest {
                     module {
                         // inject mocks
                         single<Logger> { LoggerFactory.getLogger("UtilTest") }
-                        single { mockk<Json>(relaxed = true) }
+                        single {
+                            Json {
+                                ignoreUnknownKeys = true
+                                explicitNulls = false
+                                isLenient = true
+                            }
+                        }
                         single { mockk<ApplicationConfig>(relaxed = true) }
                         single { mockk<ApplicationEnvironment>(relaxed = true) }
                         single { mockk<SongRepository>(relaxed = true) }
@@ -94,7 +102,24 @@ class UtilTest : KoinTest {
                 )
 
             actual = Util.weaveRequest(song)
-            assertThat(actual).isEqualTo(WeaveRequest(body = ""))
+
+            val json =Json {
+                ignoreUnknownKeys = true
+                explicitNulls = false
+                isLenient = true
+            }
+
+            val expected = WeaveRequest(
+                json.encodeToString(
+                    WeaveProps(
+                        arweaveWalletJson = "",
+                        files = emptyList(),
+                        checkAndFund = false
+                    )
+                )
+            )
+
+            assertThat(actual).isEqualTo(expected)
         }
 
     @Test
@@ -128,6 +153,22 @@ class UtilTest : KoinTest {
                 )
 
             actual = Util.weaveRequest(song)
-            assertThat(actual).isEqualTo(WeaveRequest(body = ""))
+
+            val json =Json {
+                ignoreUnknownKeys = true
+                explicitNulls = false
+                isLenient = true
+            }
+
+            val expected = WeaveRequest(
+                json.encodeToString(
+                    WeaveProps(
+                        arweaveWalletJson = "",
+                        files = emptyList<WeaveFile>().plus(WeaveFile("https://newm.io/agreement", "application/pdf")),
+                        checkAndFund = false
+                    )
+                )
+            )
+            assertThat(actual).isEqualTo(expected)
         }
 }
