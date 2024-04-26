@@ -1,7 +1,7 @@
 package io.newm.server.features.song
 
 import io.newm.server.features.song.model.Song
-import io.newm.server.features.song.model.SongBarcodeType
+import io.newm.server.features.song.model.ReleaseBarcodeType
 import java.time.LocalDate
 
 val testSong1 =
@@ -12,7 +12,6 @@ val testSong1 =
         moods = listOf("Mood 1.1", "Mood 1.2"),
         coverArtUrl = "https://projectnewm.io/song1.png",
         description = "Song 1 description",
-        album = "Song 1 album",
         track = 1,
         language = "Song 1 language",
         coverRemixSample = false,
@@ -21,7 +20,7 @@ val testSong1 =
         phonographicCopyrightOwner = "Song 1 phonographicCopyrightOwner",
         phonographicCopyrightYear = 2222,
         parentalAdvisory = "Song 1 parentalAdvisory",
-        barcodeType = SongBarcodeType.Upc,
+        barcodeType = ReleaseBarcodeType.Upc,
         barcodeNumber = "Barcode 1",
         isrc = "Song 1 isrc",
         iswc = "Song 1 iswc",
@@ -39,7 +38,6 @@ val testSong2 =
         moods = listOf("Mood 2.1", "Mood 2.2"),
         coverArtUrl = "https://projectnewm.io/song2.png",
         description = "Song 2 description",
-        album = "Song 2 album",
         track = 2,
         language = "Song 2 language",
         coverRemixSample = true,
@@ -48,7 +46,7 @@ val testSong2 =
         phonographicCopyrightOwner = "Song 2 phonographicCopyrightOwner",
         phonographicCopyrightYear = 1111,
         parentalAdvisory = "Song 2 parentalAdvisory",
-        barcodeType = SongBarcodeType.Ean,
+        barcodeType = ReleaseBarcodeType.Ean,
         barcodeNumber = "Barcode 2",
         isrc = "Song 2 isrc",
         iswc = "Song 2 iswc",
@@ -56,5 +54,4 @@ val testSong2 =
         releaseDate = LocalDate.of(2023, 2, 2),
         publicationDate = LocalDate.of(2023, 2, 3),
         lyricsUrl = "https://projectnewm.io/lirycs2.txt",
-        hasSubmittedForDistribution = true,
     )

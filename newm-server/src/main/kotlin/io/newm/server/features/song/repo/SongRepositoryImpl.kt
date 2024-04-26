@@ -3,12 +3,10 @@ package io.newm.server.features.song.repo
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.sqs.model.SendMessageRequest
 import com.google.iot.cbor.CborInteger
-import io.ktor.http.URLBuilder
-import io.ktor.http.URLProtocol
-import io.ktor.http.encodedPath
-import io.ktor.server.application.ApplicationEnvironment
-import io.ktor.util.logging.Logger
-import io.ktor.utils.io.ByteReadChannel
+import io.ktor.http.*
+import io.ktor.server.application.*
+import io.ktor.util.logging.*
+import io.ktor.utils.io.*
 import io.newm.chain.grpc.Utxo
 import io.newm.chain.grpc.outputUtxo
 import io.newm.chain.util.toAdaString
@@ -27,19 +25,8 @@ import io.newm.server.features.collaboration.repo.CollaborationRepository
 import io.newm.server.features.distribution.DistributionRepository
 import io.newm.server.features.email.repo.EmailRepository
 import io.newm.server.features.minting.MintingStatusSqsMessage
-import io.newm.server.features.song.database.SongEntity
-import io.newm.server.features.song.database.SongErrorHistoryTable
-import io.newm.server.features.song.database.SongReceiptEntity
-import io.newm.server.features.song.database.SongReceiptTable
-import io.newm.server.features.song.database.SongTable
-import io.newm.server.features.song.model.AudioEncodingStatus
-import io.newm.server.features.song.model.AudioStreamData
-import io.newm.server.features.song.model.AudioUploadReport
-import io.newm.server.features.song.model.MintPaymentResponse
-import io.newm.server.features.song.model.MintingStatus
-import io.newm.server.features.song.model.RefundPaymentResponse
-import io.newm.server.features.song.model.Song
-import io.newm.server.features.song.model.SongFilters
+import io.newm.server.features.song.database.*
+import io.newm.server.features.song.model.*
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
 import io.newm.server.features.user.model.UserVerificationStatus
@@ -51,17 +38,7 @@ import io.newm.shared.exception.HttpConflictException
 import io.newm.shared.exception.HttpForbiddenException
 import io.newm.shared.exception.HttpUnprocessableEntityException
 import io.newm.shared.koin.inject
-import io.newm.shared.ktx.debug
-import io.newm.shared.ktx.getConfigChild
-import io.newm.shared.ktx.getConfigString
-import io.newm.shared.ktx.getInt
-import io.newm.shared.ktx.getLong
-import io.newm.shared.ktx.getString
-import io.newm.shared.ktx.info
-import io.newm.shared.ktx.orNull
-import io.newm.shared.ktx.orZero
-import io.newm.shared.ktx.propertiesFromResource
-import io.newm.shared.ktx.toTempFile
+import io.newm.shared.ktx.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
@@ -71,6 +48,7 @@ import org.jaudiotagger.audio.AudioFileIO
 import org.jetbrains.annotations.VisibleForTesting
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf
 import java.math.BigDecimal
@@ -78,8 +56,7 @@ import java.math.BigInteger
 import java.math.RoundingMode
 import java.net.URI
 import java.time.LocalDateTime
-import java.util.Properties
-import java.util.UUID
+import java.util.*
 
 internal class SongRepositoryImpl(
     private val environment: ApplicationEnvironment,
@@ -107,15 +84,29 @@ internal class SongRepositoryImpl(
         song.checkFieldLengths()
         return transaction {
             title.checkTitleUnique(ownerId)
+            val releaseId =
+                ReleaseEntity.new {
+                    archived = false
+                    this.ownerId = EntityID(ownerId, UserTable)
+                    this.title = title
+                    // TODO: Refactor 'single' hardcoding once we have album support in the UI/UX
+                    releaseType = ReleaseType.SINGLE
+                    barcodeType = song.barcodeType
+                    barcodeNumber = song.barcodeNumber
+                    releaseDate = song.releaseDate
+                    publicationDate = song.publicationDate
+                    coverArtUrl = song.coverArtUrl?.asValidUrl()
+                    hasSubmittedForDistribution = false
+                    errorMessage = song.errorMessage
+                }.id.value
             SongEntity.new {
                 archived = song.archived ?: false
                 this.ownerId = EntityID(ownerId, UserTable)
                 this.title = title
                 this.genres = genres.toTypedArray()
                 moods = song.moods?.toTypedArray()
-                coverArtUrl = song.coverArtUrl?.asValidUrl()
                 description = song.description
-                album = song.album
+                this.releaseId = EntityID(releaseId, ReleaseTable)
                 track = song.track
                 language = song.language
                 coverRemixSample = song.coverRemixSample ?: false
@@ -124,16 +115,11 @@ internal class SongRepositoryImpl(
                 phonographicCopyrightOwner = song.phonographicCopyrightOwner
                 phonographicCopyrightYear = song.phonographicCopyrightYear
                 parentalAdvisory = song.parentalAdvisory
-                barcodeType = song.barcodeType
-                barcodeNumber = song.barcodeNumber
                 isrc = song.isrc
                 iswc = song.iswc
                 ipis = song.ipis?.toTypedArray()
-                releaseDate = song.releaseDate
-                publicationDate = song.publicationDate
                 lyricsUrl = song.lyricsUrl?.asValidUrl()
                 instrumental = song.instrumental ?: song.genres.contains("Instrumental")
-                hasSubmittedForDistribution = song.hasSubmittedForDistribution ?: false
             }.id.value
         }
     }
@@ -146,66 +132,96 @@ internal class SongRepositoryImpl(
         logger.debug { "update: songId = $songId, song = $song, requesterId = $requesterId" }
         song.checkFieldLengths()
         transaction {
-            val entity = SongEntity[songId]
-            requesterId?.let { entity.checkRequester(it) }
+            val songEntity = SongEntity[songId]
+            val releaseEntity = ReleaseEntity[songEntity.releaseId!!]
+            requesterId?.let { songEntity.checkRequester(it) }
+
             with(song) {
-                archived?.let { entity.archived = it }
+                archived?.let { songEntity.archived = it }
                 title?.let {
-                    if (!it.equals(entity.title, ignoreCase = true)) {
-                        it.checkTitleUnique(entity.ownerId.value)
+                    if (!it.equals(songEntity.title, ignoreCase = true)) {
+                        it.checkTitleUnique(songEntity.ownerId.value)
                     }
-                    entity.title = it
+                    songEntity.title = it
                 }
-                genres?.let { entity.genres = it.toTypedArray() }
-                moods?.let { entity.moods = it.toTypedArray() }
-                coverArtUrl?.let { entity.coverArtUrl = it.orNull()?.asValidUrl() }
-                description?.let { entity.description = it.orNull() }
-                album?.let { entity.album = it.orNull() }
-                track?.let { entity.track = it }
-                language?.let { entity.language = it.orNull() }
-                coverRemixSample?.let { entity.coverRemixSample = it }
-                compositionCopyrightOwner?.let { entity.compositionCopyrightOwner = it.orNull() }
-                compositionCopyrightYear?.let { entity.compositionCopyrightYear = it }
-                phonographicCopyrightOwner?.let { entity.phonographicCopyrightOwner = it.orNull() }
-                phonographicCopyrightYear?.let { entity.phonographicCopyrightYear = it }
-                parentalAdvisory?.let { entity.parentalAdvisory = it.orNull() }
-                barcodeType?.let { entity.barcodeType = it }
-                barcodeNumber?.let { entity.barcodeNumber = it }
-                isrc?.let { entity.isrc = it.orNull() }
-                iswc?.let { entity.iswc = it.orNull() }
-                ipis?.let { entity.ipis = it.toTypedArray() }
-                hasSubmittedForDistribution?.let { entity.hasSubmittedForDistribution = it }
+                genres?.let { songEntity.genres = it.toTypedArray() }
+                moods?.let { songEntity.moods = it.toTypedArray() }
+                coverArtUrl?.let { releaseEntity.coverArtUrl = it.orNull()?.asValidUrl() }
+                description?.let { songEntity.description = it.orNull() }
+                track?.let { songEntity.track = it }
+                language?.let { songEntity.language = it.orNull() }
+                coverRemixSample?.let { songEntity.coverRemixSample = it }
+                compositionCopyrightOwner?.let { songEntity.compositionCopyrightOwner = it.orNull() }
+                compositionCopyrightYear?.let { songEntity.compositionCopyrightYear = it }
+                phonographicCopyrightOwner?.let { songEntity.phonographicCopyrightOwner = it.orNull() }
+                phonographicCopyrightYear?.let { songEntity.phonographicCopyrightYear = it }
+                parentalAdvisory?.let { songEntity.parentalAdvisory = it.orNull() }
+                barcodeType?.let { releaseEntity.barcodeType = it }
+                barcodeNumber?.let { releaseEntity.barcodeNumber = it }
+                isrc?.let { songEntity.isrc = it.orNull() }
+                iswc?.let { songEntity.iswc = it.orNull() }
+                ipis?.let { songEntity.ipis = it.toTypedArray() }
                 // only allow updating release date if we have never submitted for distribution
-                if (!entity.hasSubmittedForDistribution) {
-                    releaseDate?.let { entity.releaseDate = it }
+                if (!releaseEntity.hasSubmittedForDistribution) {
+                    releaseDate?.let { releaseEntity.releaseDate = it }
                 }
-                publicationDate?.let { entity.publicationDate = it }
-                lyricsUrl?.let { entity.lyricsUrl = it.orNull()?.asValidUrl() }
-                instrumental?.let { entity.instrumental = it }
+                publicationDate?.let { releaseEntity.publicationDate = it }
+                lyricsUrl?.let { songEntity.lyricsUrl = it.orNull()?.asValidUrl() }
+                instrumental?.let { songEntity.instrumental = it }
 
                 if (requesterId == null) {
                     // don't allow updating these fields when invoked from REST API
-                    tokenAgreementUrl?.let { entity.tokenAgreementUrl = it.orNull()?.asValidUrl() }
-                    originalAudioUrl?.let { entity.originalAudioUrl = it.orNull()?.asValidUrl() }
-                    clipUrl?.let { entity.clipUrl = it.orNull()?.asValidUrl() }
-                    streamUrl?.let { entity.streamUrl = it.orNull()?.asValidUrl() }
-                    duration?.let { entity.duration = it }
-                    nftPolicyId?.let { entity.nftPolicyId = it.orNull() }
-                    nftName?.let { entity.nftName = it.orNull() }
-                    mintingTxId?.let { entity.mintingTxId = it.orNull() }
-                    audioEncodingStatus?.let { entity.audioEncodingStatus = it }
-                    mintingStatus?.let { entity.mintingStatus = it }
-                    marketplaceStatus?.let { entity.marketplaceStatus = it }
-                    paymentKeyId?.let { entity.paymentKeyId = EntityID(it, KeyTable) }
-                    arweaveCoverArtUrl?.let { entity.arweaveCoverArtUrl = it.orNull()?.asValidUrl() }
-                    arweaveLyricsUrl?.let { entity.arweaveLyricsUrl = it.orNull()?.asValidUrl() }
-                    arweaveClipUrl?.let { entity.arweaveClipUrl = it.orNull()?.asValidUrl() }
-                    arweaveTokenAgreementUrl?.let { entity.arweaveTokenAgreementUrl = it.orNull()?.asValidUrl() }
-                    distributionTrackId?.let { entity.distributionTrackId = it }
-                    distributionReleaseId?.let { entity.distributionReleaseId = it }
-                    mintCostLovelace?.let { entity.mintCostLovelace = it }
-                    forceDistributed?.let { entity.forceDistributed = it }
-                    errorMessage?.let { entity.errorMessage = it.orNull() }
+                    tokenAgreementUrl?.let { songEntity.tokenAgreementUrl = it.orNull()?.asValidUrl() }
+                    originalAudioUrl?.let { songEntity.originalAudioUrl = it.orNull()?.asValidUrl() }
+                    clipUrl?.let { songEntity.clipUrl = it.orNull()?.asValidUrl() }
+                    streamUrl?.let { songEntity.streamUrl = it.orNull()?.asValidUrl() }
+                    duration?.let { songEntity.duration = it }
+                    nftPolicyId?.let { songEntity.nftPolicyId = it.orNull() }
+                    nftName?.let { songEntity.nftName = it.orNull() }
+                    mintingTxId?.let { songEntity.mintingTxId = it.orNull() }
+                    audioEncodingStatus?.let { songEntity.audioEncodingStatus = it }
+                    mintingStatus?.let { songEntity.mintingStatus = it }
+                    marketplaceStatus?.let { songEntity.marketplaceStatus = it }
+                    paymentKeyId?.let { songEntity.paymentKeyId = EntityID(it, KeyTable) }
+                    arweaveLyricsUrl?.let { songEntity.arweaveLyricsUrl = it.orNull()?.asValidUrl() }
+                    arweaveClipUrl?.let { songEntity.arweaveClipUrl = it.orNull()?.asValidUrl() }
+                    arweaveTokenAgreementUrl?.let { songEntity.arweaveTokenAgreementUrl = it.orNull()?.asValidUrl() }
+                    distributionTrackId?.let { songEntity.distributionTrackId = it }
+                    mintCostLovelace?.let { songEntity.mintCostLovelace = it }
+                    forceDistributed?.let { releaseEntity.forceDistributed = it }
+                    errorMessage?.let { releaseEntity.errorMessage = it.orNull() }
+                }
+            }
+        }
+    }
+
+    override suspend fun update(
+        releaseId: UUID,
+        release: Release,
+        requesterId: UUID?
+    ) {
+        logger.debug { "update: releaseId = $releaseId, release = $release, requesterId = $requesterId" }
+        transaction {
+            val releaseEntity = ReleaseEntity[releaseId]
+            requesterId?.let { releaseEntity.checkRequester(it) }
+
+            with(release) {
+                archived?.let { releaseEntity.archived = it }
+                title?.let { releaseEntity.title = it }
+                coverArtUrl?.let { releaseEntity.coverArtUrl = it.orNull()?.asValidUrl() }
+                barcodeType?.let { releaseEntity.barcodeType = it }
+                barcodeNumber?.let { releaseEntity.barcodeNumber = it }
+                releaseDate?.let { releaseEntity.releaseDate = it }
+                publicationDate?.let { releaseEntity.publicationDate = it }
+                releaseType?.let { releaseEntity.releaseType = it }
+
+                if (requesterId == null) {
+                    // don't allow updating these fields when invoked from REST API
+                    arweaveCoverArtUrl?.let { releaseEntity.arweaveCoverArtUrl = it.orNull()?.asValidUrl() }
+                    hasSubmittedForDistribution?.let { releaseEntity.hasSubmittedForDistribution = it }
+                    distributionReleaseId?.let { releaseEntity.distributionReleaseId = it }
+                    forceDistributed?.let { releaseEntity.forceDistributed = it }
+                    errorMessage?.let { releaseEntity.errorMessage = it.orNull() }
                 }
             }
         }
@@ -237,7 +253,17 @@ internal class SongRepositoryImpl(
     override suspend fun get(songId: UUID): Song {
         logger.debug { "get: songId = $songId" }
         return transaction {
-            SongEntity[songId].toModel()
+            SongEntity[songId].let {
+                val release = ReleaseEntity[it.releaseId!!].toModel()
+                it.toModel(release)
+            }
+        }
+    }
+
+    override suspend fun getRelease(releaseId: UUID): Release {
+        logger.debug { "getRelease: releaseId = $releaseId" }
+        return transaction {
+            ReleaseEntity[releaseId].toModel()
         }
     }
 
@@ -250,7 +276,10 @@ internal class SongRepositoryImpl(
         return transaction {
             SongEntity.all(filters)
                 .limit(n = limit, offset = offset.toLong())
-                .map(SongEntity::toModel)
+                .map {
+                    val release = ReleaseEntity[it.releaseId!!].toModel()
+                    it.toModel(release)
+                }
         }
     }
 
@@ -258,6 +287,16 @@ internal class SongRepositoryImpl(
         logger.debug { "getAllCount: filters = $filters" }
         return transaction {
             SongEntity.all(filters).count()
+        }
+    }
+
+    override suspend fun getAllByReleaseId(id: UUID): List<Song> {
+        logger.debug { "getAllByReleaseId: id = $id" }
+        return transaction {
+            val release = ReleaseEntity[id].toModel()
+            SongEntity.wrapRows(
+                SongTable.selectAll().where { SongTable.releaseId eq id }
+            ).map { it.toModel(release) }
         }
     }
 
@@ -747,10 +786,12 @@ internal class SongRepositoryImpl(
         path: String,
         songId: UUID
     ) {
-        val (song, owner) =
+        val (release, song, owner) =
             transaction {
                 val song = SongEntity[songId]
-                song to UserEntity[song.ownerId]
+                val release = ReleaseEntity[song.releaseId!!]
+                val owner = UserEntity[song.ownerId]
+                Triple(release, song, owner)
             }
 
         val collaborations =
@@ -780,21 +821,23 @@ internal class SongRepositoryImpl(
                                     ?.user?.stageOrFullName ?: collaboration.email
                             }: ${collaboration.royaltyRate}%</li>"
                         },
-                    "errors" to song.errorMessage.orEmpty()
+                    "errors" to release.errorMessage.orEmpty()
                 )
         )
     }
 
     override suspend fun distribute(songId: UUID) {
         val song = get(songId)
+        val release = transaction { ReleaseEntity[song.releaseId!!].toModel() }
 
-        distributionRepository.distributeSong(song)
+        distributionRepository.distributeRelease(release)
     }
 
     override suspend fun redistribute(songId: UUID) {
         val song = get(songId)
+        val release = transaction { ReleaseEntity[song.releaseId!!].toModel() }
 
-        distributionRepository.redistributeSong(song)
+        distributionRepository.redistributeRelease(release)
     }
 
     private fun checkRequester(
@@ -815,6 +858,16 @@ internal class SongRepositoryImpl(
         }
     }
 
+    private fun ReleaseEntity.checkRequester(
+        requesterId: UUID,
+        verified: Boolean = false
+    ) {
+        if (ownerId.value != requesterId) throw HttpForbiddenException("operation allowed only by owner")
+        if (verified && UserEntity[requesterId].verificationStatus != UserVerificationStatus.Verified) {
+            throw HttpUnprocessableEntityException("operation allowed only after owner is KYC verified")
+        }
+    }
+
     private fun String.checkTitleUnique(ownerId: UUID) {
         if (SongEntity.exists(ownerId, this)) {
             throw HttpConflictException("Title already exists: $this")
@@ -826,7 +879,6 @@ internal class SongRepositoryImpl(
         genres?.forEachIndexed { index, genre -> genre.checkLength("genres$index") }
         moods?.forEachIndexed { index, mood -> mood.checkLength("moods$index") }
         description?.checkLength("description", 250)
-        album?.checkLength("album")
         language?.checkLength("language")
         compositionCopyrightOwner?.checkLength("compositionCopyrightOwner")
         phonographicCopyrightOwner?.checkLength("phonographicCopyrightOwner")

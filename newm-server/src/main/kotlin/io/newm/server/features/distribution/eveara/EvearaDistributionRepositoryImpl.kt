@@ -3,35 +3,16 @@ package io.newm.server.features.distribution.eveara
 import com.amazonaws.HttpMethod
 import com.amazonaws.services.s3.AmazonS3
 import com.github.benmanes.caffeine.cache.Caffeine
-import io.ktor.client.HttpClient
-import io.ktor.client.call.body
-import io.ktor.client.plugins.ServerResponseException
-import io.ktor.client.plugins.retry
-import io.ktor.client.plugins.timeout
-import io.ktor.client.request.accept
-import io.ktor.client.request.bearerAuth
-import io.ktor.client.request.delete
-import io.ktor.client.request.forms.InputProvider
-import io.ktor.client.request.forms.formData
-import io.ktor.client.request.forms.submitFormWithBinaryData
-import io.ktor.client.request.get
-import io.ktor.client.request.parameter
-import io.ktor.client.request.patch
-import io.ktor.client.request.post
-import io.ktor.client.request.put
-import io.ktor.client.request.setBody
-import io.ktor.client.statement.bodyAsChannel
-import io.ktor.client.statement.bodyAsText
-import io.ktor.http.ContentType
-import io.ktor.http.Headers
-import io.ktor.http.HttpHeaders
-import io.ktor.http.contentType
-import io.ktor.http.isSuccess
-import io.ktor.http.quote
-import io.ktor.server.application.ApplicationEnvironment
-import io.ktor.utils.io.core.isNotEmpty
-import io.ktor.utils.io.core.readBytes
-import io.ktor.utils.io.streams.asInput
+import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.plugins.*
+import io.ktor.client.request.*
+import io.ktor.client.request.forms.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
+import io.ktor.server.application.*
+import io.ktor.utils.io.core.*
+import io.ktor.utils.io.streams.*
 import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_EVEARA_CLIENT_ID
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_EVEARA_CLIENT_SECRET
@@ -41,70 +22,15 @@ import io.newm.server.features.collaboration.model.Collaboration
 import io.newm.server.features.collaboration.model.CollaborationStatus
 import io.newm.server.features.collaboration.repo.CollaborationRepository
 import io.newm.server.features.distribution.DistributionRepository
-import io.newm.server.features.distribution.model.AddAlbumRequest
-import io.newm.server.features.distribution.model.AddAlbumResponse
-import io.newm.server.features.distribution.model.AddArtistRequest
-import io.newm.server.features.distribution.model.AddArtistResponse
-import io.newm.server.features.distribution.model.AddParticipantRequest
-import io.newm.server.features.distribution.model.AddParticipantResponse
-import io.newm.server.features.distribution.model.AddTrackResponse
-import io.newm.server.features.distribution.model.AddUserLabelRequest
-import io.newm.server.features.distribution.model.AddUserLabelResponse
-import io.newm.server.features.distribution.model.AddUserRequest
-import io.newm.server.features.distribution.model.AddUserResponse
-import io.newm.server.features.distribution.model.AddUserSubscriptionRequest
-import io.newm.server.features.distribution.model.AddUserSubscriptionResponse
-import io.newm.server.features.distribution.model.CoverImage
-import io.newm.server.features.distribution.model.DeleteUserLabelResponse
-import io.newm.server.features.distribution.model.DistributeFutureReleaseRequest
-import io.newm.server.features.distribution.model.DistributeReleaseRequest
-import io.newm.server.features.distribution.model.DistributeReleaseResponse
-import io.newm.server.features.distribution.model.DistributionOutletReleaseStatusResponse
-import io.newm.server.features.distribution.model.EvearaErrorResponse
-import io.newm.server.features.distribution.model.EvearaSimpleResponse
-import io.newm.server.features.distribution.model.GetAlbumResponse
-import io.newm.server.features.distribution.model.GetArtistResponse
-import io.newm.server.features.distribution.model.GetCountriesResponse
-import io.newm.server.features.distribution.model.GetGenresResponse
-import io.newm.server.features.distribution.model.GetLanguagesResponse
-import io.newm.server.features.distribution.model.GetOutletProfileNamesResponse
-import io.newm.server.features.distribution.model.GetOutletsResponse
-import io.newm.server.features.distribution.model.GetParticipantsResponse
-import io.newm.server.features.distribution.model.GetPayoutBalanceResponse
-import io.newm.server.features.distribution.model.GetPayoutHistoryResponse
-import io.newm.server.features.distribution.model.GetRolesResponse
-import io.newm.server.features.distribution.model.GetTrackStatusResponse
-import io.newm.server.features.distribution.model.GetTracksResponse
-import io.newm.server.features.distribution.model.GetUserLabelResponse
-import io.newm.server.features.distribution.model.GetUserResponse
-import io.newm.server.features.distribution.model.GetUserSubscriptionResponse
-import io.newm.server.features.distribution.model.InitiatePayoutResponse
-import io.newm.server.features.distribution.model.OutletProfile
-import io.newm.server.features.distribution.model.OutletStatusCode
-import io.newm.server.features.distribution.model.OutletsDetail
-import io.newm.server.features.distribution.model.Participant
-import io.newm.server.features.distribution.model.Preview
-import io.newm.server.features.distribution.model.Subscription
-import io.newm.server.features.distribution.model.Track
-import io.newm.server.features.distribution.model.UpdateArtistRequest
-import io.newm.server.features.distribution.model.UpdateArtistResponse
-import io.newm.server.features.distribution.model.UpdateTrackRequest
-import io.newm.server.features.distribution.model.UpdateUserLabelRequest
-import io.newm.server.features.distribution.model.UpdateUserLabelResponse
-import io.newm.server.features.distribution.model.UpdateUserRequest
-import io.newm.server.features.distribution.model.ValidateAlbumResponse
+import io.newm.server.features.distribution.model.*
 import io.newm.server.features.song.model.MintingStatus
+import io.newm.server.features.song.model.Release
 import io.newm.server.features.song.model.Song
-import io.newm.server.features.song.model.SongBarcodeType
 import io.newm.server.features.song.model.toSongBarcodeType
 import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.features.user.model.User
 import io.newm.server.features.user.repo.UserRepository
-import io.newm.server.ktx.asValidUrl
-import io.newm.server.ktx.getFileNameWithExtensionFromUrl
-import io.newm.server.ktx.getSecureConfigString
-import io.newm.server.ktx.toAudioContentType
-import io.newm.server.ktx.toBucketAndKey
+import io.newm.server.ktx.*
 import io.newm.server.logging.logRequestJson
 import io.newm.shared.exception.HttpServiceUnavailableException
 import io.newm.shared.exception.HttpStatusException.Companion.toException
@@ -128,8 +54,8 @@ import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
-import java.util.Date
-import java.util.UUID
+import java.util.*
+import kotlin.collections.set
 import kotlin.random.Random.Default.nextLong
 import kotlin.time.Duration.Companion.minutes
 
@@ -824,7 +750,7 @@ class EvearaDistributionRepositoryImpl(
         val genres = getGenres().genres
         val languages = getLanguages().languages
         val collabs = collabRepository.getAllBySongId(song.id!!)
-        val artistIds = collectAlbumArtistIdsList(user, collabs)
+        val artistIds = collectSongArtistIdsList(user, collabs)
         val featuredArtistIds = collectFeaturedArtistIdsList(user, collabs)
 
         val response =
@@ -939,14 +865,37 @@ class EvearaDistributionRepositoryImpl(
 
     override suspend fun addAlbum(
         user: User,
-        trackId: Long,
-        song: Song
+        release: Release,
+        songs: List<Song>
     ): AddAlbumResponse {
         requireNotNull(user.distributionUserId) { "User.distributionUserId must not be null!" }
-        val collabs = collabRepository.getAllBySongId(song.id!!)
-        val artistIds = collectAlbumArtistIdsList(user, collabs)
-        val featuredArtistIds = collectFeaturedArtistIdsList(user, collabs)
-        val participants = collectAlbumParticipantsList(user, collabs)
+        val releaseArtistIds = mutableSetOf<Long>()
+        val tracks =
+            songs.map { song ->
+                requireNotNull(song.id) { "Song.id must not be null!" }
+                requireNotNull(song.distributionTrackId) { "Song.distributionTrackId must not be null!" }
+                val collabs = collabRepository.getAllBySongId(song.id)
+                val artistIds = collectSongArtistIdsList(user, collabs)
+                releaseArtistIds.addAll(artistIds)
+                val featuredArtistIds = collectFeaturedArtistIdsList(user, collabs)
+                val participants = collectSongParticipantsList(user, collabs)
+
+                Track(
+                    trackId = song.distributionTrackId,
+                    artistIds = artistIds,
+                    featuredArtists = featuredArtistIds,
+                    // TODO: Allow user to specify this later
+                    preview = Preview(startAt = 0, duration = 30),
+                    participants = participants,
+                    instrumental =
+                        song.instrumental ?: song.genres?.any {
+                            it.equals(
+                                "Instrumental",
+                                ignoreCase = true
+                            )
+                        } ?: false,
+                )
+            }
         val response =
             httpClient.post("$evearaApiBaseUrl/albums") {
                 contentType(ContentType.Application.Json)
@@ -955,47 +904,22 @@ class EvearaDistributionRepositoryImpl(
                 setBody(
                     AddAlbumRequest(
                         uuid = user.distributionUserId!!,
-                        // NOTE: for single, track title is used as album name
-                        name = song.title,
-                        artistIds = artistIds,
+                        name = release.title,
+                        artistIds = releaseArtistIds.toList(),
                         subscriptionId = user.distributionSubscriptionId!!,
-                        eanUpc = song.barcodeNumber,
-                        productCodeType =
-                            if (song.barcodeNumber == null || song.barcodeType == SongBarcodeType.Ean) {
-                                "ean"
-                            } else if (song.barcodeType == SongBarcodeType.Upc) {
-                                "upc"
-                            } else {
-                                "jan"
-                            },
+                        eanUpc = release.barcodeNumber,
+                        productCodeType = release.releaseProductCodeType,
                         labelId = user.distributionLabelId,
-                        productType = "single",
-                        codeAutoGenerate = song.barcodeNumber == null,
+                        productType = release.releaseType!!.value,
+                        codeAutoGenerate = release.barcodeNumber == null,
                         productFormat = "stereo",
                         coverImage =
                             CoverImage(
-                                url = song.coverArtUrl.asValidUrl(),
-                                extension = song.coverArtUrl.asValidUrl().substringAfterLast(".").lowercase(),
+                                url = release.coverArtUrl.asValidUrl(),
+                                extension = release.coverArtUrl.asValidUrl().substringAfterLast(".").lowercase(),
                             ),
-                        originalReleaseDate = song.releaseDate,
-                        tracks =
-                            listOf(
-                                Track(
-                                    trackId = trackId,
-                                    artistIds = artistIds,
-                                    featuredArtists = featuredArtistIds,
-                                    // TODO: Allow user to specify this later
-                                    preview = Preview(startAt = 0, duration = 30),
-                                    participants = participants,
-                                    instrumental =
-                                        song.instrumental ?: song.genres?.any {
-                                            it.equals(
-                                                "Instrumental",
-                                                ignoreCase = true
-                                            )
-                                        } ?: false,
-                                )
-                            ),
+                        originalReleaseDate = release.releaseDate,
+                        tracks = tracks,
                     ).logRequestJson(log)
                 )
             }
@@ -1033,63 +957,62 @@ class EvearaDistributionRepositoryImpl(
 
     override suspend fun updateAlbum(
         user: User,
-        song: Song
+        release: Release,
+        songs: List<Song>
     ): EvearaSimpleResponse {
         requireNotNull(user.distributionUserId) { "User.distributionUserId must not be null!" }
-        requireNotNull(song.distributionReleaseId) { "Song.distributionReleaseId must not be null!" }
-        val collabs = collabRepository.getAllBySongId(song.id!!)
-        val artistIds = collectAlbumArtistIdsList(user, collabs)
-        val featuredArtistIds = collectFeaturedArtistIdsList(user, collabs)
-        val participants = collectAlbumParticipantsList(user, collabs)
+        requireNotNull(release.distributionReleaseId) { "Song.distributionReleaseId must not be null!" }
+        val releaseArtistIds = mutableSetOf<Long>()
+        val tracks =
+            songs.map { song ->
+                requireNotNull(song.id) { "Song.id must not be null!" }
+                requireNotNull(song.distributionTrackId) { "Song.distributionTrackId must not be null!" }
+                val collabs = collabRepository.getAllBySongId(song.id)
+                val artistIds = collectSongArtistIdsList(user, collabs)
+                releaseArtistIds.addAll(artistIds)
+                val featuredArtistIds = collectFeaturedArtistIdsList(user, collabs)
+                val participants = collectSongParticipantsList(user, collabs)
+
+                Track(
+                    trackId = song.distributionTrackId,
+                    artistIds = artistIds,
+                    featuredArtists = featuredArtistIds,
+                    // TODO: Allow user to specify this later
+                    preview = Preview(startAt = 0, duration = 30),
+                    participants = participants,
+                    instrumental =
+                        song.instrumental ?: song.genres?.any {
+                            it.equals(
+                                "Instrumental",
+                                ignoreCase = true
+                            )
+                        } ?: false,
+                )
+            }
         val response =
-            httpClient.put("$evearaApiBaseUrl/albums/${song.distributionReleaseId}") {
+            httpClient.put("$evearaApiBaseUrl/albums/${release.distributionReleaseId}") {
                 contentType(ContentType.Application.Json)
                 accept(ContentType.Application.Json)
                 bearerAuth(getEvearaApiToken())
                 setBody(
                     AddAlbumRequest(
                         uuid = user.distributionUserId!!,
-                        // NOTE: for single, track title is used as album name
-                        name = song.album ?: song.title,
-                        artistIds = artistIds,
+                        name = release.title,
+                        artistIds = releaseArtistIds.toList(),
                         subscriptionId = user.distributionSubscriptionId!!,
-                        eanUpc = song.barcodeNumber,
-                        productCodeType =
-                            if (song.barcodeNumber == null || song.barcodeType == SongBarcodeType.Ean) {
-                                "ean"
-                            } else if (song.barcodeType == SongBarcodeType.Upc) {
-                                "upc"
-                            } else {
-                                "jan"
-                            },
+                        eanUpc = release.barcodeNumber,
+                        productCodeType = release.releaseProductCodeType,
                         labelId = user.distributionLabelId,
-                        productType = "single",
-                        codeAutoGenerate = song.barcodeNumber == null,
+                        productType = release.releaseType!!.value,
+                        codeAutoGenerate = release.barcodeNumber == null,
                         productFormat = "stereo",
                         coverImage =
                             CoverImage(
-                                url = song.coverArtUrl.asValidUrl(),
-                                extension = song.coverArtUrl.asValidUrl().substringAfterLast(".").lowercase(),
+                                url = release.coverArtUrl.asValidUrl(),
+                                extension = release.coverArtUrl.asValidUrl().substringAfterLast(".").lowercase(),
                             ),
-                        originalReleaseDate = song.releaseDate,
-                        tracks =
-                            listOf(
-                                Track(
-                                    trackId = song.distributionTrackId!!,
-                                    artistIds = artistIds,
-                                    featuredArtists = featuredArtistIds,
-                                    // TODO: Allow user to specify this later
-                                    preview = Preview(startAt = 0, duration = 30),
-                                    participants = participants,
-                                    instrumental =
-                                        song.instrumental ?: song.genres?.any {
-                                            it.equals(
-                                                "Instrumental",
-                                                ignoreCase = true
-                                            )
-                                        } ?: false,
-                                )
-                            ),
+                        originalReleaseDate = release.releaseDate,
+                        tracks = tracks,
                     ).logRequestJson(log)
                 )
             }
@@ -1180,12 +1103,14 @@ class EvearaDistributionRepositoryImpl(
 
     override suspend fun distributeReleaseToOutlets(
         user: User,
-        song: Song,
+        release: Release,
         allowRetry: Boolean,
     ): DistributeReleaseResponse {
         requireNotNull(user.distributionUserId) { "User.distributionUserId must not be null!" }
+        requireNotNull(release.distributionReleaseId) { "Release.distributionReleaseId must not be null!" }
+        requireNotNull(release.releaseDate) { "Release.releaseDate must not be null!" }
         val response =
-            httpClient.patch("$evearaApiBaseUrl/outlets/${song.distributionReleaseId!!}/distribute") {
+            httpClient.patch("$evearaApiBaseUrl/outlets/${release.distributionReleaseId}/distribute") {
                 contentType(ContentType.Application.Json)
                 accept(ContentType.Application.Json)
                 bearerAuth(getEvearaApiToken())
@@ -1196,7 +1121,7 @@ class EvearaDistributionRepositoryImpl(
                             getOutlets(user).outlets.map { evearaOutlet ->
                                 OutletsDetail(
                                     storeId = evearaOutlet.storeId,
-                                    releaseStartDate = song.releaseDate!!,
+                                    releaseStartDate = release.releaseDate,
                                 )
                             }
                     ).logRequestJson(log)
@@ -1214,10 +1139,10 @@ class EvearaDistributionRepositoryImpl(
                     if (evearaErrorResponse.errors?.find { it.code == 8018 } != null) {
                         // invalid release start date. Try it again one more time with a different date
                         val earliestReleaseDate = getEarliestReleaseDate(user.id!!)
-                        val updatedSong = song.copy(releaseDate = earliestReleaseDate)
-                        songRepository.update(song.id!!, Song(releaseDate = earliestReleaseDate))
+                        val updatedRelease = release.copy(releaseDate = earliestReleaseDate)
+                        songRepository.update(release.id!!, Release(releaseDate = earliestReleaseDate))
                         // retry it once
-                        return distributeReleaseToOutlets(user, updatedSong, false)
+                        return distributeReleaseToOutlets(user, updatedRelease, false)
                     }
                 }
             }
@@ -1288,54 +1213,64 @@ class EvearaDistributionRepositoryImpl(
         return distributionOutletReleaseStatusResponse
     }
 
-    override suspend fun distributeSong(song: Song) {
-        requireNotNull(song.ownerId) { "Song.ownerId must not be null!" }
-        val user = userRepository.get(song.ownerId)
-        requireNotNull(user.id) { "User.id must not be null!" }
+    override suspend fun distributeRelease(release: Release) {
+        requireNotNull(release.id) { "Release.id must not be null!" }
+        requireNotNull(release.ownerId) { "Release.ownerId must not be null!" }
+        val releaseOwner = userRepository.get(release.ownerId)
 
         // Create the distribution user if they don't exist yet
-        createDistributionUserIfNeeded(user)
+        createDistributionUserIfNeeded(releaseOwner)
 
-        // Create the distribution artistId for each collaborator under this user account if they don't exist yet
-        val collabs = collabRepository.getAllBySongId(song.id!!)
-        createDistributionArtistsForCollabs(song, user, collabs)
+        requireNotNull(releaseOwner.id) { "User.id must not be null!" }
+        val songs = songRepository.getAllByReleaseId(release.id)
 
-        // Create the distribution subscription if it doesn't yet exist
-        createDistributionSubscription(user)
-
-        // Create the distribution participants if they don't exist yet
-        createDistributionParticipants(user, collabs)
-
-        // Add or Update Distribution Label
-        createDistributionLabel(user, song)
-
-        // Add or Update Distribution Track
-        var mutableSong = createDistributionTrack(user, song)
-
-        // Add or Update Distribution Album
-        mutableSong = createDistributionAlbum(user, mutableSong)
-
-        // Validate Distribution Album
-        val validateReleaseResponse = validateAlbum(user, mutableSong.distributionReleaseId!!)
-        require(validateReleaseResponse.validateData.errorFields.isNullOrEmpty()) { "Error validating release: $validateReleaseResponse" }
-        log.info {
-            "Validated distribution album ${mutableSong.title} with id ${mutableSong.distributionReleaseId}: ${validateReleaseResponse.message}"
+        if (songs.size > 1) {
+            require(songs.all { it.track != null }) { "All songs must have a track number for ep/album/compilation!" }
         }
 
-        mutableSong = distributeAlbumRelease(user, mutableSong)
+        val uploadedSongs =
+            songs.sortedBy { it.track ?: 0 }.map { song ->
+                // Create the distribution artistId for each collaborator under this user account if they don't exist yet
+                val collabs = collabRepository.getAllBySongId(song.id!!)
+                createDistributionArtistsForCollabs(song, releaseOwner, collabs)
 
-        // Mark the song as having been submitted for distribution the first time. This helps us ensure we don't allow
+                // Create the distribution subscription if it doesn't yet exist
+                createDistributionSubscription(releaseOwner)
+
+                // Create the distribution participants if they don't exist yet
+                createDistributionParticipants(releaseOwner, collabs)
+
+                // Add or Update Distribution Label
+                createDistributionLabel(releaseOwner, song)
+
+                // Add or Update Distribution Track
+                createDistributionTrack(releaseOwner, song)
+            }
+
+        // Add or Update Distribution Album
+        var mutableRelease = createDistributionAlbum(releaseOwner, release, uploadedSongs)
+
+        // Validate Distribution Album
+        val validateReleaseResponse = validateAlbum(releaseOwner, mutableRelease.distributionReleaseId!!)
+        require(validateReleaseResponse.validateData.errorFields.isNullOrEmpty()) { "Error validating release: $validateReleaseResponse" }
+        log.info {
+            "Validated distribution album ${mutableRelease.title} with id ${mutableRelease.distributionReleaseId}: ${validateReleaseResponse.message}"
+        }
+
+        mutableRelease = distributeAlbumRelease(releaseOwner, mutableRelease)
+
+        // Mark the release as having been submitted for distribution the first time. This helps us ensure we don't allow
         // certain things like release date to be edited when we have to re-attempt distribution for the song.
-        songRepository.update(song.id, Song(hasSubmittedForDistribution = true))
+        songRepository.update(mutableRelease.id!!, Release(hasSubmittedForDistribution = true))
     }
 
-    override suspend fun redistributeSong(song: Song) {
-        requireNotNull(song.id) { "Song.id must not be null!" }
-        requireNotNull(song.ownerId) { "Song.ownerId must not be null!" }
-        val user = userRepository.get(song.ownerId)
+    override suspend fun redistributeRelease(release: Release) {
+        requireNotNull(release.id) { "Release.id must not be null!" }
+        requireNotNull(release.ownerId) { "Release.ownerId must not be null!" }
+        val user = userRepository.get(release.ownerId)
         requireNotNull(user.id) { "User.id must not be null!" }
 
-        val distributionReleaseStatusResponse = distributionOutletReleaseStatus(user, song.distributionReleaseId!!)
+        val distributionReleaseStatusResponse = distributionOutletReleaseStatus(user, release.distributionReleaseId!!)
         val spotifyOutletStatusCode =
             distributionReleaseStatusResponse.outletReleaseStatuses?.find {
                 it.storeName.equals(
@@ -1348,7 +1283,9 @@ class EvearaDistributionRepositoryImpl(
             "Song must be in a disapproved status to redistribute!"
         }
         // Check a second time that they actually paid for the minting and then re-distribute
-        songRepository.updateSongMintingStatus(song.id, MintingStatus.MintingPaymentSubmitted)
+        songRepository.getAllByReleaseId(release.id).first().let { song ->
+            songRepository.updateSongMintingStatus(song.id!!, MintingStatus.MintingPaymentSubmitted)
+        }
     }
 
     override suspend fun getEarliestReleaseDate(userId: UUID): LocalDate {
@@ -1968,89 +1905,90 @@ class EvearaDistributionRepositoryImpl(
 
     private suspend fun createDistributionAlbum(
         user: User,
-        song: Song
-    ): Song {
-        var mutableSong = song
+        release: Release,
+        songs: List<Song>
+    ): Release {
+        var mutableRelease = release
         val getAlbumResponse = getAlbums(user)
         val existingAlbum =
             if (getAlbumResponse.totalRecords > 0) {
-                getAlbumResponse.albumData.firstOrNull { it.releaseId == mutableSong.distributionReleaseId || it.name == mutableSong.title }
+                getAlbumResponse.albumData.firstOrNull { it.releaseId == mutableRelease.distributionReleaseId || it.name == mutableRelease.title }
             } else {
                 null
             }
 
         if (existingAlbum == null) {
-            val response = addAlbum(user, mutableSong.distributionTrackId!!, mutableSong)
-            log.info { "Created distribution album ${mutableSong.title} with id ${response.releaseId}: ${response.message}" }
+            val response = addAlbum(user, release, songs)
+            log.info { "Created distribution album ${release.title} with id ${response.releaseId}: ${response.message}" }
             val albumData = getAlbums(user).albumData.first { it.releaseId == response.releaseId }
             val barcodeType = albumData.productCodeType.toSongBarcodeType()
             val barcode = albumData.eanUpc
-            mutableSong =
-                mutableSong.copy(
+            mutableRelease =
+                mutableRelease.copy(
                     distributionReleaseId = response.releaseId,
                     barcodeNumber = barcode,
                     barcodeType = barcodeType
                 )
             songRepository.update(
-                mutableSong.id!!,
-                Song(
+                mutableRelease.id!!,
+                Release(
                     distributionReleaseId = response.releaseId,
                     barcodeNumber = barcode,
                     barcodeType = barcodeType
                 )
             )
         } else {
-            log.info { "Found existing distribution album ${mutableSong.title} with id ${existingAlbum.releaseId}, title ${existingAlbum.name}" }
-            if (mutableSong.distributionReleaseId == null) {
-                mutableSong = mutableSong.copy(distributionReleaseId = existingAlbum.releaseId)
-                songRepository.update(mutableSong.id!!, Song(distributionReleaseId = existingAlbum.releaseId))
+            log.info { "Found existing distribution album ${mutableRelease.title} with id ${existingAlbum.releaseId}, title ${existingAlbum.name}" }
+            if (mutableRelease.distributionReleaseId == null) {
+                mutableRelease = mutableRelease.copy(distributionReleaseId = existingAlbum.releaseId)
+                songRepository.update(mutableRelease.id!!, Release(distributionReleaseId = existingAlbum.releaseId))
             } else {
-                require(mutableSong.distributionReleaseId == existingAlbum.releaseId) {
-                    "Song.distributionReleaseId: ${mutableSong.distributionReleaseId} does not match existing distribution album! ${existingAlbum.releaseId}"
+                require(mutableRelease.distributionReleaseId == existingAlbum.releaseId) {
+                    "Song.distributionReleaseId: ${mutableRelease.distributionReleaseId} does not match existing distribution album! ${existingAlbum.releaseId}"
                 }
             }
-            val response = updateAlbum(user, mutableSong)
-            log.info { "Updated distribution album ${mutableSong.title} with id ${existingAlbum.releaseId}: ${response.message}" }
+            val response = updateAlbum(user, mutableRelease, songs)
+            log.info { "Updated distribution album ${mutableRelease.title} with id ${existingAlbum.releaseId}: ${response.message}" }
         }
-        return mutableSong
+        return mutableRelease
     }
 
     private suspend fun distributeAlbumRelease(
         user: User,
-        song: Song
-    ): Song {
+        release: Release
+    ): Release {
         requireNotNull(user.id) { "User.id must not be null!" }
-        var mutableSong = song
+        var mutableRelease = release
 
         // Only allow extending release date if we haven't attempted distribution before.
-        if (mutableSong.hasSubmittedForDistribution != true) {
+        if (mutableRelease.hasSubmittedForDistribution != true) {
             // Verify we have enough days to distribute the release
             val earliestReleaseDate = getEarliestReleaseDate(user.id)
-            if (earliestReleaseDate.isAfter(mutableSong.releaseDate!!)) {
-                mutableSong = mutableSong.copy(releaseDate = earliestReleaseDate)
-                songRepository.update(mutableSong.id!!, Song(releaseDate = earliestReleaseDate))
+            if (earliestReleaseDate.isAfter(mutableRelease.releaseDate!!)) {
+                mutableRelease = mutableRelease.copy(releaseDate = earliestReleaseDate)
+                songRepository.update(mutableRelease.id!!, Release(releaseDate = earliestReleaseDate))
             }
         }
 
         // Distribute the release to outlets
-        val distributeReleaseResponse = distributeReleaseToOutlets(user, mutableSong)
+        val distributeReleaseResponse = distributeReleaseToOutlets(user, mutableRelease)
         require(
             distributeReleaseResponse.releaseData?.errorFields.isNullOrEmpty()
         ) { "Error distributing release: $distributeReleaseResponse" }
         log.info {
-            "Distributed release ${mutableSong.title} with id ${mutableSong.distributionReleaseId} to outlets: ${distributeReleaseResponse.message}"
+            "Distributed release ${mutableRelease.title} with id ${mutableRelease.distributionReleaseId} to outlets: ${distributeReleaseResponse.message}"
         }
 
         // Distribute the release to future outlets
         val distributeFutureReleaseResponse =
-            distributeReleaseToFutureOutlets(user, mutableSong.distributionReleaseId!!)
+            distributeReleaseToFutureOutlets(user, mutableRelease.distributionReleaseId!!)
         log.info {
-            "Distributed release ${mutableSong.title} with id ${mutableSong.distributionReleaseId} to future outlets: ${distributeFutureReleaseResponse.message}"
+            "Distributed release ${mutableRelease.title} with id ${mutableRelease.distributionReleaseId} to future outlets: ${distributeFutureReleaseResponse.message}"
         }
-        return mutableSong
+        return mutableRelease
     }
 
-    private fun collectAlbumArtistIdsList(
+    private fun collectSongArtistIdsList(
         user: User,
         collabs: List<Collaboration>
     ): List<Long> =
@@ -2070,7 +2008,7 @@ class EvearaDistributionRepositoryImpl(
         collabs.filter { it.featured == true && it.email != user.email }
             .map { it.distributionArtistId!! }.distinct().takeIf { it.isNotEmpty() }
 
-    private suspend fun collectAlbumParticipantsList(
+    private suspend fun collectSongParticipantsList(
         user: User,
         collabs: List<Collaboration>
     ): List<Participant> =

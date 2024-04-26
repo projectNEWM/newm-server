@@ -2,34 +2,28 @@ package io.newm.server.features.arweave.repo
 
 import cats.Monad
 import cats.arrow.FunctionK
-import co.upvest.arweave4s.adt.Data
-import co.upvest.arweave4s.adt.Signed
-import co.upvest.arweave4s.adt.Tag
-import co.upvest.arweave4s.adt.Transaction
-import co.upvest.arweave4s.adt.Wallet
-import co.upvest.arweave4s.adt.Winston
+import co.upvest.arweave4s.adt.*
+import com.amazonaws.HttpMethod
 import com.amazonaws.services.lambda.model.InvokeRequest
 import com.amazonaws.services.s3.AmazonS3
 import com.softwaremill.sttp.Response
 import com.softwaremill.sttp.SttpBackendOptions
 import com.softwaremill.sttp.Uri
 import com.softwaremill.sttp.asynchttpclient.future.AsyncHttpClientFutureBackend
-import io.ktor.server.application.ApplicationEnvironment
+import io.ktor.server.application.*
 import io.newm.chain.util.b64ToByteArray
+import io.newm.server.features.arweave.ktx.toFiles
 import io.newm.server.features.arweave.model.*
 import io.newm.server.features.email.repo.EmailRepository
+import io.newm.server.features.song.model.Release
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.ktx.await
 import io.newm.server.ktx.getSecureConfigString
+import io.newm.server.ktx.toBucketAndKey
 import io.newm.shared.coroutine.SupervisorScope
 import io.newm.shared.koin.inject
-import io.newm.shared.ktx.getConfigBigDecimal
-import io.newm.shared.ktx.getConfigChild
-import io.newm.shared.ktx.getConfigString
-import io.newm.shared.ktx.getString
-import io.newm.shared.ktx.info
-import io.newm.shared.ktx.warn
+import io.newm.shared.ktx.*
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.time.delay
 import kotlinx.coroutines.time.withTimeout
@@ -49,6 +43,7 @@ import java.math.BigDecimal
 import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
+import java.util.*
 import java.util.concurrent.Executors
 import co.upvest.arweave4s.adt.`Signable$`.`MODULE$` as signableApi
 import co.upvest.arweave4s.adt.Tag.`Custom$`.`MODULE$` as tagApi
@@ -59,10 +54,6 @@ import co.upvest.arweave4s.api.`package`.`Config$`.`MODULE$` as configApi
 import co.upvest.arweave4s.api.`package`.`future$`.`MODULE$` as future
 import co.upvest.arweave4s.api.`price$`.`MODULE$` as priceApi
 import co.upvest.arweave4s.api.`tx$`.`MODULE$` as txApi
-import io.newm.server.features.arweave.ktx.toFiles
-import com.amazonaws.HttpMethod
-import java.util.Date
-import io.newm.server.ktx.toBucketAndKey
 
 class ArweaveRepositoryImpl(
     private val environment: ApplicationEnvironment,
@@ -252,13 +243,15 @@ class ArweaveRepositoryImpl(
 
         var arweaveException: Throwable? = null
 
+        val release = songRepository.getRelease(song.releaseId!!)
+
         val newmWeaveRequest =
             WeaveRequest(
                 json.encodeToString(
                     WeaveProps(
                         arweaveWalletJson = environment.getSecureConfigString("arweave.walletJson"),
                         files =
-                            song.toFiles().map { (inputUrl, contentType) ->
+                            song.toFiles(release).map { (inputUrl, contentType) ->
                                 val downloadUrl =
                                     if (inputUrl.startsWith("s3://")) {
                                         val (bucket, key) = inputUrl.toBucketAndKey()
@@ -300,19 +293,27 @@ class ArweaveRepositoryImpl(
                     IllegalStateException("Error uploading to Arweave song: ${song.id}: ${weaveResponse.error}")
             } else {
                 val arweaveUrl = "ar://${weaveResponse.id}"
-                when (weaveResponse.contentType) {
-                    "image/webp" -> Song(arweaveCoverArtUrl = arweaveUrl)
-                    "application/pdf" -> Song(arweaveTokenAgreementUrl = arweaveUrl)
-                    "audio/mpeg" -> Song(arweaveClipUrl = arweaveUrl)
-                    "text/plain" -> Song(arweaveLyricsUrl = arweaveUrl)
-                    else -> {
-                        arweaveException = IllegalStateException("Unknown mime type: ${weaveResponse.contentType}")
-                        null
+                val toUpdate: Any? =
+                    when (weaveResponse.contentType) {
+                        "image/webp" -> Release(arweaveCoverArtUrl = arweaveUrl)
+                        "application/pdf" -> Song(arweaveTokenAgreementUrl = arweaveUrl)
+                        "audio/mpeg" -> Song(arweaveClipUrl = arweaveUrl)
+                        "text/plain" -> Song(arweaveLyricsUrl = arweaveUrl)
+                        else -> {
+                            arweaveException = IllegalStateException("Unknown mime type: ${weaveResponse.contentType}")
+                            null
+                        }
                     }
-                }?.let { songToUpdate ->
-                    // We're on chain now. Update the song record
-                    songRepository.update(song.id!!, songToUpdate)
-                    log.info { "Song ${song.id} updated: $songToUpdate" }
+                // We're on chain now. Update the song/release record
+                when (toUpdate) {
+                    is Song -> {
+                        songRepository.update(song.id!!, toUpdate)
+                        log.info { "Song ${song.id} updated: $toUpdate" }
+                    }
+                    is Release -> {
+                        songRepository.update(song.releaseId, toUpdate)
+                        log.info { "Release ${song.releaseId} updated: $toUpdate" }
+                    }
                 }
             }
         }

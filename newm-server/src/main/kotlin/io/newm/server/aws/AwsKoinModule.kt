@@ -1,5 +1,7 @@
 package io.newm.server.aws
 
+import com.amazonaws.regions.Region
+import com.amazonaws.regions.RegionUtils
 import com.amazonaws.regions.Regions
 import com.amazonaws.services.kms.AWSKMSAsync
 import com.amazonaws.services.kms.AWSKMSAsyncClientBuilder
@@ -48,5 +50,5 @@ val awsKoinModule =
                 .build()
         }
 
-        single { Regions.fromName(get<ApplicationEnvironment>().getConfigString("aws.region")) }
+        single<Region> { RegionUtils.getRegion(get<ApplicationEnvironment>().getConfigString("aws.region")) }
     }

@@ -1,16 +1,10 @@
 package io.newm.server.features.song.repo
 
-import io.ktor.utils.io.ByteReadChannel
+import io.ktor.utils.io.*
 import io.newm.chain.grpc.Utxo
 import io.newm.server.features.song.database.SongEntity
-import io.newm.server.features.song.model.AudioStreamData
-import io.newm.server.features.song.model.AudioUploadReport
-import io.newm.server.features.song.model.MintPaymentResponse
-import io.newm.server.features.song.model.MintingStatus
-import io.newm.server.features.song.model.RefundPaymentResponse
-import io.newm.server.features.song.model.Song
-import io.newm.server.features.song.model.SongFilters
-import java.util.UUID
+import io.newm.server.features.song.model.*
+import java.util.*
 
 interface SongRepository {
     suspend fun add(
@@ -24,12 +18,20 @@ interface SongRepository {
         requesterId: UUID? = null
     )
 
+    suspend fun update(
+        releaseId: UUID,
+        release: Release,
+        requesterId: UUID? = null
+    )
+
     suspend fun delete(
         songId: UUID,
         requesterId: UUID
     )
 
     suspend fun get(songId: UUID): Song
+
+    suspend fun getRelease(releaseId: UUID): Release
 
     suspend fun getAll(
         filters: SongFilters,
@@ -38,6 +40,8 @@ interface SongRepository {
     ): List<Song>
 
     suspend fun getAllCount(filters: SongFilters): Long
+
+    suspend fun getAllByReleaseId(id: UUID): List<Song>
 
     suspend fun getGenres(
         filters: SongFilters,

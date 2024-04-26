@@ -1,12 +1,9 @@
 package io.newm.server.features.marketplace
 
 import com.google.common.truth.Truth.assertThat
-import io.ktor.client.call.body
-import io.ktor.client.request.accept
-import io.ktor.client.request.get
-import io.ktor.client.request.parameter
-import io.ktor.http.ContentType
-import io.ktor.http.HttpStatusCode
+import io.ktor.client.call.*
+import io.ktor.client.request.*
+import io.ktor.http.*
 import io.newm.server.BaseApplicationTests
 import io.newm.server.features.collaboration.database.CollaborationEntity
 import io.newm.server.features.collaboration.database.CollaborationTable
@@ -15,11 +12,15 @@ import io.newm.server.features.marketplace.database.MarketplaceSaleTable
 import io.newm.server.features.marketplace.model.Sale
 import io.newm.server.features.marketplace.model.SaleStatus
 import io.newm.server.features.model.CountResponse
+import io.newm.server.features.song.database.ReleaseEntity
+import io.newm.server.features.song.database.ReleaseTable
 import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.database.SongTable
+import io.newm.server.features.song.model.ReleaseType
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
 import kotlinx.coroutines.runBlocking
+import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.neq
 import org.jetbrains.exposed.sql.deleteAll
 import org.jetbrains.exposed.sql.deleteWhere
@@ -36,6 +37,7 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
             MarketplaceSaleTable.deleteAll()
             CollaborationTable.deleteAll()
             SongTable.deleteAll()
+            ReleaseTable.deleteAll()
             UserTable.deleteWhere { email neq testUserEmail }
         }
     }
@@ -451,12 +453,20 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
 
         val song =
             transaction {
+                val title = "title$offset ${phraseOrEmpty(3)} blah blah"
+                val releaseId =
+                    ReleaseEntity.new {
+                        ownerId = artist.id
+                        this.title = title
+                        coverArtUrl = "coverArtUrl$offset"
+                        releaseType = ReleaseType.SINGLE
+                    }.id.value
                 SongEntity.new {
                     ownerId = artist.id
-                    title = "title$offset ${phraseOrEmpty(3)}} blah blah"
+                    this.title = title
+                    this.releaseId = EntityID(releaseId, ReleaseTable)
                     genres = arrayOf("genre${offset}_0", "genre${offset}_1")
                     moods = arrayOf("mood${offset}_0", "mood${offset}_1")
-                    coverArtUrl = "coverArtUrl$offset"
                     clipUrl = "clipUrl$offset"
                     tokenAgreementUrl = "tokenAgreementUrl$offset"
                 }

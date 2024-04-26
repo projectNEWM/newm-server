@@ -1,17 +1,17 @@
 package io.newm.server.features.playlist.repo
 
-import io.newm.server.ktx.checkLength
 import io.ktor.util.logging.*
-import io.newm.shared.exception.HttpForbiddenException
-import io.newm.shared.exception.HttpUnprocessableEntityException
 import io.newm.server.features.playlist.database.PlaylistEntity
 import io.newm.server.features.playlist.model.Playlist
 import io.newm.server.features.playlist.model.PlaylistFilters
-import io.newm.server.features.song.database.SongEntity
+import io.newm.server.features.song.database.ReleaseEntity
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.user.database.UserTable
-import io.newm.shared.ktx.debug
+import io.newm.server.ktx.checkLength
+import io.newm.shared.exception.HttpForbiddenException
+import io.newm.shared.exception.HttpUnprocessableEntityException
 import io.newm.shared.koin.inject
+import io.newm.shared.ktx.debug
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf
@@ -121,7 +121,10 @@ internal class PlaylistRepositoryImpl : PlaylistRepository {
     ): List<Song> {
         logger.debug { "getSongs: playlistId = $playlistId, offset = $offset, limit = $limit" }
         return transaction {
-            PlaylistEntity[playlistId].songs.limit(n = limit, offset = offset.toLong()).map(SongEntity::toModel)
+            PlaylistEntity[playlistId].songs.limit(n = limit, offset = offset.toLong()).map { songEntity ->
+                val release = ReleaseEntity[songEntity.releaseId!!].toModel()
+                songEntity.toModel(release)
+            }
         }
     }
 

@@ -1,43 +1,13 @@
 package io.newm.server.features.distribution
 
 import io.newm.server.features.collaboration.model.Collaboration
-import io.newm.server.features.distribution.model.AddAlbumResponse
-import io.newm.server.features.distribution.model.AddArtistRequest
-import io.newm.server.features.distribution.model.AddArtistResponse
-import io.newm.server.features.distribution.model.AddParticipantResponse
-import io.newm.server.features.distribution.model.AddTrackResponse
-import io.newm.server.features.distribution.model.AddUserLabelResponse
-import io.newm.server.features.distribution.model.AddUserResponse
-import io.newm.server.features.distribution.model.AddUserSubscriptionResponse
-import io.newm.server.features.distribution.model.DeleteUserLabelResponse
-import io.newm.server.features.distribution.model.DistributeReleaseResponse
-import io.newm.server.features.distribution.model.DistributionOutletReleaseStatusResponse
-import io.newm.server.features.distribution.model.EvearaSimpleResponse
-import io.newm.server.features.distribution.model.GetAlbumResponse
-import io.newm.server.features.distribution.model.GetArtistResponse
-import io.newm.server.features.distribution.model.GetCountriesResponse
-import io.newm.server.features.distribution.model.GetGenresResponse
-import io.newm.server.features.distribution.model.GetLanguagesResponse
-import io.newm.server.features.distribution.model.GetOutletProfileNamesResponse
-import io.newm.server.features.distribution.model.GetOutletsResponse
-import io.newm.server.features.distribution.model.GetParticipantsResponse
-import io.newm.server.features.distribution.model.GetPayoutBalanceResponse
-import io.newm.server.features.distribution.model.GetPayoutHistoryResponse
-import io.newm.server.features.distribution.model.GetRolesResponse
-import io.newm.server.features.distribution.model.GetTracksResponse
-import io.newm.server.features.distribution.model.GetUserLabelResponse
-import io.newm.server.features.distribution.model.GetUserResponse
-import io.newm.server.features.distribution.model.GetUserSubscriptionResponse
-import io.newm.server.features.distribution.model.InitiatePayoutResponse
-import io.newm.server.features.distribution.model.UpdateArtistRequest
-import io.newm.server.features.distribution.model.UpdateArtistResponse
-import io.newm.server.features.distribution.model.UpdateUserLabelResponse
-import io.newm.server.features.distribution.model.ValidateAlbumResponse
+import io.newm.server.features.distribution.model.*
+import io.newm.server.features.song.model.Release
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.user.model.User
 import java.io.File
 import java.time.LocalDate
-import java.util.UUID
+import java.util.*
 
 /**
  * Higher level api for working with a music distribution service
@@ -133,15 +103,16 @@ interface DistributionRepository {
 
     suspend fun addAlbum(
         user: User,
-        trackId: Long,
-        song: Song
+        release: Release,
+        songs: List<Song>
     ): AddAlbumResponse
 
     suspend fun getAlbums(user: User): GetAlbumResponse
 
     suspend fun updateAlbum(
         user: User,
-        song: Song
+        release: Release,
+        songs: List<Song>
     ): EvearaSimpleResponse
 
     suspend fun validateAlbum(
@@ -161,7 +132,7 @@ interface DistributionRepository {
 
     suspend fun distributeReleaseToOutlets(
         user: User,
-        song: Song,
+        release: Release,
         allowRetry: Boolean = true,
     ): DistributeReleaseResponse
 
@@ -175,9 +146,9 @@ interface DistributionRepository {
         releaseId: Long
     ): DistributionOutletReleaseStatusResponse
 
-    suspend fun distributeSong(song: Song)
+    suspend fun distributeRelease(release: Release)
 
-    suspend fun redistributeSong(song: Song)
+    suspend fun redistributeRelease(release: Release)
 
     suspend fun getEarliestReleaseDate(userId: UUID): LocalDate
 

@@ -5,6 +5,7 @@ import io.newm.server.features.marketplace.model.Sale
 import io.newm.server.features.marketplace.model.SaleFilters
 import io.newm.server.features.marketplace.model.SaleStatus
 import io.newm.server.features.marketplace.model.Token
+import io.newm.server.features.song.database.ReleaseEntity
 import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.database.SongTable
 import io.newm.server.features.user.database.UserEntity
@@ -63,6 +64,7 @@ class MarketplaceSaleEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             availableBundleQuantity = availableBundleQuantity,
             song =
                 SongEntity[songId].run {
+                    val release = ReleaseEntity[releaseId!!]
                     Sale.Song(
                         id = id.value,
                         artistId = ownerId.value,
@@ -70,7 +72,7 @@ class MarketplaceSaleEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                         title = title,
                         genres = genres.toList(),
                         moods = moods?.toList(),
-                        coverArtUrl = coverArtUrl,
+                        coverArtUrl = release.coverArtUrl,
                         clipUrl = clipUrl,
                         tokenAgreementUrl = tokenAgreementUrl,
                         collaborators =

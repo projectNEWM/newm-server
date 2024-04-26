@@ -1,21 +1,10 @@
 package io.newm.server.features.song
 
 import com.google.common.truth.Truth.assertThat
-import io.ktor.client.call.body
-import io.ktor.client.request.accept
-import io.ktor.client.request.bearerAuth
-import io.ktor.client.request.delete
-import io.ktor.client.request.get
-import io.ktor.client.request.parameter
-import io.ktor.client.request.patch
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
-import io.ktor.http.ContentType
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.URLProtocol
-import io.ktor.http.contentType
-import io.ktor.http.setCookie
-import io.ktor.server.application.ApplicationEnvironment
+import io.ktor.client.call.*
+import io.ktor.client.request.*
+import io.ktor.http.*
+import io.ktor.server.application.*
 import io.mockk.coEvery
 import io.mockk.mockk
 import io.newm.server.BaseApplicationTests
@@ -23,18 +12,8 @@ import io.newm.server.features.cardano.database.KeyEntity
 import io.newm.server.features.cardano.database.KeyTable
 import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.model.CountResponse
-import io.newm.server.features.song.database.SongEntity
-import io.newm.server.features.song.database.SongReceiptTable
-import io.newm.server.features.song.database.SongTable
-import io.newm.server.features.song.model.AudioEncodingStatus
-import io.newm.server.features.song.model.AudioStreamResponse
-import io.newm.server.features.song.model.AudioUploadReport
-import io.newm.server.features.song.model.MarketplaceStatus
-import io.newm.server.features.song.model.MintPaymentResponse
-import io.newm.server.features.song.model.MintingStatus
-import io.newm.server.features.song.model.Song
-import io.newm.server.features.song.model.SongBarcodeType
-import io.newm.server.features.song.model.SongIdBody
+import io.newm.server.features.song.database.*
+import io.newm.server.features.song.model.*
 import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.features.song.repo.SongRepositoryImpl
 import io.newm.server.features.user.database.UserEntity
@@ -56,7 +35,7 @@ import org.koin.core.context.GlobalContext.loadKoinModules
 import org.koin.dsl.module
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.util.UUID
+import java.util.*
 
 class SongRoutesTests : BaseApplicationTests() {
     @BeforeAll
@@ -86,6 +65,7 @@ class SongRoutesTests : BaseApplicationTests() {
         transaction {
             SongReceiptTable.deleteAll()
             SongTable.deleteAll()
+            ReleaseTable.deleteAll()
             KeyTable.deleteAll()
             UserTable.deleteWhere { id neq testUserId }
         }
@@ -107,7 +87,7 @@ class SongRoutesTests : BaseApplicationTests() {
             val songId = response.body<SongIdBody>().songId
 
             // Read Song directly from database & verify it
-            val song = transaction { SongEntity[songId] }.toModel()
+            val song = transaction { SongEntity[songId].let { it.toModel(ReleaseEntity[it.releaseId!!].toModel()) } }
             assertThat(song.id).isEqualTo(songId)
             assertThat(song.archived).isEqualTo(false)
             assertThat(song.ownerId).isEqualTo(testUserId)
@@ -116,7 +96,6 @@ class SongRoutesTests : BaseApplicationTests() {
             assertThat(song.genres).isEqualTo(testSong1.genres)
             assertThat(song.moods).isEqualTo(testSong1.moods)
             assertThat(song.description).isEqualTo(testSong1.description)
-            assertThat(song.album).isEqualTo(testSong1.album)
             assertThat(song.track).isEqualTo(testSong1.track)
             assertThat(song.language).isEqualTo(testSong1.language)
             assertThat(song.coverRemixSample).isEqualTo(testSong1.coverRemixSample)
@@ -603,7 +582,6 @@ class SongRoutesTests : BaseApplicationTests() {
                     val stageOrFullName = transaction { UserEntity[song.ownerId!!].stageOrFullName }
                     phrase in song.title!! ||
                         phrase in song.description!! ||
-                        phrase in song.album!! ||
                         phrase in song.nftName!! ||
                         phrase in stageOrFullName
                 }
@@ -636,7 +614,10 @@ class SongRoutesTests : BaseApplicationTests() {
     fun testPatchSong() =
         runBlocking {
             // Add Song directly into database
-            val song1 = addSongToDatabase(ownerId = testUserId)
+            val song1 =
+                addSongToDatabase(ownerId = testUserId) {
+                    ReleaseEntity[releaseId!!].hasSubmittedForDistribution = true
+                }
             val songId = song1.id!!
 
             // Patch it with Song2
@@ -649,7 +630,12 @@ class SongRoutesTests : BaseApplicationTests() {
             assertThat(response.status).isEqualTo(HttpStatusCode.NoContent)
 
             // Read Song directly from database & verify it
-            val song2 = transaction { SongEntity[songId] }.toModel()
+            val song2 =
+                transaction {
+                    val song = SongEntity[songId]
+                    val release = ReleaseEntity[song.releaseId!!].toModel()
+                    song.toModel(release)
+                }
             assertThat(song2.id).isEqualTo(songId)
             assertThat(song2.archived).isEqualTo(testSong2.archived)
             assertThat(song2.ownerId).isEqualTo(testUserId)
@@ -658,7 +644,6 @@ class SongRoutesTests : BaseApplicationTests() {
             assertThat(song2.genres).isEqualTo(testSong2.genres)
             assertThat(song2.moods).isEqualTo(testSong2.moods)
             assertThat(song2.description).isEqualTo(testSong2.description)
-            assertThat(song2.album).isEqualTo(testSong2.album)
             assertThat(song2.track).isEqualTo(testSong2.track)
             assertThat(song2.language).isEqualTo(testSong2.language)
             assertThat(song2.coverRemixSample).isEqualTo(testSong2.coverRemixSample)
@@ -1018,17 +1003,31 @@ fun addSongToDatabase(
             }
         }.id
 
+    val title = "title$offset ${phraseOrEmpty(3)} blah blah"
+    val releaseId =
+        transaction {
+            ReleaseEntity.new {
+                this.title = title
+                this.ownerId = ownerEntityId
+                releaseType = ReleaseType.SINGLE
+                coverArtUrl = "https://newm.io/cover$offset"
+                barcodeType = ReleaseBarcodeType.entries[offset % ReleaseBarcodeType.entries.size]
+                barcodeNumber = "barcodeNumber$offset"
+                releaseDate = LocalDate.of(2023, 1, offset % 31 + 1)
+                publicationDate = LocalDate.of(2023, 1, offset % 31 + 1)
+            }.id.value
+        }
+    val release = transaction { ReleaseEntity[releaseId].toModel() }
     return transaction {
         SongEntity.new {
             this.archived = archived
             this.ownerId = ownerEntityId
-            title = "title$offset ${phraseOrEmpty(3)} blah blah"
+            this.title = title
+            this.releaseId = EntityID(release.id!!, ReleaseTable)
             description = "description$offset ${phraseOrEmpty(4)} blah blah"
-            album = "album$offset ${phraseOrEmpty(5)} blah blah"
             nftName = "nftName$offset ${phraseOrEmpty(6)} blah blah"
             genres = arrayOf("genre${offset}_0", "genre${offset}_1")
             moods = arrayOf("mood${offset}_0", "mood${offset}_1")
-            coverArtUrl = "https://newm.io/cover$offset"
             track = offset
             language = "language$offset"
             coverRemixSample = offset % 2 == 0
@@ -1037,13 +1036,9 @@ fun addSongToDatabase(
             phonographicCopyrightOwner = "copyright$phonographicCopyrightOwner"
             phonographicCopyrightYear = 2 * offset
             parentalAdvisory = "parentalAdvisory$offset"
-            barcodeType = SongBarcodeType.entries[offset % SongBarcodeType.entries.size]
-            barcodeNumber = "barcodeNumber$offset"
             isrc = "isrc$offset"
             iswc = "iswc$offset"
             ipis = arrayOf("ipi${offset}_0", "ipi${offset}_1")
-            releaseDate = LocalDate.of(2023, 1, offset % 31 + 1)
-            publicationDate = LocalDate.of(2023, 1, offset % 31 + 1)
             lyricsUrl = "https://newm.io/lyrics$offset"
             tokenAgreementUrl = "https://newm.io/agreement$offset"
             originalAudioUrl = "https://newm.io/audio$offset"
@@ -1059,5 +1054,5 @@ fun addSongToDatabase(
                 this.apply { init() }
             }
         }
-    }.toModel()
+    }.toModel(release)
 }
