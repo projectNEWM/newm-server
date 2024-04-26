@@ -9,12 +9,7 @@ import io.ktor.server.routing.route
 import io.newm.server.auth.jwt.AUTH_JWT
 import io.newm.server.auth.jwt.AUTH_JWT_ADMIN
 import io.newm.server.features.model.CountResponse
-import io.newm.server.features.song.model.AudioStreamResponse
-import io.newm.server.features.song.model.MintPaymentRequest
-import io.newm.server.features.song.model.MintPaymentResponse
-import io.newm.server.features.song.model.SongIdBody
-import io.newm.server.features.song.model.StreamTokenAgreementRequest
-import io.newm.server.features.song.model.songFilters
+import io.newm.server.features.song.model.*
 import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.features.user.model.User
 import io.newm.server.features.user.repo.UserRepository
@@ -86,7 +81,8 @@ fun Routing.createSongRoutes() {
                     respond(songRepository.get(songId))
                 }
                 patch {
-                    songRepository.update(songId, receive(), myUserId)
+                    val song: Song = receive()
+                    songRepository.update(songId, song, myUserId)
                     respond(HttpStatusCode.NoContent)
                 }
                 delete {

@@ -3,7 +3,7 @@ package io.newm.server.features.distribution.eveara
 import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.Logger
 import com.google.common.truth.Truth.assertThat
-import io.ktor.server.application.ApplicationEnvironment
+import io.ktor.server.application.*
 import io.mockk.mockk
 import io.newm.server.BaseApplicationTests
 import io.newm.server.config.repo.ConfigRepository
@@ -16,6 +16,8 @@ import io.newm.server.features.collaboration.repo.CollaborationRepository
 import io.newm.server.features.collaboration.repo.CollaborationRepositoryImpl
 import io.newm.server.features.distribution.DistributionRepository
 import io.newm.server.features.song.model.MintingStatus
+import io.newm.server.features.song.model.Release
+import io.newm.server.features.song.model.ReleaseType
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.features.song.repo.SongRepositoryImpl
@@ -35,7 +37,7 @@ import org.junit.jupiter.api.Test
 import org.slf4j.LoggerFactory
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.util.UUID
+import java.util.*
 
 class EvearaDistributionRepositoryTest : BaseApplicationTests() {
     @BeforeEach
@@ -143,6 +145,14 @@ class EvearaDistributionRepositoryTest : BaseApplicationTests() {
 
         songId =
             addSongToDatabase(
+                Release(
+                    ownerId = primaryArtistId,
+                    title = "Daisuke",
+                    releaseType = ReleaseType.SINGLE,
+                    arweaveCoverArtUrl = "ar://GlMlqHIPjwUtlPUfQxDdX1jWSjlKK1BCTBIekXgA66A",
+                    releaseDate = LocalDate.parse("2023-02-03"),
+                    publicationDate = LocalDate.parse("2023-02-03"),
+                ),
                 Song(
                     ownerId = primaryArtistId,
                     title = "Daisuke",
@@ -152,11 +162,9 @@ class EvearaDistributionRepositoryTest : BaseApplicationTests() {
                     // isrc = "QZ-NW7-23-57511",
                     moods = listOf("spiritual"),
                     coverArtUrl = "https://res.cloudinary.com/newm/image/upload/c_fit,w_4000,h_4000/v1683539164/ufshvmlfxbis0ba4bshw.jpg",
-                    arweaveCoverArtUrl = "ar://GlMlqHIPjwUtlPUfQxDdX1jWSjlKK1BCTBIekXgA66A",
                     arweaveLyricsUrl = "ar://7vQTHTkgybn8nVLDlukGiBazy2NZVhWP6HZdJdmPH00",
                     arweaveTokenAgreementUrl = "ar://eK8gAPCvJ-9kbiP3PrSMwLGAk38aNyxPDudzzbGypxE",
                     arweaveClipUrl = "ar://QpgjmWmAHNeRVgx_Ylwvh16i3aWd8BBgyq7f16gaUu0",
-                    album = "Daisuke",
                     duration = 200000,
                     track = 1,
                     compositionCopyrightOwner = "Mirai Music Publishing",
@@ -322,8 +330,9 @@ class EvearaDistributionRepositoryTest : BaseApplicationTests() {
                 EvearaDistributionRepositoryImpl(collabRepository, configRepository)
 
             val song = songRepository.get(songId)
+            val release = songRepository.getRelease(song.releaseId!!)
 
-            distributionRepository.distributeSong(song)
+            distributionRepository.distributeRelease(release)
         }
 
     @Test

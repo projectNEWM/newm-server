@@ -97,7 +97,7 @@ object Dependencies {
     }
 
     object Koin {
-        private const val VERSION = "3.5.4"
+        private const val VERSION = "3.5.6"
 
         const val KTOR = "io.insert-koin:koin-ktor:$VERSION"
         const val TEST = "io.insert-koin:koin-test:$VERSION"
@@ -132,7 +132,7 @@ object Dependencies {
     }
 
     object FlywayDB {
-        private const val VERSION = "10.11.0"
+        private const val VERSION = "10.11.1"
 
         const val CORE = "org.flywaydb:flyway-core:$VERSION"
         const val POSTGRES = "org.flywaydb:flyway-database-postgresql:$VERSION"
@@ -201,7 +201,7 @@ object Dependencies {
     }
 
     object SpringSecurity {
-        private const val VERSION = "6.2.3"
+        private const val VERSION = "6.2.4"
 
         const val CORE = "org.springframework.security:spring-security-core:$VERSION"
     }
@@ -214,8 +214,8 @@ object Dependencies {
     }
 
     object Aws {
-        private const val VERSION = "1.12.697"
-        private const val VERSION2 = "2.25.27"
+        private const val VERSION = "1.12.709"
+        private const val VERSION2 = "2.25.39"
         private const val JAXB_VERSION = "2.3.1"
 
         const val BOM = "com.amazonaws:aws-java-sdk-bom:$VERSION"

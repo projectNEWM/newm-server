@@ -1,13 +1,14 @@
 package io.newm.server
 
+import com.amazonaws.services.kms.AWSKMSAsync
 import com.amazonaws.services.s3.AmazonS3
 import com.zaxxer.hikari.HikariDataSource
-import io.ktor.client.HttpClient
-import io.ktor.client.plugins.HttpTimeout
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.serialization.kotlinx.json.json
-import io.ktor.server.config.ApplicationConfig
-import io.ktor.server.testing.TestApplication
+import io.ktor.client.*
+import io.ktor.client.plugins.*
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.serialization.kotlinx.json.*
+import io.ktor.server.config.*
+import io.ktor.server.testing.*
 import io.mockk.mockk
 import io.newm.server.auth.jwt.database.JwtTable
 import io.newm.server.auth.twofactor.database.TwoFactorAuthTable
@@ -23,9 +24,9 @@ import io.newm.server.features.marketplace.database.MarketplacePurchaseTable
 import io.newm.server.features.marketplace.database.MarketplaceSaleTable
 import io.newm.server.features.playlist.database.PlaylistTable
 import io.newm.server.features.playlist.database.SongsInPlaylistsTable
-import io.newm.server.features.song.database.SongEntity
-import io.newm.server.features.song.database.SongReceiptTable
-import io.newm.server.features.song.database.SongTable
+import io.newm.server.features.song.database.*
+import io.newm.server.features.song.model.Release
+import io.newm.server.features.song.model.ReleaseType
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.user.QUALIFIER_APPLE_MUSIC_PROFILE_URL_VERIFIER
 import io.newm.server.features.user.QUALIFIER_SOUND_CLOUD_PROFILE_URL_VERIFIER
@@ -62,7 +63,7 @@ import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 import java.math.BigDecimal
 import java.math.BigInteger
-import java.util.UUID
+import java.util.*
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
@@ -159,6 +160,7 @@ open class BaseApplicationTests {
                 single { mockk<LinkedInUserProvider>(relaxed = true) }
                 single { mockk<AppleUserProvider>(relaxed = true) }
                 single { mockk<AmazonS3>(relaxed = true) }
+                single { mockk<AWSKMSAsync>(relaxed = true) }
                 single { mockk<RecaptchaRepository>(relaxed = true) }
                 single<OutletProfileUrlVerifier>(QUALIFIER_SPOTIFY_PROFILE_URL_VERIFIER) {
                     mockk<OutletProfileUrlVerifier>(relaxed = true)
@@ -220,16 +222,34 @@ open class BaseApplicationTests {
             }.id.value
         }
 
-    protected fun addSongToDatabase(song: Song): UUID =
+    protected fun addSongToDatabase(
+        release: Release,
+        song: Song
+    ): UUID =
         transaction {
+            val releaseId =
+                ReleaseEntity.new {
+                    archived = false
+                    this.ownerId = EntityID(release.ownerId!!, UserTable)
+                    this.title = release.title!!
+                    // TODO: Refactor 'single' hardcoding once we have album support in the UI/UX
+                    releaseType = ReleaseType.SINGLE
+                    barcodeType = release.barcodeType
+                    barcodeNumber = release.barcodeNumber
+                    releaseDate = release.releaseDate
+                    publicationDate = release.publicationDate
+                    coverArtUrl = release.coverArtUrl?.asValidUrl()
+                    arweaveCoverArtUrl = release.arweaveCoverArtUrl
+                    hasSubmittedForDistribution = false
+                    errorMessage = song.errorMessage
+                }.id.value
             SongEntity.new {
                 ownerId = EntityID(song.ownerId!!, UserTable)
                 title = song.title!!
                 genres = song.genres!!.toTypedArray()
                 moods = song.moods?.toTypedArray()
-                coverArtUrl = song.coverArtUrl?.asValidUrl()
                 description = song.description
-                album = song.album
+                this.releaseId = EntityID(releaseId, ReleaseTable)
                 track = song.track
                 language = song.language
                 compositionCopyrightOwner = song.compositionCopyrightOwner
@@ -240,14 +260,10 @@ open class BaseApplicationTests {
                 isrc = song.isrc
                 iswc = song.iswc
                 ipis = song.ipis?.toTypedArray()
-                releaseDate = song.releaseDate
                 lyricsUrl = song.lyricsUrl?.asValidUrl()
                 arweaveClipUrl = song.arweaveClipUrl
-                arweaveCoverArtUrl = song.arweaveCoverArtUrl
                 arweaveLyricsUrl = song.arweaveLyricsUrl
                 arweaveTokenAgreementUrl = song.arweaveTokenAgreementUrl
-                releaseDate = song.releaseDate
-                publicationDate = song.publicationDate
                 duration = song.duration
                 originalAudioUrl = song.originalAudioUrl
             }.id.value

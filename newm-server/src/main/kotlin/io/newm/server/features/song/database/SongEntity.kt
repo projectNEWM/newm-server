@@ -1,11 +1,6 @@
 package io.newm.server.features.song.database
 
-import io.newm.server.features.song.model.AudioEncodingStatus
-import io.newm.server.features.song.model.MarketplaceStatus
-import io.newm.server.features.song.model.MintingStatus
-import io.newm.server.features.song.model.Song
-import io.newm.server.features.song.model.SongBarcodeType
-import io.newm.server.features.song.model.SongFilters
+import io.newm.server.features.song.model.*
 import io.newm.server.features.user.database.UserTable
 import io.newm.shared.exposed.overlaps
 import io.newm.shared.exposed.unnest
@@ -13,25 +8,14 @@ import io.newm.shared.ktx.exists
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.AndOp
-import org.jetbrains.exposed.sql.Op
-import org.jetbrains.exposed.sql.SizedIterable
-import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.count
-import org.jetbrains.exposed.sql.innerJoin
-import org.jetbrains.exposed.sql.lowerCase
-import org.jetbrains.exposed.sql.mapLazy
-import org.jetbrains.exposed.sql.or
-import org.jetbrains.exposed.sql.selectAll
-import java.time.LocalDate
 import java.time.LocalDateTime
-import java.util.UUID
+import java.util.*
 
 class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var archived: Boolean by SongTable.archived
@@ -40,9 +24,8 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var title: String by SongTable.title
     var genres: Array<String> by SongTable.genres
     var moods: Array<String>? by SongTable.moods
-    var coverArtUrl: String? by SongTable.coverArtUrl
     var description: String? by SongTable.description
-    var album: String? by SongTable.album
+    var releaseId: EntityID<UUID>? by SongTable.releaseId
     var track: Int? by SongTable.track
     var language: String? by SongTable.language
     var coverRemixSample: Boolean by SongTable.coverRemixSample
@@ -51,13 +34,9 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var phonographicCopyrightOwner: String? by SongTable.phonographicCopyrightOwner
     var phonographicCopyrightYear: Int? by SongTable.phonographicCopyrightYear
     var parentalAdvisory: String? by SongTable.parentalAdvisory
-    var barcodeType: SongBarcodeType? by SongTable.barcodeType
-    var barcodeNumber: String? by SongTable.barcodeNumber
     var isrc: String? by SongTable.isrc
     var iswc: String? by SongTable.iswc
     var ipis: Array<String>? by SongTable.ipis
-    var releaseDate: LocalDate? by SongTable.releaseDate
-    var publicationDate: LocalDate? by SongTable.publicationDate
     var lyricsUrl: String? by SongTable.lyricsUrl
     var tokenAgreementUrl: String? by SongTable.tokenAgreementUrl
     var originalAudioUrl: String? by SongTable.originalAudioUrl
@@ -71,19 +50,14 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var mintingTxId: String? by SongTable.mintingTxId
     var marketplaceStatus: MarketplaceStatus by SongTable.marketplaceStatus
     var paymentKeyId: EntityID<UUID>? by SongTable.paymentKeyId
-    var arweaveCoverArtUrl: String? by SongTable.arweaveCoverArtUrl
     var arweaveLyricsUrl: String? by SongTable.arweaveLyricsUrl
     var arweaveTokenAgreementUrl: String? by SongTable.arweaveTokenAgreementUrl
     var arweaveClipUrl: String? by SongTable.arweaveClipUrl
     var distributionTrackId: Long? by SongTable.distributionTrackId
-    var distributionReleaseId: Long? by SongTable.distributionReleaseId
     var mintCostLovelace: Long? by SongTable.mintCostLovelace
-    var forceDistributed: Boolean? by SongTable.forceDistributed
-    var errorMessage: String? by SongTable.errorMessage
     var instrumental: Boolean by SongTable.instrumental
-    var hasSubmittedForDistribution: Boolean by SongTable.hasSubmittedForDistribution
 
-    fun toModel(): Song =
+    fun toModel(release: Release): Song =
         Song(
             id = id.value,
             archived = archived,
@@ -92,9 +66,9 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             title = title,
             genres = genres.toList(),
             moods = moods?.toList(),
-            coverArtUrl = coverArtUrl,
+            coverArtUrl = release.coverArtUrl,
             description = description,
-            album = album,
+            releaseId = releaseId?.value,
             track = track,
             language = language,
             coverRemixSample = coverRemixSample,
@@ -103,13 +77,13 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             phonographicCopyrightOwner = phonographicCopyrightOwner,
             phonographicCopyrightYear = phonographicCopyrightYear,
             parentalAdvisory = parentalAdvisory,
-            barcodeType = barcodeType,
-            barcodeNumber = barcodeNumber,
+            barcodeType = release.barcodeType,
+            barcodeNumber = release.barcodeNumber,
             isrc = isrc,
             iswc = iswc,
             ipis = ipis?.toList(),
-            releaseDate = releaseDate,
-            publicationDate = publicationDate,
+            releaseDate = release.releaseDate,
+            publicationDate = release.publicationDate,
             lyricsUrl = lyricsUrl,
             tokenAgreementUrl = tokenAgreementUrl,
             originalAudioUrl = originalAudioUrl,
@@ -123,17 +97,14 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             mintingTxId = mintingTxId,
             marketplaceStatus = marketplaceStatus,
             paymentKeyId = paymentKeyId?.value,
-            arweaveCoverArtUrl = arweaveCoverArtUrl,
             arweaveLyricsUrl = arweaveLyricsUrl,
             arweaveTokenAgreementUrl = arweaveTokenAgreementUrl,
             arweaveClipUrl = arweaveClipUrl,
             distributionTrackId = distributionTrackId,
-            distributionReleaseId = distributionReleaseId,
             mintCostLovelace = mintCostLovelace,
-            forceDistributed = forceDistributed,
-            errorMessage = errorMessage,
+            forceDistributed = release.forceDistributed,
+            errorMessage = release.errorMessage,
             instrumental = instrumental,
-            hasSubmittedForDistribution = hasSubmittedForDistribution,
         )
 
     companion object : UUIDEntityClass<SongEntity>(SongTable) {
@@ -212,7 +183,6 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                 ops += (
                     (SongTable.title.lowerCase() like pattern)
                         or (SongTable.description.lowerCase() like pattern)
-                        or (SongTable.album.lowerCase() like pattern)
                         or (SongTable.nftName.lowerCase() like pattern)
                         or (UserTable.nickname.lowerCase() like pattern)
                         or (

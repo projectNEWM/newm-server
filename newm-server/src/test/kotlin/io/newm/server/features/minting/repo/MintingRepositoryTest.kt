@@ -19,6 +19,8 @@ import io.newm.server.features.collaboration.model.CollaborationStatus
 import io.newm.server.features.collaboration.repo.CollaborationRepository
 import io.newm.server.features.collaboration.repo.CollaborationRepositoryImpl
 import io.newm.server.features.song.model.MintingStatus
+import io.newm.server.features.song.model.Release
+import io.newm.server.features.song.model.ReleaseType
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.features.song.repo.SongRepositoryImpl
@@ -35,7 +37,7 @@ import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.util.UUID
+import java.util.*
 
 class MintingRepositoryTest : BaseApplicationTests() {
     @BeforeEach
@@ -138,19 +140,23 @@ class MintingRepositoryTest : BaseApplicationTests() {
 
         songId =
             addSongToDatabase(
+                Release(
+                    ownerId = primaryArtistId,
+                    title = "Daisuke",
+                    releaseType = ReleaseType.SINGLE,
+                    arweaveCoverArtUrl = "ar://GlMlqHIPjwUtlPUfQxDdX1jWSjlKK1BCTBIekXgA66A",
+                    releaseDate = LocalDate.parse("2023-02-03"),
+                    publicationDate = LocalDate.parse("2023-02-03"),
+                ),
                 Song(
                     ownerId = primaryArtistId,
                     title = "Daisuke",
                     genres = listOf("Pop", "House", "Tribal"),
-                    releaseDate = LocalDate.parse("2023-02-03"),
-                    publicationDate = LocalDate.parse("2023-02-03"),
                     isrc = "QZ-NW7-23-57511",
                     moods = listOf("spiritual"),
-                    arweaveCoverArtUrl = "ar://GlMlqHIPjwUtlPUfQxDdX1jWSjlKK1BCTBIekXgA66A",
                     arweaveLyricsUrl = "ar://7vQTHTkgybn8nVLDlukGiBazy2NZVhWP6HZdJdmPH00",
                     arweaveTokenAgreementUrl = "ar://eK8gAPCvJ-9kbiP3PrSMwLGAk38aNyxPDudzzbGypxE",
                     arweaveClipUrl = "ar://QpgjmWmAHNeRVgx_Ylwvh16i3aWd8BBgyq7f16gaUu0",
-                    album = "Daisuke",
                     duration = 200000,
                     track = 1,
                     compositionCopyrightOwner = "Mirai Music Publishing",
@@ -300,6 +306,7 @@ class MintingRepositoryTest : BaseApplicationTests() {
             val mintingRepository = MintingRepositoryImpl(mockk(), collabRepository, mockk(), mockk())
 
             val song = songRepository.get(songId)
+            val release = songRepository.getRelease(song.releaseId!!)
             val primaryArtist =
                 transaction {
                     UserEntity.getByEmail("danketsu@me.com")!!.toModel(false)
@@ -320,7 +327,7 @@ class MintingRepositoryTest : BaseApplicationTests() {
                 )
 
             val plutusDataHex =
-                mintingRepository.buildStreamTokenMetadata(song, primaryArtist, collabs).toCborObject().toCborByteArray()
+                mintingRepository.buildStreamTokenMetadata(release, song, primaryArtist, collabs).toCborObject().toCborByteArray()
                     .toHexString()
 
             println("plutusDataHex: $plutusDataHex")
@@ -380,6 +387,7 @@ class MintingRepositoryTest : BaseApplicationTests() {
             val mintingRepository = MintingRepositoryImpl(mockk(), collabRepository, cardanoRepository, mockk())
 
             val song = songRepository.get(songId)
+            val release = songRepository.getRelease(song.releaseId!!)
             val primaryArtist =
                 transaction {
                     UserEntity.getByEmail("danketsu@me.com")!!.toModel(false)
@@ -399,7 +407,7 @@ class MintingRepositoryTest : BaseApplicationTests() {
                     Integer.MAX_VALUE
                 )
 
-            val cip68Metadata = mintingRepository.buildStreamTokenMetadata(song, primaryArtist, collabs)
+            val cip68Metadata = mintingRepository.buildStreamTokenMetadata(release, song, primaryArtist, collabs)
             val cashRegisterUtxos =
                 listOf(
                     utxo {

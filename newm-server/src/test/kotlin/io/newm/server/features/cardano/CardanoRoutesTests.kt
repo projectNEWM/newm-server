@@ -1,27 +1,18 @@
 package io.newm.server.features.cardano
 
 import com.google.common.truth.Truth.assertThat
-import io.ktor.client.call.body
-import io.ktor.client.request.accept
-import io.ktor.client.request.bearerAuth
-import io.ktor.client.request.get
-import io.ktor.client.request.parameter
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
-import io.ktor.http.ContentType
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.contentType
+import io.ktor.client.call.*
+import io.ktor.client.request.*
+import io.ktor.http.*
 import io.newm.server.BaseApplicationTests
 import io.newm.server.features.cardano.database.KeyEntity
 import io.newm.server.features.cardano.database.KeyTable
 import io.newm.server.features.cardano.model.GetWalletSongsResponse
+import io.newm.server.features.song.database.ReleaseEntity
+import io.newm.server.features.song.database.ReleaseTable
 import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.database.SongTable
-import io.newm.server.features.song.model.AudioEncodingStatus
-import io.newm.server.features.song.model.MarketplaceStatus
-import io.newm.server.features.song.model.MintingStatus
-import io.newm.server.features.song.model.Song
-import io.newm.server.features.song.model.SongBarcodeType
+import io.newm.server.features.song.model.*
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
 import kotlinx.coroutines.runBlocking
@@ -33,12 +24,13 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
-import java.util.UUID
+import java.util.*
 
 class CardanoRoutesTests : BaseApplicationTests() {
     @BeforeEach
     fun beforeEach() {
         transaction {
+            ReleaseTable.deleteAll()
             SongTable.deleteAll()
             KeyTable.deleteAll()
             UserTable.deleteWhere { id neq testUserId }
@@ -322,17 +314,31 @@ fun addSongToDatabase(
         target: Int
     ) = phrase?.takeIf { offset % 4 == target }.orEmpty()
 
+    val title = "title$offset ${phraseOrBlank(offset, 0)} blah blah"
+    val releaseId =
+        transaction {
+            ReleaseEntity.new {
+                this.title = title
+                this.ownerId = ownerEntityId
+                releaseType = ReleaseType.SINGLE
+                coverArtUrl = "https://newm.io/cover$offset"
+                barcodeType = ReleaseBarcodeType.entries[offset % ReleaseBarcodeType.entries.size]
+                barcodeNumber = "barcodeNumber$offset"
+                releaseDate = LocalDate.of(2023, 1, offset % 31 + 1)
+                publicationDate = LocalDate.of(2023, 1, offset % 31 + 1)
+            }.id.value
+        }
+    val release = transaction { ReleaseEntity[releaseId].toModel() }
     return transaction {
         SongEntity.new {
             this.archived = archived
             this.ownerId = ownerEntityId
-            title = "title$offset ${phraseOrBlank(offset, 0)} blah blah"
+            this.title = title
+            this.releaseId = EntityID(release.id!!, ReleaseTable)
             description = "description$offset ${phraseOrBlank(offset, 1)} blah blah"
-            album = "album$offset ${phraseOrBlank(offset, 2)} blah blah"
             this.nftName = nftName
             genres = arrayOf("genre${offset}_0", "genre${offset}_1")
             moods = arrayOf("mood${offset}_0", "mood${offset}_1")
-            coverArtUrl = "https://newm.io/cover$offset"
             track = offset
             language = "language$offset"
             compositionCopyrightOwner = "compositionCopyrightOwner$offset"
@@ -340,13 +346,9 @@ fun addSongToDatabase(
             phonographicCopyrightOwner = "copyright$phonographicCopyrightOwner"
             phonographicCopyrightYear = 2 * offset
             parentalAdvisory = "parentalAdvisory$offset"
-            barcodeType = SongBarcodeType.entries[offset % SongBarcodeType.entries.size]
-            barcodeNumber = "barcodeNumber$offset"
             isrc = "isrc$offset"
             iswc = "iswc$offset"
             ipis = arrayOf("ipi${offset}_0", "ipi${offset}_1")
-            releaseDate = LocalDate.of(2023, 1, offset % 31 + 1)
-            publicationDate = LocalDate.of(2023, 1, offset % 31 + 1)
             lyricsUrl = "https://newm.io/lyrics$offset"
             tokenAgreementUrl = "https://newm.io/agreement$offset"
             originalAudioUrl = "https://newm.io/audio$offset"
@@ -362,5 +364,5 @@ fun addSongToDatabase(
                 this.apply { init() }
             }
         }
-    }.toModel()
+    }.toModel(release)
 }

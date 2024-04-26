@@ -21,9 +21,11 @@ data class Song(
     val title: String? = null,
     val genres: List<String>? = null,
     val moods: List<String>? = null,
+    // FIXME: Keep coverArtUrl for now since the UI/UX expects it. Eventually this will only be on the Release instead of the Song.
     val coverArtUrl: String? = null,
     val description: String? = null,
-    val album: String? = null,
+    @Serializable(with = UUIDSerializer::class)
+    val releaseId: UUID? = null,
     val track: Int? = null,
     val language: String? = null,
     val coverRemixSample: Boolean? = null,
@@ -32,13 +34,17 @@ data class Song(
     val phonographicCopyrightOwner: String? = null,
     val phonographicCopyrightYear: Int? = null,
     val parentalAdvisory: String? = null,
-    val barcodeType: SongBarcodeType? = null,
+    // FIXME: Keep barcodeType for now since the UI/UX expects it. Eventually this will only be on the Release instead of the Song.
+    val barcodeType: ReleaseBarcodeType? = null,
+    // FIXME: Keep barcodeNumber for now since the UI/UX expects it. Eventually this will only be on the Release instead of the Song.
     val barcodeNumber: String? = null,
     val isrc: String? = null,
     val iswc: String? = null,
     val ipis: List<String>? = null,
+    // FIXME: Keep releaseDate for now since the UI/UX expects it. Eventually this will only be on the Release instead of the Song.
     @Serializable(with = LocalDateSerializer::class)
     val releaseDate: LocalDate? = null,
+    // FIXME: Keep publicationDate for now since the UI/UX expects it. Eventually this will only be on the Release instead of the Song.
     @Serializable(with = LocalDateSerializer::class)
     val publicationDate: LocalDate? = null,
     val lyricsUrl: String? = null,
@@ -56,8 +62,6 @@ data class Song(
     @Serializable(with = UUIDSerializer::class)
     val paymentKeyId: UUID? = null,
     @Transient
-    val arweaveCoverArtUrl: String? = null,
-    @Transient
     val arweaveLyricsUrl: String? = null,
     @Transient
     val arweaveTokenAgreementUrl: String? = null,
@@ -66,12 +70,10 @@ data class Song(
     @Transient
     val distributionTrackId: Long? = null,
     @Transient
-    val distributionReleaseId: Long? = null,
-    @Transient
     val mintCostLovelace: Long? = null,
     @Transient
     val forceDistributed: Boolean? = null,
+    // FIXME: Keep errorMessage for now since the UI/UX expects it. Eventually this will only be on the Release instead of the Song.
     val errorMessage: String? = null,
     val instrumental: Boolean? = null,
-    val hasSubmittedForDistribution: Boolean? = null,
 )

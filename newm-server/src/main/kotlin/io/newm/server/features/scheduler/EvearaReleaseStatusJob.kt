@@ -45,8 +45,9 @@ class EvearaReleaseStatusJob : Job {
             try {
                 val user = userRepository.get(userId)
                 val song = songRepository.get(songId)
+                val release = songRepository.getRelease(song.releaseId!!)
                 val distributionReleaseStatusResponse =
-                    distributionRepository.distributionOutletReleaseStatus(user, song.distributionReleaseId!!)
+                    distributionRepository.distributionOutletReleaseStatus(user, release.distributionReleaseId!!)
                 val spotifyOutletStatusCode =
                     if (song.forceDistributed == true) {
                         // If the song is force distributed, then we can mark it as disapproved or distributed
@@ -88,7 +89,7 @@ class EvearaReleaseStatusJob : Job {
                                 "Failed to get album disapproveMessage: ${albumsResponse.message}"
                             )
                         } else {
-                            albumsResponse.albumData.firstOrNull { it.releaseId == song.distributionReleaseId }?.let {
+                            albumsResponse.albumData.firstOrNull { it.releaseId == release.distributionReleaseId }?.let {
                                 songRepository.updateSongMintingStatus(
                                     songId,
                                     MintingStatus.Declined,
@@ -115,7 +116,7 @@ class EvearaReleaseStatusJob : Job {
                             // We're on testnet, so we can simulate distribution
                             log.info { "Simulating distribution for $songId on testnet" }
                             val response =
-                                distributionRepository.simulateDistributeRelease(user, song.distributionReleaseId)
+                                distributionRepository.simulateDistributeRelease(user, release.distributionReleaseId)
                             log.info { "Simulated distribution response: $response" }
                         }
                         log.info {

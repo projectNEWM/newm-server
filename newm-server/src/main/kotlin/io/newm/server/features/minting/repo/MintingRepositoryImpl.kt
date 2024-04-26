@@ -7,18 +7,7 @@ import com.google.iot.cbor.CborMap
 import com.google.iot.cbor.CborTextString
 import com.google.protobuf.ByteString
 import com.google.protobuf.kotlin.toByteString
-import io.newm.chain.grpc.PlutusData
-import io.newm.chain.grpc.RedeemerTag
-import io.newm.chain.grpc.Signature
-import io.newm.chain.grpc.Utxo
-import io.newm.chain.grpc.nativeAsset
-import io.newm.chain.grpc.outputUtxo
-import io.newm.chain.grpc.plutusData
-import io.newm.chain.grpc.plutusDataList
-import io.newm.chain.grpc.plutusDataMap
-import io.newm.chain.grpc.plutusDataMapItem
-import io.newm.chain.grpc.redeemer
-import io.newm.chain.grpc.signature
+import io.newm.chain.grpc.*
 import io.newm.chain.util.Blake2b
 import io.newm.chain.util.Sha3
 import io.newm.chain.util.hexToByteArray
@@ -34,7 +23,9 @@ import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.collaboration.model.Collaboration
 import io.newm.server.features.collaboration.repo.CollaborationRepository
 import io.newm.server.features.minting.model.MintInfo
+import io.newm.server.features.song.model.Release
 import io.newm.server.features.song.model.Song
+import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.model.User
 import io.newm.server.features.user.repo.UserRepository
@@ -60,12 +51,14 @@ class MintingRepositoryImpl(
     private val configRepository: ConfigRepository,
 ) : MintingRepository {
     private val log: Logger by inject { parametersOf(javaClass.simpleName) }
+    private val songRepository: SongRepository by inject()
 
     override suspend fun mint(song: Song): MintInfo {
         return cardanoRepository.withLock {
             val user = userRepository.get(song.ownerId!!)
+            val release = songRepository.getRelease(song.releaseId!!)
             val collabs = collabRepository.getAllBySongId(song.id!!)
-            val cip68Metadata = buildStreamTokenMetadata(song, user, collabs)
+            val cip68Metadata = buildStreamTokenMetadata(release, song, user, collabs)
             val streamTokensTotal = 100_000_000L
             var streamTokensRemaining = 100_000_000L
             val splitCollabs =
@@ -400,6 +393,7 @@ class MintingRepositoryImpl(
 
     @VisibleForTesting
     internal fun buildStreamTokenMetadata(
+        release: Release,
         song: Song,
         user: User,
         collabs: List<Collaboration>
@@ -423,7 +417,7 @@ class MintingRepositoryImpl(
                                             add(
                                                 plutusDataMapItem {
                                                     mapItemKey = "image".toPlutusData()
-                                                    mapItemValue = song.arweaveCoverArtUrl!!.toPlutusData()
+                                                    mapItemValue = release.arweaveCoverArtUrl!!.toPlutusData()
                                                 }
                                             )
                                             add(
@@ -438,7 +432,7 @@ class MintingRepositoryImpl(
                                                     mapItemValue = plutusData { int = 2 } // CIP-60 Version 2
                                                 }
                                             )
-                                            add(createPlutusDataRelease(song, collabs))
+                                            add(createPlutusDataRelease(release, collabs))
                                             add(createPlutusDataFiles(song, user, collabs))
                                             // DO NOT ADD LINKS for now. Revisit later
                                             // add(createPlutusDataLinks(user, collabs))
@@ -454,7 +448,7 @@ class MintingRepositoryImpl(
     }
 
     private fun createPlutusDataRelease(
-        song: Song,
+        release: Release,
         collabs: List<Collaboration>
     ) = plutusDataMapItem {
         mapItemKey = "release".toPlutusData()
@@ -473,20 +467,16 @@ class MintingRepositoryImpl(
                             add(
                                 plutusDataMapItem {
                                     mapItemKey = "release_title".toPlutusData()
-                                    mapItemValue =
-                                        (
-                                            song.album
-                                                ?: song.title
-                                        )!!.toPlutusData() // NOTE: for single, track title is used as album name
+                                    mapItemValue = release.title!!.toPlutusData()
                                 }
                             )
                             add(
                                 plutusDataMapItem {
                                     mapItemKey = "release_date".toPlutusData()
-                                    mapItemValue = song.releaseDate!!.toString().toPlutusData()
+                                    mapItemValue = release.releaseDate!!.toString().toPlutusData()
                                 }
                             )
-                            song.publicationDate?.let {
+                            release.publicationDate?.let {
                                 add(
                                     plutusDataMapItem {
                                         mapItemKey = "publication_date".toPlutusData()
