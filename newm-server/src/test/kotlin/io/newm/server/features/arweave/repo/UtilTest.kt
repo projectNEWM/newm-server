@@ -25,7 +25,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.LocalDate
 import java.util.UUID
-import kotlin.math.exp
 
 class UtilTest : KoinTest {
     companion object {
@@ -62,21 +61,10 @@ class UtilTest : KoinTest {
         }
     }
 
-//    @Before
-//    fun startKoinForTest() {
-//        startKoin {
-//            module {
-//                 single { mockk<ApplicationEnvironment>() }
-//            }
-//        }
-//    }
-
     @Test
     fun `test weaveRequest already exists`() =
         runTest {
             var actual: WeaveRequest
-//        val mockEnvironment = Mockito.mock(ApplicationEnvironment::class.java)
-//        Mockito.`when`(mockEnvironment.getSecureConfigString("arweave.walletJson")).thenReturn("")
 
             val song =
                 Song(
@@ -103,21 +91,23 @@ class UtilTest : KoinTest {
 
             actual = Util.weaveRequest(song)
 
-            val json =Json {
-                ignoreUnknownKeys = true
-                explicitNulls = false
-                isLenient = true
-            }
+            val json =
+                Json {
+                    ignoreUnknownKeys = true
+                    explicitNulls = false
+                    isLenient = true
+                }
 
-            val expected = WeaveRequest(
-                json.encodeToString(
-                    WeaveProps(
-                        arweaveWalletJson = "",
-                        files = emptyList(),
-                        checkAndFund = false
+            val expected =
+                WeaveRequest(
+                    json.encodeToString(
+                        WeaveProps(
+                            arweaveWalletJson = "",
+                            files = emptyList(),
+                            checkAndFund = false
+                        )
                     )
                 )
-            )
 
             assertThat(actual).isEqualTo(expected)
         }
@@ -126,8 +116,6 @@ class UtilTest : KoinTest {
     fun `test weaveRequest doesn't exist`() =
         runTest {
             var actual: WeaveRequest
-//        val mockEnvironment = Mockito.mock(ApplicationEnvironment::class.java)
-//        Mockito.`when`(mockEnvironment.getSecureConfigString("arweave.walletJson")).thenReturn("")
 
             val song =
                 Song(
@@ -154,21 +142,23 @@ class UtilTest : KoinTest {
 
             actual = Util.weaveRequest(song)
 
-            val json =Json {
-                ignoreUnknownKeys = true
-                explicitNulls = false
-                isLenient = true
-            }
+            val json =
+                Json {
+                    ignoreUnknownKeys = true
+                    explicitNulls = false
+                    isLenient = true
+                }
 
-            val expected = WeaveRequest(
-                json.encodeToString(
-                    WeaveProps(
-                        arweaveWalletJson = "",
-                        files = emptyList<WeaveFile>().plus(WeaveFile("https://newm.io/agreement", "application/pdf")),
-                        checkAndFund = false
+            val expected =
+                WeaveRequest(
+                    json.encodeToString(
+                        WeaveProps(
+                            arweaveWalletJson = "",
+                            files = emptyList<WeaveFile>().plus(WeaveFile("https://newm.io/agreement", "application/pdf")),
+                            checkAndFund = false
+                        )
                     )
                 )
-            )
             assertThat(actual).isEqualTo(expected)
         }
 }
