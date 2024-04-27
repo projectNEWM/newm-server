@@ -112,6 +112,7 @@ dependencies {
     implementation(Dependencies.JAudioTagger.ALL)
     implementation(Dependencies.JSoup.ALL)
     implementation(Dependencies.QRCodeKotlin.ALL)
+    implementation(Dependencies.ApacheCurators.RECEIPES)
 
     testImplementation(Dependencies.Ktor.CLIENT_LOGGING)
     testImplementation(Dependencies.JUnit.JUPITER)

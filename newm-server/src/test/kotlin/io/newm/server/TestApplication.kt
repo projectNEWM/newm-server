@@ -11,6 +11,7 @@ import io.newm.server.features.cloudinary.createCloudinaryRoutes
 import io.newm.server.features.collaboration.createCollaborationRoutes
 import io.newm.server.features.idenfy.createIdenfyFakeServerRoutes
 import io.newm.server.features.idenfy.createIdenfyRoutes
+import io.newm.server.features.marketplace.createMarketplaceRoutes
 import io.newm.server.features.playlist.createPlaylistRoutes
 import io.newm.server.features.song.createSongRoutes
 import io.newm.server.features.user.createUserRoutes
@@ -39,5 +40,6 @@ fun Application.testModule() {
         createIdenfyRoutes()
         createIdenfyFakeServerRoutes()
         createWalletConnectionRoutes()
+        createMarketplaceRoutes()
     }
 }

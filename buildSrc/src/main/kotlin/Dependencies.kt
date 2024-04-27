@@ -170,6 +170,12 @@ object Dependencies {
         const val FRACTION = "org.apache.commons:commons-numbers-fraction:$VERSION"
     }
 
+    object ApacheCurators {
+        private const val VERSION = "5.6.0"
+
+        const val RECEIPES = "org.apache.curator:curator-recipes:$VERSION"
+    }
+
     object ApacheTika {
         private const val VERSION = "2.9.2"
 

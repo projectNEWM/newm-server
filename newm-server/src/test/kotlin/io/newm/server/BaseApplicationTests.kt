@@ -18,6 +18,9 @@ import io.newm.server.features.collaboration.database.CollaborationEntity
 import io.newm.server.features.collaboration.database.CollaborationTable
 import io.newm.server.features.collaboration.model.Collaboration
 import io.newm.server.features.collaboration.model.CollaborationStatus
+import io.newm.server.features.marketplace.database.MarketplaceBookmarkTable
+import io.newm.server.features.marketplace.database.MarketplacePurchaseTable
+import io.newm.server.features.marketplace.database.MarketplaceSaleTable
 import io.newm.server.features.playlist.database.PlaylistTable
 import io.newm.server.features.playlist.database.SongsInPlaylistsTable
 import io.newm.server.features.song.database.SongEntity
@@ -143,6 +146,9 @@ open class BaseApplicationTests {
                 SongReceiptTable,
                 WalletConnectionChallengeTable,
                 WalletConnectionTable,
+                MarketplaceBookmarkTable,
+                MarketplaceSaleTable,
+                MarketplacePurchaseTable,
             )
         }
         application.start()

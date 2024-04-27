@@ -6,6 +6,7 @@ import io.newm.server.features.cardano.model.EncryptionRequest
 import io.newm.server.features.cardano.model.GetWalletSongsResponse
 import io.newm.server.features.cardano.model.Key
 import io.newm.server.features.cardano.model.NFTSong
+import kotlinx.coroutines.flow.Flow
 import java.util.*
 
 interface CardanoRepository {
@@ -47,6 +48,11 @@ interface CardanoRepository {
     ): VerifySignDataResponse
 
     suspend fun verifySignTransaction(cborHex: String): VerifySignDataResponse
+
+    suspend fun monitorAddress(
+        address: String,
+        startAfterTxId: String? = null
+    ): Flow<MonitorAddressResponse>
 
     suspend fun getWalletSongs(
         request: List<String>,
