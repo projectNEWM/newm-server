@@ -5,14 +5,11 @@ import com.google.common.truth.Truth.assertThat
 import io.ktor.server.application.*
 import io.ktor.server.config.*
 import io.mockk.mockk
-import io.newm.server.features.arweave.model.WeaveFile
-import io.newm.server.features.arweave.model.WeaveProps
 import io.newm.server.features.arweave.model.WeaveRequest
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.repo.SongRepository
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
@@ -90,26 +87,9 @@ class UtilTest : KoinTest {
                 )
 
             actual = Util.weaveRequest(song)
-
-            val json =
-                Json {
-                    ignoreUnknownKeys = true
-                    explicitNulls = false
-                    isLenient = true
-                }
-
-            val expected =
-                WeaveRequest(
-                    json.encodeToString(
-                        WeaveProps(
-                            arweaveWalletJson = "",
-                            files = emptyList(),
-                            checkAndFund = false
-                        )
-                    )
-                )
-
-            assertThat(actual).isEqualTo(expected)
+            val expectedBody = "{\"arweaveWalletJson\":\"\",\"files\":[],\"checkAndFund\":false}"
+            val expectedWaveRequest = WeaveRequest(body=expectedBody)
+            assertThat(actual).isEqualTo(expectedWaveRequest)
         }
 
     @Test
@@ -142,23 +122,8 @@ class UtilTest : KoinTest {
 
             actual = Util.weaveRequest(song)
 
-            val json =
-                Json {
-                    ignoreUnknownKeys = true
-                    explicitNulls = false
-                    isLenient = true
-                }
-
-            val expected =
-                WeaveRequest(
-                    json.encodeToString(
-                        WeaveProps(
-                            arweaveWalletJson = "",
-                            files = emptyList<WeaveFile>().plus(WeaveFile("https://newm.io/agreement", "application/pdf")),
-                            checkAndFund = false
-                        )
-                    )
-                )
-            assertThat(actual).isEqualTo(expected)
+            val expectedBody = "{\"arweaveWalletJson\":\"\",\"files\":[{\"url\":\"https://newm.io/agreement\",\"contentType\":\"application/pdf\"}],\"checkAndFund\":false}"
+            val expectedWaveRequest = WeaveRequest(body=expectedBody)
+            assertThat(actual).isEqualTo(expectedWaveRequest)
         }
 }
