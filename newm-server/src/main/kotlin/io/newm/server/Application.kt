@@ -6,6 +6,7 @@ import io.newm.server.auth.createAuthenticationRoutes
 import io.newm.server.auth.installAuthentication
 import io.newm.server.content.installContentNegotiation
 import io.newm.server.cors.installCORS
+import io.newm.server.curator.installCurator
 import io.newm.server.database.initializeDatabase
 import io.newm.server.di.installDependencyInjection
 import io.newm.server.features.cardano.createCardanoRoutes
@@ -14,10 +15,11 @@ import io.newm.server.features.collaboration.createCollaborationRoutes
 import io.newm.server.features.distribution.createDistributionRoutes
 import io.newm.server.features.earnings.createEarningsRoutes
 import io.newm.server.features.idenfy.createIdenfyRoutes
+import io.newm.server.features.marketplace.createMarketplaceRoutes
 import io.newm.server.features.playlist.createPlaylistRoutes
-import io.newm.server.features.walletconnection.createWalletConnectionRoutes
 import io.newm.server.features.song.createSongRoutes
 import io.newm.server.features.user.createUserRoutes
+import io.newm.server.features.walletconnection.createWalletConnectionRoutes
 import io.newm.server.forwarder.installForwarder
 import io.newm.server.health.installHealthCheck
 import io.newm.server.logging.initializeSentry
@@ -33,6 +35,7 @@ fun Application.module() {
     initializeSentry()
     installDependencyInjection()
     initializeDatabase()
+    installCurator()
 
     installCallLogging()
     installContentNegotiation()
@@ -55,6 +58,7 @@ fun Application.module() {
         createDistributionRoutes()
         createEarningsRoutes()
         createWalletConnectionRoutes()
+        createMarketplaceRoutes()
     }
 
     initializeDaemons()

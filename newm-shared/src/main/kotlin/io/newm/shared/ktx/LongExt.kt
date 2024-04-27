@@ -1,6 +1,8 @@
 package io.newm.shared.ktx
 
 import java.text.SimpleDateFormat
+import java.time.LocalDateTime
+import java.time.ZoneOffset
 import java.util.Date
 import java.util.TimeZone
 
@@ -12,3 +14,5 @@ private val minutesSecondsFormatter =
 fun Long?.orZero(): Long = this ?: 0L
 
 fun Long.millisToMinutesSecondsString(): String = minutesSecondsFormatter.format(Date(this))
+
+fun Long.epochSecondsToLocalDateTime(): LocalDateTime = LocalDateTime.ofEpochSecond(this, 0, ZoneOffset.UTC)

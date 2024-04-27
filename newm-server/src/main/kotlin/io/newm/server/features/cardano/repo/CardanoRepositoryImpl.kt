@@ -39,6 +39,7 @@ import io.newm.shared.ktx.isValidHex
 import io.newm.shared.ktx.isValidPassword
 import io.newm.txbuilder.ktx.mergeAmounts
 import io.newm.txbuilder.ktx.toNativeAssetMap
+import kotlinx.coroutines.flow.Flow
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf
@@ -281,6 +282,18 @@ internal class CardanoRepositoryImpl(
         return client.verifySignTransaction(
             submitTransactionRequest {
                 cbor = ByteString.fromHex(cborHex)
+            }
+        )
+    }
+
+    override suspend fun monitorAddress(
+        address: String,
+        startAfterTxId: String?
+    ): Flow<MonitorAddressResponse> {
+        return client.monitorAddress(
+            monitorAddressRequest {
+                this.address = address
+                startAfterTxId?.let { this.startAfterTxId = it }
             }
         )
     }

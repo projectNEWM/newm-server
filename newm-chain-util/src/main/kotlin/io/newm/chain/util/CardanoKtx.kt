@@ -193,3 +193,20 @@ fun <K, V> List<Map<K, V>>.flatten(): Map<K, V> {
         for (innerMap in list) putAll(innerMap)
     }
 }
+
+fun paymentAddressFromHash(
+    isMainnet: Boolean,
+    hash: ByteArray
+): String {
+    require(hash.size == 28 || hash.size == 56) { "Invalid hash size: ${hash.size}" }
+    val prefix: String
+    val firstByte: Byte
+    if (isMainnet) {
+        prefix = "addr"
+        firstByte = Constants.PAYMENT_ADDRESS_PREFIX_MAINNET
+    } else {
+        prefix = "addr_test"
+        firstByte = Constants.PAYMENT_ADDRESS_PREFIX_TESTNET
+    }
+    return Bech32.encode(prefix, byteArrayOf(firstByte) + hash)
+}
