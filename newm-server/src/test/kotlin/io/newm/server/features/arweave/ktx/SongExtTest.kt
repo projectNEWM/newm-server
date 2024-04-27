@@ -1,16 +1,8 @@
-package io.newm.server.features.arweave.repo
-
-import com.amazonaws.services.secretsmanager.AWSSecretsManagerAsync
+package io.newm.server.features.arweave.ktx
 import com.google.common.truth.Truth.assertThat
-import io.ktor.server.application.*
-import io.ktor.server.config.*
-import io.mockk.mockk
-import io.newm.server.features.arweave.model.WeaveRequest
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Song
-import io.newm.server.features.song.repo.SongRepository
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -23,7 +15,7 @@ import org.slf4j.LoggerFactory
 import java.time.LocalDate
 import java.util.UUID
 
-class UtilTest : KoinTest {
+class SongExtTest : KoinTest {
     companion object {
         @BeforeAll
         @JvmStatic
@@ -33,18 +25,7 @@ class UtilTest : KoinTest {
                 modules(
                     module {
                         // inject mocks
-                        single<Logger> { LoggerFactory.getLogger("UtilTest") }
-                        single {
-                            Json {
-                                ignoreUnknownKeys = true
-                                explicitNulls = false
-                                isLenient = true
-                            }
-                        }
-                        single { mockk<ApplicationConfig>(relaxed = true) }
-                        single { mockk<ApplicationEnvironment>(relaxed = true) }
-                        single { mockk<SongRepository>(relaxed = true) }
-                        single { mockk<AWSSecretsManagerAsync>(relaxed = true) }
+                        single<Logger> { LoggerFactory.getLogger("SongExtTest") }
                     }
                 )
             }
@@ -59,10 +40,8 @@ class UtilTest : KoinTest {
     }
 
     @Test
-    fun `test weaveRequest already exists`() =
+    fun `test should return empty list`() =
         runTest {
-            var actual: WeaveRequest
-
             val song =
                 Song(
                     ownerId = UUID.randomUUID(),
@@ -86,17 +65,13 @@ class UtilTest : KoinTest {
                     mintingStatus = MintingStatus.Pending
                 )
 
-            actual = Util.weaveRequest(song)
-            val expectedBody = "{\"arweaveWalletJson\":\"\",\"files\":[],\"checkAndFund\":false}"
-            val expectedWaveRequest = WeaveRequest(body=expectedBody)
-            assertThat(actual).isEqualTo(expectedWaveRequest)
+            val actual: List<Pair<String, String>> = song.toFiles()
+            assertThat(actual).isEqualTo(listOfNotNull(null))
         }
 
     @Test
-    fun `test weaveRequest doesn't exist`() =
+    fun `test should return non empty list`() =
         runTest {
-            var actual: WeaveRequest
-
             val song =
                 Song(
                     ownerId = UUID.randomUUID(),
@@ -120,10 +95,7 @@ class UtilTest : KoinTest {
                     mintingStatus = MintingStatus.Pending
                 )
 
-            actual = Util.weaveRequest(song)
-
-            val expectedBody = "{\"arweaveWalletJson\":\"\",\"files\":[{\"url\":\"https://newm.io/agreement\",\"contentType\":\"application/pdf\"}],\"checkAndFund\":false}"
-            val expectedWaveRequest = WeaveRequest(body=expectedBody)
-            assertThat(actual).isEqualTo(expectedWaveRequest)
+            val actual = song.toFiles()
+            assertThat(actual).isEqualTo(listOf(Pair("https://newm.io/agreement", "application/pdf")))
         }
 }
