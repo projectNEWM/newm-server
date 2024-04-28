@@ -25,13 +25,10 @@ import org.jetbrains.exposed.sql.deleteAll
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 
-// TODO: For some reason these test fail in the build environment, but pass locally in dev system. Temporarily disabled until fixed
-
-@Disabled("Temporarily disabled ")
 class MarketplaceRoutesTests : BaseApplicationTests() {
     @BeforeEach
     fun beforeEach() {
@@ -476,7 +473,7 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
 
         return transaction {
             MarketplaceSaleEntity.new {
-                createdAt = LocalDateTime.now()
+                createdAt = LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS)
                 status = SaleStatus.entries[offset % SaleStatus.entries.size]
                 songId = song.id
                 ownerAddress = "ownerAddress$offset"
