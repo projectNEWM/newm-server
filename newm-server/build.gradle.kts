@@ -129,9 +129,6 @@ dependencies {
     "integTestImplementation"(Dependencies.JUnit.JUPITER)
     "integTestRuntimeOnly"("org.junit.platform:junit-platform-launcher")
     "integTestImplementation"(Dependencies.Typesafe.CONFIG)
-
-    runtimeOnly("com.pinterest.ktlint:ktlint-core:0.49.1")
-    runtimeOnly("com.pinterest.ktlint:ktlint-ruleset-standard:1.2.1")
 }
 
 tasks {
