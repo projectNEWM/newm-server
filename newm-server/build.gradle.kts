@@ -132,7 +132,6 @@ dependencies {
 
     runtimeOnly("com.pinterest.ktlint:ktlint-core:0.49.1")
     runtimeOnly("com.pinterest.ktlint:ktlint-ruleset-standard:1.2.1")
-    testImplementation("org.mockito:mockito-core:5.11.0")
 }
 
 tasks {
@@ -198,10 +197,6 @@ fun Test.configTest(instance: String) {
 }
 tasks.register<Test>("integTestGarage") {
     configTest("Garage")
-}
-
-tasks.register<Test>("integTestStudio") {
-    configTest("Studio")
 }
 
 tasks.register<Wrapper>("wrapper") {
