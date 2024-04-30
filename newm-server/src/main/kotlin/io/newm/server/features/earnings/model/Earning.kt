@@ -1,5 +1,6 @@
 package io.newm.server.features.earnings.model
 
+import io.newm.server.typealiases.SongId
 import io.newm.shared.serialization.LocalDateTimeSerializer
 import io.newm.shared.serialization.UUIDSerializer
 import kotlinx.serialization.Serializable
@@ -15,7 +16,7 @@ data class Earning(
     @Serializable(with = UUIDSerializer::class)
     val id: UUID? = null,
     @Serializable(with = UUIDSerializer::class)
-    val songId: UUID? = null,
+    val songId: SongId? = null,
     val stakeAddress: String,
     val amount: Long,
     val memo: String,

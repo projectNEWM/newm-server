@@ -1,7 +1,7 @@
 package io.newm.server.features.release.repo
 
-import java.util.UUID
+import io.newm.server.typealiases.SongId
 
 interface OutletReleaseRepository {
-    suspend fun isSongReleased(songId: UUID): Boolean
+    suspend fun isSongReleased(songId: SongId): Boolean
 }

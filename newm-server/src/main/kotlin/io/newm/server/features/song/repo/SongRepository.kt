@@ -1,10 +1,18 @@
 package io.newm.server.features.song.repo
 
-import io.ktor.utils.io.*
+import io.ktor.utils.io.ByteReadChannel
 import io.newm.chain.grpc.Utxo
 import io.newm.server.features.song.database.SongEntity
-import io.newm.server.features.song.model.*
-import java.util.*
+import io.newm.server.features.song.model.AudioStreamData
+import io.newm.server.features.song.model.AudioUploadReport
+import io.newm.server.features.song.model.MintPaymentResponse
+import io.newm.server.features.song.model.MintingStatus
+import io.newm.server.features.song.model.RefundPaymentResponse
+import io.newm.server.features.song.model.Song
+import io.newm.server.features.song.model.SongFilters
+import io.newm.server.features.song.model.Release
+import io.newm.server.typealiases.SongId
+import java.util.UUID
 
 interface SongRepository {
     suspend fun add(
@@ -13,7 +21,7 @@ interface SongRepository {
     ): UUID
 
     suspend fun update(
-        songId: UUID,
+        songId: SongId,
         song: Song,
         requesterId: UUID? = null
     )
@@ -25,11 +33,11 @@ interface SongRepository {
     )
 
     suspend fun delete(
-        songId: UUID,
+        songId: SongId,
         requesterId: UUID
     )
 
-    suspend fun get(songId: UUID): Song
+    suspend fun get(songId: SongId): Song
 
     suspend fun getRelease(releaseId: UUID): Release
 
@@ -52,59 +60,59 @@ interface SongRepository {
     suspend fun getGenreCount(filters: SongFilters): Long
 
     suspend fun uploadAudio(
-        songId: UUID,
+        songId: SongId,
         requesterId: UUID,
         data: ByteReadChannel
     ): AudioUploadReport
 
-    suspend fun generateAudioStreamData(songId: UUID): AudioStreamData
+    suspend fun generateAudioStreamData(songId: SongId): AudioStreamData
 
     suspend fun processStreamTokenAgreement(
-        songId: UUID,
+        songId: SongId,
         requesterId: UUID,
         accepted: Boolean
     )
 
-    suspend fun processAudioEncoding(songId: UUID)
+    suspend fun processAudioEncoding(songId: SongId)
 
     suspend fun getMintingPaymentAmount(
-        songId: UUID,
+        songId: SongId,
         requesterId: UUID
     ): MintPaymentResponse
 
     suspend fun getMintingPaymentEstimate(collaborators: Int): MintPaymentResponse
 
     suspend fun generateMintingPaymentTransaction(
-        songId: UUID,
+        songId: SongId,
         requesterId: UUID,
         sourceUtxos: List<Utxo>,
         changeAddress: String
     ): String
 
     suspend fun refundMintingPayment(
-        songId: UUID,
+        songId: SongId,
         walletAddress: String
     ): RefundPaymentResponse
 
-    suspend fun processCollaborations(songId: UUID)
+    suspend fun processCollaborations(songId: SongId)
 
     suspend fun updateSongMintingStatus(
-        songId: UUID,
+        songId: SongId,
         mintingStatus: MintingStatus,
         errorMessage: String = ""
     )
 
-    suspend fun distribute(songId: UUID)
+    suspend fun distribute(songId: SongId)
 
-    suspend fun redistribute(songId: UUID)
+    suspend fun redistribute(songId: SongId)
 
     fun set(
-        songId: UUID,
+        songId: SongId,
         editor: (SongEntity) -> Unit
     )
 
     fun saveOrUpdateReceipt(
-        songId: UUID,
+        songId: SongId,
         mintPaymentResponse: MintPaymentResponse
     )
 }

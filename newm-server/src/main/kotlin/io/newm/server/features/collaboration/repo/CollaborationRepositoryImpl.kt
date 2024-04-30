@@ -16,6 +16,7 @@ import io.newm.server.features.user.database.UserEntity
 import io.newm.server.ktx.asMandatoryField
 import io.newm.server.ktx.asValidEmail
 import io.newm.server.ktx.checkLength
+import io.newm.server.typealiases.SongId
 import io.newm.shared.exception.HttpConflictException
 import io.newm.shared.exception.HttpForbiddenException
 import io.newm.shared.exception.HttpUnprocessableEntityException
@@ -167,7 +168,7 @@ internal class CollaborationRepositoryImpl(
         }
     }
 
-    override suspend fun getAllBySongId(songId: UUID): List<Collaboration> =
+    override suspend fun getAllBySongId(songId: SongId): List<Collaboration> =
         getAll(
             userId = transaction { SongEntity[songId].ownerId.value },
             filters = CollaborationFilters(songIds = listOf(songId)),
