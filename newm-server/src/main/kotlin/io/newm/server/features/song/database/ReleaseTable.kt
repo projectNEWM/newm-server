@@ -1,7 +1,7 @@
 package io.newm.server.features.song.database
 
-import io.newm.server.features.song.model.ReleaseType
 import io.newm.server.features.song.model.ReleaseBarcodeType
+import io.newm.server.features.song.model.ReleaseType
 import io.newm.server.features.user.database.UserTable
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.UUIDTable
@@ -19,7 +19,13 @@ object ReleaseTable : UUIDTable(name = "releases") {
     val createdAt: Column<LocalDateTime> = datetime("created_at").defaultExpression(CurrentDateTime)
     val ownerId: Column<EntityID<UUID>> = reference("owner_id", UserTable, onDelete = ReferenceOption.NO_ACTION)
     val title: Column<String> = text("title")
-    val releaseType: Column<ReleaseType> = enumerationByName("release_type", 20, ReleaseType::class)
+    val releaseType: Column<ReleaseType> =
+        customEnumeration(
+            "release_type",
+            "varchar(20)",
+            { value -> ReleaseType.valueOf((value as String).uppercase()) },
+            { it.name.lowercase() }
+        )
     val distributionReleaseId: Column<Long?> = long("distribution_release_id").nullable()
     val barcodeType: Column<ReleaseBarcodeType?> = enumeration("barcode_type", ReleaseBarcodeType::class).nullable()
     val barcodeNumber: Column<String?> = text("barcode_number").nullable()
