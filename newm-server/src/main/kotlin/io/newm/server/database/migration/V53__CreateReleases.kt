@@ -10,38 +10,38 @@ class V53__CreateReleases : BaseJavaMigration() {
             execInBatch(
                 listOf(
                     """
-                    CREATE TABLE IF NOT EXISTS releases
+                    CREATE TABLE IF NOT EXISTS "releases"
                     (
-                        id uuid PRIMARY KEY,
-                        owner_id uuid NOT NULL,
-                        release_type varchar(20) NOT NULL,
-                        title text NOT NULL,
-                        distribution_release_id bigint,
-                        barcode_type integer,
-                        barcode_number text,
-                        release_date DATE,
-                        publication_date DATE,
-                        cover_art_url text,
-                        arweave_cover_art_url text,
-                        has_submitted_for_distribution boolean NOT NULL DEFAULT FALSE,
-                        error_message text,
-                        force_distributed boolean NOT NULL DEFAULT FALSE,
-                        archived boolean NOT NULL DEFAULT FALSE,
-                        created_at timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        "id" uuid PRIMARY KEY,
+                        "owner_id" uuid NOT NULL,
+                        "release_type" varchar(20) NOT NULL,
+                        "title" text NOT NULL,
+                        "distribution_release_id" bigint,
+                        "barcode_type" integer,
+                        "barcode_number" text,
+                        "release_date" DATE,
+                        "publication_date" DATE,
+                        "cover_art_url" text,
+                        "arweave_cover_art_url" text,
+                        "has_submitted_for_distribution" boolean NOT NULL DEFAULT FALSE,
+                        "error_message" text,
+                        "force_distributed" boolean,
+                        "archived" boolean NOT NULL DEFAULT FALSE,
+                        "created_at" timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
                         CONSTRAINT fk_releases_owner_id__id FOREIGN KEY (owner_id) REFERENCES users (id) ON UPDATE NO ACTION ON DELETE NO ACTION
-                    )
+                    );
                     """.trimIndent(),
                     """
-                    ALTER TABLE songs
-                    RENAME COLUMN album TO release_id;
+                    ALTER TABLE "songs"
+                    RENAME COLUMN "album" TO "release_id";
                     """.trimIndent(),
                     """
-                    ALTER TABLE songs
-                    ALTER COLUMN release_id SET DATA TYPE uuid USING release_id::uuid;
+                    ALTER TABLE "songs"
+                    ALTER COLUMN "release_id" SET DATA TYPE uuid USING release_id::uuid;
                     """.trimIndent(),
                     """
-                    ALTER TABLE songs
-                    ADD CONSTRAINT IF NOT EXISTS fk_songs_release_id__id FOREIGN KEY (release_id) REFERENCES releases (id) ON ON UPDATE NO ACTION ON DELETE NO ACTION;
+                    ALTER TABLE "songs"
+                    ADD CONSTRAINT fk_songs_release_id__id FOREIGN KEY (release_id) REFERENCES releases (id) ON UPDATE NO ACTION ON DELETE NO ACTION;
                     """.trimIndent(),
                     // Note: initially, a release_id will match a song_id since everything is a single and it makes this
                     // migration simpler. In the future, that will not be the case.
@@ -79,7 +79,7 @@ class V53__CreateReleases : BaseJavaMigration() {
                     DROP COLUMN publication_date,
                     DROP COLUMN cover_art_url,
                     DROP COLUMN arweave_cover_art_url,
-                    DROP COLUMN has_submitted_for_distribution
+                    DROP COLUMN has_submitted_for_distribution,
                     DROP COLUMN force_distributed,
                     DROP COLUMN error_message;
                     """.trimIndent()
