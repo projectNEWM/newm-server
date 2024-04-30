@@ -910,7 +910,7 @@ class EvearaDistributionRepositoryImpl(
                         eanUpc = release.barcodeNumber,
                         productCodeType = release.releaseProductCodeType,
                         labelId = user.distributionLabelId,
-                        productType = release.releaseType!!.value,
+                        productType = release.releaseType!!.name.lowercase(),
                         codeAutoGenerate = release.barcodeNumber == null,
                         productFormat = "stereo",
                         coverImage =
@@ -1003,7 +1003,7 @@ class EvearaDistributionRepositoryImpl(
                         eanUpc = release.barcodeNumber,
                         productCodeType = release.releaseProductCodeType,
                         labelId = user.distributionLabelId,
-                        productType = release.releaseType!!.value,
+                        productType = release.releaseType!!.name.lowercase(),
                         codeAutoGenerate = release.barcodeNumber == null,
                         productFormat = "stereo",
                         coverImage =
