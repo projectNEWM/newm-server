@@ -195,7 +195,6 @@ tasks.register<Test>("integTestGarage") {
     configTest("Garage")
 }
 
-tasks.register<Wrapper>("wrapper") {
-    gradleVersion = "8.7"
-    validateDistributionUrl = false
+tasks.register<Test>("integTestStudio") {
+    configTest("Studio")
 }
