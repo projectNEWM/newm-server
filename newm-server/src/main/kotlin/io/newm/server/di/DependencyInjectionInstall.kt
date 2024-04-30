@@ -6,6 +6,7 @@ import io.newm.server.auth.authKoinModule
 import io.newm.server.aws.awsKoinModule
 import io.newm.server.client.clientKoinModule
 import io.newm.server.config.configKoinModule
+import io.newm.server.curator.curatorKoinModule
 import io.newm.server.database.databaseKoinModule
 import io.newm.server.features.arweave.arweaveKoinModule
 import io.newm.server.features.cardano.cardanoKoinModule
@@ -16,6 +17,7 @@ import io.newm.server.features.distribution.distributionKoinModule
 import io.newm.server.features.earnings.earningsKoinModule
 import io.newm.server.features.email.emailKoinModule
 import io.newm.server.features.idenfy.idenfyKoinModule
+import io.newm.server.features.marketplace.marketplaceKoinModule
 import io.newm.server.features.minting.mintingKoinModule
 import io.newm.server.features.playlist.playlistKoinModule
 import io.newm.server.features.walletconnection.walletConnectionKoinModule
@@ -39,6 +41,7 @@ fun Application.installDependencyInjection() {
         modules(
             appKoinModule,
             databaseKoinModule,
+            curatorKoinModule,
             configKoinModule,
             serializationModule,
             clientKoinModule,
@@ -60,6 +63,7 @@ fun Application.installDependencyInjection() {
             releaseKoinModule,
             earningsKoinModule,
             walletConnectionKoinModule,
+            marketplaceKoinModule,
         )
     }
 }

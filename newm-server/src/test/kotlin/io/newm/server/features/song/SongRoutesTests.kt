@@ -993,19 +993,19 @@ fun addSongToDatabase(
     phrase: String? = null,
     init: (SongEntity.() -> Unit)? = null
 ): Song {
+    fun phraseOrEmpty(target: Int) = phrase?.takeIf { offset % 7 == target }.orEmpty()
+
     val ownerEntityId =
         ownerId?.let {
             EntityID(it, UserTable)
         } ?: transaction {
             UserEntity.new {
                 email = "artist$offset@newm.io"
-                if (phrase != null) {
-                    when (offset % 7) {
-                        0 -> firstName = "firstName$offset $phrase blah blah"
-                        1 -> lastName = "lastName$offset $phrase blah blah"
-                        2 -> nickname = "nickname$offset $phrase blah blah"
-                    }
+                if (offset % 4 == 0) {
+                    nickname = "nickname$offset ${phraseOrEmpty(0)} blah blah"
                 }
+                firstName = "firstName$offset ${phraseOrEmpty(1)} blah blah"
+                lastName = "lastName$offset ${phraseOrEmpty(2)} blah blah"
             }
         }.id
 
@@ -1018,19 +1018,14 @@ fun addSongToDatabase(
             }
         }.id
 
-    fun phraseOrBlank(
-        offset: Int,
-        target: Int
-    ) = phrase?.takeIf { offset % 7 == target }.orEmpty()
-
     return transaction {
         SongEntity.new {
             this.archived = archived
             this.ownerId = ownerEntityId
-            title = "title$offset ${phraseOrBlank(offset, 3)} blah blah"
-            description = "description$offset ${phraseOrBlank(offset, 4)} blah blah"
-            album = "album$offset ${phraseOrBlank(offset, 5)} blah blah"
-            nftName = "nftName$offset ${phraseOrBlank(offset, 6)} blah blah"
+            title = "title$offset ${phraseOrEmpty(3)} blah blah"
+            description = "description$offset ${phraseOrEmpty(4)} blah blah"
+            album = "album$offset ${phraseOrEmpty(5)} blah blah"
+            nftName = "nftName$offset ${phraseOrEmpty(6)} blah blah"
             genres = arrayOf("genre${offset}_0", "genre${offset}_1")
             moods = arrayOf("mood${offset}_0", "mood${offset}_1")
             coverArtUrl = "https://newm.io/cover$offset"

@@ -1,6 +1,7 @@
 package io.newm.chain.daemon
 
 import io.ktor.server.application.ApplicationEnvironment
+import io.newm.chain.cardano.getEpochSecondAtSlot
 import io.newm.chain.config.Config
 import io.newm.chain.database.entity.MonitoredAddressChain
 import io.newm.chain.database.repository.ChainRepository
@@ -368,6 +369,7 @@ class MonitorAddressDaemon(
                         .setTxId(transactionId)
                         .addAllSpentUtxos(spentAddressUtxos)
                         .addAllCreatedUtxos(createdAddressUtxos)
+                        .setTimestamp(getEpochSecondAtSlot(block.slot))
                         .apply {
                             val transaction = block.transactions.first { it.id == transactionId }
                             transaction.datums?.let { datums ->

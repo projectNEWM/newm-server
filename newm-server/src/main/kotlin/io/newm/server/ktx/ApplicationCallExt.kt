@@ -9,6 +9,7 @@ import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.bits.Memory
+import io.newm.server.features.marketplace.model.SaleStatus
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.shared.exception.HttpUnauthorizedException
 import io.newm.shared.ktx.orZero
@@ -106,6 +107,15 @@ val ApplicationCall.nftNames: List<String>?
 
 val ApplicationCall.connectionId: UUID
     get() = parameters["connectionId"]!!.toUUID()
+
+val ApplicationCall.saleId: UUID
+    get() = parameters["saleId"]!!.toUUID()
+
+val ApplicationCall.saleStatuses: List<SaleStatus>?
+    get() = parameters["saleStatuses"]?.splitAndTrim()?.map(SaleStatus::valueOf)
+
+val ApplicationCall.artistIds: List<UUID>?
+    get() = parameters["artistIds"]?.splitAndTrim()?.map(String::toUUID)
 
 suspend inline fun ApplicationCall.identifyUser(crossinline body: suspend ApplicationCall.(UUID, Boolean) -> Unit) {
     val uid = userId

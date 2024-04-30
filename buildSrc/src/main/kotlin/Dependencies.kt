@@ -91,7 +91,7 @@ object Dependencies {
     }
 
     object LogBack {
-        private const val VERSION = "1.5.4"
+        private const val VERSION = "1.5.6"
 
         const val CLASSIC = "ch.qos.logback:logback-classic:$VERSION"
     }
@@ -170,6 +170,12 @@ object Dependencies {
         const val FRACTION = "org.apache.commons:commons-numbers-fraction:$VERSION"
     }
 
+    object ApacheCurators {
+        private const val VERSION = "5.6.0"
+
+        const val RECEIPES = "org.apache.curator:curator-recipes:$VERSION"
+    }
+
     object ApacheTika {
         private const val VERSION = "2.9.2"
 
@@ -243,7 +249,7 @@ object Dependencies {
     }
 
     object Cbor {
-        private const val VERSION = "0.01.08-NEWM"
+        private const val VERSION = "0.2.1-NEWM"
 
         const val CBOR = "io.newm:com.google.iot.cbor:$VERSION"
     }
