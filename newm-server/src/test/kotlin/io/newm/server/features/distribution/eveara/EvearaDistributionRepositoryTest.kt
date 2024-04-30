@@ -26,6 +26,7 @@ import io.newm.server.features.user.model.User
 import io.newm.server.ktx.getFileNameWithExtensionFromUrl
 import io.newm.server.ktx.toAudioContentType
 import io.newm.server.ktx.toBucketAndKey
+import io.newm.server.typealiases.SongId
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.info
 import kotlinx.coroutines.runBlocking
@@ -47,7 +48,7 @@ class EvearaDistributionRepositoryTest : BaseApplicationTests() {
         }
     }
 
-    private lateinit var songId: UUID
+    private lateinit var songId: SongId
 
     private suspend fun setupDatabase() {
         val primaryArtistId =

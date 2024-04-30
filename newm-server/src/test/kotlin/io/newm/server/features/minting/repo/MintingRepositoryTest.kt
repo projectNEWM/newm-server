@@ -27,6 +27,7 @@ import io.newm.server.features.song.repo.SongRepositoryImpl
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
 import io.newm.server.features.user.model.User
+import io.newm.server.typealiases.SongId
 import io.newm.shared.ktx.toHexString
 import io.newm.txbuilder.ktx.toCborObject
 import kotlinx.coroutines.runBlocking
@@ -47,7 +48,7 @@ class MintingRepositoryTest : BaseApplicationTests() {
         }
     }
 
-    private lateinit var songId: UUID
+    private lateinit var songId: SongId
 
     private suspend fun setupDatabase() {
         val primaryArtistId =

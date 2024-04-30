@@ -12,6 +12,7 @@ import io.newm.server.features.earnings.model.Earning
 import io.newm.server.features.song.database.SongTable
 import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.features.user.repo.UserRepository
+import io.newm.server.typealiases.SongId
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
@@ -59,7 +60,7 @@ class EarningsRepositoryImpl(
     }
 
     override suspend fun addRoyaltySplits(
-        songId: UUID,
+        songId: SongId,
         royaltyRequest: AddSongRoyaltyRequest
     ) {
         require((royaltyRequest.newmAmount != null) xor (royaltyRequest.usdAmount != null)) {
@@ -136,7 +137,7 @@ class EarningsRepositoryImpl(
             EarningEntity.all().map { it.toModel() }
         }
 
-    override suspend fun getAllBySongId(songId: UUID): List<Earning> =
+    override suspend fun getAllBySongId(songId: SongId): List<Earning> =
         transaction {
             EarningEntity.wrapRows(
                 EarningEntity.searchQuery(EarningsTable.songId eq songId).orderBy(EarningsTable.createdAt, SortOrder.DESC)

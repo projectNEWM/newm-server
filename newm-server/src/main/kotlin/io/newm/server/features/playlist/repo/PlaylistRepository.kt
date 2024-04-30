@@ -3,6 +3,7 @@ package io.newm.server.features.playlist.repo
 import io.newm.server.features.playlist.model.Playlist
 import io.newm.server.features.playlist.model.PlaylistFilters
 import io.newm.server.features.song.model.Song
+import io.newm.server.typealiases.SongId
 import java.util.UUID
 
 interface PlaylistRepository {
@@ -34,13 +35,13 @@ interface PlaylistRepository {
 
     suspend fun addSong(
         playlistId: UUID,
-        songId: UUID,
+        songId: SongId,
         requesterId: UUID
     )
 
     suspend fun deleteSong(
         playlistId: UUID,
-        songId: UUID,
+        songId: SongId,
         requesterId: UUID
     )
 

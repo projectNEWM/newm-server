@@ -34,6 +34,7 @@ import io.newm.server.ktx.asValidUrl
 import io.newm.server.ktx.await
 import io.newm.server.ktx.checkLength
 import io.newm.server.ktx.getSecureConfigString
+import io.newm.server.typealiases.SongId
 import io.newm.shared.exception.HttpConflictException
 import io.newm.shared.exception.HttpForbiddenException
 import io.newm.shared.exception.HttpUnprocessableEntityException
@@ -125,7 +126,7 @@ internal class SongRepositoryImpl(
     }
 
     override suspend fun update(
-        songId: UUID,
+        songId: SongId,
         song: Song,
         requesterId: UUID?
     ) {
@@ -228,7 +229,7 @@ internal class SongRepositoryImpl(
     }
 
     override fun set(
-        songId: UUID,
+        songId: SongId,
         editor: (SongEntity) -> Unit
     ) {
         logger.debug { "set: songId = $songId" }
@@ -239,7 +240,7 @@ internal class SongRepositoryImpl(
     }
 
     override suspend fun delete(
-        songId: UUID,
+        songId: SongId,
         requesterId: UUID
     ) {
         logger.debug { "delete: songId = $songId, requesterId = $requesterId" }
@@ -250,7 +251,7 @@ internal class SongRepositoryImpl(
         }
     }
 
-    override suspend fun get(songId: UUID): Song {
+    override suspend fun get(songId: SongId): Song {
         logger.debug { "get: songId = $songId" }
         return transaction {
             SongEntity[songId].let {
@@ -321,7 +322,7 @@ internal class SongRepositoryImpl(
     }
 
     override suspend fun uploadAudio(
-        songId: UUID,
+        songId: SongId,
         requesterId: UUID,
         data: ByteReadChannel
     ): AudioUploadReport {
@@ -377,7 +378,7 @@ internal class SongRepositoryImpl(
         }
     }
 
-    override suspend fun generateAudioStreamData(songId: UUID): AudioStreamData {
+    override suspend fun generateAudioStreamData(songId: SongId): AudioStreamData {
         val song = get(songId)
         if (song.streamUrl == null) {
             throw HttpUnprocessableEntityException("streamUrl is null")
@@ -493,7 +494,7 @@ internal class SongRepositoryImpl(
     }
 
     override suspend fun getMintingPaymentAmount(
-        songId: UUID,
+        songId: SongId,
         requesterId: UUID
     ): MintPaymentResponse {
         logger.debug { "getMintingPaymentAmount: songId = $songId" }
@@ -568,7 +569,7 @@ internal class SongRepositoryImpl(
     }
 
     override suspend fun generateMintingPaymentTransaction(
-        songId: UUID,
+        songId: SongId,
         requesterId: UUID,
         sourceUtxos: List<Utxo>,
         changeAddress: String
@@ -598,7 +599,7 @@ internal class SongRepositoryImpl(
     }
 
     override suspend fun refundMintingPayment(
-        songId: UUID,
+        songId: SongId,
         walletAddress: String
     ): RefundPaymentResponse {
         logger.debug { "refundMintingPayment: songId = $songId" }
@@ -646,7 +647,7 @@ internal class SongRepositoryImpl(
     }
 
     override suspend fun updateSongMintingStatus(
-        songId: UUID,
+        songId: SongId,
         mintingStatus: MintingStatus,
         errorMessage: String
     ) {

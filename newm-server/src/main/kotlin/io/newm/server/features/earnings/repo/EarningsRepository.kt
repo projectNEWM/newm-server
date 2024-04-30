@@ -3,6 +3,7 @@ package io.newm.server.features.earnings.repo
 import io.newm.server.features.earnings.model.AddSongRoyaltyRequest
 import io.newm.server.features.earnings.model.ClaimOrder
 import io.newm.server.features.earnings.model.Earning
+import io.newm.server.typealiases.SongId
 import java.util.*
 
 interface EarningsRepository {
@@ -45,7 +46,7 @@ interface EarningsRepository {
     /**
      * Get all earnings by song id
      */
-    suspend fun getAllBySongId(songId: UUID): List<Earning>
+    suspend fun getAllBySongId(songId: SongId): List<Earning>
 
     /**
      * Get all earnings by stake address

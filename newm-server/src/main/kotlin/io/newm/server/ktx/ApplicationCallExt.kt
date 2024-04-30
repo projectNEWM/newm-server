@@ -11,6 +11,7 @@ import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.bits.Memory
 import io.newm.server.features.marketplace.model.SaleStatus
 import io.newm.server.features.song.model.MintingStatus
+import io.newm.server.typealiases.SongId
 import io.newm.shared.exception.HttpUnauthorizedException
 import io.newm.shared.ktx.orZero
 import io.newm.shared.ktx.splitAndTrim
@@ -40,7 +41,7 @@ val ApplicationCall.userId: UUID
         return if (id == "me") myUserId else id.toUUID()
     }
 
-val ApplicationCall.songId: UUID
+val ApplicationCall.songId: SongId
     get() = parameters["songId"]!!.toUUID()
 
 val ApplicationCall.mintingStatus: MintingStatus
@@ -72,7 +73,7 @@ val ApplicationCall.ownerIds: List<UUID>?
         parameters["ownerIds"]?.splitAndTrim()?.map {
             if (it == "me") myUserId else it.toUUID()
         }
-val ApplicationCall.songIds: List<UUID>?
+val ApplicationCall.songIds: List<SongId>?
     get() = parameters["songIds"]?.splitAndTrim()?.map(String::toUUID)
 
 val ApplicationCall.emails: List<String>?
