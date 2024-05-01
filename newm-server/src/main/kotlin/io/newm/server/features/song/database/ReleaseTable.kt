@@ -3,6 +3,7 @@ package io.newm.server.features.song.database
 import io.newm.server.features.song.model.ReleaseBarcodeType
 import io.newm.server.features.song.model.ReleaseType
 import io.newm.server.features.user.database.UserTable
+import io.newm.server.typealiases.UserId
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.Column
@@ -17,7 +18,7 @@ import java.util.*
 object ReleaseTable : UUIDTable(name = "releases") {
     val archived: Column<Boolean> = bool("archived").default(false)
     val createdAt: Column<LocalDateTime> = datetime("created_at").defaultExpression(CurrentDateTime)
-    val ownerId: Column<EntityID<UUID>> = reference("owner_id", UserTable, onDelete = ReferenceOption.NO_ACTION)
+    val ownerId: Column<EntityID<UserId>> = reference("owner_id", UserTable, onDelete = ReferenceOption.NO_ACTION)
     val title: Column<String> = text("title")
     val releaseType: Column<ReleaseType> =
         customEnumeration(

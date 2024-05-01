@@ -1,5 +1,6 @@
 package io.newm.server.features.song.model
 
+import io.newm.server.typealiases.UserId
 import io.newm.shared.serialization.LocalDateSerializer
 import io.newm.shared.serialization.LocalDateTimeSerializer
 import io.newm.shared.serialization.UUIDSerializer
@@ -15,7 +16,7 @@ data class Release(
     val id: UUID? = null,
     val archived: Boolean? = null,
     @Serializable(with = UUIDSerializer::class)
-    val ownerId: UUID? = null,
+    val ownerId: UserId? = null,
     @Serializable(with = LocalDateTimeSerializer::class)
     val createdAt: LocalDateTime? = null,
     val title: String? = null,

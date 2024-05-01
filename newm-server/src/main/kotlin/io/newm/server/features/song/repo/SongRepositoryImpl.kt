@@ -35,6 +35,7 @@ import io.newm.server.ktx.await
 import io.newm.server.ktx.checkLength
 import io.newm.server.ktx.getSecureConfigString
 import io.newm.server.typealiases.SongId
+import io.newm.server.typealiases.UserId
 import io.newm.shared.exception.HttpConflictException
 import io.newm.shared.exception.HttpForbiddenException
 import io.newm.shared.exception.HttpUnprocessableEntityException
@@ -77,8 +78,8 @@ internal class SongRepositoryImpl(
 
     override suspend fun add(
         song: Song,
-        ownerId: UUID
-    ): UUID {
+        ownerId: UserId
+    ): SongId {
         logger.debug { "add: song = $song" }
         val title = song.title ?: throw HttpUnprocessableEntityException("missing title")
         val genres = song.genres ?: throw HttpUnprocessableEntityException("missing genres")
@@ -128,7 +129,7 @@ internal class SongRepositoryImpl(
     override suspend fun update(
         songId: SongId,
         song: Song,
-        requesterId: UUID?
+        requesterId: UserId?
     ) {
         logger.debug { "update: songId = $songId, song = $song, requesterId = $requesterId" }
         song.checkFieldLengths()
@@ -199,7 +200,7 @@ internal class SongRepositoryImpl(
     override suspend fun update(
         releaseId: UUID,
         release: Release,
-        requesterId: UUID?
+        requesterId: UserId?
     ) {
         logger.debug { "update: releaseId = $releaseId, release = $release, requesterId = $requesterId" }
         transaction {
@@ -241,7 +242,7 @@ internal class SongRepositoryImpl(
 
     override suspend fun delete(
         songId: SongId,
-        requesterId: UUID
+        requesterId: UserId
     ) {
         logger.debug { "delete: songId = $songId, requesterId = $requesterId" }
         transaction {
@@ -323,7 +324,7 @@ internal class SongRepositoryImpl(
 
     override suspend fun uploadAudio(
         songId: SongId,
-        requesterId: UUID,
+        requesterId: UserId,
         data: ByteReadChannel
     ): AudioUploadReport {
         // File I/O is blocking so make sure we're on the IO dispatcher
@@ -407,8 +408,8 @@ internal class SongRepositoryImpl(
     }
 
     override suspend fun processStreamTokenAgreement(
-        songId: UUID,
-        requesterId: UUID,
+        songId: SongId,
+        requesterId: UserId,
         accepted: Boolean
     ) {
         logger.debug { "processStreamTokenAgreement: songId = $songId, accepted = $accepted" }
@@ -437,7 +438,7 @@ internal class SongRepositoryImpl(
         }
     }
 
-    override suspend fun processAudioEncoding(songId: UUID) {
+    override suspend fun processAudioEncoding(songId: SongId) {
         logger.debug { "processAudioEncoding: songId = $songId" }
         with(get(songId)) {
             when (audioEncodingStatus) {
@@ -460,7 +461,7 @@ internal class SongRepositoryImpl(
         }
     }
 
-    override suspend fun processCollaborations(songId: UUID) {
+    override suspend fun processCollaborations(songId: SongId) {
         logger.debug { "processCollaborations: songId = $songId" }
         if (transaction { SongEntity[songId].mintingStatus } == MintingStatus.AwaitingCollaboratorApproval) {
             val collaborations =
@@ -495,7 +496,7 @@ internal class SongRepositoryImpl(
 
     override suspend fun getMintingPaymentAmount(
         songId: SongId,
-        requesterId: UUID
+        requesterId: UserId
     ): MintPaymentResponse {
         logger.debug { "getMintingPaymentAmount: songId = $songId" }
         // TODO: We might need to change this code in the future if we're charging NEWM tokens in addition to ada
@@ -570,7 +571,7 @@ internal class SongRepositoryImpl(
 
     override suspend fun generateMintingPaymentTransaction(
         songId: SongId,
-        requesterId: UUID,
+        requesterId: UserId,
         sourceUtxos: List<Utxo>,
         changeAddress: String
     ): String {
@@ -741,7 +742,7 @@ internal class SongRepositoryImpl(
     }
 
     override fun saveOrUpdateReceipt(
-        songId: UUID,
+        songId: SongId,
         mintPaymentResponse: MintPaymentResponse
     ) {
         logger.debug { "saveOrUpdateReceipt: songId = $songId" }
@@ -778,14 +779,14 @@ internal class SongRepositoryImpl(
         }
     }
 
-    private suspend fun sendMintingStartedNotification(songId: UUID) {
+    private suspend fun sendMintingStartedNotification(songId: SongId) {
         collaborationRepository.invite(songId)
         sendMintingNotification("started", songId)
     }
 
     private suspend fun sendMintingNotification(
         path: String,
-        songId: UUID
+        songId: SongId
     ) {
         val (release, song, owner) =
             transaction {
@@ -827,14 +828,14 @@ internal class SongRepositoryImpl(
         )
     }
 
-    override suspend fun distribute(songId: UUID) {
+    override suspend fun distribute(songId: SongId) {
         val song = get(songId)
         val release = transaction { ReleaseEntity[song.releaseId!!].toModel() }
 
         distributionRepository.distributeRelease(release)
     }
 
-    override suspend fun redistribute(songId: UUID) {
+    override suspend fun redistribute(songId: SongId) {
         val song = get(songId)
         val release = transaction { ReleaseEntity[song.releaseId!!].toModel() }
 
@@ -842,15 +843,15 @@ internal class SongRepositoryImpl(
     }
 
     private fun checkRequester(
-        songId: UUID,
-        requesterId: UUID,
+        songId: SongId,
+        requesterId: UserId,
         verified: Boolean = false
     ) = transaction {
         SongEntity[songId].checkRequester(requesterId, verified)
     }
 
     private fun SongEntity.checkRequester(
-        requesterId: UUID,
+        requesterId: UserId,
         verified: Boolean = false
     ) {
         if (ownerId.value != requesterId) throw HttpForbiddenException("operation allowed only by owner")
@@ -860,7 +861,7 @@ internal class SongRepositoryImpl(
     }
 
     private fun ReleaseEntity.checkRequester(
-        requesterId: UUID,
+        requesterId: UserId,
         verified: Boolean = false
     ) {
         if (ownerId.value != requesterId) throw HttpForbiddenException("operation allowed only by owner")
@@ -869,7 +870,7 @@ internal class SongRepositoryImpl(
         }
     }
 
-    private fun String.checkTitleUnique(ownerId: UUID) {
+    private fun String.checkTitleUnique(ownerId: UserId) {
         if (SongEntity.exists(ownerId, this)) {
             throw HttpConflictException("Title already exists: $this")
         }

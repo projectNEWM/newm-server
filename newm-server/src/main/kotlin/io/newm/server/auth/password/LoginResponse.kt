@@ -2,8 +2,8 @@ package io.newm.server.auth.password
 
 import io.newm.server.auth.jwt.JwtType
 import io.newm.server.auth.jwt.repo.JwtRepository
+import io.newm.server.typealiases.UserId
 import kotlinx.serialization.Serializable
-import java.util.UUID
 
 @Serializable
 data class LoginResponse(
@@ -12,7 +12,7 @@ data class LoginResponse(
 )
 
 suspend fun JwtRepository.createLoginResponse(
-    userId: UUID,
+    userId: UserId,
     admin: Boolean = false
 ) = LoginResponse(
     accessToken = create(JwtType.Access, userId, admin),

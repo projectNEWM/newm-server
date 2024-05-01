@@ -12,6 +12,7 @@ import io.ktor.utils.io.bits.Memory
 import io.newm.server.features.marketplace.model.SaleStatus
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.typealiases.SongId
+import io.newm.server.typealiases.UserId
 import io.newm.shared.exception.HttpUnauthorizedException
 import io.newm.shared.ktx.orZero
 import io.newm.shared.ktx.splitAndTrim
@@ -32,10 +33,10 @@ val ApplicationCall.jwtPrincipal: JWTPrincipal
 val ApplicationCall.jwtId: UUID
     get() = jwtPrincipal.jwtId!!.toUUID()
 
-val ApplicationCall.myUserId: UUID
+val ApplicationCall.myUserId: UserId
     get() = jwtPrincipal.subject!!.toUUID()
 
-val ApplicationCall.userId: UUID
+val ApplicationCall.userId: UserId
     get() {
         val id = parameters["userId"]!!
         return if (id == "me") myUserId else id.toUUID()
@@ -68,7 +69,7 @@ val ApplicationCall.sortOrder: SortOrder?
 val ApplicationCall.ids: List<UUID>?
     get() = parameters["ids"]?.splitAndTrim()?.map(String::toUUID)
 
-val ApplicationCall.ownerIds: List<UUID>?
+val ApplicationCall.ownerIds: List<UserId>?
     get() =
         parameters["ownerIds"]?.splitAndTrim()?.map {
             if (it == "me") myUserId else it.toUUID()

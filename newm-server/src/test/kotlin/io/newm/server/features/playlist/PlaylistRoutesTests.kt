@@ -27,6 +27,7 @@ import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongIdBody
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
+import io.newm.server.typealiases.UserId
 import io.newm.shared.ktx.exists
 import io.newm.shared.ktx.existsHavingId
 import kotlinx.coroutines.runBlocking
@@ -40,7 +41,6 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.time.LocalDateTime
-import java.util.UUID
 
 class PlaylistRoutesTests : BaseApplicationTests() {
     @BeforeEach
@@ -475,7 +475,7 @@ class PlaylistRoutesTests : BaseApplicationTests() {
 
 private fun addPLaylistToDatabase(
     offset: Int = 0,
-    ownerId: UUID? = null
+    ownerId: UserId? = null
 ): Playlist {
     val ownerEntityId =
         ownerId?.let {

@@ -23,6 +23,7 @@ import io.newm.server.ktx.asValidEmail
 import io.newm.server.ktx.asValidName
 import io.newm.server.ktx.asValidUrl
 import io.newm.server.ktx.checkLength
+import io.newm.server.typealiases.UserId
 import io.newm.shared.auth.Password
 import io.newm.shared.exception.HttpBadRequestException
 import io.newm.shared.exception.HttpConflictException
@@ -42,7 +43,6 @@ import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf
-import java.util.UUID
 
 internal class UserRepositoryImpl(
     private val googleUserProvider: GoogleUserProvider,
@@ -57,7 +57,7 @@ internal class UserRepositoryImpl(
 ) : UserRepository {
     private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
 
-    override suspend fun add(user: User): UUID {
+    override suspend fun add(user: User): UserId {
         logger.debug { "add: user = $user" }
 
         user.checkWhitelist()
@@ -114,7 +114,7 @@ internal class UserRepositoryImpl(
     override suspend fun find(
         email: String,
         password: Password
-    ): Pair<UUID, Boolean> {
+    ): Pair<UserId, Boolean> {
         logger.debug { "find: email = $email" }
         return transaction {
             val entity = getUserEntityByEmail(email)
@@ -135,7 +135,7 @@ internal class UserRepositoryImpl(
     override suspend fun findOrAdd(
         oauthType: OAuthType,
         oauthTokens: OAuthTokens
-    ): UUID {
+    ): UserId {
         logger.debug { "findOrAdd: oauthType = $oauthType" }
 
         val user =
@@ -166,13 +166,13 @@ internal class UserRepositoryImpl(
         }
     }
 
-    override suspend fun exists(userId: UUID): Boolean =
+    override suspend fun exists(userId: UserId): Boolean =
         transaction {
             UserEntity.existsHavingId(userId)
         }
 
     override suspend fun get(
-        userId: UUID,
+        userId: UserId,
         includeAll: Boolean
     ): User {
         logger.debug { "get: userId = $userId, includeAll = $includeAll" }
@@ -202,7 +202,7 @@ internal class UserRepositoryImpl(
     }
 
     override suspend fun update(
-        userId: UUID,
+        userId: UserId,
         user: User
     ) {
         logger.debug { "update: userId = $userId, user = $user" }
@@ -283,7 +283,7 @@ internal class UserRepositoryImpl(
      * Update data fields except for email, password, and oauth fields.
      */
     override fun updateUserData(
-        userId: UUID,
+        userId: UserId,
         user: User
     ) {
         transaction {
@@ -331,7 +331,7 @@ internal class UserRepositoryImpl(
         }
     }
 
-    override suspend fun delete(userId: UUID) {
+    override suspend fun delete(userId: UserId) {
         logger.debug { "delete: userId = $userId" }
         transaction {
             JwtTable.deleteWhere { JwtTable.userId eq userId }

@@ -5,6 +5,8 @@ import io.newm.server.features.song.model.ReleaseBarcodeType
 import io.newm.server.features.song.model.ReleaseType
 import io.newm.server.features.song.model.SongFilters
 import io.newm.server.features.user.database.UserTable
+import io.newm.server.typealiases.ReleaseId
+import io.newm.server.typealiases.UserId
 import io.newm.shared.ktx.exists
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
@@ -19,10 +21,10 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
 
-class ReleaseEntity(id: EntityID<UUID>) : UUIDEntity(id) {
+class ReleaseEntity(id: EntityID<ReleaseId>) : UUIDEntity(id) {
     var archived: Boolean by ReleaseTable.archived
     val createdAt: LocalDateTime by ReleaseTable.createdAt
-    var ownerId: EntityID<UUID> by ReleaseTable.ownerId
+    var ownerId: EntityID<UserId> by ReleaseTable.ownerId
     var title: String by ReleaseTable.title
     var releaseType: ReleaseType by ReleaseTable.releaseType
     var distributionReleaseId: Long? by ReleaseTable.distributionReleaseId
@@ -73,7 +75,7 @@ class ReleaseEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         }
 
         fun exists(
-            ownerId: UUID,
+            ownerId: UserId,
             title: String
         ): Boolean =
             exists {

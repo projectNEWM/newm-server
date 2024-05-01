@@ -15,6 +15,7 @@ import io.newm.server.features.song.database.SongTable
 import io.newm.server.features.song.model.*
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
+import io.newm.server.typealiases.UserId
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.neq
@@ -286,7 +287,7 @@ fun addSongToDatabase(
     nftPolicy: String,
     nftName: String,
     offset: Int = 0,
-    ownerId: UUID? = null,
+    ownerId: UserId? = null,
     archived: Boolean = false,
     phrase: String? = null,
     init: (SongEntity.() -> Unit)? = null

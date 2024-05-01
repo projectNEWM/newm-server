@@ -5,6 +5,7 @@ import io.newm.server.features.song.model.AudioEncodingStatus
 import io.newm.server.features.song.model.MarketplaceStatus
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.user.database.UserTable
+import io.newm.server.typealiases.UserId
 import io.newm.shared.exposed.textArray
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.UUIDTable
@@ -18,7 +19,7 @@ import java.util.UUID
 object SongTable : UUIDTable(name = "songs") {
     val archived: Column<Boolean> = bool("archived").default(false)
     val createdAt: Column<LocalDateTime> = datetime("created_at").defaultExpression(CurrentDateTime)
-    val ownerId: Column<EntityID<UUID>> = reference("owner_id", UserTable, onDelete = ReferenceOption.NO_ACTION)
+    val ownerId: Column<EntityID<UserId>> = reference("owner_id", UserTable, onDelete = ReferenceOption.NO_ACTION)
     val title: Column<String> = text("title")
     val genres: Column<Array<String>> = textArray("genres")
     val moods: Column<Array<String>?> = textArray("moods").nullable()

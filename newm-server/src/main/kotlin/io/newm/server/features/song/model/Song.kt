@@ -1,5 +1,8 @@
 package io.newm.server.features.song.model
 
+import io.newm.server.typealiases.ReleaseId
+import io.newm.server.typealiases.SongId
+import io.newm.server.typealiases.UserId
 import io.newm.shared.serialization.LocalDateSerializer
 import io.newm.shared.serialization.LocalDateTimeSerializer
 import io.newm.shared.serialization.UUIDSerializer
@@ -12,10 +15,10 @@ import java.util.UUID
 @Serializable
 data class Song(
     @Serializable(with = UUIDSerializer::class)
-    val id: UUID? = null,
+    val id: SongId? = null,
     val archived: Boolean? = null,
     @Serializable(with = UUIDSerializer::class)
-    val ownerId: UUID? = null,
+    val ownerId: UserId? = null,
     @Serializable(with = LocalDateTimeSerializer::class)
     val createdAt: LocalDateTime? = null,
     val title: String? = null,
@@ -25,7 +28,7 @@ data class Song(
     val coverArtUrl: String? = null,
     val description: String? = null,
     @Serializable(with = UUIDSerializer::class)
-    val releaseId: UUID? = null,
+    val releaseId: ReleaseId? = null,
     val track: Int? = null,
     val language: String? = null,
     val coverRemixSample: Boolean? = null,

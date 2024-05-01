@@ -5,27 +5,27 @@ import io.newm.server.auth.oauth.model.OAuthType
 import io.newm.shared.auth.Password
 import io.newm.server.features.user.model.User
 import io.newm.server.features.user.model.UserFilters
-import java.util.UUID
+import io.newm.server.typealiases.UserId
 
 interface UserRepository {
-    suspend fun add(user: User): UUID
+    suspend fun add(user: User): UserId
 
     suspend fun find(
         email: String,
         password: Password
-    ): Pair<UUID, Boolean>
+    ): Pair<UserId, Boolean>
 
     suspend fun findByEmail(email: String): User
 
     suspend fun findOrAdd(
         oauthType: OAuthType,
         oauthTokens: OAuthTokens
-    ): UUID
+    ): UserId
 
-    suspend fun exists(userId: UUID): Boolean
+    suspend fun exists(userId: UserId): Boolean
 
     suspend fun get(
-        userId: UUID,
+        userId: UserId,
         includeAll: Boolean = true
     ): User
 
@@ -38,16 +38,16 @@ interface UserRepository {
     suspend fun getAllCount(filters: UserFilters): Long
 
     suspend fun update(
-        userId: UUID,
+        userId: UserId,
         user: User
     )
 
     fun updateUserData(
-        userId: UUID,
+        userId: UserId,
         user: User
     )
 
     suspend fun recover(user: User)
 
-    suspend fun delete(userId: UUID)
+    suspend fun delete(userId: UserId)
 }

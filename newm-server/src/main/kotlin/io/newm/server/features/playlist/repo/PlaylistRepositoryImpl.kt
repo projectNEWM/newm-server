@@ -8,6 +8,8 @@ import io.newm.server.features.song.database.ReleaseEntity
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.user.database.UserTable
 import io.newm.server.ktx.checkLength
+import io.newm.server.typealiases.SongId
+import io.newm.server.typealiases.UserId
 import io.newm.shared.exception.HttpForbiddenException
 import io.newm.shared.exception.HttpUnprocessableEntityException
 import io.newm.shared.koin.inject
@@ -22,7 +24,7 @@ internal class PlaylistRepositoryImpl : PlaylistRepository {
 
     override suspend fun add(
         playlist: Playlist,
-        ownerId: UUID
+        ownerId: UserId
     ): UUID {
         logger.debug { "add: playlist = $playlist" }
         val name = playlist.name ?: throw HttpUnprocessableEntityException("missing name")
@@ -38,7 +40,7 @@ internal class PlaylistRepositoryImpl : PlaylistRepository {
     override suspend fun update(
         playlist: Playlist,
         playlistId: UUID,
-        requesterId: UUID
+        requesterId: UserId
     ) {
         logger.debug { "update: playlist = $playlist" }
         playlist.checkFieldLengths()
@@ -51,7 +53,7 @@ internal class PlaylistRepositoryImpl : PlaylistRepository {
 
     override suspend fun delete(
         playlistId: UUID,
-        requesterId: UUID
+        requesterId: UserId
     ) {
         logger.debug { "delete: playlistId = $playlistId" }
         transaction {
@@ -90,8 +92,8 @@ internal class PlaylistRepositoryImpl : PlaylistRepository {
 
     override suspend fun addSong(
         playlistId: UUID,
-        songId: UUID,
-        requesterId: UUID
+        songId: SongId,
+        requesterId: UserId
     ) {
         logger.debug { "addSong: playlistId = $playlistId, songId = $songId" }
         return transaction {
@@ -103,8 +105,8 @@ internal class PlaylistRepositoryImpl : PlaylistRepository {
 
     override suspend fun deleteSong(
         playlistId: UUID,
-        songId: UUID,
-        requesterId: UUID
+        songId: SongId,
+        requesterId: UserId
     ) {
         logger.debug { "deleteSong: playlistId = $playlistId, songId = $songId" }
         transaction {
@@ -128,7 +130,7 @@ internal class PlaylistRepositoryImpl : PlaylistRepository {
         }
     }
 
-    private fun PlaylistEntity.checkRequester(requesterId: UUID) {
+    private fun PlaylistEntity.checkRequester(requesterId: UserId) {
         if (ownerId.value != requesterId) throw HttpForbiddenException("operation allowed only by owner")
     }
 

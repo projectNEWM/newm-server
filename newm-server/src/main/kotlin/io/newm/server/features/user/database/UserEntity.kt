@@ -4,22 +4,18 @@ import io.newm.server.auth.oauth.model.OAuthType
 import io.newm.server.features.user.model.User
 import io.newm.server.features.user.model.UserFilters
 import io.newm.server.features.user.model.UserVerificationStatus
+import io.newm.server.typealiases.UserId
 import io.newm.shared.ktx.exists
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.AndOp
-import org.jetbrains.exposed.sql.Op
-import org.jetbrains.exposed.sql.SizedIterable
-import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
-import org.jetbrains.exposed.sql.lowerCase
 import java.time.LocalDateTime
-import java.util.UUID
 
-class UserEntity(id: EntityID<UUID>) : UUIDEntity(id) {
+class UserEntity(id: EntityID<UserId>) : UUIDEntity(id) {
     val createdAt: LocalDateTime by UserTable.createdAt
     var oauthType: OAuthType? by UserTable.oauthType
     var oauthId: String? by UserTable.oauthId

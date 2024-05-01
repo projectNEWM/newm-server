@@ -1,5 +1,6 @@
 package io.newm.server.features.collaboration.model
 
+import io.newm.server.typealiases.SongId
 import io.newm.shared.serialization.LocalDateTimeSerializer
 import io.newm.shared.serialization.UUIDSerializer
 import kotlinx.serialization.Contextual
@@ -15,7 +16,7 @@ data class Collaboration(
     @Serializable(with = LocalDateTimeSerializer::class)
     val createdAt: LocalDateTime? = null,
     @Serializable(with = UUIDSerializer::class)
-    val songId: UUID? = null,
+    val songId: SongId? = null,
     val email: String? = null,
     var role: String? = null,
     @Contextual

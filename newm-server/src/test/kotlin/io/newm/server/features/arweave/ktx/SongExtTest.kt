@@ -3,6 +3,7 @@ import com.google.common.truth.Truth.assertThat
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Release
 import io.newm.server.features.song.model.Song
+import io.newm.server.typealiases.UserId
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
@@ -43,7 +44,7 @@ class SongExtTest : KoinTest {
     @Test
     fun `test should return empty list`() =
         runTest {
-            val ownerId = UUID.randomUUID()
+            val ownerId = UserId.randomUUID()
             val release =
                 Release(
                     ownerId = ownerId,
@@ -80,7 +81,7 @@ class SongExtTest : KoinTest {
     @Test
     fun `test should return non empty list`() =
         runTest {
-            val ownerId = UUID.randomUUID()
+            val ownerId = UserId.randomUUID()
             val release =
                 Release(
                     ownerId = ownerId,
