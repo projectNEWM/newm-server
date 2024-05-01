@@ -17,6 +17,7 @@ import io.newm.server.ktx.asMandatoryField
 import io.newm.server.ktx.asValidEmail
 import io.newm.server.ktx.checkLength
 import io.newm.server.typealiases.SongId
+import io.newm.server.typealiases.UserId
 import io.newm.shared.exception.HttpConflictException
 import io.newm.shared.exception.HttpForbiddenException
 import io.newm.shared.exception.HttpUnprocessableEntityException
@@ -38,7 +39,7 @@ internal class CollaborationRepositoryImpl(
 
     override suspend fun add(
         collaboration: Collaboration,
-        requesterId: UUID
+        requesterId: UserId
     ): UUID {
         logger.debug { "add: collaboration = $collaboration" }
 
@@ -65,7 +66,7 @@ internal class CollaborationRepositoryImpl(
     override suspend fun update(
         collaboration: Collaboration,
         collaborationId: UUID,
-        requesterId: UUID,
+        requesterId: UserId,
         skipStatusCheck: Boolean
     ) {
         logger.debug { "update: collaboration = $collaboration, collaborationId = $collaborationId" }
@@ -98,7 +99,7 @@ internal class CollaborationRepositoryImpl(
 
     override suspend fun delete(
         collaborationId: UUID,
-        requesterId: UUID
+        requesterId: UserId
     ) {
         logger.debug { "delete: collaborationId = $collaborationId" }
         transaction {
@@ -111,7 +112,7 @@ internal class CollaborationRepositoryImpl(
 
     override suspend fun get(
         collaborationId: UUID,
-        requesterId: UUID
+        requesterId: UserId
     ): Collaboration {
         logger.debug { "get: collaborationId = $collaborationId" }
         return transaction {
@@ -188,7 +189,7 @@ internal class CollaborationRepositoryImpl(
 
     override suspend fun reply(
         collaborationId: UUID,
-        requesterId: UUID,
+        requesterId: UserId,
         accepted: Boolean
     ): Collaboration {
         logger.debug { "reply: collaborationId = $collaborationId, accepted = $accepted" }
@@ -203,13 +204,13 @@ internal class CollaborationRepositoryImpl(
         }
     }
 
-    override suspend fun invite(songId: UUID) {
+    override suspend fun invite(songId: SongId) {
         logger.debug { "invite: songId = $songId" }
         invite(songId) { CollaborationEntity.findBySongId(songId) }
     }
 
     private suspend fun invite(
-        songId: UUID,
+        songId: SongId,
         getCollaborations: Transaction.() -> Iterable<CollaborationEntity>
     ) {
         val emails = mutableListOf<String>()
@@ -249,13 +250,13 @@ internal class CollaborationRepositoryImpl(
     ): Boolean = UserEntity[userId].email.equals(email, ignoreCase = true)
 
     private fun CollaborationEntity.checkSongState(
-        requesterId: UUID,
+        requesterId: UserId,
         edit: Boolean = true
     ) = checkSongState(songId.value, requesterId, email, edit)
 
     private fun checkSongState(
-        songId: UUID,
-        requesterId: UUID,
+        songId: SongId,
+        requesterId: UserId,
         email: String? = null,
         edit: Boolean = true
     ) {
@@ -292,7 +293,7 @@ internal class CollaborationRepositoryImpl(
     }
 
     private fun checkUniqueEmail(
-        songId: UUID,
+        songId: SongId,
         email: String
     ) {
         if (CollaborationEntity.exists(songId, email)) {

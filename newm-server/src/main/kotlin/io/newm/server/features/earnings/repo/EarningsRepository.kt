@@ -21,7 +21,7 @@ interface EarningsRepository {
      * Add royalty earnings to a song and split them based on its stream token holders
      */
     suspend fun addRoyaltySplits(
-        songId: UUID,
+        songId: SongId,
         royaltyRequest: AddSongRoyaltyRequest
     )
 

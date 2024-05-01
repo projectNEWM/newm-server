@@ -5,6 +5,7 @@ import io.newm.server.features.distribution.model.*
 import io.newm.server.features.song.model.Release
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.user.model.User
+import io.newm.server.typealiases.UserId
 import java.io.File
 import java.time.LocalDate
 import java.util.*
@@ -150,11 +151,11 @@ interface DistributionRepository {
 
     suspend fun redistributeRelease(release: Release)
 
-    suspend fun getEarliestReleaseDate(userId: UUID): LocalDate
+    suspend fun getEarliestReleaseDate(userId: UserId): LocalDate
 
-    suspend fun getPayoutBalance(userId: UUID): GetPayoutBalanceResponse
+    suspend fun getPayoutBalance(userId: UserId): GetPayoutBalanceResponse
 
-    suspend fun getPayoutHistory(userId: UUID): GetPayoutHistoryResponse
+    suspend fun getPayoutHistory(userId: UserId): GetPayoutHistoryResponse
 
-    suspend fun initiatePayout(userId: UUID): InitiatePayoutResponse
+    suspend fun initiatePayout(userId: UserId): InitiatePayoutResponse
 }

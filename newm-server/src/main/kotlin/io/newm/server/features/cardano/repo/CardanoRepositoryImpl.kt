@@ -33,6 +33,7 @@ import io.newm.server.features.song.model.SongFilters
 import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.features.walletconnection.database.WalletConnectionEntity
 import io.newm.server.ktx.cborHexToUtxo
+import io.newm.server.typealiases.UserId
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.debug
 import io.newm.shared.ktx.isValidHex
@@ -401,7 +402,7 @@ internal class CardanoRepositoryImpl(
     }
 
     override suspend fun getWalletNFTSongs(
-        userId: UUID,
+        userId: UserId,
         includeLegacy: Boolean
     ): List<NFTSong> {
         val assets = getWalletAssets(userId)
@@ -416,7 +417,7 @@ internal class CardanoRepositoryImpl(
         return nftSongs
     }
 
-    override suspend fun getWalletImages(userId: UUID): List<String> {
+    override suspend fun getWalletImages(userId: UserId): List<String> {
         val assets = getWalletAssets(userId)
         val images = mutableSetOf<String>()
         for (asset in assets) {
@@ -426,7 +427,7 @@ internal class CardanoRepositoryImpl(
         return images.map(String::toResourceUrl)
     }
 
-    private suspend fun getWalletAssets(userId: UUID): List<NativeAsset> {
+    private suspend fun getWalletAssets(userId: UserId): List<NativeAsset> {
         val nativeAssets = mutableListOf<NativeAsset>()
         val stakeAddresses = transaction { WalletConnectionEntity.getAllByUserId(userId).map { it.stakeAddress } }
         for (stakeAddress in stakeAddresses) {

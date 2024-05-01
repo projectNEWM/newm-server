@@ -2,6 +2,9 @@ package io.newm.server.features.song.database
 
 import io.newm.server.features.song.model.*
 import io.newm.server.features.user.database.UserTable
+import io.newm.server.typealiases.ReleaseId
+import io.newm.server.typealiases.SongId
+import io.newm.server.typealiases.UserId
 import io.newm.shared.exposed.overlaps
 import io.newm.shared.exposed.unnest
 import io.newm.shared.ktx.exists
@@ -17,15 +20,15 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
 import java.time.LocalDateTime
 import java.util.*
 
-class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
+class SongEntity(id: EntityID<SongId>) : UUIDEntity(id) {
     var archived: Boolean by SongTable.archived
     val createdAt: LocalDateTime by SongTable.createdAt
-    var ownerId: EntityID<UUID> by SongTable.ownerId
+    var ownerId: EntityID<UserId> by SongTable.ownerId
     var title: String by SongTable.title
     var genres: Array<String> by SongTable.genres
     var moods: Array<String>? by SongTable.moods
     var description: String? by SongTable.description
-    var releaseId: EntityID<UUID>? by SongTable.releaseId
+    var releaseId: EntityID<ReleaseId>? by SongTable.releaseId
     var track: Int? by SongTable.track
     var language: String? by SongTable.language
     var coverRemixSample: Boolean by SongTable.coverRemixSample
@@ -145,7 +148,7 @@ class SongEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         }
 
         fun exists(
-            ownerId: UUID,
+            ownerId: UserId,
             title: String
         ): Boolean =
             exists {

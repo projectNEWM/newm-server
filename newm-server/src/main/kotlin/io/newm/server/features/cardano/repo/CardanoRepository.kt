@@ -6,6 +6,7 @@ import io.newm.server.features.cardano.model.EncryptionRequest
 import io.newm.server.features.cardano.model.GetWalletSongsResponse
 import io.newm.server.features.cardano.model.Key
 import io.newm.server.features.cardano.model.NFTSong
+import io.newm.server.typealiases.UserId
 import kotlinx.coroutines.flow.Flow
 import java.util.*
 
@@ -61,11 +62,11 @@ interface CardanoRepository {
     ): GetWalletSongsResponse
 
     suspend fun getWalletNFTSongs(
-        userId: UUID,
+        userId: UserId,
         includeLegacy: Boolean
     ): List<NFTSong>
 
-    suspend fun getWalletImages(userId: UUID): List<String>
+    suspend fun getWalletImages(userId: UserId): List<String>
 
     // TODO: remove xpubKey support after client migrate to new Wallet Connection method
     suspend fun getWalletNFTSongs(

@@ -11,35 +11,36 @@ import io.newm.server.features.song.model.RefundPaymentResponse
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongFilters
 import io.newm.server.features.song.model.Release
+import io.newm.server.typealiases.ReleaseId
 import io.newm.server.typealiases.SongId
-import java.util.UUID
+import io.newm.server.typealiases.UserId
 
 interface SongRepository {
     suspend fun add(
         song: Song,
-        ownerId: UUID
-    ): UUID
+        ownerId: UserId
+    ): SongId
 
     suspend fun update(
         songId: SongId,
         song: Song,
-        requesterId: UUID? = null
+        requesterId: UserId? = null
     )
 
     suspend fun update(
-        releaseId: UUID,
+        releaseId: ReleaseId,
         release: Release,
-        requesterId: UUID? = null
+        requesterId: UserId? = null
     )
 
     suspend fun delete(
         songId: SongId,
-        requesterId: UUID
+        requesterId: UserId
     )
 
     suspend fun get(songId: SongId): Song
 
-    suspend fun getRelease(releaseId: UUID): Release
+    suspend fun getRelease(releaseId: ReleaseId): Release
 
     suspend fun getAll(
         filters: SongFilters,
@@ -49,7 +50,7 @@ interface SongRepository {
 
     suspend fun getAllCount(filters: SongFilters): Long
 
-    suspend fun getAllByReleaseId(id: UUID): List<Song>
+    suspend fun getAllByReleaseId(id: ReleaseId): List<Song>
 
     suspend fun getGenres(
         filters: SongFilters,
@@ -61,7 +62,7 @@ interface SongRepository {
 
     suspend fun uploadAudio(
         songId: SongId,
-        requesterId: UUID,
+        requesterId: UserId,
         data: ByteReadChannel
     ): AudioUploadReport
 
@@ -69,7 +70,7 @@ interface SongRepository {
 
     suspend fun processStreamTokenAgreement(
         songId: SongId,
-        requesterId: UUID,
+        requesterId: UserId,
         accepted: Boolean
     )
 
@@ -77,14 +78,14 @@ interface SongRepository {
 
     suspend fun getMintingPaymentAmount(
         songId: SongId,
-        requesterId: UUID
+        requesterId: UserId
     ): MintPaymentResponse
 
     suspend fun getMintingPaymentEstimate(collaborators: Int): MintPaymentResponse
 
     suspend fun generateMintingPaymentTransaction(
         songId: SongId,
-        requesterId: UUID,
+        requesterId: UserId,
         sourceUtxos: List<Utxo>,
         changeAddress: String
     ): String

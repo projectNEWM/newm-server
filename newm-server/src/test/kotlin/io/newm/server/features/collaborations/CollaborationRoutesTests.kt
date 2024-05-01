@@ -27,6 +27,7 @@ import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.database.SongTable
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
+import io.newm.server.typealiases.UserId
 import io.newm.shared.ktx.existsHavingId
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.dao.id.EntityID
@@ -37,7 +38,6 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.time.LocalDateTime
-import java.util.UUID
 
 class CollaborationRoutesTests : BaseApplicationTests() {
     @BeforeEach
@@ -914,7 +914,7 @@ class CollaborationRoutesTests : BaseApplicationTests() {
 }
 
 private fun addCollaborationToDatabase(
-    ownerId: UUID? = null,
+    ownerId: UserId? = null,
     offset: Int = 0,
     email: String? = null,
     status: CollaborationStatus? = null

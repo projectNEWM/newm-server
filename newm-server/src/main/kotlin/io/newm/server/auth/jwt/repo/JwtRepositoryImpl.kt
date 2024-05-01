@@ -8,6 +8,7 @@ import io.newm.server.auth.jwt.JwtType
 import io.newm.server.auth.jwt.database.JwtEntity
 import io.newm.server.features.user.database.UserTable
 import io.newm.server.ktx.getSecureConfigString
+import io.newm.server.typealiases.UserId
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.debug
 import io.newm.shared.ktx.existsHavingId
@@ -27,7 +28,7 @@ class JwtRepositoryImpl(
 
     override suspend fun create(
         type: JwtType,
-        userId: UUID,
+        userId: UserId,
         admin: Boolean
     ): String {
         logger.debug { "create: type = $type, userId = $userId" }

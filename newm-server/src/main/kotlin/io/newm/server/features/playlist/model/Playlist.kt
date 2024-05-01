@@ -1,5 +1,6 @@
 package io.newm.server.features.playlist.model
 
+import io.newm.server.typealiases.UserId
 import io.newm.shared.serialization.LocalDateTimeSerializer
 import io.newm.shared.serialization.UUIDSerializer
 import kotlinx.serialization.Serializable
@@ -13,6 +14,6 @@ data class Playlist(
     @Serializable(with = LocalDateTimeSerializer::class)
     val createdAt: LocalDateTime? = null,
     @Serializable(with = UUIDSerializer::class)
-    val ownerId: UUID? = null,
+    val ownerId: UserId? = null,
     val name: String? = null
 )

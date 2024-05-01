@@ -18,6 +18,7 @@ import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.features.song.repo.SongRepositoryImpl
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
+import io.newm.server.typealiases.UserId
 import io.newm.server.utils.ResourceOutgoingContent
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.existsHavingId
@@ -973,7 +974,7 @@ class SongRoutesTests : BaseApplicationTests() {
 
 fun addSongToDatabase(
     offset: Int = 0,
-    ownerId: UUID? = null,
+    ownerId: UserId? = null,
     archived: Boolean = false,
     phrase: String? = null,
     init: (SongEntity.() -> Unit)? = null

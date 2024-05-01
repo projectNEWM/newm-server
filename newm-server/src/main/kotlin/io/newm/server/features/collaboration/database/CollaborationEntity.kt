@@ -7,6 +7,8 @@ import io.newm.server.features.collaboration.model.CollaboratorFilters
 import io.newm.server.features.song.database.SongTable
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
+import io.newm.server.typealiases.SongId
+import io.newm.server.typealiases.UserId
 import io.newm.shared.ktx.exists
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
@@ -34,7 +36,7 @@ import java.util.UUID
 
 class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     val createdAt: LocalDateTime by CollaborationTable.createdAt
-    var songId: EntityID<UUID> by CollaborationTable.songId
+    var songId: EntityID<SongId> by CollaborationTable.songId
     var email: String by CollaborationTable.email
     var role: String? by CollaborationTable.role
     var royaltyRate: Float? by CollaborationTable.royaltyRate
@@ -61,7 +63,7 @@ class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
 
     companion object : UUIDEntityClass<CollaborationEntity>(CollaborationTable) {
         fun exists(
-            songId: UUID,
+            songId: SongId,
             email: String
         ): Boolean =
             exists {
@@ -69,7 +71,7 @@ class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             }
 
         fun exists(
-            ownerId: UUID,
+            ownerId: UserId,
             email: String,
             status: CollaborationStatus
         ): Boolean {
@@ -133,7 +135,7 @@ class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             return res.orderBy(CollaborationTable.createdAt to (filters.sortOrder ?: SortOrder.ASC))
         }
 
-        fun findBySongId(songId: UUID): SizedIterable<CollaborationEntity> = find { CollaborationTable.songId eq songId }
+        fun findBySongId(songId: SongId): SizedIterable<CollaborationEntity> = find { CollaborationTable.songId eq songId }
 
         fun collaborators(
             userId: UUID,
