@@ -23,15 +23,18 @@ fun Routing.createMarketplaceRoutes() {
     route(ROOT_PATH) {
         route("sales") {
             get {
-                recaptchaRepository.verify("get_sales", request)
+                // TODO: re-enable when WebApp fixed
+                // recaptchaRepository.verify("get_sales", request)
                 respond(marketplaceRepository.getSales(saleFilters, offset, limit))
             }
             get("count") {
-                recaptchaRepository.verify("get_sale_count", request)
+                // TODO: re-enable when WebApp fixed
+                // recaptchaRepository.verify("get_sale_count", request)
                 respond(CountResponse(marketplaceRepository.getSaleCount(saleFilters)))
             }
             get("{saleId}") {
-                recaptchaRepository.verify("get_sale", request)
+                // TODO: re-enable when WebApp fixed
+                // recaptchaRepository.verify("get_sale", request)
                 respond(marketplaceRepository.getSale(saleId))
             }
         }
