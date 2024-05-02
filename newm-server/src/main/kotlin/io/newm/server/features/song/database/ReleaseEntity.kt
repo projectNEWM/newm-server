@@ -55,6 +55,7 @@ class ReleaseEntity(id: EntityID<ReleaseId>) : UUIDEntity(id) {
             publicationDate = publicationDate,
             hasSubmittedForDistribution = hasSubmittedForDistribution,
             errorMessage = errorMessage,
+            forceDistributed = forceDistributed,
         )
 
     companion object : UUIDEntityClass<ReleaseEntity>(ReleaseTable) {
