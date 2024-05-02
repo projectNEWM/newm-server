@@ -1,6 +1,7 @@
 package io.newm.server.features.walletconnection.database
 
 import io.newm.server.features.walletconnection.model.WalletConnection
+import io.newm.server.typealiases.UserId
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
@@ -16,7 +17,7 @@ import java.util.UUID
 class WalletConnectionEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     val createdAt: LocalDateTime by WalletConnectionTable.createdAt
     var stakeAddress: String by WalletConnectionTable.stakeAddress
-    var userId: EntityID<UUID>? by WalletConnectionTable.userId
+    var userId: EntityID<UserId>? by WalletConnectionTable.userId
 
     fun toModel(): WalletConnection =
         WalletConnection(
@@ -38,7 +39,7 @@ class WalletConnectionEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             }
         }
 
-        fun getAllByUserId(userId: UUID): SizedIterable<WalletConnectionEntity> =
+        fun getAllByUserId(userId: UserId): SizedIterable<WalletConnectionEntity> =
             find {
                 WalletConnectionTable.userId eq userId
             }

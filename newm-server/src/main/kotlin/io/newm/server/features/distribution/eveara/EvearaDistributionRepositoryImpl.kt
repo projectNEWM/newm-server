@@ -32,6 +32,7 @@ import io.newm.server.features.user.model.User
 import io.newm.server.features.user.repo.UserRepository
 import io.newm.server.ktx.*
 import io.newm.server.logging.logRequestJson
+import io.newm.server.typealiases.UserId
 import io.newm.shared.exception.HttpServiceUnavailableException
 import io.newm.shared.exception.HttpStatusException.Companion.toException
 import io.newm.shared.koin.inject
@@ -1288,7 +1289,7 @@ class EvearaDistributionRepositoryImpl(
         }
     }
 
-    override suspend fun getEarliestReleaseDate(userId: UUID): LocalDate {
+    override suspend fun getEarliestReleaseDate(userId: UserId): LocalDate {
         val user = userRepository.get(userId)
         createDistributionUserIfNeeded(user)
         val maxDays =
@@ -1297,7 +1298,7 @@ class EvearaDistributionRepositoryImpl(
         return maxDays.toReleaseDate()
     }
 
-    override suspend fun getPayoutBalance(userId: UUID): GetPayoutBalanceResponse {
+    override suspend fun getPayoutBalance(userId: UserId): GetPayoutBalanceResponse {
         val user = userRepository.get(userId)
         requireNotNull(user.distributionUserId) { "User.distributionUserId must not be null!" }
         val response =
@@ -1316,7 +1317,7 @@ class EvearaDistributionRepositoryImpl(
         return getPayoutBalanceResponse
     }
 
-    override suspend fun getPayoutHistory(userId: UUID): GetPayoutHistoryResponse {
+    override suspend fun getPayoutHistory(userId: UserId): GetPayoutHistoryResponse {
         val user = userRepository.get(userId)
         requireNotNull(user.distributionUserId) { "User.distributionUserId must not be null!" }
         val response =
@@ -1335,7 +1336,7 @@ class EvearaDistributionRepositoryImpl(
         return getPayoutHistoryResponse
     }
 
-    override suspend fun initiatePayout(userId: UUID): InitiatePayoutResponse {
+    override suspend fun initiatePayout(userId: UserId): InitiatePayoutResponse {
         val user = userRepository.get(userId)
         requireNotNull(user.distributionUserId) { "User.distributionUserId must not be null!" }
         val response =

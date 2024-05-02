@@ -123,7 +123,7 @@ internal class CollaborationRepositoryImpl(
     }
 
     override suspend fun getAll(
-        userId: UUID,
+        userId: UserId,
         filters: CollaborationFilters,
         offset: Int,
         limit: Int
@@ -137,7 +137,7 @@ internal class CollaborationRepositoryImpl(
     }
 
     override suspend fun getAllCount(
-        userId: UUID,
+        userId: UserId,
         filters: CollaborationFilters
     ): Long {
         logger.debug { "getAllCount: userId = $userId, filters = $filters" }
@@ -147,7 +147,7 @@ internal class CollaborationRepositoryImpl(
     }
 
     override suspend fun getCollaborators(
-        userId: UUID,
+        userId: UserId,
         filters: CollaboratorFilters,
         offset: Int,
         limit: Int
@@ -178,7 +178,7 @@ internal class CollaborationRepositoryImpl(
         )
 
     override suspend fun getCollaboratorCount(
-        userId: UUID,
+        userId: UserId,
         filters: CollaboratorFilters
     ): Long {
         logger.debug { "getCollaboratorCount: userId = $userId, filters = $filters" }
@@ -245,7 +245,7 @@ internal class CollaborationRepositoryImpl(
     }
 
     private fun userMatches(
-        userId: UUID,
+        userId: UserId,
         email: String?
     ): Boolean = UserEntity[userId].email.equals(email, ignoreCase = true)
 

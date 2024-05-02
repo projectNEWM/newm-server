@@ -32,7 +32,7 @@ interface CollaborationRepository {
     ): Collaboration
 
     suspend fun getAll(
-        userId: UUID,
+        userId: UserId,
         filters: CollaborationFilters,
         offset: Int,
         limit: Int
@@ -41,19 +41,19 @@ interface CollaborationRepository {
     suspend fun getAllBySongId(songId: SongId): List<Collaboration>
 
     suspend fun getAllCount(
-        userId: UUID,
+        userId: UserId,
         filters: CollaborationFilters
     ): Long
 
     suspend fun getCollaborators(
-        userId: UUID,
+        userId: UserId,
         filters: CollaboratorFilters,
         offset: Int,
         limit: Int
     ): List<Collaborator>
 
     suspend fun getCollaboratorCount(
-        userId: SongId,
+        userId: UserId,
         filters: CollaboratorFilters
     ): Long
 
