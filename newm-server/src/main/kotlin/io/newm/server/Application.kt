@@ -1,7 +1,7 @@
 package io.newm.server
 
-import io.ktor.server.application.Application
-import io.ktor.server.routing.routing
+import io.ktor.server.application.*
+import io.ktor.server.routing.*
 import io.newm.server.auth.createAuthenticationRoutes
 import io.newm.server.auth.installAuthentication
 import io.newm.server.content.installContentNegotiation
@@ -27,6 +27,7 @@ import io.newm.server.logging.installCallLogging
 import io.newm.server.staticcontent.createStaticContentRoutes
 import io.newm.server.statuspages.installStatusPages
 import io.newm.shared.daemon.initializeDaemons
+import io.newm.shared.ktx.getConfigBoolean
 
 fun main(args: Array<String>) = io.ktor.server.cio.EngineMain.main(args)
 
@@ -35,7 +36,9 @@ fun Application.module() {
     initializeSentry()
     installDependencyInjection()
     initializeDatabase()
-    installCurator()
+    if (environment.getConfigBoolean("marketplace.enabled")) {
+        installCurator()
+    }
 
     installCallLogging()
     installContentNegotiation()

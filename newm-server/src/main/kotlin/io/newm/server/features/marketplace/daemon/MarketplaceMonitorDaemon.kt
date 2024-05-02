@@ -33,10 +33,12 @@ class MarketplaceMonitorDaemon(
     private val isEnabled = environment.getConfigBoolean("marketplace.enabled")
 
     override fun start() {
-        log.info { "Starting..." }
         if (isEnabled) {
+            log.info { "Starting..." }
             leaderLatch.addListener(this)
             leaderLatch.start()
+        } else {
+            log.info { "Disabled" }
         }
     }
 
