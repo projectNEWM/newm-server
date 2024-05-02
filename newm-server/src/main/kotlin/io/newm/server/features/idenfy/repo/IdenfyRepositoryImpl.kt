@@ -15,6 +15,7 @@ import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.model.UserVerificationStatus
 import io.newm.server.ktx.checkedBody
 import io.newm.server.ktx.getSecureString
+import io.newm.server.typealiases.UserId
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.debug
 import io.newm.shared.ktx.getConfigChild
@@ -39,7 +40,7 @@ class IdenfyRepositoryImpl(
         propertiesFromResource("idenfy-messages.properties")
     }
 
-    override suspend fun createSession(userId: UUID): IdenfyCreateSessionResponse {
+    override suspend fun createSession(userId: UserId): IdenfyCreateSessionResponse {
         logger.debug { "createSession: $userId" }
 
         return with(environment.getConfigChild("idenfy")) {

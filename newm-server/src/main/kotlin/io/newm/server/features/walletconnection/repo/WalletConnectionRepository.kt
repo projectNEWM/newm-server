@@ -5,6 +5,7 @@ import io.newm.server.features.walletconnection.model.AnswerChallengeResponse
 import io.newm.server.features.walletconnection.model.WalletConnection
 import io.newm.server.features.walletconnection.model.GenerateChallengeRequest
 import io.newm.server.features.walletconnection.model.GenerateChallengeResponse
+import io.newm.server.typealiases.UserId
 import java.util.UUID
 
 interface WalletConnectionRepository {
@@ -16,13 +17,13 @@ interface WalletConnectionRepository {
 
     suspend fun connect(
         connectionId: UUID,
-        userId: UUID
+        userId: UserId
     ): WalletConnection
 
     suspend fun disconnect(
         connectionId: UUID,
-        userId: UUID
+        userId: UserId
     )
 
-    suspend fun getUserConnections(userId: UUID): List<WalletConnection>
+    suspend fun getUserConnections(userId: UserId): List<WalletConnection>
 }

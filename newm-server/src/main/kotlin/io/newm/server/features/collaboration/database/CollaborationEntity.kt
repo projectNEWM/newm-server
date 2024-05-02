@@ -88,7 +88,7 @@ class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         }
 
         fun all(
-            userId: UUID,
+            userId: UserId,
             filters: CollaborationFilters
         ): SizedIterable<CollaborationEntity> {
             val inbound = filters.inbound == true
@@ -138,7 +138,7 @@ class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         fun findBySongId(songId: SongId): SizedIterable<CollaborationEntity> = find { CollaborationTable.songId eq songId }
 
         fun collaborators(
-            userId: UUID,
+            userId: UserId,
             filters: CollaboratorFilters
         ): SizedIterable<Pair<String, Long>> {
             val ops = mutableListOf<Op<Boolean>>()

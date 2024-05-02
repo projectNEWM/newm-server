@@ -20,6 +20,7 @@ import io.newm.server.features.walletconnection.model.GenerateChallengeRequest
 import io.newm.server.features.walletconnection.model.GenerateChallengeResponse
 import io.newm.server.features.walletconnection.model.ChallengeMethod
 import io.newm.server.features.walletconnection.model.WalletConnection
+import io.newm.server.typealiases.UserId
 import io.newm.shared.exception.HttpForbiddenException
 import io.newm.shared.exception.HttpNotFoundException
 import io.newm.shared.koin.inject
@@ -184,7 +185,7 @@ internal class WalletConnectionRepositoryImpl(
 
     override suspend fun connect(
         connectionId: UUID,
-        userId: UUID
+        userId: UserId
     ): WalletConnection {
         logger.debug { "connect: connectionId = $connectionId, userId = $userId" }
         return transaction {
@@ -199,7 +200,7 @@ internal class WalletConnectionRepositoryImpl(
 
     override suspend fun disconnect(
         connectionId: UUID,
-        userId: UUID
+        userId: UserId
     ) {
         logger.debug { "disconnect: connectionId = $connectionId, userId = $userId" }
         transaction {
@@ -210,7 +211,7 @@ internal class WalletConnectionRepositoryImpl(
         }
     }
 
-    override suspend fun getUserConnections(userId: UUID): List<WalletConnection> {
+    override suspend fun getUserConnections(userId: UserId): List<WalletConnection> {
         logger.debug { "getUserConnections: userId = $userId" }
         return transaction {
             WalletConnectionEntity.getAllByUserId(userId).map(WalletConnectionEntity::toModel)
