@@ -1055,5 +1055,5 @@ fun addSongToDatabase(
                 this.apply { init() }
             }
         }
-    }.toModel(release).copy(forceDistributed = null)
+    }.toModel(release)
 }

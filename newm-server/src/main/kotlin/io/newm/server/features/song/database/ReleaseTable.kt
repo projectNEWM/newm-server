@@ -13,7 +13,6 @@ import org.jetbrains.exposed.sql.javatime.date
 import org.jetbrains.exposed.sql.javatime.datetime
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.util.*
 
 object ReleaseTable : UUIDTable(name = "releases") {
     val archived: Column<Boolean> = bool("archived").default(false)
@@ -36,5 +35,5 @@ object ReleaseTable : UUIDTable(name = "releases") {
     val arweaveCoverArtUrl: Column<String?> = text("arweave_cover_art_url").nullable()
     val hasSubmittedForDistribution: Column<Boolean> = bool("has_submitted_for_distribution").default(false)
     val errorMessage: Column<String?> = text("error_message").nullable()
-    val forceDistributed: Column<Boolean> = bool("force_distributed").default(false)
+    val forceDistributed: Column<Boolean?> = bool("force_distributed").nullable()
 }

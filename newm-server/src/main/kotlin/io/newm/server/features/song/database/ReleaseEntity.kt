@@ -36,7 +36,7 @@ class ReleaseEntity(id: EntityID<ReleaseId>) : UUIDEntity(id) {
     var arweaveCoverArtUrl: String? by ReleaseTable.arweaveCoverArtUrl
     var hasSubmittedForDistribution: Boolean by ReleaseTable.hasSubmittedForDistribution
     var errorMessage: String? by ReleaseTable.errorMessage
-    var forceDistributed: Boolean by ReleaseTable.forceDistributed
+    var forceDistributed: Boolean? by ReleaseTable.forceDistributed
 
     fun toModel(): Release =
         Release(
