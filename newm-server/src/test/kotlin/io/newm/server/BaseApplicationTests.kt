@@ -242,6 +242,7 @@ open class BaseApplicationTests {
                     arweaveCoverArtUrl = release.arweaveCoverArtUrl
                     hasSubmittedForDistribution = false
                     errorMessage = song.errorMessage
+                    forceDistributed = false
                 }.id.value
             SongEntity.new {
                 ownerId = EntityID(song.ownerId!!, UserTable)
