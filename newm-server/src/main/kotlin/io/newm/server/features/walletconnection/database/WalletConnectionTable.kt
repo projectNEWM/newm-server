@@ -9,7 +9,6 @@ import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.javatime.CurrentDateTime
 import org.jetbrains.exposed.sql.javatime.datetime
 import java.time.LocalDateTime
-import java.util.UUID
 
 object WalletConnectionTable : UUIDTable(name = "wallet_connections") {
     val createdAt: Column<LocalDateTime> = datetime("created_at").defaultExpression(CurrentDateTime)
