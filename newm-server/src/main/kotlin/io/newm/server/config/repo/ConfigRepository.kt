@@ -54,5 +54,7 @@ interface ConfigRepository {
         const val CONFIG_KEY_RECAPTCHA_ENABLED = "recaptcha.enabled"
         const val CONFIG_KEY_RECAPTCHA_MIN_SCORE = "recaptcha.minScore"
         const val CONFIG_KEY_NFTCDN_ENABLED = "nftcdn.enabled"
+        const val CONFIG_KEY_MARKETPLACE_MIN_INCENTIVE_AMOUNT = "marketplace.minIncentiveAmount"
+        const val CONFIG_KEY_MARKETPLACE_ORDER_LOVELACE = "marketplace.orderLovelace"
     }
 }

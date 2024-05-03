@@ -210,3 +210,5 @@ fun paymentAddressFromHash(
     }
     return Bech32.encode(prefix, byteArrayOf(firstByte) + hash)
 }
+
+fun hashFromPaymentAddress(address: String): ByteArray = Bech32.decode(address).bytes.drop(1).toByteArray()

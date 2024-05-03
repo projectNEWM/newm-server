@@ -145,6 +145,10 @@ fun Number.toPlutusData(): PlutusData {
     return plutusData { int = this@toPlutusData.toLong() }
 }
 
+fun ByteArray.toPlutusData(): PlutusData {
+    return plutusData { bytes = this@toPlutusData.toByteString() }
+}
+
 operator fun PlutusDataMap.get(key: PlutusData): PlutusData? {
     return this.mapItemList.find { it.mapItemKey == key }?.mapItemValue
 }
