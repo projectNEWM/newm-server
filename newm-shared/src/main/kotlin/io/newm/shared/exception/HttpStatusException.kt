@@ -12,6 +12,8 @@ sealed class HttpStatusException(val statusCode: HttpStatusCode, message: String
                 HttpStatusCode.Forbidden -> HttpUnauthorizedException(message)
                 HttpStatusCode.UnprocessableEntity -> HttpUnauthorizedException(message)
                 HttpStatusCode.Conflict -> HttpUnauthorizedException(message)
+                HttpStatusCode.ServiceUnavailable -> HttpServiceUnavailableException(message)
+                HttpStatusCode.PaymentRequired -> HttpPaymentRequiredException(message)
                 else -> HttpUnknownException(this, message)
             }
         }
@@ -32,6 +34,8 @@ class HttpUnprocessableEntityException(message: String) :
 class HttpConflictException(message: String) : HttpStatusException(HttpStatusCode.Conflict, message)
 
 class HttpServiceUnavailableException(message: String) : HttpStatusException(HttpStatusCode.ServiceUnavailable, message)
+
+class HttpPaymentRequiredException(message: String) : HttpStatusException(HttpStatusCode.PaymentRequired, message)
 
 class HttpUnknownException(httpStatusCode: HttpStatusCode, message: String) :
     HttpStatusException(httpStatusCode, message)

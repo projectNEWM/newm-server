@@ -1,12 +1,26 @@
 package io.newm.server.features.marketplace.repo
 
+import com.google.iot.cbor.CborArray
+import com.google.iot.cbor.CborInteger
 import io.ktor.server.application.ApplicationEnvironment
 import io.newm.chain.grpc.MonitorAddressResponse
+import io.newm.chain.grpc.nativeAsset
+import io.newm.chain.grpc.outputUtxo
 import io.newm.chain.util.toAdaString
+import io.newm.chain.util.toHexString
+import io.newm.server.config.repo.ConfigRepository
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_MIN_INCENTIVE_AMOUNT
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_ORDER_LOVELACE
 import io.newm.server.features.cardano.repo.CardanoRepository
+import io.newm.server.features.marketplace.builders.buildQueueDatum
 import io.newm.server.features.marketplace.database.MarketplaceBookmarkEntity
+import io.newm.server.features.marketplace.database.MarketplacePendingOrderEntity
 import io.newm.server.features.marketplace.database.MarketplacePurchaseEntity
 import io.newm.server.features.marketplace.database.MarketplaceSaleEntity
+import io.newm.server.features.marketplace.model.OrderAmountRequest
+import io.newm.server.features.marketplace.model.OrderAmountResponse
+import io.newm.server.features.marketplace.model.OrderTransactionRequest
+import io.newm.server.features.marketplace.model.OrderTransactionResponse
 import io.newm.server.features.marketplace.model.Sale
 import io.newm.server.features.marketplace.model.SaleFilters
 import io.newm.server.features.marketplace.model.SaleStatus
@@ -15,18 +29,25 @@ import io.newm.server.features.marketplace.parser.parseQueue
 import io.newm.server.features.marketplace.parser.parseSale
 import io.newm.server.features.song.database.SongTable
 import io.newm.server.ktx.getSecureConfigString
+import io.newm.shared.exception.HttpPaymentRequiredException
+import io.newm.shared.exception.HttpUnprocessableEntityException
 import io.newm.shared.koin.inject
+import io.newm.shared.ktx.coLazy
 import io.newm.shared.ktx.debug
 import io.newm.shared.ktx.epochSecondsToLocalDateTime
+import io.newm.shared.ktx.getConfigLong
 import io.newm.shared.ktx.info
 import io.newm.shared.ktx.orZero
 import io.newm.shared.ktx.warn
-import kotlinx.coroutines.runBlocking
+import io.newm.txbuilder.ktx.mergeAmounts
+import io.newm.txbuilder.ktx.toCborObject
+import io.newm.txbuilder.ktx.toNativeAssetCborMap
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf
 import org.slf4j.Logger
+import java.math.BigInteger
 import java.util.UUID
 
 private const val SALE_TIP_KEY = "saleTip"
@@ -34,14 +55,24 @@ private const val QUEUE_TIP_KEY = "queueTip"
 
 internal class MarketplaceRepositoryImpl(
     private val environment: ApplicationEnvironment,
+    private val configRepository: ConfigRepository,
     private val cardanoRepository: CardanoRepository
 ) : MarketplaceRepository {
     private val log: Logger by inject { parametersOf(javaClass.simpleName) }
-
-    private val pointerPolicyId: String by lazy {
-        runBlocking {
-            environment.getSecureConfigString("marketplace.pointerPolicyId")
-        }
+    private val queueContractAddress: String by coLazy {
+        environment.getSecureConfigString("marketplace.queue.contractAddress")
+    }
+    private val pointerPolicyId: String by coLazy {
+        environment.getSecureConfigString("marketplace.pointerPolicyId")
+    }
+    private val incentivePolicyId: String by coLazy {
+        environment.getSecureConfigString("marketplace.incentive.policyId")
+    }
+    private val incentiveAssetName: String by coLazy {
+        environment.getSecureConfigString("marketplace.incentive.assetName")
+    }
+    private val pendingOrderTimeToLive: Long by lazy {
+        environment.getConfigLong("marketplace.pendingOrderTimeToLive")
     }
 
     override suspend fun getSale(saleId: UUID): Sale {
@@ -72,6 +103,118 @@ internal class MarketplaceRepositoryImpl(
         return transaction {
             MarketplaceSaleEntity.all(filters).count()
         }
+    }
+
+    override suspend fun generateOrderAmount(request: OrderAmountRequest): OrderAmountResponse {
+        log.debug { "generateOrderAmount: $request" }
+
+        val sale = transaction { MarketplaceSaleEntity[request.saleId] }
+        require(request.bundleQuantity <= sale.availableBundleQuantity) { "Not enough bundles available for sale" }
+
+        val minIncentiveAmount = configRepository.getLong(CONFIG_KEY_MARKETPLACE_MIN_INCENTIVE_AMOUNT)
+        val incentiveAmount =
+            request.incentiveAmount?.also {
+                require(it < minIncentiveAmount) { "Not enough incentive" }
+            } ?: minIncentiveAmount
+
+        val nativeAssets =
+            listOf(
+                nativeAsset {
+                    policy = sale.costPolicyId
+                    name = sale.costAssetName
+                    amount = (sale.costAmount.toBigInteger() * request.bundleQuantity.toBigInteger()).toString()
+                },
+                nativeAsset {
+                    policy = incentivePolicyId
+                    name = incentiveAssetName
+                    amount = (incentiveAmount.toBigInteger() * BigInteger.TWO).toString()
+                }
+            )
+
+        val lovelace = configRepository.getLong(CONFIG_KEY_MARKETPLACE_ORDER_LOVELACE)
+        val amount =
+            CborArray.create(
+                listOf(
+                    CborInteger.create(lovelace.toBigInteger()),
+                    nativeAssets.toNativeAssetCborMap()
+                )
+            )
+
+        val order =
+            transaction {
+                MarketplacePendingOrderEntity.deleteAllExpired(pendingOrderTimeToLive)
+                MarketplacePendingOrderEntity.new {
+                    saleId = sale.id
+                    bundleQuantity = request.bundleQuantity
+                    this.incentiveAmount = incentiveAmount
+                }
+            }
+
+        return OrderAmountResponse(
+            orderId = order.id.value,
+            amountCborHex = amount.toCborByteArray().toHexString()
+        )
+    }
+
+    override suspend fun generateOrderTransaction(request: OrderTransactionRequest): OrderTransactionResponse {
+        log.debug { "generateOrderTransaction: $request" }
+
+        if (request.utxos.isEmpty()) {
+            throw HttpPaymentRequiredException("Missing UTXO's")
+        }
+
+        val (order, sale) =
+            transaction {
+                MarketplacePendingOrderEntity.deleteAllExpired(pendingOrderTimeToLive)
+                MarketplacePendingOrderEntity[request.orderId].let { it to MarketplaceSaleEntity[it.saleId] }
+            }
+
+        val lovelace = configRepository.getLong(CONFIG_KEY_MARKETPLACE_ORDER_LOVELACE)
+
+        val transaction =
+            cardanoRepository.buildTransaction {
+                sourceUtxos.addAll(request.utxos)
+                outputUtxos.add(
+                    outputUtxo {
+                        address = queueContractAddress
+                        this.lovelace = lovelace.toString()
+                        nativeAssets.addAll(
+                            listOf(
+                                nativeAsset {
+                                    policy = sale.costPolicyId
+                                    name = sale.costAssetName
+                                    amount =
+                                        (sale.costAmount.toBigInteger() * order.bundleQuantity.toBigInteger()).toString()
+                                },
+                                nativeAsset {
+                                    policy = incentivePolicyId
+                                    name = incentiveAssetName
+                                    amount = (order.incentiveAmount.toBigInteger() * BigInteger.TWO).toString()
+                                }
+                            ).mergeAmounts()
+                        )
+                        datum =
+                            buildQueueDatum(
+                                ownerAddress = sale.ownerAddress,
+                                numberOfBundles = order.bundleQuantity,
+                                incentivePolicyId = incentivePolicyId,
+                                incentiveAssetName = incentiveAssetName,
+                                incentiveAmount = order.incentiveAmount,
+                                pointerAssetName = sale.pointerAssetName
+                            ).toCborObject().toCborByteArray().toHexString()
+                    }
+                )
+                changeAddress = request.changeAddress
+            }
+        if (transaction.hasErrorMessage()) {
+            throw HttpUnprocessableEntityException("Failed to build order transaction: ${transaction.errorMessage}")
+        }
+        transaction {
+            order.delete()
+        }
+        return OrderTransactionResponse(
+            transaction.transactionCbor.toByteArray().toHexString()
+        )
     }
 
     override suspend fun getSaleTransactionTip(): String? {
