@@ -34,6 +34,7 @@ import io.newm.server.ktx.asValidUrl
 import io.newm.server.ktx.await
 import io.newm.server.ktx.checkLength
 import io.newm.server.ktx.getSecureConfigString
+import io.newm.server.typealiases.ReleaseId
 import io.newm.server.typealiases.SongId
 import io.newm.server.typealiases.UserId
 import io.newm.shared.exception.HttpConflictException
@@ -198,7 +199,7 @@ internal class SongRepositoryImpl(
     }
 
     override suspend fun update(
-        releaseId: UUID,
+        releaseId: ReleaseId,
         release: Release,
         requesterId: UserId?
     ) {
@@ -262,7 +263,7 @@ internal class SongRepositoryImpl(
         }
     }
 
-    override suspend fun getRelease(releaseId: UUID): Release {
+    override suspend fun getRelease(releaseId: ReleaseId): Release {
         logger.debug { "getRelease: releaseId = $releaseId" }
         return transaction {
             ReleaseEntity[releaseId].toModel()
@@ -292,7 +293,7 @@ internal class SongRepositoryImpl(
         }
     }
 
-    override suspend fun getAllByReleaseId(id: UUID): List<Song> {
+    override suspend fun getAllByReleaseId(id: ReleaseId): List<Song> {
         logger.debug { "getAllByReleaseId: id = $id" }
         return transaction {
             val release = ReleaseEntity[id].toModel()

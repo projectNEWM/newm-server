@@ -28,7 +28,6 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf
 import org.slf4j.Logger
 import java.util.Properties
-import java.util.UUID
 
 class IdenfyRepositoryImpl(
     private val environment: ApplicationEnvironment,
