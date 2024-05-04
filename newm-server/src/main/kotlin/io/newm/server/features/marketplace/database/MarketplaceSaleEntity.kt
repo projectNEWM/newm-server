@@ -10,6 +10,7 @@ import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.database.SongTable
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
+import io.newm.server.ktx.arweaveToWebUrl
 import io.newm.shared.exposed.overlaps
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
@@ -48,8 +49,11 @@ class MarketplaceSaleEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var totalBundleQuantity: Long by MarketplaceSaleTable.totalBundleQuantity
     var availableBundleQuantity: Long by MarketplaceSaleTable.availableBundleQuantity
 
-    fun toModel(): Sale =
-        Sale(
+    fun toModel(costAmountUsd: String): Sale {
+        val song = SongEntity[songId]
+        val artist = UserEntity[song.ownerId]
+        val release = ReleaseEntity[song.releaseId!!]
+        return Sale(
             id = id.value,
             createdAt = createdAt,
             status = status,
@@ -58,34 +62,36 @@ class MarketplaceSaleEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             costPolicyId = costPolicyId,
             costAssetName = costAssetName,
             costAmount = costAmount,
+            costAmountUsd = costAmountUsd,
             maxBundleSize = maxBundleSize,
             totalBundleQuantity = totalBundleQuantity,
             bundleAmount = bundleAmount,
             availableBundleQuantity = availableBundleQuantity,
             song =
-                SongEntity[songId].run {
-                    val release = ReleaseEntity[releaseId!!]
-                    Sale.Song(
-                        id = id.value,
-                        artistId = ownerId.value,
-                        artistName = UserEntity.findById(ownerId)?.stageOrFullName,
-                        title = title,
-                        genres = genres.toList(),
-                        moods = moods?.toList(),
-                        coverArtUrl = release.coverArtUrl,
-                        clipUrl = clipUrl,
-                        tokenAgreementUrl = tokenAgreementUrl,
-                        collaborators =
-                            CollaborationEntity.findBySongId(songId.value).map {
-                                Sale.SongCollaborator(
-                                    id = it.id.value,
-                                    name = UserEntity.getByEmail(it.email)?.stageOrFullName,
-                                    role = it.role
-                                )
-                            }
-                    )
-                }
+                Sale.Song(
+                    id = songId.value,
+                    artistId = artist.id.value,
+                    artistName = artist.stageOrFullName,
+                    artistPictureUrl = artist.pictureUrl,
+                    title = song.title,
+                    description = song.description,
+                    parentalAdvisory = song.parentalAdvisory,
+                    genres = song.genres.toList(),
+                    moods = song.moods?.toList(),
+                    coverArtUrl = release.arweaveCoverArtUrl?.arweaveToWebUrl(),
+                    clipUrl = song.arweaveClipUrl?.arweaveToWebUrl(),
+                    tokenAgreementUrl = song.arweaveTokenAgreementUrl?.arweaveToWebUrl(),
+                    collaborators =
+                        CollaborationEntity.findBySongId(songId.value).map {
+                            Sale.SongCollaborator(
+                                id = it.id.value,
+                                name = UserEntity.getByEmail(it.email)?.stageOrFullName,
+                                role = it.role
+                            )
+                        }
+                )
         )
+    }
 
     companion object : UUIDEntityClass<MarketplaceSaleEntity>(MarketplaceSaleTable) {
         fun getByPointer(pointer: Token): MarketplaceSaleEntity? = getByPointer(pointer.policyId, pointer.assetName)

@@ -236,6 +236,15 @@ internal class CardanoRepositoryImpl(
         }
     }
 
+    override suspend fun queryNativeTokenUSDPrice(
+        policyId: String,
+        assetName: String
+    ): Long {
+        // TODO: Implement this. Must cache values since we'll be calling often with the same assets (e.g., NEWM token)
+        // for now just hardcoded to $0.005
+        return 5000L
+    }
+
     override suspend fun snapshotToken(
         policyId: String,
         name: String,

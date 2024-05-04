@@ -41,6 +41,11 @@ interface CardanoRepository {
 
     suspend fun queryAdaUSDPrice(): Long
 
+    suspend fun queryNativeTokenUSDPrice(
+        policyId: String,
+        assetName: String
+    ): Long
+
     suspend fun <T> withLock(block: suspend () -> T): T
 
     suspend fun verifySignData(

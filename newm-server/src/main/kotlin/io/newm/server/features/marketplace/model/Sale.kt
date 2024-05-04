@@ -19,6 +19,7 @@ data class Sale(
     val costPolicyId: String,
     val costAssetName: String,
     val costAmount: Long,
+    val costAmountUsd: String,
     val maxBundleSize: Long,
     val totalBundleQuantity: Long,
     val availableBundleQuantity: Long,
@@ -31,7 +32,10 @@ data class Sale(
         @Serializable(with = UUIDSerializer::class)
         val artistId: UUID,
         val artistName: String?,
+        val artistPictureUrl: String?,
         val title: String?,
+        val description: String?,
+        val parentalAdvisory: String?,
         val genres: List<String>?,
         val moods: List<String>?,
         val coverArtUrl: String?,
