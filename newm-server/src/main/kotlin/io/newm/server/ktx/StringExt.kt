@@ -58,6 +58,11 @@ fun String?.asUrlWithHost(host: String): String? {
     return "https://${updatedUrl.substringBefore('?')}"
 }
 
+fun String.arweaveToWebUrl(): String {
+    require(startsWith("ar://")) { "Invalid Arweave URL: $this" }
+    return "https://arweave.net/${substring(5)}"
+}
+
 /**
  * Converts an s3://url into a bucket and key pair.
  */

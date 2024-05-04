@@ -1,9 +1,13 @@
 package io.newm.server.features.marketplace
 
 import com.google.common.truth.Truth.assertThat
-import io.ktor.client.call.*
-import io.ktor.client.request.*
-import io.ktor.http.*
+import io.ktor.client.call.body
+import io.ktor.client.request.accept
+import io.ktor.client.request.get
+import io.ktor.client.request.parameter
+import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
+import io.newm.chain.util.toAdaString
 import io.newm.server.BaseApplicationTests
 import io.newm.server.features.collaboration.database.CollaborationEntity
 import io.newm.server.features.collaboration.database.CollaborationTable
@@ -448,6 +452,7 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
                     }
                     firstName = "firstName$offset ${phraseOrEmpty(1)} blah blah"
                     lastName = "lastName$offset ${phraseOrEmpty(2)} blah blah"
+                    pictureUrl = "pictureUrl$offset"
                 }
             }
 
@@ -458,17 +463,19 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
                     ReleaseEntity.new {
                         ownerId = artist.id
                         this.title = title
-                        coverArtUrl = "coverArtUrl$offset"
+                        arweaveCoverArtUrl = "ar://coverArtUrl$offset"
                         releaseType = ReleaseType.SINGLE
                     }.id.value
                 SongEntity.new {
                     ownerId = artist.id
                     this.title = title
+                    description = "description$offset"
+                    parentalAdvisory = "parentalAdvisory$offset"
                     this.releaseId = EntityID(releaseId, ReleaseTable)
                     genres = arrayOf("genre${offset}_0", "genre${offset}_1")
                     moods = arrayOf("mood${offset}_0", "mood${offset}_1")
-                    clipUrl = "clipUrl$offset"
-                    tokenAgreementUrl = "tokenAgreementUrl$offset"
+                    arweaveClipUrl = "ar://clipUrl$offset"
+                    arweaveTokenAgreementUrl = "ar://tokenAgreementUrl$offset"
                 }
             }
 
@@ -494,11 +501,11 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
                 bundleAmount = offset + 1L
                 costPolicyId = "costPolicyId$offset"
                 costAssetName = "costAssetName$offset"
-                costAmount = offset + 10L
+                costAmount = offset.toLong()
                 maxBundleSize = offset + 100L
                 totalBundleQuantity = offset + 1000L
                 availableBundleQuantity = offset + 1000L
-            }.toModel()
+            }.toModel((offset.toBigInteger() * 5000.toBigInteger()).toAdaString())
         }
     }
 }

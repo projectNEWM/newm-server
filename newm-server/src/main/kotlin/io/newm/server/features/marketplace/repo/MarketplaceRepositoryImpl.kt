@@ -2,6 +2,7 @@ package io.newm.server.features.marketplace.repo
 
 import io.ktor.server.application.ApplicationEnvironment
 import io.newm.chain.grpc.MonitorAddressResponse
+import io.newm.chain.util.toAdaString
 import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.marketplace.database.MarketplaceBookmarkEntity
 import io.newm.server.features.marketplace.database.MarketplacePurchaseEntity
@@ -45,9 +46,9 @@ internal class MarketplaceRepositoryImpl(
 
     override suspend fun getSale(saleId: UUID): Sale {
         log.debug { "get: saleId = $saleId" }
-        return transaction {
-            MarketplaceSaleEntity[saleId].toModel()
-        }
+        val sale = transaction { MarketplaceSaleEntity[saleId] }
+        val costAmountUsd = sale.getCostAmountUsd()
+        return transaction { sale.toModel(costAmountUsd) }
     }
 
     override suspend fun getSales(
@@ -56,8 +57,13 @@ internal class MarketplaceRepositoryImpl(
         limit: Int
     ): List<Sale> {
         log.info { "getSales: filters = $filters, offset = $offset, limit = $limit" }
+        val sales =
+            transaction {
+                MarketplaceSaleEntity.all(filters).limit(n = limit, offset = offset.toLong()).toList()
+            }
+        val costAmountsUsd: Map<UUID, String> = sales.associate { it.id.value to it.getCostAmountUsd() }
         return transaction {
-            MarketplaceSaleEntity.all(filters).limit(n = limit, offset = offset.toLong()).map(MarketplaceSaleEntity::toModel)
+            sales.map { it.toModel(costAmountsUsd[it.id.value]!!) }
         }
     }
 
@@ -206,4 +212,9 @@ internal class MarketplaceRepositoryImpl(
         SongTable.select(SongTable.id).where {
             (SongTable.nftPolicyId eq policyId) and (SongTable.nftName eq assetName)
         }.limit(1).firstOrNull()?.get(SongTable.id)
+
+    private suspend fun MarketplaceSaleEntity.getCostAmountUsd(): String {
+        val unitPrice = cardanoRepository.queryNativeTokenUSDPrice(costPolicyId, costAssetName)
+        return (costAmount.toBigInteger() * unitPrice.toBigInteger()).toAdaString()
+    }
 }
