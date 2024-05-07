@@ -9,6 +9,7 @@ import io.newm.server.auth.jwt.AUTH_JWT
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.value
 import io.newm.server.features.cloudinary.model.CloudinarySignResponse
+import io.newm.server.features.staticmembers.StaticMembers
 import io.newm.shared.ktx.post
 import java.time.Instant
 import kotlinx.serialization.json.JsonPrimitive
@@ -17,12 +18,12 @@ fun Routing.createCloudinaryRoutes() {
     val cloudinary by inject<Cloudinary>()
 
     authenticate(AUTH_JWT) {
-        post("/v1/cloudinary/sign") {
+        post(StaticMembers.getAuthPath()) {
             val timestamp = Instant.now().epochSecond
             val params =
                 mutableMapOf<String, Any>().apply {
                     receive<Map<String, JsonPrimitive>>().mapValuesTo(this) { it.value.value }
-                    put("timestamp", timestamp)
+                    put(StaticMembers.getTimestamp(), timestamp)
                 }
             respond(
                 CloudinarySignResponse(
