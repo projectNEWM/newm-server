@@ -56,5 +56,6 @@ interface ConfigRepository {
         const val CONFIG_KEY_NFTCDN_ENABLED = "nftcdn.enabled"
         const val CONFIG_KEY_MARKETPLACE_MIN_INCENTIVE_AMOUNT = "marketplace.minIncentiveAmount"
         const val CONFIG_KEY_MARKETPLACE_ORDER_LOVELACE = "marketplace.orderLovelace"
+        const val CONFIG_KEY_MOBILE_CONFIG_PAYLOAD = "mobile.configPayload"
     }
 }

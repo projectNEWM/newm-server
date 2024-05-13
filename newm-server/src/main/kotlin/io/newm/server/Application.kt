@@ -1,7 +1,7 @@
 package io.newm.server
 
-import io.ktor.server.application.*
-import io.ktor.server.routing.*
+import io.ktor.server.application.Application
+import io.ktor.server.routing.routing
 import io.newm.server.auth.createAuthenticationRoutes
 import io.newm.server.auth.installAuthentication
 import io.newm.server.content.installContentNegotiation
@@ -16,6 +16,7 @@ import io.newm.server.features.distribution.createDistributionRoutes
 import io.newm.server.features.earnings.createEarningsRoutes
 import io.newm.server.features.idenfy.createIdenfyRoutes
 import io.newm.server.features.marketplace.createMarketplaceRoutes
+import io.newm.server.features.mobileconfig.createMobileConfigRoutes
 import io.newm.server.features.playlist.createPlaylistRoutes
 import io.newm.server.features.song.createSongRoutes
 import io.newm.server.features.user.createUserRoutes
@@ -62,6 +63,7 @@ fun Application.module() {
         createEarningsRoutes()
         createWalletConnectionRoutes()
         createMarketplaceRoutes()
+        createMobileConfigRoutes()
     }
 
     initializeDaemons()
