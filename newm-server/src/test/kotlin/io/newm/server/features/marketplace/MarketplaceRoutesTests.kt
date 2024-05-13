@@ -7,8 +7,11 @@ import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
+import io.mockk.coEvery
+import io.mockk.mockk
 import io.newm.chain.util.toAdaString
 import io.newm.server.BaseApplicationTests
+import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.collaboration.database.CollaborationEntity
 import io.newm.server.features.collaboration.database.CollaborationTable
 import io.newm.server.features.marketplace.database.MarketplaceSaleEntity
@@ -29,12 +32,31 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.neq
 import org.jetbrains.exposed.sql.deleteAll
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.koin.core.context.GlobalContext.loadKoinModules
+import org.koin.dsl.module
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 
+private const val COST_TOKEN_USD_PRICE = 5000L
+
 class MarketplaceRoutesTests : BaseApplicationTests() {
+    @BeforeAll
+    fun beforeAllMarketplaceRoutesTests() {
+        loadKoinModules(
+            module {
+                single {
+                    mockk<CardanoRepository>(relaxed = true) {
+                        coEvery { isMainnet() } returns false
+                        coEvery { queryNativeTokenUSDPrice(any(), any()) } returns COST_TOKEN_USD_PRICE
+                    }
+                }
+            }
+        )
+    }
+
     @BeforeEach
     fun beforeEach() {
         transaction {
@@ -476,6 +498,8 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
                     moods = arrayOf("mood${offset}_0", "mood${offset}_1")
                     arweaveClipUrl = "ar://clipUrl$offset"
                     arweaveTokenAgreementUrl = "ar://tokenAgreementUrl$offset"
+                    nftPolicyId = "nftPolicyId$offset"
+                    nftName = "nftName$offset"
                 }
             }
 
@@ -505,7 +529,7 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
                 maxBundleSize = offset + 100L
                 totalBundleQuantity = offset + 1000L
                 availableBundleQuantity = offset + 1000L
-            }.toModel((offset.toBigInteger() * 5000.toBigInteger()).toAdaString())
+            }.toModel(false, (offset.toBigInteger() * COST_TOKEN_USD_PRICE.toBigInteger()).toAdaString())
         }
     }
 }
