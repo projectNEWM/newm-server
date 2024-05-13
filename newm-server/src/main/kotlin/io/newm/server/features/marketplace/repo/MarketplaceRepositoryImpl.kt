@@ -78,8 +78,9 @@ internal class MarketplaceRepositoryImpl(
     override suspend fun getSale(saleId: UUID): Sale {
         log.debug { "get: saleId = $saleId" }
         val sale = transaction { MarketplaceSaleEntity[saleId] }
+        val isMainnet = cardanoRepository.isMainnet()
         val costAmountUsd = sale.getCostAmountUsd()
-        return transaction { sale.toModel(costAmountUsd) }
+        return transaction { sale.toModel(isMainnet, costAmountUsd) }
     }
 
     override suspend fun getSales(
@@ -88,13 +89,14 @@ internal class MarketplaceRepositoryImpl(
         limit: Int
     ): List<Sale> {
         log.info { "getSales: filters = $filters, offset = $offset, limit = $limit" }
+        val isMainnet = cardanoRepository.isMainnet()
         val sales =
             transaction {
                 MarketplaceSaleEntity.all(filters).limit(n = limit, offset = offset.toLong()).toList()
             }
         val costAmountsUsd: Map<UUID, String> = sales.associate { it.id.value to it.getCostAmountUsd() }
         return transaction {
-            sales.map { it.toModel(costAmountsUsd[it.id.value]!!) }
+            sales.map { it.toModel(isMainnet, costAmountsUsd[it.id.value]!!) }
         }
     }
 

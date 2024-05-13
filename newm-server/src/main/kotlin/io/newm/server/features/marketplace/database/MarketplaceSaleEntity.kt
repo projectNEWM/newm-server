@@ -1,5 +1,6 @@
 package io.newm.server.features.marketplace.database
 
+import io.newm.chain.util.assetUrlOf
 import io.newm.server.features.collaboration.database.CollaborationEntity
 import io.newm.server.features.marketplace.model.Sale
 import io.newm.server.features.marketplace.model.SaleFilters
@@ -49,7 +50,10 @@ class MarketplaceSaleEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var totalBundleQuantity: Long by MarketplaceSaleTable.totalBundleQuantity
     var availableBundleQuantity: Long by MarketplaceSaleTable.availableBundleQuantity
 
-    fun toModel(costAmountUsd: String): Sale {
+    fun toModel(
+        isMainnet: Boolean,
+        costAmountUsd: String
+    ): Sale {
         val song = SongEntity[songId]
         val artist = UserEntity[song.ownerId]
         val release = ReleaseEntity[song.releaseId!!]
@@ -81,13 +85,17 @@ class MarketplaceSaleEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                     coverArtUrl = release.arweaveCoverArtUrl?.arweaveToWebUrl(),
                     clipUrl = song.arweaveClipUrl?.arweaveToWebUrl(),
                     tokenAgreementUrl = song.arweaveTokenAgreementUrl?.arweaveToWebUrl(),
+                    assetUrl = assetUrlOf(isMainnet, song.nftPolicyId!!, song.nftName!!),
                     collaborators =
-                        CollaborationEntity.findBySongId(songId.value).map {
-                            Sale.SongCollaborator(
-                                id = it.id.value,
-                                name = UserEntity.getByEmail(it.email)?.stageOrFullName,
-                                role = it.role
-                            )
+                        CollaborationEntity.findBySongId(songId.value).mapNotNull { collab ->
+                            UserEntity.getByEmail(collab.email)?.run {
+                                Sale.SongCollaborator(
+                                    id = id.value,
+                                    name = stageOrFullName,
+                                    pictureUrl = pictureUrl,
+                                    role = collab.role
+                                )
+                            }
                         }
                 )
         )

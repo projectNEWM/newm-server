@@ -41,6 +41,7 @@ data class Sale(
         val coverArtUrl: String?,
         val clipUrl: String?,
         val tokenAgreementUrl: String?,
+        val assetUrl: String?,
         val collaborators: List<SongCollaborator>?,
     )
 
@@ -49,6 +50,7 @@ data class Sale(
         @Serializable(with = UUIDSerializer::class)
         val id: UUID,
         val name: String?,
+        val pictureUrl: String?,
         val role: String?,
     )
 }

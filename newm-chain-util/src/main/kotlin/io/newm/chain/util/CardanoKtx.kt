@@ -212,3 +212,30 @@ fun paymentAddressFromHash(
 }
 
 fun hashFromPaymentAddress(address: String): ByteArray = Bech32.decode(address).bytes.drop(1).toByteArray()
+
+/**
+ * Computes the Asset fingerprint
+ * Based on: https://cips.cardano.org/cip/CIP-14
+ */
+fun assetFingerprintOf(
+    policyId: String,
+    assetName: String
+): String =
+    Bech32.encode(
+        prefix = "asset",
+        bytes = Blake2b.hash160(policyId.hexToByteArray() + assetName.hexToByteArray())
+    )
+
+/**
+ * Gives the Asset URL at pool.pm for mainnet, or at preprod.cardanoscan.io for testnet.
+ */
+fun assetUrlOf(
+    isMainnet: Boolean,
+    policyId: String,
+    assetName: String
+): String =
+    if (isMainnet) {
+        "https://pool.pm/${assetFingerprintOf(policyId, assetName)}"
+    } else {
+        "https://preprod.cardanoscan.io/token/$policyId$assetName"
+    }
