@@ -213,7 +213,7 @@ internal class CollaborationRepositoryImpl(
         songId: SongId,
         getCollaborations: Transaction.() -> Iterable<CollaborationEntity>
     ) {
-        val emails = mutableListOf<String>()
+        val emails = mutableSetOf<String>()
         val song =
             transaction {
                 val song = SongEntity[songId]
@@ -232,7 +232,7 @@ internal class CollaborationRepositoryImpl(
         if (emails.isNotEmpty()) {
             emailRepository.send(
                 to = emptyList(),
-                bcc = emails,
+                bcc = emails.toList(),
                 subject = environment.getConfigString("collaboration.email.subject"),
                 messageUrl = environment.getConfigString("collaboration.email.messageUrl"),
                 messageArgs =

@@ -122,7 +122,7 @@ fun PlutusData.toCborObject(): CborObject {
                     bytes.toByteArray().asList().chunked(64).map { chunk ->
                         chunk.toByteArray()
                     }.toTypedArray()
-                CborByteString.wrap(chunks, cborTag, true)
+                CborByteString.wrap(chunks, cborTag, true, null)
             } else {
                 CborByteString.create(
                     bytes.toByteArray(),
