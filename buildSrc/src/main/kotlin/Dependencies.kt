@@ -15,7 +15,7 @@ object Dependencies {
     }
 
     object KotlinPlugin {
-        const val VERSION = "1.9.23"
+        const val VERSION = "1.9.24"
         const val JVM_ID = "jvm"
         const val SERIALIZATION_ID = "plugin.serialization"
     }
@@ -53,7 +53,7 @@ object Dependencies {
     }
 
     object Coroutines {
-        private const val VERSION = "1.8.0"
+        private const val VERSION = "1.8.1"
 
         const val CORE = "org.jetbrains.kotlinx:kotlinx-coroutines-core:$VERSION"
         const val JDK8 = "org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:$VERSION"
@@ -65,7 +65,7 @@ object Dependencies {
     }
 
     object Ktor {
-        private const val VERSION = "2.3.10"
+        private const val VERSION = "2.3.11"
 
         const val SERVER_CORE = "io.ktor:ktor-server-core:$VERSION"
         const val SERVER_CIO = "io.ktor:ktor-server-cio:$VERSION"
@@ -132,7 +132,7 @@ object Dependencies {
     }
 
     object FlywayDB {
-        private const val VERSION = "10.11.1"
+        private const val VERSION = "10.12.0"
 
         const val CORE = "org.flywaydb:flyway-core:$VERSION"
         const val POSTGRES = "org.flywaydb:flyway-database-postgresql:$VERSION"
@@ -159,7 +159,7 @@ object Dependencies {
     }
 
     object ApacheCommonsCodec {
-        private const val VERSION = "1.16.1"
+        private const val VERSION = "1.17.0"
 
         const val ALL = "commons-codec:commons-codec:$VERSION"
     }
@@ -214,8 +214,8 @@ object Dependencies {
     }
 
     object Aws {
-        private const val VERSION = "1.12.709"
-        private const val VERSION2 = "2.25.39"
+        private const val VERSION = "1.12.720"
+        private const val VERSION2 = "2.25.50"
         private const val JAXB_VERSION = "2.3.1"
 
         const val BOM = "com.amazonaws:aws-java-sdk-bom:$VERSION"
@@ -249,7 +249,7 @@ object Dependencies {
     }
 
     object Cbor {
-        private const val VERSION = "0.2.1-NEWM"
+        private const val VERSION = "0.2.2-NEWM"
 
         const val CBOR = "io.newm:com.google.iot.cbor:$VERSION"
     }
@@ -267,7 +267,7 @@ object Dependencies {
     }
 
     object Sentry {
-        private const val VERSION = "7.8.0"
+        private const val VERSION = "7.9.0"
 
         const val CORE = "io.sentry:sentry:$VERSION"
         const val LOGBACK = "io.sentry:sentry-logback:$VERSION"
@@ -311,14 +311,14 @@ object Dependencies {
     }
 
     object SSLKickstart {
-        private const val VERSION = "8.3.4"
+        private const val VERSION = "8.3.5"
 
         const val PEM = "io.github.hakky54:sslcontext-kickstart-for-pem:$VERSION"
         const val NETTY = "io.github.hakky54:sslcontext-kickstart-for-netty:$VERSION"
     }
 
     object TestContainers {
-        private const val VERSION = "1.19.7"
+        private const val VERSION = "1.19.8"
 
         const val CORE = "org.testcontainers:testcontainers:$VERSION"
         const val JUINT = "org.testcontainers:junit-jupiter:$VERSION"

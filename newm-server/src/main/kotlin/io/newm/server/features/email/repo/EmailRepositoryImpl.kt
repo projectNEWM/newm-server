@@ -3,15 +3,7 @@ package io.newm.server.features.email.repo
 import io.ktor.server.application.ApplicationEnvironment
 import io.newm.server.ktx.getSecureString
 import io.newm.shared.koin.inject
-import io.newm.shared.ktx.debug
-import io.newm.shared.ktx.error
-import io.newm.shared.ktx.format
-import io.newm.shared.ktx.getBoolean
-import io.newm.shared.ktx.getChild
-import io.newm.shared.ktx.getConfigChild
-import io.newm.shared.ktx.getInt
-import io.newm.shared.ktx.toUrl
-import io.newm.shared.ktx.warn
+import io.newm.shared.ktx.*
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import org.apache.commons.mail.DefaultAuthenticator
@@ -66,6 +58,8 @@ internal class EmailRepositoryImpl(
                                 this.subject = subject
                                 setHtmlMsg(message)
                             }.send()
+
+                            logger.info { "Email sent to: $to, bcc: $bcc, subject: $subject" }
                         } else {
                             logger.warn { "Email notifications disabled - skipped sending message" }
                         }
