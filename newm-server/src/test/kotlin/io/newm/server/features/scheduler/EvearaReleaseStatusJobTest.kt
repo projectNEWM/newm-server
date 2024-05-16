@@ -3,6 +3,8 @@ package io.newm.server.features.scheduler
 import io.mockk.*
 import io.mockk.junit5.MockKExtension
 import io.newm.server.config.repo.ConfigRepository
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_EVEARA_STATUS_CHECK_MINUTES
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_EVEARA_STATUS_CHECK_REFIRE
 import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.distribution.DistributionRepository
 import io.newm.server.features.song.model.Release
@@ -62,7 +64,8 @@ class EvearaReleaseStatusJobTest : KoinTest {
 
             // Mock ConfigRepository
             val configRepository = mockk<ConfigRepository>(relaxed = true)
-            coEvery { configRepository.getInt(any()) } coAnswers { 30 }
+            coEvery { configRepository.getInt(CONFIG_KEY_EVEARA_STATUS_CHECK_MINUTES) } coAnswers { 720 }
+            coEvery { configRepository.getInt(CONFIG_KEY_EVEARA_STATUS_CHECK_REFIRE) } coAnswers { 21600 }
 
             startKoin {
                 modules(

@@ -11,8 +11,8 @@ class V32__ConfigUpdates : BaseJavaMigration() {
         transaction {
             execInBatch(
                 listOf(
-                    // default 24 hours
-                    "INSERT INTO config VALUES ('$CONFIG_KEY_EVEARA_STATUS_CHECK_REFIRE','60') ON CONFLICT(id) DO NOTHING",
+                    // Check album status every 720(minutes) X 30(days) = 21600 minutes
+                    "INSERT INTO config VALUES ('$CONFIG_KEY_EVEARA_STATUS_CHECK_REFIRE','21600') ON CONFLICT(id) DO NOTHING",
                 )
             )
         }
