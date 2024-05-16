@@ -1,5 +1,7 @@
 package io.newm.server.features.scheduler
 
+import io.newm.server.config.repo.ConfigRepository
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_EVEARA_STATUS_CHECK_REFIRE
 import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.distribution.DistributionRepository
 import io.newm.server.features.distribution.model.OutletStatusCode
@@ -28,6 +30,7 @@ class EvearaReleaseStatusJob : Job {
     private val cardanoRepository: CardanoRepository by inject()
     private val userRepository: UserRepository by inject()
     private val songRepository: SongRepository by inject()
+    private val configRepository: ConfigRepository by inject()
 
     override fun execute(context: JobExecutionContext) {
         log.info {
@@ -101,14 +104,17 @@ class EvearaReleaseStatusJob : Job {
                                 "Failed to get album disapproveMessage"
                             )
                         }
-
-                        // Cancel this job's future executions
-                        context.scheduler.deleteJob(
-                            JobKey.jobKey(
-                                context.jobDetail.key.name,
-                                context.jobDetail.key.group
+                        if (context.refireCount > configRepository.getInt(CONFIG_KEY_EVEARA_STATUS_CHECK_REFIRE)) {
+                            // Cancel this job's future executions
+                            context.scheduler.deleteJob(
+                                JobKey.jobKey(
+                                    context.jobDetail.key.name,
+                                    context.jobDetail.key.group
+                                )
                             )
-                        )
+                        } else {
+                            log.info { "Keep job ${context.jobDetail.key.name} in the schedule, re-fire count is: ${context.refireCount}" }
+                        }
                     }
 
                     OutletStatusCode.DISTRIBUTE_INITIATED -> {
