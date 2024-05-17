@@ -9,9 +9,11 @@ import org.jetbrains.exposed.sql.transactions.transaction
 class V31__ConfigUpdates : BaseJavaMigration() {
     override fun migrate(context: Context?) {
         transaction {
-            exec(
-                // default 24 hours
-                "INSERT INTO config VALUES ('$CONFIG_KEY_EVEARA_STATUS_CHECK_MINUTES','1440') ON CONFLICT(id) DO NOTHING",
+            execInBatch(
+                listOf(
+                    // default 24 hours
+                    "INSERT INTO config VALUES ('$CONFIG_KEY_EVEARA_STATUS_CHECK_MINUTES','1440') ON CONFLICT(id) DO NOTHING",
+                )
             )
         }
     }
