@@ -118,7 +118,7 @@ class EvearaReleaseStatusJob : Job {
                                 )
                             )
                         } else {
-                            log.info { "Keep job ${context.jobDetail.key.name} in the schedule, re-fire count is: ${context.refireCount}" }
+                            log.debug("Keep job ${context.jobDetail.key.name} in the schedule, re-fire count is: ${context.refireCount}")
                         }
                     }
 
