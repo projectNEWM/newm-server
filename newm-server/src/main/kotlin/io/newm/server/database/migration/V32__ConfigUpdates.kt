@@ -9,11 +9,9 @@ import org.jetbrains.exposed.sql.transactions.transaction
 class V32__ConfigUpdates : BaseJavaMigration() {
     override fun migrate(context: Context?) {
         transaction {
-            execInBatch(
-                listOf(
-                    // Check album status every 720(minutes) X 30(days) = 21600 minutes
-                    "INSERT INTO config VALUES ('$CONFIG_KEY_EVEARA_STATUS_CHECK_REFIRE','21600') ON CONFLICT(id) DO NOTHING",
-                )
+            exec(
+                // Check album status every 720(minutes) X 30(days) = 21600 minutes
+                "INSERT INTO config VALUES ('$CONFIG_KEY_EVEARA_STATUS_CHECK_REFIRE','21600') ON CONFLICT(id) DO NOTHING",
             )
         }
     }
