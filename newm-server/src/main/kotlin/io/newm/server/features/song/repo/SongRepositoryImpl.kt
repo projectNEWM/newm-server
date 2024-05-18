@@ -70,6 +70,15 @@ import io.newm.shared.ktx.orNull
 import io.newm.shared.ktx.orZero
 import io.newm.shared.ktx.propertiesFromResource
 import io.newm.shared.ktx.toTempFile
+import java.math.BigDecimal
+import java.math.BigInteger
+import java.math.RoundingMode
+import java.net.URI
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.util.Properties
+import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
@@ -82,13 +91,6 @@ import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf
-import java.math.BigDecimal
-import java.math.BigInteger
-import java.math.RoundingMode
-import java.net.URI
-import java.time.LocalDateTime
-import java.util.Properties
-import java.util.UUID
 
 internal class SongRepositoryImpl(
     private val environment: ApplicationEnvironment,
@@ -859,17 +861,37 @@ internal class SongRepositoryImpl(
     }
 
     override suspend fun distribute(songId: SongId) {
-        val song = get(songId)
+        val song = fixupSongCopyrights(get(songId))
         val release = transaction { ReleaseEntity[song.releaseId!!].toModel() }
 
         distributionRepository.distributeRelease(release)
     }
 
     override suspend fun redistribute(songId: SongId) {
-        val song = get(songId)
+        val song = fixupSongCopyrights(get(songId))
         val release = transaction { ReleaseEntity[song.releaseId!!].toModel() }
 
         distributionRepository.redistributeRelease(release)
+    }
+
+    private suspend fun fixupSongCopyrights(song: Song): Song {
+        val user = transaction { UserEntity[song.ownerId!!].toModel() }
+        // update with default user's company, stagename, or fullname and current year
+        val thisYear = Instant.now().atZone(ZoneId.systemDefault()).year
+        val updatedSong =
+            song.copy(
+                compositionCopyrightOwner =
+                    song.compositionCopyrightOwner ?: user.companyOrStageOrFullName,
+                compositionCopyrightYear =
+                    song.compositionCopyrightYear ?: thisYear,
+                phonographicCopyrightOwner =
+                    song.phonographicCopyrightOwner ?: user.companyOrStageOrFullName,
+                phonographicCopyrightYear =
+                    song.phonographicCopyrightYear ?: thisYear,
+            )
+
+        update(song.id!!, updatedSong)
+        return updatedSong
     }
 
     private fun checkRequester(
