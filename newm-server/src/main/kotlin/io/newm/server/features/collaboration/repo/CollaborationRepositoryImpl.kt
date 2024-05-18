@@ -16,6 +16,7 @@ import io.newm.server.features.user.database.UserEntity
 import io.newm.server.ktx.asMandatoryField
 import io.newm.server.ktx.asValidEmail
 import io.newm.server.ktx.checkLength
+import io.newm.server.model.FilterCriteria
 import io.newm.server.typealiases.SongId
 import io.newm.server.typealiases.UserId
 import io.newm.shared.exception.HttpConflictException
@@ -172,7 +173,7 @@ internal class CollaborationRepositoryImpl(
     override suspend fun getAllBySongId(songId: SongId): List<Collaboration> =
         getAll(
             userId = transaction { SongEntity[songId].ownerId.value },
-            filters = CollaborationFilters(songIds = listOf(songId)),
+            filters = CollaborationFilters(songIds = FilterCriteria(includes = listOf(songId))),
             offset = 0,
             limit = Integer.MAX_VALUE
         )

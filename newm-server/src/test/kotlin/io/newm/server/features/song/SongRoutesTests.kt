@@ -344,6 +344,43 @@ class SongRoutesTests : BaseApplicationTests() {
         }
 
     @Test
+    fun testGetSongsByIdsExclusion() =
+        runBlocking {
+            // Add Songs directly into database
+            val allSongs = mutableListOf<Song>()
+            for (offset in 0..30) {
+                allSongs += addSongToDatabase(offset)
+            }
+
+            // filter out 1st and last
+            val expectedSongs = allSongs.subList(1, allSongs.size - 1)
+            val ids = allSongs.filter { it !in expectedSongs }.joinToString { "-${it.id}" }
+
+            // Get all songs forcing pagination
+            var offset = 0
+            val limit = 5
+            val actualSongs = mutableListOf<Song>()
+            while (true) {
+                val response =
+                    client.get("v1/songs") {
+                        bearerAuth(testUserToken)
+                        accept(ContentType.Application.Json)
+                        parameter("offset", offset)
+                        parameter("limit", limit)
+                        parameter("ids", ids)
+                    }
+                assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+                val songs = response.body<List<Song>>()
+                if (songs.isEmpty()) break
+                actualSongs += songs
+                offset += limit
+            }
+
+            // verify all
+            assertThat(actualSongs).isEqualTo(expectedSongs)
+        }
+
+    @Test
     fun testGetSongsByOwnerIds() =
         runBlocking {
             // Add Songs directly into database
@@ -355,6 +392,43 @@ class SongRoutesTests : BaseApplicationTests() {
             // filter out 1st and last
             val expectedSongs = allSongs.subList(1, allSongs.size - 1)
             val ownerIds = expectedSongs.joinToString { it.ownerId.toString() }
+
+            // Get all songs forcing pagination
+            var offset = 0
+            val limit = 5
+            val actualSongs = mutableListOf<Song>()
+            while (true) {
+                val response =
+                    client.get("v1/songs") {
+                        bearerAuth(testUserToken)
+                        accept(ContentType.Application.Json)
+                        parameter("offset", offset)
+                        parameter("limit", limit)
+                        parameter("ownerIds", ownerIds)
+                    }
+                assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+                val songs = response.body<List<Song>>()
+                if (songs.isEmpty()) break
+                actualSongs += songs
+                offset += limit
+            }
+
+            // verify all
+            assertThat(actualSongs).isEqualTo(expectedSongs)
+        }
+
+    @Test
+    fun testGetSongsByOwnerIdsExclusion() =
+        runBlocking {
+            // Add Songs directly into database
+            val allSongs = mutableListOf<Song>()
+            for (offset in 0..30) {
+                allSongs += addSongToDatabase(offset)
+            }
+
+            // filter out 1st and last
+            val expectedSongs = allSongs.subList(1, allSongs.size - 1)
+            val ownerIds = allSongs.filter { it !in expectedSongs }.joinToString { "-${it.ownerId}" }
 
             // Get all songs forcing pagination
             var offset = 0
@@ -418,6 +492,43 @@ class SongRoutesTests : BaseApplicationTests() {
         }
 
     @Test
+    fun testGetSongsByGenresExclusion() =
+        runBlocking {
+            // Add Songs directly into database
+            val allSongs = mutableListOf<Song>()
+            for (offset in 0..30) {
+                allSongs += addSongToDatabase(offset)
+            }
+
+            // filter out 1st and last and take only 1st genre of each
+            val expectedSongs = allSongs.subList(1, allSongs.size - 1)
+            val genres = allSongs.filter { it !in expectedSongs }.joinToString { "-${it.genres!!.first()}" }
+
+            // Get all songs forcing pagination
+            var offset = 0
+            val limit = 5
+            val actualSongs = mutableListOf<Song>()
+            while (true) {
+                val response =
+                    client.get("v1/songs") {
+                        bearerAuth(testUserToken)
+                        accept(ContentType.Application.Json)
+                        parameter("offset", offset)
+                        parameter("limit", limit)
+                        parameter("genres", genres)
+                    }
+                assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+                val songs = response.body<List<Song>>()
+                if (songs.isEmpty()) break
+                actualSongs += songs
+                offset += limit
+            }
+
+            // verify all
+            assertThat(actualSongs).isEqualTo(expectedSongs)
+        }
+
+    @Test
     fun testGetSongsByMoods() =
         runBlocking {
             // Add Songs directly into database
@@ -429,6 +540,43 @@ class SongRoutesTests : BaseApplicationTests() {
             // filter out 1st and last and take only 1st mood of each
             val expectedSongs = allSongs.subList(1, allSongs.size - 1)
             val moods = expectedSongs.joinToString { it.moods!!.first() }
+
+            // Get all songs forcing pagination
+            var offset = 0
+            val limit = 5
+            val actualSongs = mutableListOf<Song>()
+            while (true) {
+                val response =
+                    client.get("v1/songs") {
+                        bearerAuth(testUserToken)
+                        accept(ContentType.Application.Json)
+                        parameter("offset", offset)
+                        parameter("limit", limit)
+                        parameter("moods", moods)
+                    }
+                assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+                val songs = response.body<List<Song>>()
+                if (songs.isEmpty()) break
+                actualSongs += songs
+                offset += limit
+            }
+
+            // verify all
+            assertThat(actualSongs).isEqualTo(expectedSongs)
+        }
+
+    @Test
+    fun testGetSongsByMoodsExclusion() =
+        runBlocking {
+            // Add Songs directly into database
+            val allSongs = mutableListOf<Song>()
+            for (offset in 0..30) {
+                allSongs += addSongToDatabase(offset)
+            }
+
+            // filter out 1st and last and take only 1st mood of each
+            val expectedSongs = allSongs.subList(1, allSongs.size - 1)
+            val moods = allSongs.filter { it !in expectedSongs }.joinToString { "-${it.moods!!.first()}" }
 
             // Get all songs forcing pagination
             var offset = 0
@@ -479,6 +627,44 @@ class SongRoutesTests : BaseApplicationTests() {
                             parameter("offset", offset)
                             parameter("limit", limit)
                             parameter("mintingStatuses", expectedMintingStatus)
+                        }
+                    assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+                    val songs = response.body<List<Song>>()
+                    if (songs.isEmpty()) break
+                    actualSongs += songs
+                    offset += limit
+                }
+
+                // verify all
+                assertThat(actualSongs).isEqualTo(expectedSongs)
+            }
+        }
+
+    @Test
+    fun testGetSongsByMintingStatusExclusion() =
+        runBlocking {
+            // Add Songs directly into database
+            val allSongs = mutableListOf<Song>()
+            for (offset in 0..30) {
+                allSongs += addSongToDatabase(offset)
+            }
+
+            for (expectedMintingStatus in MintingStatus.entries) {
+                // filter out
+                val expectedSongs = allSongs.filter { it.mintingStatus != expectedMintingStatus }
+
+                // Get all songs forcing pagination
+                var offset = 0
+                val limit = 5
+                val actualSongs = mutableListOf<Song>()
+                while (true) {
+                    val response =
+                        client.get("v1/songs") {
+                            bearerAuth(testUserToken)
+                            accept(ContentType.Application.Json)
+                            parameter("offset", offset)
+                            parameter("limit", limit)
+                            parameter("mintingStatuses", "-$expectedMintingStatus")
                         }
                     assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                     val songs = response.body<List<Song>>()

@@ -196,6 +196,43 @@ class PlaylistRoutesTests : BaseApplicationTests() {
         }
 
     @Test
+    fun testGetPlaylistsByIdsExclusion() =
+        runBlocking {
+            // Add Playlists directly into database
+            val allPlaylists = mutableListOf<Playlist>()
+            for (offset in 0..30) {
+                allPlaylists += addPLaylistToDatabase(offset)
+            }
+
+            // filter out 1st and last
+            val expectedPlaylists = allPlaylists.subList(1, allPlaylists.size - 1)
+            val ids = allPlaylists.filter { it !in expectedPlaylists }.joinToString { "-${it.id}" }
+
+            // Get all playlists forcing pagination
+            var offset = 0
+            val limit = 5
+            val actualPlaylists = mutableListOf<Playlist>()
+            while (true) {
+                val response =
+                    client.get("v1/playlists") {
+                        bearerAuth(testUserToken)
+                        accept(ContentType.Application.Json)
+                        parameter("offset", offset)
+                        parameter("limit", limit)
+                        parameter("ids", ids)
+                    }
+                assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+                val songs = response.body<List<Playlist>>()
+                if (songs.isEmpty()) break
+                actualPlaylists += songs
+                offset += limit
+            }
+
+            // verify all
+            assertThat(actualPlaylists).isEqualTo(expectedPlaylists)
+        }
+
+    @Test
     fun testGetPlaylistsByOwnerIds() =
         runBlocking {
             // Add Playlists directly into database
@@ -207,6 +244,43 @@ class PlaylistRoutesTests : BaseApplicationTests() {
             // filter out 1st and last
             val expectedPlaylists = allPlaylists.subList(1, allPlaylists.size - 1)
             val ownerIds = expectedPlaylists.joinToString { it.ownerId.toString() }
+
+            // Get all playlists forcing pagination
+            var offset = 0
+            val limit = 5
+            val actualPlaylists = mutableListOf<Playlist>()
+            while (true) {
+                val response =
+                    client.get("v1/playlists") {
+                        bearerAuth(testUserToken)
+                        accept(ContentType.Application.Json)
+                        parameter("offset", offset)
+                        parameter("limit", limit)
+                        parameter("ownerIds", ownerIds)
+                    }
+                assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+                val songs = response.body<List<Playlist>>()
+                if (songs.isEmpty()) break
+                actualPlaylists += songs
+                offset += limit
+            }
+
+            // verify all
+            assertThat(actualPlaylists).isEqualTo(expectedPlaylists)
+        }
+
+    @Test
+    fun testGetPlaylistsByOwnerIdsExclusion() =
+        runBlocking {
+            // Add Playlists directly into database
+            val allPlaylists = mutableListOf<Playlist>()
+            for (offset in 0..30) {
+                allPlaylists += addPLaylistToDatabase(offset)
+            }
+
+            // filter out 1st and last
+            val expectedPlaylists = allPlaylists.subList(1, allPlaylists.size - 1)
+            val ownerIds = allPlaylists.filter { it !in expectedPlaylists }.joinToString { "-${it.ownerId}" }
 
             // Get all playlists forcing pagination
             var offset = 0

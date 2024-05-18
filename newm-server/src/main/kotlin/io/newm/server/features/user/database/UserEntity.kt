@@ -9,10 +9,15 @@ import io.newm.shared.ktx.exists
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.AndOp
+import org.jetbrains.exposed.sql.Op
+import org.jetbrains.exposed.sql.SizedIterable
+import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.notInList
+import org.jetbrains.exposed.sql.lowerCase
 import java.time.LocalDateTime
 
 class UserEntity(id: EntityID<UserId>) : UUIDEntity(id) {
@@ -107,14 +112,23 @@ class UserEntity(id: EntityID<UserId>) : UUIDEntity(id) {
                 newerThan?.let {
                     ops += UserTable.createdAt greater it
                 }
-                ids?.let {
+                ids?.includes?.let {
                     ops += UserTable.id inList it
                 }
-                roles?.let {
+                ids?.excludes?.let {
+                    ops += UserTable.id notInList it
+                }
+                roles?.includes?.let {
                     ops += UserTable.role inList it
                 }
-                genres?.let {
+                roles?.excludes?.let {
+                    ops += UserTable.role notInList it
+                }
+                genres?.includes?.let {
                     ops += UserTable.genre inList it
+                }
+                genres?.excludes?.let {
+                    ops += UserTable.genre notInList it
                 }
             }
             return (if (ops.isEmpty()) all() else find(AndOp(ops)))

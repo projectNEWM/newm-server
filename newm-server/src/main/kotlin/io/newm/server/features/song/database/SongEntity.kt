@@ -1,24 +1,41 @@
 package io.newm.server.features.song.database
 
-import io.newm.server.features.song.model.*
+import io.newm.server.features.song.model.AudioEncodingStatus
+import io.newm.server.features.song.model.MarketplaceStatus
+import io.newm.server.features.song.model.MintingStatus
+import io.newm.server.features.song.model.Release
+import io.newm.server.features.song.model.Song
+import io.newm.server.features.song.model.SongFilters
 import io.newm.server.features.user.database.UserTable
 import io.newm.server.typealiases.ReleaseId
 import io.newm.server.typealiases.SongId
 import io.newm.server.typealiases.UserId
+import io.newm.shared.exposed.notOverlaps
 import io.newm.shared.exposed.overlaps
 import io.newm.shared.exposed.unnest
 import io.newm.shared.ktx.exists
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.AndOp
+import org.jetbrains.exposed.sql.Op
+import org.jetbrains.exposed.sql.SizedIterable
+import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.notInList
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.count
+import org.jetbrains.exposed.sql.innerJoin
+import org.jetbrains.exposed.sql.lowerCase
+import org.jetbrains.exposed.sql.mapLazy
+import org.jetbrains.exposed.sql.or
+import org.jetbrains.exposed.sql.selectAll
 import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
 
 class SongEntity(id: EntityID<SongId>) : UUIDEntity(id) {
     var archived: Boolean by SongTable.archived
@@ -166,20 +183,41 @@ class SongEntity(id: EntityID<SongId>) : UUIDEntity(id) {
             newerThan?.let {
                 ops += SongTable.createdAt greater it
             }
-            ids?.let {
+            ids?.includes?.let {
                 ops += SongTable.id inList it
             }
-            ownerIds?.let {
+            ids?.excludes?.let {
+                ops += SongTable.id notInList it
+            }
+            ownerIds?.includes?.let {
                 ops += SongTable.ownerId inList it
             }
-            genres?.let {
+            ownerIds?.excludes?.let {
+                ops += SongTable.ownerId notInList it
+            }
+            genres?.includes?.let {
                 ops += SongTable.genres overlaps it.toTypedArray()
             }
-            moods?.let {
+            genres?.excludes?.let {
+                ops += SongTable.genres notOverlaps it.toTypedArray()
+            }
+            moods?.includes?.let {
                 ops += SongTable.moods overlaps it.toTypedArray()
             }
-            mintingStatuses?.let {
+            moods?.excludes?.let {
+                ops += SongTable.moods notOverlaps it.toTypedArray()
+            }
+            mintingStatuses?.includes?.let {
                 ops += SongTable.mintingStatus inList it
+            }
+            mintingStatuses?.excludes?.let {
+                ops += SongTable.mintingStatus notInList it
+            }
+            nftNames?.includes?.let {
+                ops += SongTable.nftName inList it
+            }
+            nftNames?.excludes?.let {
+                ops += SongTable.nftName notInList it
             }
             phrase?.let {
                 val pattern = "%${it.lowercase()}%"
@@ -195,9 +233,6 @@ class SongEntity(id: EntityID<SongId>) : UUIDEntity(id) {
                             )
                         )
                 )
-            }
-            nftNames?.let {
-                ops += SongTable.nftName inList it
             }
             return ops
         }

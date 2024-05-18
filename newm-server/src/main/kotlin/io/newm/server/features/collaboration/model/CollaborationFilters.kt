@@ -7,7 +7,8 @@ import io.newm.server.ktx.newerThan
 import io.newm.server.ktx.olderThan
 import io.newm.server.ktx.songIds
 import io.newm.server.ktx.sortOrder
-import io.newm.shared.ktx.splitAndTrim
+import io.newm.server.model.FilterCriteria
+import io.newm.server.model.toFilterCriteria
 import org.jetbrains.exposed.sql.SortOrder
 import java.time.LocalDateTime
 import java.util.UUID
@@ -17,17 +18,17 @@ data class CollaborationFilters(
     val inbound: Boolean? = null,
     val olderThan: LocalDateTime? = null,
     val newerThan: LocalDateTime? = null,
-    val ids: List<UUID>? = null,
-    val songIds: List<UUID>? = null,
-    val emails: List<String>? = null,
-    val statuses: List<CollaborationStatus>? = null
+    val ids: FilterCriteria<UUID>? = null,
+    val songIds: FilterCriteria<UUID>? = null,
+    val emails: FilterCriteria<String>? = null,
+    val statuses: FilterCriteria<CollaborationStatus>? = null
 )
 
 val ApplicationCall.inbound: Boolean?
     get() = parameters["inbound"]?.toBoolean()
 
-val ApplicationCall.statuses: List<CollaborationStatus>?
-    get() = parameters["statuses"]?.splitAndTrim()?.map(CollaborationStatus::valueOf)
+val ApplicationCall.statuses: FilterCriteria<CollaborationStatus>?
+    get() = parameters["statuses"]?.toFilterCriteria(CollaborationStatus::valueOf)
 
 val ApplicationCall.collaborationFilters: CollaborationFilters
     get() = CollaborationFilters(sortOrder, inbound, olderThan, newerThan, ids, songIds, emails, statuses)

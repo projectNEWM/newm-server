@@ -12,6 +12,7 @@ import io.newm.server.features.song.database.SongTable
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
 import io.newm.server.ktx.arweaveToWebUrl
+import io.newm.shared.exposed.notOverlaps
 import io.newm.shared.exposed.overlaps
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
@@ -25,6 +26,7 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.notInList
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.innerJoin
 import org.jetbrains.exposed.sql.lowerCase
@@ -141,23 +143,41 @@ class MarketplaceSaleEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             newerThan?.let {
                 ops += MarketplaceSaleTable.createdAt greater it
             }
-            ids?.let {
+            ids?.includes?.let {
                 ops += MarketplaceSaleTable.id inList it
             }
-            songIds?.let {
+            ids?.excludes?.let {
+                ops += MarketplaceSaleTable.id notInList it
+            }
+            songIds?.includes?.let {
                 ops += MarketplaceSaleTable.songId inList it
             }
-            artistIds?.let {
+            songIds?.excludes?.let {
+                ops += MarketplaceSaleTable.songId notInList it
+            }
+            artistIds?.includes?.let {
                 ops += UserTable.id inList it
             }
-            statuses?.let {
+            artistIds?.excludes?.let {
+                ops += UserTable.id notInList it
+            }
+            statuses?.includes?.let {
                 ops += MarketplaceSaleTable.status inList it
             }
-            genres?.let {
+            statuses?.excludes?.let {
+                ops += MarketplaceSaleTable.status notInList it
+            }
+            genres?.includes?.let {
                 ops += SongTable.genres overlaps it.toTypedArray()
             }
-            moods?.let {
+            genres?.excludes?.let {
+                ops += SongTable.genres notOverlaps it.toTypedArray()
+            }
+            moods?.includes?.let {
                 ops += SongTable.moods overlaps it.toTypedArray()
+            }
+            moods?.excludes?.let {
+                ops += SongTable.moods notOverlaps it.toTypedArray()
             }
             phrase?.let {
                 val pattern = "%${it.lowercase()}%"

@@ -23,6 +23,7 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.neq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.notInList
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.count
 import org.jetbrains.exposed.sql.innerJoin
@@ -106,17 +107,29 @@ class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                 newerThan?.let {
                     ops += CollaborationTable.createdAt greater it
                 }
-                ids?.let {
+                ids?.includes?.let {
                     ops += CollaborationTable.id inList it
                 }
-                songIds?.let {
+                ids?.excludes?.let {
+                    ops += CollaborationTable.id notInList it
+                }
+                songIds?.includes?.let {
                     ops += CollaborationTable.songId inList it
                 }
-                emails?.let {
+                songIds?.excludes?.let {
+                    ops += CollaborationTable.songId notInList it
+                }
+                emails?.includes?.let {
                     ops += CollaborationTable.email.lowerCase() inList it.map(String::lowercase)
                 }
-                statuses?.let {
+                emails?.excludes?.let {
+                    ops += CollaborationTable.email.lowerCase() notInList it.map(String::lowercase)
+                }
+                statuses?.includes?.let {
                     ops += CollaborationTable.status inList it
+                }
+                statuses?.excludes?.let {
+                    ops += CollaborationTable.status notInList it
                 }
             }
             val andOp = AndOp(ops)
@@ -148,11 +161,17 @@ class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                 if (excludeMe == true) {
                     ops += CollaborationTable.email.lowerCase() neq UserEntity[userId].email.lowercase()
                 }
-                songIds?.let {
+                songIds?.includes?.let {
                     ops += CollaborationTable.songId inList it
                 }
-                emails?.let {
+                songIds?.excludes?.let {
+                    ops += CollaborationTable.songId notInList it
+                }
+                emails?.includes?.let {
                     ops += CollaborationTable.email.lowerCase() inList it.map(String::lowercase)
+                }
+                emails?.excludes?.let {
+                    ops += CollaborationTable.email.lowerCase() notInList it.map(String::lowercase)
                 }
                 phrase?.let {
                     val pattern = "%${it.lowercase()}%"

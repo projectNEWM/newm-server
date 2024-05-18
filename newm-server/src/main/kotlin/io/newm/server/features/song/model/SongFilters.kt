@@ -4,14 +4,15 @@ import io.ktor.server.application.ApplicationCall
 import io.newm.server.ktx.archived
 import io.newm.server.ktx.genres
 import io.newm.server.ktx.ids
-import io.newm.server.ktx.mintingStatuses
 import io.newm.server.ktx.moods
 import io.newm.server.ktx.newerThan
-import io.newm.server.ktx.nftNames
 import io.newm.server.ktx.olderThan
 import io.newm.server.ktx.ownerIds
 import io.newm.server.ktx.phrase
 import io.newm.server.ktx.sortOrder
+import io.newm.server.model.FilterCriteria
+import io.newm.server.model.toFilterCriteria
+import io.newm.server.model.toStringFilterCriteria
 import org.jetbrains.exposed.sql.SortOrder
 import java.time.LocalDateTime
 import java.util.UUID
@@ -21,14 +22,20 @@ data class SongFilters(
     val sortOrder: SortOrder?,
     val olderThan: LocalDateTime?,
     val newerThan: LocalDateTime?,
-    val ids: List<UUID>?,
-    val ownerIds: List<UUID>?,
-    val genres: List<String>?,
-    val moods: List<String>?,
-    val mintingStatuses: List<MintingStatus>?,
+    val ids: FilterCriteria<UUID>?,
+    val ownerIds: FilterCriteria<UUID>?,
+    val genres: FilterCriteria<String>?,
+    val moods: FilterCriteria<String>?,
+    val mintingStatuses: FilterCriteria<MintingStatus>?,
+    val nftNames: FilterCriteria<String>?,
     val phrase: String?,
-    val nftNames: List<String>?,
 )
+
+val ApplicationCall.mintingStatuses: FilterCriteria<MintingStatus>?
+    get() = parameters["mintingStatuses"]?.toFilterCriteria(MintingStatus::valueOf)
+
+val ApplicationCall.nftNames: FilterCriteria<String>?
+    get() = parameters["nftNames"]?.toStringFilterCriteria()
 
 val ApplicationCall.songFilters: SongFilters
     get() =
@@ -42,6 +49,6 @@ val ApplicationCall.songFilters: SongFilters
             genres,
             moods,
             mintingStatuses,
+            nftNames,
             phrase,
-            nftNames
         )

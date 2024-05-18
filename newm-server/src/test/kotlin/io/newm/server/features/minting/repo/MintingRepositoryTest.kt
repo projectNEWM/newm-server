@@ -27,6 +27,7 @@ import io.newm.server.features.song.repo.SongRepositoryImpl
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
 import io.newm.server.features.user.model.User
+import io.newm.server.model.FilterCriteria
 import io.newm.server.typealiases.SongId
 import io.newm.shared.ktx.toHexString
 import io.newm.txbuilder.ktx.toCborObject
@@ -38,7 +39,7 @@ import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
 
 class MintingRepositoryTest : BaseApplicationTests() {
     @BeforeEach
@@ -317,18 +318,19 @@ class MintingRepositoryTest : BaseApplicationTests() {
                     primaryArtist.id!!,
                     CollaborationFilters(
                         inbound = null,
-                        songIds = listOf(song.id!!),
+                        songIds = FilterCriteria(includes = listOf(song.id!!)),
                         olderThan = null,
                         newerThan = null,
                         ids = null,
-                        statuses = listOf(CollaborationStatus.Accepted),
+                        statuses = FilterCriteria(includes = listOf(CollaborationStatus.Accepted)),
                     ),
                     0,
                     Integer.MAX_VALUE
                 )
 
             val plutusDataHex =
-                mintingRepository.buildStreamTokenMetadata(release, song, primaryArtist, collabs).toCborObject().toCborByteArray()
+                mintingRepository.buildStreamTokenMetadata(release, song, primaryArtist, collabs).toCborObject()
+                    .toCborByteArray()
                     .toHexString()
 
             println("plutusDataHex: $plutusDataHex")
@@ -398,11 +400,11 @@ class MintingRepositoryTest : BaseApplicationTests() {
                     primaryArtist.id!!,
                     CollaborationFilters(
                         inbound = null,
-                        songIds = listOf(song.id!!),
+                        songIds = FilterCriteria(includes = listOf(song.id!!)),
                         olderThan = null,
                         newerThan = null,
                         ids = null,
-                        statuses = listOf(CollaborationStatus.Accepted),
+                        statuses = FilterCriteria(includes = listOf(CollaborationStatus.Accepted)),
                     ),
                     0,
                     Integer.MAX_VALUE
@@ -500,7 +502,13 @@ class MintingRepositoryTest : BaseApplicationTests() {
                     cip68Policy = "a0488f6ef1b8b5b268583312a94aaebefb36e570b198e02024d321a9",
                     refTokenName = refTokenName,
                     fracTokenName = fracTokenName,
-                    streamTokenSplits = listOf(Pair("addr_test1vz0pdhl9yagp6mk4ncqvgxx796sl4hxarfazy88s63xtdscuqxqf5", 100000000L)),
+                    streamTokenSplits =
+                        listOf(
+                            Pair(
+                                "addr_test1vz0pdhl9yagp6mk4ncqvgxx796sl4hxarfazy88s63xtdscuqxqf5",
+                                100000000L
+                            )
+                        ),
                     requiredSigners = signingKeys,
                     starterTokenUtxoReference = starterTokenUtxoReference,
                     mintScriptUtxoReference = mintScriptUtxoReference,
@@ -535,7 +543,13 @@ class MintingRepositoryTest : BaseApplicationTests() {
                     cip68Policy = "a0488f6ef1b8b5b268583312a94aaebefb36e570b198e02024d321a9",
                     refTokenName = refTokenName,
                     fracTokenName = fracTokenName,
-                    streamTokenSplits = listOf(Pair("addr_test1vz0pdhl9yagp6mk4ncqvgxx796sl4hxarfazy88s63xtdscuqxqf5", 100000000L)),
+                    streamTokenSplits =
+                        listOf(
+                            Pair(
+                                "addr_test1vz0pdhl9yagp6mk4ncqvgxx796sl4hxarfazy88s63xtdscuqxqf5",
+                                100000000L
+                            )
+                        ),
                     requiredSigners = signingKeys,
                     starterTokenUtxoReference = starterTokenUtxoReference,
                     mintScriptUtxoReference = mintScriptUtxoReference,
