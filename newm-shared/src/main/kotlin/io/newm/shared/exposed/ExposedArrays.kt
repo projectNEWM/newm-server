@@ -163,6 +163,12 @@ infix fun <T> ExpressionWithColumnType<Array<T>>.overlaps(array: Array<T>): Op<B
 @JvmName("overlaps2")
 infix fun <T> ExpressionWithColumnType<Array<T>?>.overlaps(array: Array<T>): Op<Boolean> = arrayOp(array, "&&")
 
+@JvmName("notOverlaps")
+infix fun <T> ExpressionWithColumnType<Array<T>>.notOverlaps(array: Array<T>): Op<Boolean> = NotOp(overlaps(array))
+
+@JvmName("notOverlaps2")
+infix fun <T> ExpressionWithColumnType<Array<T>?>.notOverlaps(array: Array<T>): Op<Boolean> = NotOp(overlaps(array))
+
 private fun <A, E> ExpressionWithColumnType<A>.arrayOp(
     array: Array<E>,
     opSign: String

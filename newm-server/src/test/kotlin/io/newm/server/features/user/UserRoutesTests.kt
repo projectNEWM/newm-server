@@ -523,6 +523,69 @@ class UserRoutesTests : BaseApplicationTests() {
         }
 
     @Test
+    fun testGetUsersByIdsExclusion() =
+        runBlocking {
+            // Put Users directly into database
+            val allUsers = mutableListOf<User>()
+            for (offset in 0..30) {
+                allUsers += addUserToDatabase(offset)
+            }
+
+            // filter out 1st and last
+            val expectedUsers = allUsers.subList(1, allUsers.size - 1)
+            val ids = allUsers.filter { it !in expectedUsers }.joinToString { "-${it.id}" }
+
+            // read back all Users forcing pagination
+            var offset = 0
+            val limit = 5
+            val actualUsers = mutableListOf<User>()
+            val token = expectedUsers.first().id.toString()
+            while (true) {
+                val response =
+                    client.get("v1/users") {
+                        bearerAuth(token)
+                        accept(ContentType.Application.Json)
+                        parameter("offset", offset)
+                        parameter("limit", limit)
+                        parameter("ids", ids)
+                    }
+                assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+                val users = response.body<List<User>>()
+                if (users.isEmpty()) break
+                actualUsers += users
+                offset += limit
+            }
+
+            // verify all
+            assertThat(actualUsers.size).isEqualTo(expectedUsers.size)
+            expectedUsers.forEachIndexed { i, expectedUser ->
+                val actualUser = actualUsers[i]
+                assertThat(actualUser.id).isEqualTo(expectedUser.id)
+                assertThat(actualUser.firstName).isEqualTo(expectedUser.firstName)
+                assertThat(actualUser.lastName).isEqualTo(expectedUser.lastName)
+                assertThat(actualUser.nickname).isEqualTo(expectedUser.nickname)
+                assertThat(actualUser.pictureUrl).isEqualTo(expectedUser.pictureUrl)
+                assertThat(actualUser.bannerUrl).isEqualTo(expectedUser.bannerUrl)
+                assertThat(actualUser.websiteUrl).isEqualTo(expectedUser.websiteUrl)
+                assertThat(actualUser.twitterUrl).isEqualTo(expectedUser.twitterUrl)
+                assertThat(actualUser.instagramUrl).isEqualTo(expectedUser.instagramUrl)
+                assertThat(actualUser.spotifyProfile).isEqualTo(expectedUser.spotifyProfile)
+                assertThat(actualUser.soundCloudProfile).isEqualTo(expectedUser.soundCloudProfile)
+                assertThat(actualUser.appleMusicProfile).isEqualTo(expectedUser.appleMusicProfile)
+                assertThat(actualUser.location).isEqualTo(expectedUser.location)
+                assertThat(actualUser.role).isEqualTo(expectedUser.role)
+                assertThat(actualUser.genre).isEqualTo(expectedUser.genre)
+                assertThat(actualUser.biography).isEqualTo(expectedUser.biography)
+                assertThat(actualUser.isni).isEqualTo(expectedUser.isni)
+                assertThat(actualUser.ipi).isEqualTo(expectedUser.ipi)
+                assertThat(actualUser.companyName).isEqualTo(expectedUser.companyName)
+                assertThat(actualUser.companyLogoUrl).isEqualTo(expectedUser.companyLogoUrl)
+                assertThat(actualUser.companyIpRights).isEqualTo(expectedUser.companyIpRights)
+                assertThat(actualUser.dspPlanSubscribed).isEqualTo(expectedUser.dspPlanSubscribed)
+            }
+        }
+
+    @Test
     fun testGetUsersByRoles() =
         runBlocking {
             // Put Users directly into database
@@ -611,6 +674,132 @@ class UserRoutesTests : BaseApplicationTests() {
                         parameter("offset", offset)
                         parameter("limit", limit)
                         parameter("genres", genres)
+                    }
+                assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+                val users = response.body<List<User>>()
+                if (users.isEmpty()) break
+                actualUsers += users
+                offset += limit
+            }
+
+            // verify all
+            assertThat(actualUsers.size).isEqualTo(expectedUsers.size)
+            expectedUsers.forEachIndexed { i, expectedUser ->
+                val actualUser = actualUsers[i]
+                assertThat(actualUser.id).isEqualTo(expectedUser.id)
+                assertThat(actualUser.firstName).isEqualTo(expectedUser.firstName)
+                assertThat(actualUser.lastName).isEqualTo(expectedUser.lastName)
+                assertThat(actualUser.nickname).isEqualTo(expectedUser.nickname)
+                assertThat(actualUser.pictureUrl).isEqualTo(expectedUser.pictureUrl)
+                assertThat(actualUser.bannerUrl).isEqualTo(expectedUser.bannerUrl)
+                assertThat(actualUser.websiteUrl).isEqualTo(expectedUser.websiteUrl)
+                assertThat(actualUser.twitterUrl).isEqualTo(expectedUser.twitterUrl)
+                assertThat(actualUser.instagramUrl).isEqualTo(expectedUser.instagramUrl)
+                assertThat(actualUser.spotifyProfile).isEqualTo(expectedUser.spotifyProfile)
+                assertThat(actualUser.soundCloudProfile).isEqualTo(expectedUser.soundCloudProfile)
+                assertThat(actualUser.appleMusicProfile).isEqualTo(expectedUser.appleMusicProfile)
+                assertThat(actualUser.location).isEqualTo(expectedUser.location)
+                assertThat(actualUser.role).isEqualTo(expectedUser.role)
+                assertThat(actualUser.genre).isEqualTo(expectedUser.genre)
+                assertThat(actualUser.biography).isEqualTo(expectedUser.biography)
+                assertThat(actualUser.isni).isEqualTo(expectedUser.isni)
+                assertThat(actualUser.ipi).isEqualTo(expectedUser.ipi)
+                assertThat(actualUser.companyName).isEqualTo(expectedUser.companyName)
+                assertThat(actualUser.companyLogoUrl).isEqualTo(expectedUser.companyLogoUrl)
+                assertThat(actualUser.companyIpRights).isEqualTo(expectedUser.companyIpRights)
+                assertThat(actualUser.dspPlanSubscribed).isEqualTo(expectedUser.dspPlanSubscribed)
+            }
+        }
+
+    @Test
+    fun testGetUsersByGenresExclusion() =
+        runBlocking {
+            // Put Users directly into database
+            val allUsers = mutableListOf<User>()
+            for (offset in 0..30) {
+                allUsers += addUserToDatabase(offset)
+            }
+
+            // filter out 1st and last
+            val expectedUsers = allUsers.subList(1, allUsers.size - 1)
+            val genres = allUsers.filter { it !in expectedUsers }.joinToString { "-${it.genre}" }
+
+            // read back all Users forcing pagination
+            var offset = 0
+            val limit = 5
+            val actualUsers = mutableListOf<User>()
+            val token = expectedUsers.first().id.toString()
+            while (true) {
+                val response =
+                    client.get("v1/users") {
+                        bearerAuth(token)
+                        accept(ContentType.Application.Json)
+                        parameter("offset", offset)
+                        parameter("limit", limit)
+                        parameter("genres", genres)
+                    }
+                assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+                val users = response.body<List<User>>()
+                if (users.isEmpty()) break
+                actualUsers += users
+                offset += limit
+            }
+
+            // verify all
+            assertThat(actualUsers.size).isEqualTo(expectedUsers.size)
+            expectedUsers.forEachIndexed { i, expectedUser ->
+                val actualUser = actualUsers[i]
+                assertThat(actualUser.id).isEqualTo(expectedUser.id)
+                assertThat(actualUser.firstName).isEqualTo(expectedUser.firstName)
+                assertThat(actualUser.lastName).isEqualTo(expectedUser.lastName)
+                assertThat(actualUser.nickname).isEqualTo(expectedUser.nickname)
+                assertThat(actualUser.pictureUrl).isEqualTo(expectedUser.pictureUrl)
+                assertThat(actualUser.bannerUrl).isEqualTo(expectedUser.bannerUrl)
+                assertThat(actualUser.websiteUrl).isEqualTo(expectedUser.websiteUrl)
+                assertThat(actualUser.twitterUrl).isEqualTo(expectedUser.twitterUrl)
+                assertThat(actualUser.instagramUrl).isEqualTo(expectedUser.instagramUrl)
+                assertThat(actualUser.spotifyProfile).isEqualTo(expectedUser.spotifyProfile)
+                assertThat(actualUser.soundCloudProfile).isEqualTo(expectedUser.soundCloudProfile)
+                assertThat(actualUser.appleMusicProfile).isEqualTo(expectedUser.appleMusicProfile)
+                assertThat(actualUser.location).isEqualTo(expectedUser.location)
+                assertThat(actualUser.role).isEqualTo(expectedUser.role)
+                assertThat(actualUser.genre).isEqualTo(expectedUser.genre)
+                assertThat(actualUser.biography).isEqualTo(expectedUser.biography)
+                assertThat(actualUser.isni).isEqualTo(expectedUser.isni)
+                assertThat(actualUser.ipi).isEqualTo(expectedUser.ipi)
+                assertThat(actualUser.companyName).isEqualTo(expectedUser.companyName)
+                assertThat(actualUser.companyLogoUrl).isEqualTo(expectedUser.companyLogoUrl)
+                assertThat(actualUser.companyIpRights).isEqualTo(expectedUser.companyIpRights)
+                assertThat(actualUser.dspPlanSubscribed).isEqualTo(expectedUser.dspPlanSubscribed)
+            }
+        }
+
+    @Test
+    fun testGetUsersByRolesExclusion() =
+        runBlocking {
+            // Put Users directly into database
+            val allUsers = mutableListOf<User>()
+            for (offset in 0..30) {
+                allUsers += addUserToDatabase(offset)
+            }
+
+            // filter out 1st and last
+            val expectedUsers = allUsers.subList(1, allUsers.size - 1)
+            val roles = allUsers.filter { it !in expectedUsers }.joinToString { "-${it.role}" }
+
+            // read back all Users forcing pagination
+            var offset = 0
+            val limit = 5
+            val actualUsers = mutableListOf<User>()
+            val token = expectedUsers.first().id.toString()
+            while (true) {
+                val response =
+                    client.get("v1/users") {
+                        bearerAuth(token)
+                        accept(ContentType.Application.Json)
+                        parameter("offset", offset)
+                        parameter("limit", limit)
+                        parameter("roles", roles)
                     }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val users = response.body<List<User>>()

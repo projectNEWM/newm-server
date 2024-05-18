@@ -9,8 +9,34 @@ import com.amazonaws.services.kms.model.EncryptResult
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.google.protobuf.ByteString
 import io.ktor.network.util.DefaultByteBufferPool
-import io.newm.chain.grpc.*
+import io.newm.chain.grpc.IsMainnetRequest
+import io.newm.chain.grpc.LedgerAssetMetadataItem
+import io.newm.chain.grpc.MonitorAddressResponse
+import io.newm.chain.grpc.MonitorPaymentAddressRequest
+import io.newm.chain.grpc.NativeAsset
 import io.newm.chain.grpc.NewmChainGrpcKt.NewmChainCoroutineStub
+import io.newm.chain.grpc.SnapshotNativeAssetsResponse
+import io.newm.chain.grpc.SubmitTransactionResponse
+import io.newm.chain.grpc.TransactionBuilderRequestKt
+import io.newm.chain.grpc.TransactionBuilderResponse
+import io.newm.chain.grpc.Utxo
+import io.newm.chain.grpc.VerifySignDataResponse
+import io.newm.chain.grpc.acquireMutexRequest
+import io.newm.chain.grpc.datumOrNull
+import io.newm.chain.grpc.listOrNull
+import io.newm.chain.grpc.mapItemValueOrNull
+import io.newm.chain.grpc.mapOrNull
+import io.newm.chain.grpc.monitorAddressRequest
+import io.newm.chain.grpc.nativeAsset
+import io.newm.chain.grpc.outputUtxo
+import io.newm.chain.grpc.queryByNativeAssetRequest
+import io.newm.chain.grpc.queryUtxosOutputRefRequest
+import io.newm.chain.grpc.queryUtxosRequest
+import io.newm.chain.grpc.releaseMutexRequest
+import io.newm.chain.grpc.snapshotNativeAssetsRequest
+import io.newm.chain.grpc.submitTransactionRequest
+import io.newm.chain.grpc.verifySignDataRequest
+import io.newm.chain.grpc.walletRequest
 import io.newm.chain.util.Constants
 import io.newm.chain.util.b64ToByteArray
 import io.newm.chain.util.toB64String
@@ -33,6 +59,7 @@ import io.newm.server.features.song.model.SongFilters
 import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.features.walletconnection.database.WalletConnectionEntity
 import io.newm.server.ktx.cborHexToUtxo
+import io.newm.server.model.FilterCriteria
 import io.newm.server.typealiases.UserId
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.debug
@@ -331,7 +358,7 @@ internal class CardanoRepositoryImpl(
                         moods = null,
                         mintingStatuses = null,
                         phrase = null,
-                        nftNames = streamTokenNames,
+                        nftNames = FilterCriteria(includes = streamTokenNames)
                     )
             )
         val songs =
@@ -348,7 +375,7 @@ internal class CardanoRepositoryImpl(
                         moods = null,
                         mintingStatuses = null,
                         phrase = null,
-                        nftNames = streamTokenNames,
+                        nftNames = FilterCriteria(includes = streamTokenNames),
                     ),
                 offset = offset,
                 limit = limit,

@@ -17,9 +17,9 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.notInList
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.util.*
 
 class ReleaseEntity(id: EntityID<ReleaseId>) : UUIDEntity(id) {
     var archived: Boolean by ReleaseTable.archived
@@ -94,11 +94,17 @@ class ReleaseEntity(id: EntityID<ReleaseId>) : UUIDEntity(id) {
             newerThan?.let {
                 ops += ReleaseTable.createdAt greater it
             }
-            ids?.let {
+            ids?.includes?.let {
                 ops += ReleaseTable.id inList it
             }
-            ownerIds?.let {
+            ids?.excludes?.let {
+                ops += ReleaseTable.id notInList it
+            }
+            ownerIds?.includes?.let {
                 ops += ReleaseTable.ownerId inList it
+            }
+            ownerIds?.excludes?.let {
+                ops += ReleaseTable.ownerId notInList it
             }
             phrase?.let {
                 val pattern = "%${it.lowercase()}%"

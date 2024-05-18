@@ -172,6 +172,39 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
         }
 
     @Test
+    fun testGetSalesByIdExclusion() =
+        runBlocking {
+            val allSales = mutableListOf<Sale>()
+            for (offset in 0..30) {
+                allSales += addSaleToDatabase(offset)
+            }
+
+            // filter out 1st and last
+            val expectedSales = allSales.subList(1, allSales.size - 1)
+            val ids = allSales.filter { it !in expectedSales }.joinToString { "-${it.id}" }
+
+            // Get sales forcing pagination
+            var offset = 0
+            val limit = 5
+            val actualSales = mutableListOf<Sale>()
+            while (true) {
+                val response =
+                    client.get("v1/marketplace/sales") {
+                        accept(ContentType.Application.Json)
+                        parameter("offset", offset)
+                        parameter("limit", limit)
+                        parameter("ids", ids)
+                    }
+                assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+                val sales = response.body<List<Sale>>()
+                if (sales.isEmpty()) break
+                actualSales += sales
+                offset += limit
+            }
+            assertThat(actualSales).isEqualTo(expectedSales)
+        }
+
+    @Test
     fun testGetSalesBySongId() =
         runBlocking {
             val allSales = mutableListOf<Sale>()
@@ -205,6 +238,39 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
         }
 
     @Test
+    fun testGetSalesBySongIdExclusion() =
+        runBlocking {
+            val allSales = mutableListOf<Sale>()
+            for (offset in 0..30) {
+                allSales += addSaleToDatabase(offset)
+            }
+
+            // filter out 1st and last
+            val expectedSales = allSales.subList(1, allSales.size - 1)
+            val songIds = allSales.filter { it !in expectedSales }.joinToString { "-${it.song!!.id}" }
+
+            // Get sales forcing pagination
+            var offset = 0
+            val limit = 5
+            val actualSales = mutableListOf<Sale>()
+            while (true) {
+                val response =
+                    client.get("v1/marketplace/sales") {
+                        accept(ContentType.Application.Json)
+                        parameter("offset", offset)
+                        parameter("limit", limit)
+                        parameter("songIds", songIds)
+                    }
+                assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+                val sales = response.body<List<Sale>>()
+                if (sales.isEmpty()) break
+                actualSales += sales
+                offset += limit
+            }
+            assertThat(actualSales).isEqualTo(expectedSales)
+        }
+
+    @Test
     fun testGetSalesByArtistId() =
         runBlocking {
             val allSales = mutableListOf<Sale>()
@@ -215,6 +281,39 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
             // filter out 1st and last
             val expectedSales = allSales.subList(1, allSales.size - 1)
             val artistIds = expectedSales.joinToString { it.song!!.artistId.toString() }
+
+            // Get sales forcing pagination
+            var offset = 0
+            val limit = 5
+            val actualSales = mutableListOf<Sale>()
+            while (true) {
+                val response =
+                    client.get("v1/marketplace/sales") {
+                        accept(ContentType.Application.Json)
+                        parameter("offset", offset)
+                        parameter("limit", limit)
+                        parameter("artistIds", artistIds)
+                    }
+                assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+                val sales = response.body<List<Sale>>()
+                if (sales.isEmpty()) break
+                actualSales += sales
+                offset += limit
+            }
+            assertThat(actualSales).isEqualTo(expectedSales)
+        }
+
+    @Test
+    fun testGetSalesByArtistIdExclusion() =
+        runBlocking {
+            val allSales = mutableListOf<Sale>()
+            for (offset in 0..30) {
+                allSales += addSaleToDatabase(offset)
+            }
+
+            // filter out 1st and last
+            val expectedSales = allSales.subList(1, allSales.size - 1)
+            val artistIds = allSales.filter { it !in expectedSales }.joinToString { "-${it.song!!.artistId}" }
 
             // Get sales forcing pagination
             var offset = 0
@@ -272,6 +371,40 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
         }
 
     @Test
+    fun testGetSalesByStatusExclusion() =
+        runBlocking {
+            val allSales = mutableListOf<Sale>()
+            for (offset in 0..30) {
+                allSales += addSaleToDatabase(offset)
+            }
+
+            for (expectedSaleStatus in SaleStatus.entries) {
+                // filter out
+                val expectedSales = allSales.filter { it.status != expectedSaleStatus }
+
+                // Get sales forcing pagination
+                var offset = 0
+                val limit = 5
+                val actualSales = mutableListOf<Sale>()
+                while (true) {
+                    val response =
+                        client.get("v1/marketplace/sales") {
+                            accept(ContentType.Application.Json)
+                            parameter("offset", offset)
+                            parameter("limit", limit)
+                            parameter("saleStatuses", "-$expectedSaleStatus")
+                        }
+                    assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+                    val sales = response.body<List<Sale>>()
+                    if (sales.isEmpty()) break
+                    actualSales += sales
+                    offset += limit
+                }
+                assertThat(actualSales).isEqualTo(expectedSales)
+            }
+        }
+
+    @Test
     fun testGetSalesByGenres() =
         runBlocking {
             val allSales = mutableListOf<Sale>()
@@ -305,6 +438,39 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
         }
 
     @Test
+    fun testGetSalesByGenresExclusion() =
+        runBlocking {
+            val allSales = mutableListOf<Sale>()
+            for (offset in 0..30) {
+                allSales += addSaleToDatabase(offset)
+            }
+
+            // filter out 1st and last and take only 1st genre of each
+            val expectedSales = allSales.subList(1, allSales.size - 1)
+            val genres = allSales.filter { it !in expectedSales }.joinToString { "-${it.song!!.genres!!.first()}" }
+
+            // Get sales forcing pagination
+            var offset = 0
+            val limit = 5
+            val actualSales = mutableListOf<Sale>()
+            while (true) {
+                val response =
+                    client.get("v1/marketplace/sales") {
+                        accept(ContentType.Application.Json)
+                        parameter("offset", offset)
+                        parameter("limit", limit)
+                        parameter("genres", genres)
+                    }
+                assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+                val sales = response.body<List<Sale>>()
+                if (sales.isEmpty()) break
+                actualSales += sales
+                offset += limit
+            }
+            assertThat(actualSales).isEqualTo(expectedSales)
+        }
+
+    @Test
     fun testGetSalesByMoods() =
         runBlocking {
             val allSales = mutableListOf<Sale>()
@@ -315,6 +481,39 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
             // filter out 1st and last and take only 1st mood of each
             val expectedSales = allSales.subList(1, allSales.size - 1)
             val moods = expectedSales.joinToString { it.song?.moods!!.first() }
+
+            // Get sales forcing pagination
+            var offset = 0
+            val limit = 5
+            val actualSales = mutableListOf<Sale>()
+            while (true) {
+                val response =
+                    client.get("v1/marketplace/sales") {
+                        accept(ContentType.Application.Json)
+                        parameter("offset", offset)
+                        parameter("limit", limit)
+                        parameter("moods", moods)
+                    }
+                assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+                val sales = response.body<List<Sale>>()
+                if (sales.isEmpty()) break
+                actualSales += sales
+                offset += limit
+            }
+            assertThat(actualSales).isEqualTo(expectedSales)
+        }
+
+    @Test
+    fun testGetSalesByMoodsExclusion() =
+        runBlocking {
+            val allSales = mutableListOf<Sale>()
+            for (offset in 0..30) {
+                allSales += addSaleToDatabase(offset)
+            }
+
+            // filter out 1st and last and take only 1st mood of each
+            val expectedSales = allSales.subList(1, allSales.size - 1)
+            val moods = allSales.filter { it !in expectedSales }.joinToString { "-${it.song!!.moods!!.first()}" }
 
             // Get sales forcing pagination
             var offset = 0

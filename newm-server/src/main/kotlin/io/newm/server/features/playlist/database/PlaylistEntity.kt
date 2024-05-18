@@ -16,6 +16,7 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.notInList
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
@@ -59,11 +60,17 @@ class PlaylistEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                 newerThan?.let {
                     ops += PlaylistTable.createdAt greater it
                 }
-                ids?.let {
+                ids?.includes?.let {
                     ops += PlaylistTable.id inList it
                 }
-                ownerIds?.let {
+                ids?.excludes?.let {
+                    ops += PlaylistTable.id notInList it
+                }
+                ownerIds?.includes?.let {
                     ops += PlaylistTable.ownerId inList it
+                }
+                ownerIds?.excludes?.let {
+                    ops += PlaylistTable.ownerId notInList it
                 }
             }
             return (if (ops.isEmpty()) all() else find(AndOp(ops)))

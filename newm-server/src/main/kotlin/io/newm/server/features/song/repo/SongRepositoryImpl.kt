@@ -3,10 +3,12 @@ package io.newm.server.features.song.repo
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.sqs.model.SendMessageRequest
 import com.google.iot.cbor.CborInteger
-import io.ktor.http.*
-import io.ktor.server.application.*
-import io.ktor.util.logging.*
-import io.ktor.utils.io.*
+import io.ktor.http.URLBuilder
+import io.ktor.http.URLProtocol
+import io.ktor.http.encodedPath
+import io.ktor.server.application.ApplicationEnvironment
+import io.ktor.util.logging.Logger
+import io.ktor.utils.io.ByteReadChannel
 import io.newm.chain.grpc.Utxo
 import io.newm.chain.grpc.outputUtxo
 import io.newm.chain.util.toAdaString
@@ -25,8 +27,23 @@ import io.newm.server.features.collaboration.repo.CollaborationRepository
 import io.newm.server.features.distribution.DistributionRepository
 import io.newm.server.features.email.repo.EmailRepository
 import io.newm.server.features.minting.MintingStatusSqsMessage
-import io.newm.server.features.song.database.*
-import io.newm.server.features.song.model.*
+import io.newm.server.features.song.database.ReleaseEntity
+import io.newm.server.features.song.database.ReleaseTable
+import io.newm.server.features.song.database.SongEntity
+import io.newm.server.features.song.database.SongErrorHistoryTable
+import io.newm.server.features.song.database.SongReceiptEntity
+import io.newm.server.features.song.database.SongReceiptTable
+import io.newm.server.features.song.database.SongTable
+import io.newm.server.features.song.model.AudioEncodingStatus
+import io.newm.server.features.song.model.AudioStreamData
+import io.newm.server.features.song.model.AudioUploadReport
+import io.newm.server.features.song.model.MintPaymentResponse
+import io.newm.server.features.song.model.MintingStatus
+import io.newm.server.features.song.model.RefundPaymentResponse
+import io.newm.server.features.song.model.Release
+import io.newm.server.features.song.model.ReleaseType
+import io.newm.server.features.song.model.Song
+import io.newm.server.features.song.model.SongFilters
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
 import io.newm.server.features.user.model.UserVerificationStatus
@@ -34,6 +51,7 @@ import io.newm.server.ktx.asValidUrl
 import io.newm.server.ktx.await
 import io.newm.server.ktx.checkLength
 import io.newm.server.ktx.getSecureConfigString
+import io.newm.server.model.FilterCriteria
 import io.newm.server.typealiases.ReleaseId
 import io.newm.server.typealiases.SongId
 import io.newm.server.typealiases.UserId
@@ -41,7 +59,17 @@ import io.newm.shared.exception.HttpConflictException
 import io.newm.shared.exception.HttpForbiddenException
 import io.newm.shared.exception.HttpUnprocessableEntityException
 import io.newm.shared.koin.inject
-import io.newm.shared.ktx.*
+import io.newm.shared.ktx.debug
+import io.newm.shared.ktx.getConfigChild
+import io.newm.shared.ktx.getConfigString
+import io.newm.shared.ktx.getInt
+import io.newm.shared.ktx.getLong
+import io.newm.shared.ktx.getString
+import io.newm.shared.ktx.info
+import io.newm.shared.ktx.orNull
+import io.newm.shared.ktx.orZero
+import io.newm.shared.ktx.propertiesFromResource
+import io.newm.shared.ktx.toTempFile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
@@ -59,7 +87,8 @@ import java.math.BigInteger
 import java.math.RoundingMode
 import java.net.URI
 import java.time.LocalDateTime
-import java.util.*
+import java.util.Properties
+import java.util.UUID
 
 internal class SongRepositoryImpl(
     private val environment: ApplicationEnvironment,
@@ -804,7 +833,7 @@ internal class SongRepositoryImpl(
         val collaborators =
             collaborationRepository.getCollaborators(
                 userId = owner.id.value,
-                filters = CollaboratorFilters(emails = collaborations.mapNotNull { it.email }),
+                filters = CollaboratorFilters(emails = FilterCriteria(includes = collaborations.mapNotNull { it.email })),
                 offset = 0,
                 limit = Int.MAX_VALUE
             )

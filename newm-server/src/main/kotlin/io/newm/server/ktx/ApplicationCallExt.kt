@@ -9,13 +9,15 @@ import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.bits.Memory
-import io.newm.server.features.marketplace.model.SaleStatus
 import io.newm.server.features.song.model.MintingStatus
+import io.newm.server.model.FilterCriteria
+import io.newm.server.model.toFilterCriteria
+import io.newm.server.model.toStringFilterCriteria
+import io.newm.server.model.toUUIDFilterCriteria
 import io.newm.server.typealiases.SongId
 import io.newm.server.typealiases.UserId
 import io.newm.shared.exception.HttpUnauthorizedException
 import io.newm.shared.ktx.orZero
-import io.newm.shared.ktx.splitAndTrim
 import io.newm.shared.ktx.toHexString
 import io.newm.shared.ktx.toLocalDateTime
 import io.newm.shared.ktx.toUUID
@@ -66,28 +68,28 @@ val ApplicationCall.limit: Int
 val ApplicationCall.sortOrder: SortOrder?
     get() = parameters["sortOrder"]?.let { SortOrder.valueOf(it.uppercase()) }
 
-val ApplicationCall.ids: List<UUID>?
-    get() = parameters["ids"]?.splitAndTrim()?.map(String::toUUID)
+val ApplicationCall.ids: FilterCriteria<UUID>?
+    get() = parameters["ids"]?.toUUIDFilterCriteria()
 
-val ApplicationCall.ownerIds: List<UserId>?
+val ApplicationCall.ownerIds: FilterCriteria<UUID>?
     get() =
-        parameters["ownerIds"]?.splitAndTrim()?.map {
+        parameters["ownerIds"]?.toFilterCriteria {
             if (it == "me") myUserId else it.toUUID()
         }
-val ApplicationCall.songIds: List<SongId>?
-    get() = parameters["songIds"]?.splitAndTrim()?.map(String::toUUID)
+val ApplicationCall.songIds: FilterCriteria<UUID>?
+    get() = parameters["songIds"]?.toUUIDFilterCriteria()
 
-val ApplicationCall.emails: List<String>?
-    get() = parameters["emails"]?.splitAndTrim()
+val ApplicationCall.emails: FilterCriteria<String>?
+    get() = parameters["emails"]?.toStringFilterCriteria()
 
-val ApplicationCall.genres: List<String>?
-    get() = parameters["genres"]?.splitAndTrim()
+val ApplicationCall.genres: FilterCriteria<String>?
+    get() = parameters["genres"]?.toStringFilterCriteria()
 
-val ApplicationCall.moods: List<String>?
-    get() = parameters["moods"]?.splitAndTrim()
+val ApplicationCall.moods: FilterCriteria<String>?
+    get() = parameters["moods"]?.toStringFilterCriteria()
 
-val ApplicationCall.roles: List<String>?
-    get() = parameters["roles"]?.splitAndTrim()
+val ApplicationCall.roles: FilterCriteria<String>?
+    get() = parameters["roles"]?.toStringFilterCriteria()
 
 val ApplicationCall.olderThan: LocalDateTime?
     get() = parameters["olderThan"]?.toLocalDateTime()
@@ -101,23 +103,14 @@ val ApplicationCall.phrase: String?
 val ApplicationCall.archived: Boolean?
     get() = parameters["archived"]?.toBoolean()
 
-val ApplicationCall.mintingStatuses: List<MintingStatus>?
-    get() = parameters["mintingStatuses"]?.splitAndTrim()?.map(MintingStatus::valueOf)
-
-val ApplicationCall.nftNames: List<String>?
-    get() = parameters["nftNames"]?.splitAndTrim()
-
 val ApplicationCall.connectionId: UUID
     get() = parameters["connectionId"]!!.toUUID()
 
 val ApplicationCall.saleId: UUID
     get() = parameters["saleId"]!!.toUUID()
 
-val ApplicationCall.saleStatuses: List<SaleStatus>?
-    get() = parameters["saleStatuses"]?.splitAndTrim()?.map(SaleStatus::valueOf)
-
-val ApplicationCall.artistIds: List<UUID>?
-    get() = parameters["artistIds"]?.splitAndTrim()?.map(String::toUUID)
+val ApplicationCall.artistIds: FilterCriteria<UUID>?
+    get() = parameters["artistIds"]?.toUUIDFilterCriteria()
 
 suspend inline fun ApplicationCall.identifyUser(crossinline body: suspend ApplicationCall.(UUID, Boolean) -> Unit) {
     val uid = userId
