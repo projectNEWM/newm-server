@@ -1,23 +1,18 @@
 package io.newm.server.features.user.verify
 
-import io.ktor.client.HttpClient
-import io.ktor.client.call.body
-import io.ktor.client.request.accept
-import io.ktor.client.request.get
-import io.ktor.http.ContentType
-import io.ktor.http.isSuccess
-import io.ktor.util.logging.Logger
-import io.newm.shared.koin.inject
-import io.newm.shared.ktx.info
+import io.github.oshai.kotlinlogging.KotlinLogging
+import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.request.*
+import io.ktor.http.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.koin.core.parameter.parametersOf
 import java.net.URI
 
 class AppleMusicProfileUrlVerifier(
     private val httpClient: HttpClient,
 ) : OutletProfileUrlVerifier {
-    private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
+    private val logger = KotlinLogging.logger {}
 
     override suspend fun verify(
         outletProfileUrl: String,

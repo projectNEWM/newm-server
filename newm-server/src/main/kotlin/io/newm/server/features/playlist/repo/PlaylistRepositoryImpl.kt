@@ -1,6 +1,6 @@
 package io.newm.server.features.playlist.repo
 
-import io.ktor.util.logging.*
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.newm.server.features.playlist.database.PlaylistEntity
 import io.newm.server.features.playlist.model.Playlist
 import io.newm.server.features.playlist.model.PlaylistFilters
@@ -12,15 +12,12 @@ import io.newm.server.typealiases.SongId
 import io.newm.server.typealiases.UserId
 import io.newm.shared.exception.HttpForbiddenException
 import io.newm.shared.exception.HttpUnprocessableEntityException
-import io.newm.shared.koin.inject
-import io.newm.shared.ktx.debug
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.koin.core.parameter.parametersOf
 import java.util.*
 
 internal class PlaylistRepositoryImpl : PlaylistRepository {
-    private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
+    private val logger = KotlinLogging.logger {}
 
     override suspend fun add(
         playlist: Playlist,

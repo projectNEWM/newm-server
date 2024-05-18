@@ -1,17 +1,13 @@
 package io.newm.server.features.release.repo
 
-import io.ktor.client.HttpClient
-import io.ktor.client.request.accept
-import io.ktor.client.request.get
-import io.ktor.http.ContentType
+import io.github.oshai.kotlinlogging.KotlinLogging
+import io.ktor.client.*
+import io.ktor.client.request.*
+import io.ktor.http.*
 import io.newm.server.features.release.model.SpotifySearchResponse
 import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.ktx.checkedBody
 import io.newm.server.typealiases.SongId
-import io.newm.shared.koin.inject
-import io.newm.shared.ktx.debug
-import org.koin.core.parameter.parametersOf
-import org.slf4j.Logger
 
 private const val SPOTIFY_SEARCH_API_URL = "https://api.spotify.com/v1/search"
 
@@ -19,7 +15,7 @@ internal class OutletReleaseRepositoryImpl(
     private val httpClient: HttpClient,
     private val songRepository: SongRepository
 ) : OutletReleaseRepository {
-    private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
+    private val logger = KotlinLogging.logger {}
 
     override suspend fun isSongReleased(songId: SongId): Boolean {
         val isrc = songRepository.get(songId).isrc!!.lowercase().replace("-", "")

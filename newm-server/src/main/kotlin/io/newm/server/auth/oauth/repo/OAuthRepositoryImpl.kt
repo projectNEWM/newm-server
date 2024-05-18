@@ -1,25 +1,22 @@
 package io.newm.server.auth.oauth.repo
 
-import io.ktor.client.HttpClient
-import io.ktor.client.request.forms.submitForm
-import io.ktor.http.Parameters
-import io.ktor.server.application.ApplicationEnvironment
-import io.ktor.util.logging.Logger
+import io.github.oshai.kotlinlogging.KotlinLogging
+import io.ktor.client.*
+import io.ktor.client.request.forms.*
+import io.ktor.http.*
+import io.ktor.server.application.*
 import io.newm.server.auth.oauth.model.OAuthTokens
 import io.newm.server.auth.oauth.model.OAuthType
 import io.newm.server.ktx.checkedBody
 import io.newm.server.ktx.getSecureString
-import io.newm.shared.koin.inject
-import io.newm.shared.ktx.debug
 import io.newm.shared.ktx.getConfigChild
 import io.newm.shared.ktx.getString
-import org.koin.core.parameter.parametersOf
 
 class OAuthRepositoryImpl(
     private val environment: ApplicationEnvironment,
     private val httpClient: HttpClient,
 ) : OAuthRepository {
-    private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
+    private val logger = KotlinLogging.logger {}
 
     override suspend fun getTokens(
         type: OAuthType,

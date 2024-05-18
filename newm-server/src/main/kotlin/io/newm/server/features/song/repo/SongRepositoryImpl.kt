@@ -3,11 +3,11 @@ package io.newm.server.features.song.repo
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.sqs.model.SendMessageRequest
 import com.google.iot.cbor.CborInteger
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.http.URLBuilder
 import io.ktor.http.URLProtocol
 import io.ktor.http.encodedPath
 import io.ktor.server.application.ApplicationEnvironment
-import io.ktor.util.logging.Logger
 import io.ktor.utils.io.ByteReadChannel
 import io.newm.chain.grpc.Utxo
 import io.newm.chain.grpc.outputUtxo
@@ -59,13 +59,11 @@ import io.newm.shared.exception.HttpConflictException
 import io.newm.shared.exception.HttpForbiddenException
 import io.newm.shared.exception.HttpUnprocessableEntityException
 import io.newm.shared.koin.inject
-import io.newm.shared.ktx.debug
 import io.newm.shared.ktx.getConfigChild
 import io.newm.shared.ktx.getConfigString
 import io.newm.shared.ktx.getInt
 import io.newm.shared.ktx.getLong
 import io.newm.shared.ktx.getString
-import io.newm.shared.ktx.info
 import io.newm.shared.ktx.orNull
 import io.newm.shared.ktx.orZero
 import io.newm.shared.ktx.propertiesFromResource
@@ -90,7 +88,6 @@ import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.koin.core.parameter.parametersOf
 
 internal class SongRepositoryImpl(
     private val environment: ApplicationEnvironment,
@@ -101,7 +98,7 @@ internal class SongRepositoryImpl(
     private val collaborationRepository: CollaborationRepository,
     private val emailRepository: EmailRepository,
 ) : SongRepository {
-    private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
+    private val logger = KotlinLogging.logger {}
     private val json: Json by inject()
     private val queueUrl by lazy { environment.getConfigString("aws.sqs.minting.queueUrl") }
     private val mimeTypes: Properties by lazy {

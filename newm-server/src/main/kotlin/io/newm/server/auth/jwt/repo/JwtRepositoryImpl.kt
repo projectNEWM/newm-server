@@ -2,29 +2,26 @@ package io.newm.server.auth.jwt.repo
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
-import io.ktor.server.application.ApplicationEnvironment
-import io.ktor.util.logging.Logger
+import io.github.oshai.kotlinlogging.KotlinLogging
+import io.ktor.server.application.*
 import io.newm.server.auth.jwt.JwtType
 import io.newm.server.auth.jwt.database.JwtEntity
 import io.newm.server.features.user.database.UserTable
 import io.newm.server.ktx.getSecureConfigString
 import io.newm.server.typealiases.UserId
-import io.newm.shared.koin.inject
-import io.newm.shared.ktx.debug
 import io.newm.shared.ktx.existsHavingId
 import io.newm.shared.ktx.getConfigLong
 import io.newm.shared.ktx.getConfigString
 import io.newm.shared.ktx.toDate
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.koin.core.parameter.parametersOf
 import java.time.LocalDateTime
-import java.util.UUID
+import java.util.*
 
 class JwtRepositoryImpl(
     private val environment: ApplicationEnvironment
 ) : JwtRepository {
-    private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
+    private val logger = KotlinLogging.logger {}
 
     override suspend fun create(
         type: JwtType,

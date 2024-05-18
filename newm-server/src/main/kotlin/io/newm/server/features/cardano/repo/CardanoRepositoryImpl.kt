@@ -8,6 +8,7 @@ import com.amazonaws.services.kms.model.EncryptRequest
 import com.amazonaws.services.kms.model.EncryptResult
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.google.protobuf.ByteString
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.network.util.DefaultByteBufferPool
 import io.newm.chain.grpc.IsMainnetRequest
 import io.newm.chain.grpc.LedgerAssetMetadataItem
@@ -63,7 +64,6 @@ import io.newm.server.ktx.cborHexToUtxo
 import io.newm.server.model.FilterCriteria
 import io.newm.server.typealiases.UserId
 import io.newm.shared.koin.inject
-import io.newm.shared.ktx.debug
 import io.newm.shared.ktx.isValidHex
 import io.newm.shared.ktx.isValidPassword
 import io.newm.txbuilder.ktx.fingerprint
@@ -80,8 +80,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.koin.core.parameter.parametersOf
-import org.slf4j.Logger
 import org.springframework.security.crypto.encrypt.BytesEncryptor
 import org.springframework.security.crypto.encrypt.Encryptors
 
@@ -92,7 +90,7 @@ internal class CardanoRepositoryImpl(
     private val configRepository: ConfigRepository,
     private val nftCdnRepository: NftCdnRepository,
 ) : CardanoRepository {
-    private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
+    private val logger = KotlinLogging.logger {}
 
     private val songRepository: SongRepository by inject()
 

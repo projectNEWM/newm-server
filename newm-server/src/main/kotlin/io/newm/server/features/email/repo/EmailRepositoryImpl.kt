@@ -1,20 +1,18 @@
 package io.newm.server.features.email.repo
 
-import io.ktor.server.application.ApplicationEnvironment
+import io.github.oshai.kotlinlogging.KotlinLogging
+import io.ktor.server.application.*
 import io.newm.server.ktx.getSecureString
-import io.newm.shared.koin.inject
 import io.newm.shared.ktx.*
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import org.apache.commons.mail.DefaultAuthenticator
 import org.apache.commons.mail.HtmlEmail
-import org.koin.core.parameter.parametersOf
-import org.slf4j.Logger
 
 internal class EmailRepositoryImpl(
     private val environment: ApplicationEnvironment
 ) : EmailRepository {
-    private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
+    private val logger = KotlinLogging.logger {}
 
     override suspend fun send(
         to: String,

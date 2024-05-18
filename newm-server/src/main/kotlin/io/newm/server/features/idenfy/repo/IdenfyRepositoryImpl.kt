@@ -1,12 +1,10 @@
 package io.newm.server.features.idenfy.repo
 
-import io.ktor.client.HttpClient
-import io.ktor.client.request.basicAuth
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
-import io.ktor.http.ContentType
-import io.ktor.http.contentType
-import io.ktor.server.application.ApplicationEnvironment
+import io.github.oshai.kotlinlogging.KotlinLogging
+import io.ktor.client.*
+import io.ktor.client.request.*
+import io.ktor.http.*
+import io.ktor.server.application.*
 import io.newm.server.features.email.repo.EmailRepository
 import io.newm.server.features.idenfy.model.IdenfyCreateSessionRequest
 import io.newm.server.features.idenfy.model.IdenfyCreateSessionResponse
@@ -16,25 +14,16 @@ import io.newm.server.features.user.model.UserVerificationStatus
 import io.newm.server.ktx.checkedBody
 import io.newm.server.ktx.getSecureString
 import io.newm.server.typealiases.UserId
-import io.newm.shared.koin.inject
-import io.newm.shared.ktx.debug
-import io.newm.shared.ktx.getConfigChild
-import io.newm.shared.ktx.getString
-import io.newm.shared.ktx.orNull
-import io.newm.shared.ktx.propertiesFromResource
-import io.newm.shared.ktx.sanitizeName
-import io.newm.shared.ktx.toUUID
+import io.newm.shared.ktx.*
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.koin.core.parameter.parametersOf
-import org.slf4j.Logger
-import java.util.Properties
+import java.util.*
 
 class IdenfyRepositoryImpl(
     private val environment: ApplicationEnvironment,
     private val httpClient: HttpClient,
     private val emailRepository: EmailRepository,
 ) : IdenfyRepository {
-    private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
+    private val logger = KotlinLogging.logger {}
     private val messages: Properties by lazy {
         propertiesFromResource("idenfy-messages.properties")
     }

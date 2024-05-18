@@ -5,8 +5,9 @@ import com.google.iot.cbor.CborInteger
 import com.google.iot.cbor.CborMap
 import com.google.iot.cbor.CborTextString
 import com.google.protobuf.kotlin.toByteString
-import io.ktor.server.application.ApplicationEnvironment
-import io.ktor.utils.io.core.toByteArray
+import io.github.oshai.kotlinlogging.KotlinLogging
+import io.ktor.server.application.*
+import io.ktor.utils.io.core.*
 import io.newm.chain.util.Bech32
 import io.newm.chain.util.Constants
 import io.newm.chain.util.toHexString
@@ -14,32 +15,23 @@ import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.user.database.UserTable
 import io.newm.server.features.walletconnection.database.WalletConnectionChallengeEntity
 import io.newm.server.features.walletconnection.database.WalletConnectionEntity
-import io.newm.server.features.walletconnection.model.AnswerChallengeRequest
-import io.newm.server.features.walletconnection.model.AnswerChallengeResponse
-import io.newm.server.features.walletconnection.model.GenerateChallengeRequest
-import io.newm.server.features.walletconnection.model.GenerateChallengeResponse
-import io.newm.server.features.walletconnection.model.ChallengeMethod
-import io.newm.server.features.walletconnection.model.WalletConnection
+import io.newm.server.features.walletconnection.model.*
 import io.newm.server.typealiases.UserId
 import io.newm.shared.exception.HttpForbiddenException
 import io.newm.shared.exception.HttpNotFoundException
-import io.newm.shared.koin.inject
-import io.newm.shared.ktx.debug
 import io.newm.shared.ktx.existsHavingId
 import io.newm.shared.ktx.getConfigLong
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.koin.core.parameter.parametersOf
-import org.slf4j.Logger
 import qrcode.QRCode
 import qrcode.color.Colors
-import java.util.UUID
+import java.util.*
 
 internal class WalletConnectionRepositoryImpl(
     private val environment: ApplicationEnvironment,
     private val cardanoRepository: CardanoRepository,
 ) : WalletConnectionRepository {
-    private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
+    private val logger = KotlinLogging.logger {}
     private val challengeTimeToLive: Long by lazy {
         environment.getConfigLong("walletConnection.challengeTimeToLive")
     }
