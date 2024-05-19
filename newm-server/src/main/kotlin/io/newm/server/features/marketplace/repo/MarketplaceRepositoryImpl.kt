@@ -88,7 +88,7 @@ internal class MarketplaceRepositoryImpl(
         offset: Int,
         limit: Int
     ): List<Sale> {
-        log.info { "getSales: filters = $filters, offset = $offset, limit = $limit" }
+        log.debug { "getSales: filters = $filters, offset = $offset, limit = $limit" }
         val isMainnet = cardanoRepository.isMainnet()
         val sales =
             transaction {
