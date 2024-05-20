@@ -20,7 +20,7 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.notInList
 import org.jetbrains.exposed.sql.lowerCase
 import java.time.LocalDateTime
 
-class UserEntity(id: EntityID<UserId>) : UUIDEntity(id) {
+open class UserEntity(id: EntityID<UserId>) : UUIDEntity(id) {
     val createdAt: LocalDateTime by UserTable.createdAt
     var oauthType: OAuthType? by UserTable.oauthType
     var oauthId: String? by UserTable.oauthId

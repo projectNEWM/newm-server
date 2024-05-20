@@ -109,7 +109,10 @@ val ApplicationCall.connectionId: UUID
 val ApplicationCall.saleId: UUID
     get() = parameters["saleId"]!!.toUUID()
 
-val ApplicationCall.artistIds: FilterCriteria<UUID>?
+val ApplicationCall.artistId: UserId
+    get() = parameters["artistId"]!!.toUUID()
+
+val ApplicationCall.artistIds: FilterCriteria<UserId>?
     get() = parameters["artistIds"]?.toUUIDFilterCriteria()
 
 suspend inline fun ApplicationCall.identifyUser(crossinline body: suspend ApplicationCall.(UUID, Boolean) -> Unit) {

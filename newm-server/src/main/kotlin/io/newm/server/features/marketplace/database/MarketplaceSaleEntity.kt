@@ -30,6 +30,7 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.notInList
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.innerJoin
 import org.jetbrains.exposed.sql.lowerCase
+import org.jetbrains.exposed.sql.mapLazy
 import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.selectAll
 import java.time.LocalDateTime
@@ -120,17 +121,17 @@ class MarketplaceSaleEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                 ops.isEmpty() -> all()
                 filters.isIndependent -> find(AndOp(ops))
                 else -> {
-                    MarketplaceSaleEntity.wrapRows(
-                        MarketplaceSaleTable.innerJoin(
-                            otherTable = SongTable,
-                            onColumn = { songId },
-                            otherColumn = { id }
-                        ).innerJoin(
-                            otherTable = UserTable,
-                            onColumn = { SongTable.ownerId },
-                            otherColumn = { id }
-                        ).selectAll().where(AndOp(ops))
-                    )
+                    MarketplaceSaleTable.innerJoin(
+                        otherTable = SongTable,
+                        onColumn = { songId },
+                        otherColumn = { id }
+                    ).innerJoin(
+                        otherTable = UserTable,
+                        onColumn = { SongTable.ownerId },
+                        otherColumn = { id }
+                    ).selectAll()
+                        .where(AndOp(ops))
+                        .mapLazy(MarketplaceSaleEntity::wrapRow)
                 }
             }.orderBy(MarketplaceSaleTable.createdAt to (filters.sortOrder ?: SortOrder.ASC))
         }

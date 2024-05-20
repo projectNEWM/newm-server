@@ -14,8 +14,10 @@ import io.newm.server.BaseApplicationTests
 import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.collaboration.database.CollaborationEntity
 import io.newm.server.features.collaboration.database.CollaborationTable
+import io.newm.server.features.marketplace.database.MarketplaceArtistEntity
 import io.newm.server.features.marketplace.database.MarketplaceSaleEntity
 import io.newm.server.features.marketplace.database.MarketplaceSaleTable
+import io.newm.server.features.marketplace.model.Artist
 import io.newm.server.features.marketplace.model.Sale
 import io.newm.server.features.marketplace.model.SaleStatus
 import io.newm.server.features.model.CountResponse
@@ -23,6 +25,7 @@ import io.newm.server.features.song.database.ReleaseEntity
 import io.newm.server.features.song.database.ReleaseTable
 import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.database.SongTable
+import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.ReleaseType
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
@@ -658,6 +661,294 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
             }
         }
 
+    @Test
+    fun testGetArtist() =
+        runBlocking {
+            val artist = addArtistToDatabase()
+            val response =
+                client.get("v1/marketplace/artists/${artist.id}") {
+                    accept(ContentType.Application.Json)
+                }
+            assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+            assertThat(response.body<Artist>()).isEqualTo(artist)
+        }
+
+    @Test
+    fun testGetAllArtists() =
+        runBlocking {
+            val expectedArtists = mutableListOf<Artist>()
+            for (offset in 0..30) {
+                expectedArtists += addArtistToDatabase(offset)
+            }
+
+            // Get all sales forcing pagination
+            var offset = 0
+            val limit = 5
+            val actualArtists = mutableListOf<Artist>()
+            while (true) {
+                val response =
+                    client.get("v1/marketplace/artists") {
+                        accept(ContentType.Application.Json)
+                        parameter("offset", offset)
+                        parameter("limit", limit)
+                    }
+                assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+                val artists = response.body<List<Artist>>()
+                if (artists.isEmpty()) break
+                actualArtists += artists
+                offset += limit
+            }
+            assertThat(actualArtists).isEqualTo(expectedArtists)
+            println(actualArtists)
+        }
+
+    @Test
+    fun testGetAllArtistsInDescendingOrder() =
+        runBlocking {
+            val allArtists = mutableListOf<Artist>()
+            for (offset in 0..30) {
+                allArtists += addArtistToDatabase(offset)
+            }
+            val expectedArtists = allArtists.sortedByDescending { it.createdAt }
+
+            // Get all artists forcing pagination
+            var offset = 0
+            val limit = 5
+            val actualArtists = mutableListOf<Artist>()
+            while (true) {
+                val response =
+                    client.get("v1/marketplace/artists") {
+                        accept(ContentType.Application.Json)
+                        parameter("offset", offset)
+                        parameter("limit", limit)
+                        parameter("sortOrder", "desc")
+                    }
+                assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+                val artists = response.body<List<Artist>>()
+                if (artists.isEmpty()) break
+                actualArtists += artists
+                offset += limit
+            }
+            assertThat(actualArtists).isEqualTo(expectedArtists)
+        }
+
+    @Test
+    fun testGetArtistsById() =
+        runBlocking {
+            val allArtists = mutableListOf<Artist>()
+            for (offset in 0..30) {
+                allArtists += addArtistToDatabase(offset)
+            }
+
+            // filter out 1st and last
+            val expectedArtists = allArtists.subList(1, allArtists.size - 1)
+            val ids = expectedArtists.joinToString { it.id.toString() }
+
+            // Get artists forcing pagination
+            var offset = 0
+            val limit = 5
+            val actualArtists = mutableListOf<Artist>()
+            while (true) {
+                val response =
+                    client.get("v1/marketplace/artists") {
+                        accept(ContentType.Application.Json)
+                        parameter("offset", offset)
+                        parameter("limit", limit)
+                        parameter("ids", ids)
+                    }
+                assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+                val artists = response.body<List<Artist>>()
+                if (artists.isEmpty()) break
+                actualArtists += artists
+                offset += limit
+            }
+            assertThat(actualArtists).isEqualTo(expectedArtists)
+        }
+
+    @Test
+    fun testGetArtistsByIdExclusion() =
+        runBlocking {
+            val allArtists = mutableListOf<Artist>()
+            for (offset in 0..30) {
+                allArtists += addArtistToDatabase(offset)
+            }
+
+            // filter out 1st and last
+            val expectedArtists = allArtists.subList(1, allArtists.size - 1)
+            val ids = allArtists.filter { it !in expectedArtists }.joinToString { "-${it.id}" }
+
+            // Get artists forcing pagination
+            var offset = 0
+            val limit = 5
+            val actualArtists = mutableListOf<Artist>()
+            while (true) {
+                val response =
+                    client.get("v1/marketplace/artists") {
+                        accept(ContentType.Application.Json)
+                        parameter("offset", offset)
+                        parameter("limit", limit)
+                        parameter("ids", ids)
+                    }
+                assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+                val artists = response.body<List<Artist>>()
+                if (artists.isEmpty()) break
+                actualArtists += artists
+                offset += limit
+            }
+            assertThat(actualArtists).isEqualTo(expectedArtists)
+        }
+
+    @Test
+    fun testGetArtistsByGenres() =
+        runBlocking {
+            val allArtists = mutableListOf<Artist>()
+            for (offset in 0..30) {
+                allArtists += addArtistToDatabase(offset)
+            }
+
+            // filter out 1st and last and take only 1st genre of each
+            val expectedArtists = allArtists.subList(1, allArtists.size - 1)
+            val genres = expectedArtists.joinToString { it.genre!! }
+
+            // Get artists forcing pagination
+            var offset = 0
+            val limit = 5
+            val actualArtists = mutableListOf<Artist>()
+            while (true) {
+                val response =
+                    client.get("v1/marketplace/artists") {
+                        accept(ContentType.Application.Json)
+                        parameter("offset", offset)
+                        parameter("limit", limit)
+                        parameter("genres", genres)
+                    }
+                assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+                val artists = response.body<List<Artist>>()
+                if (artists.isEmpty()) break
+                actualArtists += artists
+                offset += limit
+            }
+            assertThat(actualArtists).isEqualTo(expectedArtists)
+        }
+
+    @Test
+    fun testGetArtistsByGenresExclusion() =
+        runBlocking {
+            val allArtists = mutableListOf<Artist>()
+            for (offset in 0..30) {
+                allArtists += addArtistToDatabase(offset)
+            }
+
+            // filter out 1st and last and take only 1st genre of each
+            val expectedArtists = allArtists.subList(1, allArtists.size - 1)
+            val genres = allArtists.filter { it !in expectedArtists }.joinToString { "-${it.genre}" }
+
+            // Get artists forcing pagination
+            var offset = 0
+            val limit = 5
+            val actualArtists = mutableListOf<Artist>()
+            while (true) {
+                val response =
+                    client.get("v1/marketplace/artists") {
+                        accept(ContentType.Application.Json)
+                        parameter("offset", offset)
+                        parameter("limit", limit)
+                        parameter("genres", genres)
+                    }
+                assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+                val artists = response.body<List<Artist>>()
+                if (artists.isEmpty()) break
+                actualArtists += artists
+                offset += limit
+            }
+            assertThat(actualArtists).isEqualTo(expectedArtists)
+        }
+
+    @Test
+    fun testGetArtistsByOlderThan() =
+        runBlocking {
+            val allArtists = mutableListOf<Artist>()
+            for (offset in 0..30) {
+                allArtists += addArtistToDatabase(offset)
+            }
+
+            // filter out newest one
+            val expectedArtists = allArtists.subList(0, allArtists.size - 1)
+            val olderThan = allArtists.last().createdAt
+
+            // Get artists forcing pagination
+            var offset = 0
+            val limit = 5
+            val actualArtists = mutableListOf<Artist>()
+            while (true) {
+                val response =
+                    client.get("v1/marketplace/artists") {
+                        accept(ContentType.Application.Json)
+                        parameter("offset", offset)
+                        parameter("limit", limit)
+                        parameter("olderThan", olderThan)
+                    }
+                assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+                val artists = response.body<List<Artist>>()
+                if (artists.isEmpty()) break
+                actualArtists += artists
+                offset += limit
+            }
+            assertThat(actualArtists).isEqualTo(expectedArtists)
+        }
+
+    @Test
+    fun testGetArtistsByNewerThan() =
+        runBlocking {
+            val allArtists = mutableListOf<Artist>()
+            for (offset in 0..30) {
+                allArtists += addArtistToDatabase(offset)
+            }
+
+            // filter out oldest one
+            val expectedArtists = allArtists.subList(1, allArtists.size)
+            val newerThan = allArtists.first().createdAt
+
+            // Get artists forcing pagination
+            var offset = 0
+            val limit = 5
+            val actualArtists = mutableListOf<Artist>()
+            while (true) {
+                val response =
+                    client.get("v1/marketplace/artists") {
+                        accept(ContentType.Application.Json)
+                        parameter("offset", offset)
+                        parameter("limit", limit)
+                        parameter("newerThan", newerThan)
+                    }
+                assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+                val artists = response.body<List<Artist>>()
+                if (artists.isEmpty()) break
+                actualArtists += artists
+                offset += limit
+            }
+            assertThat(actualArtists).isEqualTo(expectedArtists)
+        }
+
+    @Test
+    fun testGetArtistCount() =
+        runBlocking {
+            var count = 0L
+            while (true) {
+                val response =
+                    client.get("v1/marketplace/artists/count") {
+                        accept(ContentType.Application.Json)
+                    }
+                assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+                val actualCount = response.body<CountResponse>().count
+                assertThat(actualCount).isEqualTo(count)
+
+                if (++count == 10L) break
+
+                addArtistToDatabase(count.toInt())
+            }
+        }
+
     private fun addSaleToDatabase(
         offset: Int = 0,
         phrase: String? = null,
@@ -730,5 +1021,56 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
                 availableBundleQuantity = offset + 1000L
             }.toModel(false, (offset.toBigInteger() * COST_TOKEN_USD_PRICE.toBigInteger()).toAdaString())
         }
+    }
+
+    private fun addArtistToDatabase(offset: Int = 0): Artist {
+        val artist =
+            transaction {
+                MarketplaceArtistEntity.new {
+                    email = "artist$offset@newm.io"
+                    nickname = "nickname$offset"
+                    genre = "genre$offset"
+                    location = "location$offset"
+                    biography = "biography$offset"
+                    pictureUrl = "pictureUrl$offset"
+                    websiteUrl = "websiteUrl$offset"
+                    websiteUrl = "websiteUrl$offset"
+                    instagramUrl = "instagramUrl$offset"
+                    spotifyProfile = "spotifyProfile$offset"
+                    soundCloudProfile = "soundCloudProfile$offset"
+                    appleMusicProfile = "appleMusicProfile$offset"
+                }
+            }
+        for (i in 0..offset + 3) {
+            transaction {
+                val song =
+                    SongEntity.new {
+                        ownerId = artist.id
+                        title = "title$offset"
+                        genres = arrayOf("genre${offset}_0", "genre${offset}_1")
+                        mintingStatus = MintingStatus.Released
+                    }
+                if (i % 2 == 0) {
+                    MarketplaceSaleEntity.new {
+                        createdAt = LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS)
+                        status = SaleStatus.entries[offset % SaleStatus.entries.size]
+                        songId = song.id
+                        ownerAddress = "ownerAddress$offset"
+                        pointerPolicyId = "pointerPolicyId$offset"
+                        pointerAssetName = "pointerAssetName$offset"
+                        bundlePolicyId = "bundlePolicyId$offset"
+                        bundleAssetName = "bundleAssetName$offset"
+                        bundleAmount = offset + 1L
+                        costPolicyId = "costPolicyId$offset"
+                        costAssetName = "costAssetName$offset"
+                        costAmount = offset.toLong()
+                        maxBundleSize = offset + 100L
+                        totalBundleQuantity = offset + 1000L
+                        availableBundleQuantity = offset + 1000L
+                    }
+                }
+            }
+        }
+        return transaction { artist.toModel() }
     }
 }
