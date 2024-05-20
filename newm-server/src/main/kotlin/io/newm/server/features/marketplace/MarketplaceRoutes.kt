@@ -4,9 +4,11 @@ import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Routing
 import io.ktor.server.routing.route
+import io.newm.server.features.marketplace.model.artistFilters
 import io.newm.server.features.marketplace.model.saleFilters
 import io.newm.server.features.marketplace.repo.MarketplaceRepository
 import io.newm.server.features.model.CountResponse
+import io.newm.server.ktx.artistId
 import io.newm.server.ktx.limit
 import io.newm.server.ktx.offset
 import io.newm.server.ktx.saleId
@@ -38,6 +40,23 @@ fun Routing.createMarketplaceRoutes() {
                 // TODO: re-enable when WebApp fixed
                 // recaptchaRepository.verify("get_sale", request)
                 respond(marketplaceRepository.getSale(saleId))
+            }
+        }
+        route("artists") {
+            get {
+                // TODO: re-enable when WebApp fixed
+                // recaptchaRepository.verify("get_artists", request)
+                respond(marketplaceRepository.getArtists(artistFilters, offset, limit))
+            }
+            get("count") {
+                // TODO: re-enable when WebApp fixed
+                // recaptchaRepository.verify("get_artist_count", request)
+                respond(CountResponse(marketplaceRepository.getArtistCount(artistFilters)))
+            }
+            get("{artistId}") {
+                // TODO: re-enable when WebApp fixed
+                // recaptchaRepository.verify("get_artist", request)
+                respond(marketplaceRepository.getArtist(artistId))
             }
         }
         route("orders") {

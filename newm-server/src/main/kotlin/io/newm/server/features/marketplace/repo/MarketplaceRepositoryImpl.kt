@@ -13,10 +13,13 @@ import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPL
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_ORDER_LOVELACE
 import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.marketplace.builders.buildQueueDatum
+import io.newm.server.features.marketplace.database.MarketplaceArtistEntity
 import io.newm.server.features.marketplace.database.MarketplaceBookmarkEntity
 import io.newm.server.features.marketplace.database.MarketplacePendingOrderEntity
 import io.newm.server.features.marketplace.database.MarketplacePurchaseEntity
 import io.newm.server.features.marketplace.database.MarketplaceSaleEntity
+import io.newm.server.features.marketplace.model.Artist
+import io.newm.server.features.marketplace.model.ArtistFilters
 import io.newm.server.features.marketplace.model.OrderAmountRequest
 import io.newm.server.features.marketplace.model.OrderAmountResponse
 import io.newm.server.features.marketplace.model.OrderTransactionRequest
@@ -29,6 +32,7 @@ import io.newm.server.features.marketplace.parser.parseQueue
 import io.newm.server.features.marketplace.parser.parseSale
 import io.newm.server.features.song.database.SongTable
 import io.newm.server.ktx.getSecureConfigString
+import io.newm.server.typealiases.UserId
 import io.newm.shared.exception.HttpPaymentRequiredException
 import io.newm.shared.exception.HttpUnprocessableEntityException
 import io.newm.shared.koin.inject
@@ -76,7 +80,7 @@ internal class MarketplaceRepositoryImpl(
     }
 
     override suspend fun getSale(saleId: UUID): Sale {
-        log.debug { "get: saleId = $saleId" }
+        log.debug { "getSale: saleId = $saleId" }
         val sale = transaction { MarketplaceSaleEntity[saleId] }
         val isMainnet = cardanoRepository.isMainnet()
         val costAmountUsd = sale.getCostAmountUsd()
@@ -104,6 +108,33 @@ internal class MarketplaceRepositoryImpl(
         log.debug { "getSaleCount: filters = $filters" }
         return transaction {
             MarketplaceSaleEntity.all(filters).count()
+        }
+    }
+
+    override suspend fun getArtist(artistId: UserId): Artist {
+        log.debug { "getArtist: artistId = $artistId" }
+        return transaction {
+            MarketplaceArtistEntity[artistId].toModel()
+        }
+    }
+
+    override suspend fun getArtists(
+        filters: ArtistFilters,
+        offset: Int,
+        limit: Int
+    ): List<Artist> {
+        log.debug { "getArtists: filters = $filters, offset = $offset, limit = $limit" }
+        return transaction {
+            MarketplaceArtistEntity.all(filters)
+                .limit(n = limit, offset = offset.toLong())
+                .map(MarketplaceArtistEntity::toModel)
+        }
+    }
+
+    override suspend fun getArtistCount(filters: ArtistFilters): Long {
+        log.debug { "getArtistCount: filters = $filters" }
+        return transaction {
+            MarketplaceArtistEntity.all(filters).count()
         }
     }
 
