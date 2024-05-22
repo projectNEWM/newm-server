@@ -142,12 +142,16 @@ internal class MarketplaceRepositoryImpl(
         log.debug { "generateOrderAmount: $request" }
 
         val sale = transaction { MarketplaceSaleEntity[request.saleId] }
-        require(request.bundleQuantity <= sale.availableBundleQuantity) { "Not enough bundles available for sale" }
+        require(request.bundleQuantity <= sale.availableBundleQuantity) {
+            "Bundle quantity (${request.bundleQuantity}) exceeds sale availability (${sale.availableBundleQuantity})"
+        }
 
         val minIncentiveAmount = configRepository.getLong(CONFIG_KEY_MARKETPLACE_MIN_INCENTIVE_AMOUNT)
         val incentiveAmount =
             request.incentiveAmount?.also {
-                require(it < minIncentiveAmount) { "Not enough incentive" }
+                require(it >= minIncentiveAmount) {
+                    "Incentive amount ($it) is less than minimum required ($minIncentiveAmount)"
+                }
             } ?: minIncentiveAmount
 
         val nativeAssets =
