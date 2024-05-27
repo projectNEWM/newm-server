@@ -8,4 +8,8 @@ interface MintingRepository {
      * Mints the song onto the blockchain and returns the successful transactionId
      */
     suspend fun mint(song: Song): MintInfo
+
+    fun getTokenAgreementFileIndex(policyId: String): Int
+
+    fun getAudioClipFileIndex(policyId: String): Int
 }

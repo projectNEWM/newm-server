@@ -11,6 +11,7 @@ import io.newm.chain.util.toHexString
 import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_MIN_INCENTIVE_AMOUNT
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_ORDER_LOVELACE
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_NFTCDN_ENABLED
 import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.marketplace.builders.buildQueueDatum
 import io.newm.server.features.marketplace.database.MarketplaceArtistEntity
@@ -83,8 +84,9 @@ internal class MarketplaceRepositoryImpl(
         log.debug { "getSale: saleId = $saleId" }
         val sale = transaction { MarketplaceSaleEntity[saleId] }
         val isMainnet = cardanoRepository.isMainnet()
+        val isNftCdnEnabled = configRepository.getBoolean(CONFIG_KEY_NFTCDN_ENABLED)
         val costAmountUsd = sale.getCostAmountUsd()
-        return transaction { sale.toModel(isMainnet, costAmountUsd) }
+        return transaction { sale.toModel(isMainnet, isNftCdnEnabled, costAmountUsd) }
     }
 
     override suspend fun getSales(
@@ -94,13 +96,14 @@ internal class MarketplaceRepositoryImpl(
     ): List<Sale> {
         log.debug { "getSales: filters = $filters, offset = $offset, limit = $limit" }
         val isMainnet = cardanoRepository.isMainnet()
+        val isNftCdnEnabled = configRepository.getBoolean(CONFIG_KEY_NFTCDN_ENABLED)
         val sales =
             transaction {
                 MarketplaceSaleEntity.all(filters).limit(n = limit, offset = offset.toLong()).toList()
             }
         val costAmountsUsd: Map<UUID, String> = sales.associate { it.id.value to it.getCostAmountUsd() }
         return transaction {
-            sales.map { it.toModel(isMainnet, costAmountsUsd[it.id.value]!!) }
+            sales.map { it.toModel(isMainnet, isNftCdnEnabled, costAmountsUsd[it.id.value]!!) }
         }
     }
 

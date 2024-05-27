@@ -54,6 +54,7 @@ import io.newm.server.features.cardano.model.NFTSong
 import io.newm.server.features.cardano.model.WalletSong
 import io.newm.server.features.cardano.parser.toNFTSongs
 import io.newm.server.features.cardano.parser.toResourceUrl
+import io.newm.server.features.nftcdn.repo.NftCdnRepository
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongFilters
 import io.newm.server.features.song.repo.SongRepository
@@ -65,6 +66,7 @@ import io.newm.shared.koin.inject
 import io.newm.shared.ktx.debug
 import io.newm.shared.ktx.isValidHex
 import io.newm.shared.ktx.isValidPassword
+import io.newm.txbuilder.ktx.fingerprint
 import io.newm.txbuilder.ktx.mergeAmounts
 import io.newm.txbuilder.ktx.toNativeAssetMap
 import kotlinx.coroutines.flow.Flow
@@ -86,6 +88,7 @@ internal class CardanoRepositoryImpl(
     private val kms: AWSKMSAsync,
     private val kmsKeyId: String,
     private val configRepository: ConfigRepository,
+    private val nftCdnRepository: NftCdnRepository,
 ) : CardanoRepository {
     private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
 
@@ -401,11 +404,11 @@ internal class CardanoRepositoryImpl(
     ): List<NFTSong> {
         val assets = getWalletAssets(xpubKey)
         val nftSongs = mutableListOf<NFTSong>()
-        val nftCdnEnabled = configRepository.getBoolean(CONFIG_KEY_NFTCDN_ENABLED)
+        val isNftCdnEnabled = configRepository.getBoolean(CONFIG_KEY_NFTCDN_ENABLED)
         for (asset in assets) {
             val metadata = getAssetMetadata(asset)
             if (includeLegacy || metadata.any { it.key.equals("music_metadata_version", true) }) {
-                nftSongs += metadata.toNFTSongs(asset, nftCdnEnabled)
+                nftSongs += metadata.toNFTSongs(asset, isNftCdnEnabled)
             }
         }
         return nftSongs
@@ -414,12 +417,13 @@ internal class CardanoRepositoryImpl(
     // TODO: remove xpubKey support after client migrate to new Wallet Connection method
     override suspend fun getWalletImages(xpubKey: String): List<String> {
         val assets = getWalletAssets(xpubKey)
-        val images = mutableSetOf<String>()
-        for (asset in assets) {
-            val metadata = getAssetMetadata(asset)
-            metadata.firstOrNull { it.key == "image" }?.let { images.add(it.value) }
+        return if (configRepository.getBoolean(CONFIG_KEY_NFTCDN_ENABLED)) {
+            assets.map { nftCdnRepository.generateImageUrl(it.fingerprint()) }
+        } else {
+            assets.mapNotNull { asset ->
+                getAssetMetadata(asset).firstOrNull { it.key == "image" }?.value?.let(String::toResourceUrl)
+            }
         }
-        return images.map(String::toResourceUrl)
     }
 
     // TODO: remove xpubKey support after client migrate to new Wallet Connection method
@@ -443,11 +447,11 @@ internal class CardanoRepositoryImpl(
     ): List<NFTSong> {
         val assets = getWalletAssets(userId)
         val nftSongs = mutableListOf<NFTSong>()
-        val nftCdnEnabled = configRepository.getBoolean(CONFIG_KEY_NFTCDN_ENABLED)
+        val isNftCdnEnabled = configRepository.getBoolean(CONFIG_KEY_NFTCDN_ENABLED)
         for (asset in assets) {
             val metadata = getAssetMetadata(asset)
             if (includeLegacy || metadata.any { it.key.equals("music_metadata_version", true) }) {
-                nftSongs += metadata.toNFTSongs(asset, nftCdnEnabled)
+                nftSongs += metadata.toNFTSongs(asset, isNftCdnEnabled)
             }
         }
         return nftSongs
@@ -455,12 +459,13 @@ internal class CardanoRepositoryImpl(
 
     override suspend fun getWalletImages(userId: UserId): List<String> {
         val assets = getWalletAssets(userId)
-        val images = mutableSetOf<String>()
-        for (asset in assets) {
-            val metadata = getAssetMetadata(asset)
-            metadata.firstOrNull { it.key == "image" }?.let { images.add(it.value) }
+        return if (configRepository.getBoolean(CONFIG_KEY_NFTCDN_ENABLED)) {
+            assets.map { nftCdnRepository.generateImageUrl(it.fingerprint()) }
+        } else {
+            assets.mapNotNull { asset ->
+                getAssetMetadata(asset).firstOrNull { it.key == "image" }?.value?.let(String::toResourceUrl)
+            }
         }
-        return images.map(String::toResourceUrl)
     }
 
     private suspend fun getWalletAssets(userId: UserId): List<NativeAsset> {

@@ -16,6 +16,7 @@ import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_CAS
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_CASH_REGISTER_MIN_AMOUNT
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_CIP68_POLICY
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_CIP68_SCRIPT_ADDRESS
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_LEGACY_POLICY_IDS
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_SCRIPT_UTXO_REFERENCE
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_STARTER_TOKEN_UTXO_REFERENCE
 import io.newm.server.features.cardano.model.Key
@@ -32,6 +33,7 @@ import io.newm.server.features.user.repo.UserRepository
 import io.newm.server.ktx.sign
 import io.newm.server.ktx.toReferenceUtxo
 import io.newm.shared.koin.inject
+import io.newm.shared.ktx.coLazy
 import io.newm.shared.ktx.info
 import io.newm.shared.ktx.orZero
 import io.newm.shared.ktx.toHexString
@@ -52,6 +54,9 @@ class MintingRepositoryImpl(
 ) : MintingRepository {
     private val log: Logger by inject { parametersOf(javaClass.simpleName) }
     private val songRepository: SongRepository by inject()
+    private val legacyPolicyIds: List<String> by coLazy {
+        configRepository.getStrings(CONFIG_KEY_MINT_LEGACY_POLICY_IDS)
+    }
 
     override suspend fun mint(song: Song): MintInfo {
         return cardanoRepository.withLock {
@@ -207,6 +212,10 @@ class MintingRepositoryImpl(
             }
         }
     }
+
+    override fun getTokenAgreementFileIndex(policyId: String): Int = if (policyId in legacyPolicyIds) 1 else 0
+
+    override fun getAudioClipFileIndex(policyId: String): Int = if (policyId in legacyPolicyIds) 0 else 1
 
     @VisibleForTesting
     internal fun signTransaction(

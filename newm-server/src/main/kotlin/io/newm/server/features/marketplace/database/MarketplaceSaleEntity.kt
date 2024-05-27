@@ -1,11 +1,14 @@
 package io.newm.server.features.marketplace.database
 
+import io.newm.chain.util.assetFingerprintOf
 import io.newm.chain.util.assetUrlOf
 import io.newm.server.features.collaboration.database.CollaborationEntity
 import io.newm.server.features.marketplace.model.Sale
 import io.newm.server.features.marketplace.model.SaleFilters
 import io.newm.server.features.marketplace.model.SaleStatus
 import io.newm.server.features.marketplace.model.Token
+import io.newm.server.features.minting.repo.MintingRepository
+import io.newm.server.features.nftcdn.repo.NftCdnRepository
 import io.newm.server.features.song.database.ReleaseEntity
 import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.database.SongTable
@@ -14,6 +17,7 @@ import io.newm.server.features.user.database.UserTable
 import io.newm.server.ktx.arweaveToWebUrl
 import io.newm.shared.exposed.notOverlaps
 import io.newm.shared.exposed.overlaps
+import io.newm.shared.koin.inject
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
@@ -36,6 +40,9 @@ import org.jetbrains.exposed.sql.selectAll
 import java.time.LocalDateTime
 import java.util.UUID
 
+private val nftCdnRepository: NftCdnRepository by inject()
+private val mintingRepository: MintingRepository by inject()
+
 class MarketplaceSaleEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var createdAt: LocalDateTime by MarketplaceSaleTable.createdAt
     var status: SaleStatus by MarketplaceSaleTable.status
@@ -55,11 +62,33 @@ class MarketplaceSaleEntity(id: EntityID<UUID>) : UUIDEntity(id) {
 
     fun toModel(
         isMainnet: Boolean,
+        isNftCdnEnabled: Boolean,
         costAmountUsd: String
     ): Sale {
         val song = SongEntity[songId]
         val artist = UserEntity[song.ownerId]
         val release = ReleaseEntity[song.releaseId!!]
+        val coverArtUrl: String
+        val clipUrl: String
+        val tokenAgreementUrl: String
+        if (isNftCdnEnabled) {
+            val fingerprint = assetFingerprintOf(song.nftPolicyId!!, song.nftName!!)
+            coverArtUrl = nftCdnRepository.generateImageUrl(fingerprint)
+            clipUrl =
+                nftCdnRepository.generateFileUrl(
+                    fingerprint = fingerprint,
+                    index = mintingRepository.getAudioClipFileIndex(song.nftPolicyId!!)
+                )
+            tokenAgreementUrl =
+                nftCdnRepository.generateFileUrl(
+                    fingerprint = fingerprint,
+                    index = mintingRepository.getTokenAgreementFileIndex(song.nftPolicyId!!)
+                )
+        } else {
+            coverArtUrl = release.arweaveCoverArtUrl!!.arweaveToWebUrl()
+            clipUrl = song.arweaveClipUrl!!.arweaveToWebUrl()
+            tokenAgreementUrl = song.arweaveTokenAgreementUrl!!.arweaveToWebUrl()
+        }
         return Sale(
             id = id.value,
             createdAt = createdAt,
@@ -85,9 +114,9 @@ class MarketplaceSaleEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                     parentalAdvisory = song.parentalAdvisory,
                     genres = song.genres.toList(),
                     moods = song.moods?.toList(),
-                    coverArtUrl = release.arweaveCoverArtUrl?.arweaveToWebUrl(),
-                    clipUrl = song.arweaveClipUrl?.arweaveToWebUrl(),
-                    tokenAgreementUrl = song.arweaveTokenAgreementUrl?.arweaveToWebUrl(),
+                    coverArtUrl = coverArtUrl,
+                    clipUrl = clipUrl,
+                    tokenAgreementUrl = tokenAgreementUrl,
                     assetUrl = assetUrlOf(isMainnet, song.nftPolicyId!!, song.nftName!!),
                     collaborators =
                         CollaborationEntity.findBySongId(songId.value).mapNotNull { collab ->

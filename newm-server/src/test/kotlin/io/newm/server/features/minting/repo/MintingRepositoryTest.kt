@@ -383,7 +383,7 @@ class MintingRepositoryTest : BaseApplicationTests() {
                     )
                 )
 
-            val cardanoRepository = CardanoRepositoryImpl(client, mockk(), "", mockk())
+            val cardanoRepository = CardanoRepositoryImpl(client, mockk(), "", mockk(), mockk())
             val songRepository: SongRepository =
                 SongRepositoryImpl(mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk())
             val collabRepository: CollaborationRepository = CollaborationRepositoryImpl(mockk(), mockk())

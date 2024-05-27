@@ -11,6 +11,8 @@ import io.mockk.coEvery
 import io.mockk.mockk
 import io.newm.chain.util.toAdaString
 import io.newm.server.BaseApplicationTests
+import io.newm.server.config.repo.ConfigRepository
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_NFTCDN_ENABLED
 import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.collaboration.database.CollaborationEntity
 import io.newm.server.features.collaboration.database.CollaborationTable
@@ -54,6 +56,11 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
                     mockk<CardanoRepository>(relaxed = true) {
                         coEvery { isMainnet() } returns false
                         coEvery { queryNativeTokenUSDPrice(any(), any()) } returns COST_TOKEN_USD_PRICE
+                    }
+                }
+                single {
+                    mockk<ConfigRepository>(relaxed = true) {
+                        coEvery { getBoolean(CONFIG_KEY_NFTCDN_ENABLED) } returns false
                     }
                 }
             }
@@ -1019,7 +1026,11 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
                 maxBundleSize = offset + 100L
                 totalBundleQuantity = offset + 1000L
                 availableBundleQuantity = offset + 1000L
-            }.toModel(false, (offset.toBigInteger() * COST_TOKEN_USD_PRICE.toBigInteger()).toAdaString())
+            }.toModel(
+                isMainnet = false,
+                isNftCdnEnabled = false,
+                costAmountUsd = (offset.toBigInteger() * COST_TOKEN_USD_PRICE.toBigInteger()).toAdaString()
+            )
         }
     }
 

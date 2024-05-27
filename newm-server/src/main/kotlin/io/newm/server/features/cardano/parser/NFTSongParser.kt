@@ -1,45 +1,29 @@
 package io.newm.server.features.cardano.parser
 
-import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.utils.io.core.toByteArray
 import io.newm.chain.grpc.LedgerAssetMetadataItem
 import io.newm.chain.grpc.NativeAsset
 import io.newm.chain.util.hexStringToAssetName
 import io.newm.server.features.cardano.model.NFTSong
-import io.newm.server.ktx.getSecureConfigString
+import io.newm.server.features.nftcdn.repo.NftCdnRepository
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.debug
 import io.newm.shared.ktx.toDurationOrNull
 import io.newm.shared.ktx.warn
 import io.newm.txbuilder.ktx.fingerprint
-import kotlinx.coroutines.runBlocking
 import org.koin.core.parameter.parametersOf
 import org.slf4j.Logger
-import java.util.Base64
 import java.util.UUID
-import javax.crypto.Mac
-import javax.crypto.spec.SecretKeySpec
-import kotlin.concurrent.getOrSet
 
 private val logger: Logger by inject { parametersOf("NFTSongParser") }
-private val environment: ApplicationEnvironment by inject()
-
-private val nftCdnSubdomain: String by lazy {
-    runBlocking { environment.getSecureConfigString("nftCdn.subdomain") }
-}
-
-private val nftCdnSecretKey: ByteArray by lazy {
-    Base64.getDecoder().decode(runBlocking { environment.getSecureConfigString("nftCdn.secretKey") })
-}
-
-private val nftCdnMacContainer = ThreadLocal<Mac>()
+private val nftCdnRepository: NftCdnRepository by inject()
 
 // Used to remove numeric prefixes on legacy SickCity NFT fields ( e.g., "1. Artist Name" and "02. Song Title")
 private val legacyPrefixRegex = "^\\d+\\.\\s*".toRegex()
 
 fun List<LedgerAssetMetadataItem>.toNFTSongs(
     asset: NativeAsset,
-    nftCdnEnabled: Boolean
+    isNftCdnEnabled: Boolean
 ): List<NFTSong> {
     val assetName = asset.name.hexStringToAssetName()
     logger.debug { "Parsing PolicyID: ${asset.policy}, assetName: $assetName" }
@@ -124,14 +108,13 @@ fun List<LedgerAssetMetadataItem>.toNFTSongs(
                 amount = asset.amount.toLong(),
                 title = title,
                 audioUrl =
-                    file.src.takeUnless { nftCdnEnabled }?.toResourceUrl() ?: buildNftCdnUrl(
+                    file.src.takeUnless { isNftCdnEnabled }?.toResourceUrl() ?: nftCdnRepository.generateFileUrl(
                         fingerprint = fingerprint,
-                        path = "files/${file.index}"
+                        index = file.index
                     ),
                 imageUrl =
-                    image.takeUnless { nftCdnEnabled }?.toResourceUrl() ?: buildNftCdnUrl(
-                        fingerprint = fingerprint,
-                        path = "image"
+                    image.takeUnless { isNftCdnEnabled }?.toResourceUrl() ?: nftCdnRepository.generateImageUrl(
+                        fingerprint = fingerprint
                     ),
                 duration = (file.songDuration ?: songDuration)?.toDurationOrNull()?.toSeconds() ?: -1L,
                 artists = file.artists ?: artists.toList(),
@@ -201,24 +184,3 @@ internal fun String.toResourceUrl(): String =
             this
         }
     }
-
-internal fun buildNftCdnUrl(
-    fingerprint: String,
-    path: String,
-): String {
-    val url = buildNftCdnUrl(fingerprint, path, "")
-    val mac =
-        nftCdnMacContainer.getOrSet {
-            Mac.getInstance("HmacSHA256").apply {
-                init(SecretKeySpec(nftCdnSecretKey, "HmacSHA256"))
-            }
-        }
-    val token = Base64.getUrlEncoder().encodeToString(mac.doFinal(url.toByteArray())).trimEnd('=')
-    return buildNftCdnUrl(fingerprint, path, token)
-}
-
-internal fun buildNftCdnUrl(
-    fingerprint: String,
-    path: String,
-    token: String
-): String = "https://$fingerprint.$nftCdnSubdomain.nftcdn.io/$path?tk=$token"
