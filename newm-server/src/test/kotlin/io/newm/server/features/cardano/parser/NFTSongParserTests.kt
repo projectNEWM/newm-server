@@ -11,9 +11,11 @@ import io.newm.chain.grpc.queryByNativeAssetRequest
 import io.newm.chain.util.assetNameToHexString
 import io.newm.server.BaseApplicationTests
 import io.newm.server.features.cardano.model.NFTSong
+import io.newm.server.features.nftcdn.repo.NftCdnRepository
+import io.newm.shared.koin.inject
 import kotlinx.coroutines.runBlocking
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.util.UUID
 
@@ -59,6 +61,7 @@ class NFTSongParserTests : BaseApplicationTests() {
     @Test
     fun `NEWM_0 - MURS Bigger Dreams, CIP-60 V1, Single, NFTCDN`() =
         runBlocking {
+            val nftCdnRepository: NftCdnRepository by inject()
             val fingerprint = "asset19dx98tjqckn26yk5hcse4zm6m0aj4gf7z0z378"
             val expectedSong =
                 NFTSong(
@@ -68,8 +71,8 @@ class NFTSongParserTests : BaseApplicationTests() {
                     assetName = "NEWM_0",
                     amount = 1,
                     title = "Bigger Dreams",
-                    imageUrl = buildNftCdnUrl(fingerprint, "image"),
-                    audioUrl = buildNftCdnUrl(fingerprint, "files/0"),
+                    imageUrl = nftCdnRepository.generateImageUrl(fingerprint),
+                    audioUrl = nftCdnRepository.generateFileUrl(fingerprint, 0),
                     duration = 240,
                     artists = listOf("MURS"),
                     genres = listOf("Hip Hop", "Rap"),
@@ -106,6 +109,7 @@ class NFTSongParserTests : BaseApplicationTests() {
     @Test
     fun `NEWM_5 - Daisuke, CIP-60 V1, Single, NFTCDN`() =
         runBlocking {
+            val nftCdnRepository: NftCdnRepository by inject()
             val fingerprint = "asset1effvlkkw02m9ft3ymlkfld8mhlq05wc2hal5du"
             val expectedSong =
                 NFTSong(
@@ -115,8 +119,8 @@ class NFTSongParserTests : BaseApplicationTests() {
                     assetName = "NEWM_5",
                     amount = 1,
                     title = "Daisuke",
-                    imageUrl = buildNftCdnUrl(fingerprint, "image"),
-                    audioUrl = buildNftCdnUrl(fingerprint, "files/0"),
+                    imageUrl = nftCdnRepository.generateImageUrl(fingerprint),
+                    audioUrl = nftCdnRepository.generateFileUrl(fingerprint, 0),
                     duration = 200,
                     artists = listOf("Danketsu", "Mirai Music", "NSTASIA"),
                     genres = listOf("Pop", "House", "Tribal"),
@@ -153,6 +157,7 @@ class NFTSongParserTests : BaseApplicationTests() {
     @Test
     fun `OddShapeShadow, CIP-60 V1, Single, NFTCDN`() =
         runBlocking {
+            val nftCdnRepository: NftCdnRepository by inject()
             val fingerprint = "asset13ht8rn89zwvchfd4d34707xvcrr3clzkgdgj6p"
             val expectedSong =
                 NFTSong(
@@ -162,8 +167,8 @@ class NFTSongParserTests : BaseApplicationTests() {
                     assetName = "OSSDREAMLOFI",
                     amount = 1,
                     title = "Smoke and Fire - Dream Lofi",
-                    imageUrl = buildNftCdnUrl(fingerprint, "image"),
-                    audioUrl = buildNftCdnUrl(fingerprint, "files/0"),
+                    imageUrl = nftCdnRepository.generateImageUrl(fingerprint),
+                    audioUrl = nftCdnRepository.generateFileUrl(fingerprint, 0),
                     duration = 154,
                     artists = listOf("OddShapeShadow"),
                     genres = listOf("lofi", "electronic"),
@@ -200,6 +205,7 @@ class NFTSongParserTests : BaseApplicationTests() {
     @Test
     fun `SickCity442, CIP-60 V2, Single, NFTCDN`() =
         runBlocking {
+            val nftCdnRepository: NftCdnRepository by inject()
             val fingerprint = "asset1w90kz4y6zpgndgk8a837g3f2n4ujtlx0mgpdhw"
             val expectedSong =
                 NFTSong(
@@ -209,8 +215,8 @@ class NFTSongParserTests : BaseApplicationTests() {
                     assetName = "SickCity442",
                     amount = 1,
                     title = "Paper Route",
-                    imageUrl = buildNftCdnUrl(fingerprint, "image"),
-                    audioUrl = buildNftCdnUrl(fingerprint, "files/0"),
+                    imageUrl = nftCdnRepository.generateImageUrl(fingerprint),
+                    audioUrl = nftCdnRepository.generateFileUrl(fingerprint, 0),
                     duration = 225,
                     artists = listOf("Mikey Mo the MC"),
                     genres = listOf("rap", "hip hop"),
@@ -247,6 +253,7 @@ class NFTSongParserTests : BaseApplicationTests() {
     @Test
     fun `SickCity343, Legacy, Single, NFTCDN`() =
         runBlocking {
+            val nftCdnRepository: NftCdnRepository by inject()
             val fingerprint = "asset1twzjexu7m9drdznjrz47f3320jxry7erhnx3e3"
             val expectedSong =
                 NFTSong(
@@ -256,8 +263,8 @@ class NFTSongParserTests : BaseApplicationTests() {
                     assetName = "SickCity343",
                     amount = 1,
                     title = "It Gets Better",
-                    imageUrl = buildNftCdnUrl(fingerprint, "image"),
-                    audioUrl = buildNftCdnUrl(fingerprint, "files/0"),
+                    imageUrl = nftCdnRepository.generateImageUrl(fingerprint),
+                    audioUrl = nftCdnRepository.generateFileUrl(fingerprint, 0),
                     duration = -1L,
                     artists = listOf("Memellionaires"),
                     genres = listOf("Pop-Rock", "Alternative"),
@@ -294,6 +301,7 @@ class NFTSongParserTests : BaseApplicationTests() {
     @Test
     fun `SickCity344, Legacy, Single, NFTCDN`() =
         runBlocking {
+            val nftCdnRepository: NftCdnRepository by inject()
             val fingerprint = "asset163r3tg4qggphswslxmfezu2gfevs35433pqz3e"
             val expectedSong =
                 NFTSong(
@@ -303,8 +311,8 @@ class NFTSongParserTests : BaseApplicationTests() {
                     assetName = "SickCity344",
                     amount = 1,
                     title = "4EVR",
-                    imageUrl = buildNftCdnUrl(fingerprint, "image"),
-                    audioUrl = buildNftCdnUrl(fingerprint, "files/0"),
+                    imageUrl = nftCdnRepository.generateImageUrl(fingerprint),
+                    audioUrl = nftCdnRepository.generateFileUrl(fingerprint, 0),
                     duration = -1L,
                     artists = listOf("Irie Reyna"),
                     genres = listOf("R&B", "Soul"),
@@ -341,6 +349,7 @@ class NFTSongParserTests : BaseApplicationTests() {
     @Test
     fun `SickCity349, Legacy, Single, NFTCDN`() =
         runBlocking {
+            val nftCdnRepository: NftCdnRepository by inject()
             val fingerprint = "asset1n8jsja05t2dlsy3e7wzjcr2a8724qmgmnwv669"
             val expectedSong =
                 NFTSong(
@@ -350,8 +359,8 @@ class NFTSongParserTests : BaseApplicationTests() {
                     assetName = "SickCity349",
                     amount = 1,
                     title = "You, I, and The Ocean",
-                    imageUrl = buildNftCdnUrl(fingerprint, "image"),
-                    audioUrl = buildNftCdnUrl(fingerprint, "files/0"),
+                    imageUrl = nftCdnRepository.generateImageUrl(fingerprint),
+                    audioUrl = nftCdnRepository.generateFileUrl(fingerprint, 0),
                     duration = -1L,
                     artists = listOf("Sam Katman"),
                     genres = listOf("Singer-Songwriter", "Folk Pop"),
@@ -506,6 +515,7 @@ class NFTSongParserTests : BaseApplicationTests() {
     @Test
     fun `Jamison Daniel-Studio Life, Legacy, Multiple, NFTCDN`() =
         runBlocking {
+            val nftCdnRepository: NftCdnRepository by inject()
             val fingerprint = "asset1njl2quag7haj4xcwfckn4rqprrvcwlr08z34ua"
             val policyId = "fb818dd32539209755211ab01cde517b044a742f1bc52e5cc57b25d9"
             val assetName = "JamisonDanielStudioLife218"
@@ -520,8 +530,8 @@ class NFTSongParserTests : BaseApplicationTests() {
                         assetName = assetName,
                         amount = 1,
                         title = "Finally (Master 2021)",
-                        imageUrl = buildNftCdnUrl(fingerprint, "image"),
-                        audioUrl = buildNftCdnUrl(fingerprint, "files/1"),
+                        imageUrl = nftCdnRepository.generateImageUrl(fingerprint),
+                        audioUrl = nftCdnRepository.generateFileUrl(fingerprint, 1),
                         duration = -1L,
                         artists = emptyList(),
                         genres = emptyList(),
@@ -534,8 +544,8 @@ class NFTSongParserTests : BaseApplicationTests() {
                         assetName = assetName,
                         amount = 1,
                         title = "Funky Squirrel (Master 2021)",
-                        imageUrl = buildNftCdnUrl(fingerprint, "image"),
-                        audioUrl = buildNftCdnUrl(fingerprint, "files/2"),
+                        imageUrl = nftCdnRepository.generateImageUrl(fingerprint),
+                        audioUrl = nftCdnRepository.generateFileUrl(fingerprint, 2),
                         duration = -1L,
                         artists = emptyList(),
                         genres = emptyList(),
@@ -548,8 +558,8 @@ class NFTSongParserTests : BaseApplicationTests() {
                         assetName = assetName,
                         amount = 1,
                         title = "Weekend Ride (Master 2021)",
-                        imageUrl = buildNftCdnUrl(fingerprint, "image"),
-                        audioUrl = buildNftCdnUrl(fingerprint, "files/3"),
+                        imageUrl = nftCdnRepository.generateImageUrl(fingerprint),
+                        audioUrl = nftCdnRepository.generateFileUrl(fingerprint, 3),
                         duration = -1L,
                         artists = emptyList(),
                         genres = emptyList(),
@@ -562,8 +572,8 @@ class NFTSongParserTests : BaseApplicationTests() {
                         assetName = assetName,
                         amount = 1,
                         title = "Rave Culture (Master 2021)",
-                        imageUrl = buildNftCdnUrl(fingerprint, "image"),
-                        audioUrl = buildNftCdnUrl(fingerprint, "files/4"),
+                        imageUrl = nftCdnRepository.generateImageUrl(fingerprint),
+                        audioUrl = nftCdnRepository.generateFileUrl(fingerprint, 4),
                         duration = -1L,
                         artists = emptyList(),
                         genres = emptyList(),
@@ -576,8 +586,8 @@ class NFTSongParserTests : BaseApplicationTests() {
                         assetName = assetName,
                         amount = 1,
                         title = "Vibrate (Master 2021)",
-                        imageUrl = buildNftCdnUrl(fingerprint, "image"),
-                        audioUrl = buildNftCdnUrl(fingerprint, "files/5"),
+                        imageUrl = nftCdnRepository.generateImageUrl(fingerprint),
+                        audioUrl = nftCdnRepository.generateFileUrl(fingerprint, 5),
                         duration = -1L,
                         artists = emptyList(),
                         genres = emptyList(),
@@ -590,8 +600,8 @@ class NFTSongParserTests : BaseApplicationTests() {
                         assetName = assetName,
                         amount = 1,
                         title = "Top 40's (Master 2021)",
-                        imageUrl = buildNftCdnUrl(fingerprint, "image"),
-                        audioUrl = buildNftCdnUrl(fingerprint, "files/6"),
+                        imageUrl = nftCdnRepository.generateImageUrl(fingerprint),
+                        audioUrl = nftCdnRepository.generateFileUrl(fingerprint, 6),
                         duration = -1L,
                         artists = emptyList(),
                         genres = emptyList(),
@@ -604,8 +614,8 @@ class NFTSongParserTests : BaseApplicationTests() {
                         assetName = assetName,
                         amount = 1,
                         title = "Acid Trip (Master 2021)",
-                        imageUrl = buildNftCdnUrl(fingerprint, "image"),
-                        audioUrl = buildNftCdnUrl(fingerprint, "files/7"),
+                        imageUrl = nftCdnRepository.generateImageUrl(fingerprint),
+                        audioUrl = nftCdnRepository.generateFileUrl(fingerprint, 7),
                         duration = -1L,
                         artists = emptyList(),
                         genres = emptyList(),
@@ -618,8 +628,8 @@ class NFTSongParserTests : BaseApplicationTests() {
                         assetName = assetName,
                         amount = 1,
                         title = "For The Win (Master 2021)",
-                        imageUrl = buildNftCdnUrl(fingerprint, "image"),
-                        audioUrl = buildNftCdnUrl(fingerprint, "files/8"),
+                        imageUrl = nftCdnRepository.generateImageUrl(fingerprint),
+                        audioUrl = nftCdnRepository.generateFileUrl(fingerprint, 8),
                         duration = -1L,
                         artists = emptyList(),
                         genres = emptyList(),
@@ -632,8 +642,8 @@ class NFTSongParserTests : BaseApplicationTests() {
                         assetName = assetName,
                         amount = 1,
                         title = "Sunday Sermon (Master 2021)",
-                        imageUrl = buildNftCdnUrl(fingerprint, "image"),
-                        audioUrl = buildNftCdnUrl(fingerprint, "files/9"),
+                        imageUrl = nftCdnRepository.generateImageUrl(fingerprint),
+                        audioUrl = nftCdnRepository.generateFileUrl(fingerprint, 9),
                         duration = -1L,
                         artists = emptyList(),
                         genres = emptyList(),
