@@ -1,6 +1,7 @@
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.jetbrains.kotlin.util.capitalizeDecapitalize.toLowerCaseAsciiOnly
 import java.time.Instant
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     application
@@ -148,14 +149,14 @@ tasks {
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    kotlinOptions {
+    compilerOptions {
         freeCompilerArgs =
             listOf(
                 "-Xjsr305=strict",
                 "-opt-in=kotlin.RequiresOptIn",
                 "-opt-in=kotlinx.serialization.ExperimentalSerializationApi"
             )
-        jvmTarget = "21"
+        jvmTarget.set(JvmTarget.JVM_21)
     }
 }
 

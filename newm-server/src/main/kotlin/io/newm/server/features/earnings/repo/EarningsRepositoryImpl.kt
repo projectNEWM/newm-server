@@ -13,13 +13,13 @@ import io.newm.server.features.song.database.SongTable
 import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.features.user.repo.UserRepository
 import io.newm.server.typealiases.SongId
+import java.time.LocalDateTime
+import java.util.UUID
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.batchInsert
 import org.jetbrains.exposed.sql.transactions.transaction
-import java.time.LocalDateTime
-import java.util.*
 
 class EarningsRepositoryImpl(
     private val userRepository: UserRepository,
@@ -66,10 +66,6 @@ class EarningsRepositoryImpl(
         require((royaltyRequest.newmAmount != null) xor (royaltyRequest.usdAmount != null)) {
             "Either newmAmount or usdAmount must be provided, but not both."
         }
-        requireNotNull(royaltyRequest.newmAmount) {
-            // TODO: Currently we only support a NEWM amount until we have a reliable oracle to convert USD to NEWM.
-            "newmAmount must be provided."
-        }
 
         val song = songRepository.get(songId)
         val user = userRepository.get(song.ownerId!!)
@@ -88,18 +84,30 @@ class EarningsRepositoryImpl(
         }
 
         val now = LocalDateTime.now()
-        val totalNewmAmount = royaltyRequest.newmAmount.toBigDecimal()
+        var exchangeRate = ""
+        val totalNewmAmount =
+            royaltyRequest.newmAmount?.toBigDecimal() ?: run {
+                val usdAmount = royaltyRequest.usdAmount!!
+                val newmUsdPrice = cardanoRepository.queryNEWMUSDPrice()
+                val newmAmount = (newmUsdPrice.toBigInteger() * usdAmount).toBigDecimal()
+                exchangeRate = " @ 1 NEWM = ${newmUsdPrice.toBigDecimal().movePointLeft(6).toPlainString()} USD"
+                newmAmount
+            }
 
         val earnings =
             snapshotMap.mapNotNull { (stakeAddress, streamTokenAmount) ->
                 if (stakeAddress == "total_supply") return@mapNotNull null
 
+                // calculate the amount of royalties for this stake address
+                // wait 24 hours before starting the royalties in case somebody
+                // put in a number wrong.
                 Earning(
                     songId = songId,
                     stakeAddress = stakeAddress,
                     amount = (totalNewmAmount * (streamTokenAmount / totalSupply)).toLong(),
-                    memo = "Royalty for: ${song.title} - ${user.stageOrFullName}",
+                    memo = "Royalty for: ${song.title} - ${user.stageOrFullName}$exchangeRate",
                     createdAt = now,
+                    startDate = now.plusHours(24),
                 )
             }
         addAll(earnings)

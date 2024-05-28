@@ -69,6 +69,12 @@ import io.newm.shared.ktx.isValidPassword
 import io.newm.txbuilder.ktx.fingerprint
 import io.newm.txbuilder.ktx.mergeAmounts
 import io.newm.txbuilder.ktx.toNativeAssetMap
+import java.time.Duration
+import java.util.UUID
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
+import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.flow.Flow
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -76,12 +82,6 @@ import org.koin.core.parameter.parametersOf
 import org.slf4j.Logger
 import org.springframework.security.crypto.encrypt.BytesEncryptor
 import org.springframework.security.crypto.encrypt.Encryptors
-import java.time.Duration
-import java.util.UUID
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
-import kotlin.coroutines.suspendCoroutine
-import kotlin.time.Duration.Companion.minutes
 
 internal class CardanoRepositoryImpl(
     private val client: NewmChainCoroutineStub,
@@ -97,6 +97,8 @@ internal class CardanoRepositoryImpl(
     private var isMainnet: Boolean? = null
 
     private var bytesEncryptor: BytesEncryptor? = null
+
+    private val oracleUtxoCache = Caffeine.newBuilder().build<String, Utxo>()
 
     override suspend fun saveKey(
         key: Key,
@@ -219,22 +221,26 @@ internal class CardanoRepositoryImpl(
         return outputUtxo.lovelace.toLong()
     }
 
-    private var oracleUtxoCached: Utxo? = null
-
     /**
-     * Returns the current ada price in USD as a Long assuming 6 decimal places.
+     * Read the Charli3 Oracle token datum value and return the price as a Long.
      */
-    override suspend fun queryAdaUSDPrice(): Long {
+    private suspend fun queryCharli3OracleFeed(
+        cacheKey: String,
+        policy: String,
+        name: String,
+        default: Long = 250000L
+    ): Long {
         val now = System.currentTimeMillis()
+        var cachedOracleUtxo = oracleUtxoCache.getIfPresent(cacheKey)
         val oracleUtxoStartTimestamp =
-            oracleUtxoCached?.datumOrNull
+            cachedOracleUtxo?.datumOrNull
                 ?.listOrNull?.getListItem(0)
                 ?.listOrNull?.getListItem(0)
                 ?.mapOrNull?.getMapItem(1)
                 ?.mapItemValueOrNull?.int
                 ?: Long.MAX_VALUE
         val oracleUtxoEndTimestamp =
-            oracleUtxoCached?.datumOrNull
+            cachedOracleUtxo?.datumOrNull
                 ?.listOrNull?.getListItem(0)
                 ?.listOrNull?.getListItem(0)
                 ?.mapOrNull?.getMapItem(2)
@@ -242,16 +248,17 @@ internal class CardanoRepositoryImpl(
                 ?: Long.MIN_VALUE
         if (now < oracleUtxoStartTimestamp || now > oracleUtxoEndTimestamp) {
             // Outside of range. Get a new oracle utxo
-            oracleUtxoCached =
+            cachedOracleUtxo =
                 client.queryUtxoByNativeAsset(
                     queryByNativeAssetRequest {
-                        policy = CHARLI3_ADA_USD_POLICY
-                        name = CHARLI3_ADA_USD_NAME
+                        this.policy = policy
+                        this.name = name
                     }
                 )
+            oracleUtxoCache.put(cacheKey, cachedOracleUtxo)
         }
         val usdPrice =
-            oracleUtxoCached?.datumOrNull
+            cachedOracleUtxo?.datumOrNull
                 ?.listOrNull?.getListItem(0)
                 ?.listOrNull?.getListItem(0)
                 ?.mapOrNull?.getMapItem(0)
@@ -260,19 +267,43 @@ internal class CardanoRepositoryImpl(
             if (isMainnet()) {
                 throw IllegalStateException("Oracle Utxo does not contain a USD price!")
             } else {
-                // On testnet, we don't have an oracle utxo, so we just return a dummy price of $0.25
-                250000L
+                // On testnet, we don't have an oracle utxo, so we just return a default price
+                default
             }
         }
     }
+
+    /**
+     * Returns the current ada price in USD as a Long assuming 6 decimal places.
+     */
+    override suspend fun queryAdaUSDPrice(): Long =
+        queryCharli3OracleFeed(
+            "ada",
+            CHARLI3_ADA_USD_POLICY,
+            CHARLI3_ADA_USD_NAME,
+        )
+
+    /**
+     * Returns the current NEWM price in USD as a Long assuming 6 decimal places.
+     */
+    override suspend fun queryNEWMUSDPrice(): Long =
+        queryCharli3OracleFeed(
+            "newm",
+            CHARLI3_NEWM_USD_POLICY,
+            CHARLI3_NEWM_USD_NAME,
+            5000L,
+        )
 
     override suspend fun queryNativeTokenUSDPrice(
         policyId: String,
         assetName: String
     ): Long {
-        // TODO: Implement this. Must cache values since we'll be calling often with the same assets (e.g., NEWM token)
-        // for now just hardcoded to $0.005
-        return 5000L
+        if ((isMainnet() && policyId == NEWM_TOKEN_POLICY && assetName == NEWM_TOKEN_NAME) ||
+            (!isMainnet() && policyId == NEWM_TOKEN_POLICY_TEST && assetName == NEWM_TOKEN_NAME_TEST)
+        ) {
+            return queryNEWMUSDPrice()
+        }
+        throw IllegalArgumentException("Unsupported token for price API - policyId: $policyId, assetName: $assetName")
     }
 
     override suspend fun snapshotToken(
@@ -586,8 +617,20 @@ internal class CardanoRepositoryImpl(
     companion object {
         const val MUTEX_NAME = "newm-server"
 
+        // NEWM token information - mainnet
+        private const val NEWM_TOKEN_POLICY = "682fe60c9918842b3323c43b5144bc3d52a23bd2fb81345560d73f63"
+        private const val NEWM_TOKEN_NAME = "4e45574d"
+
+        // NEWM token information - testnet
+        private const val NEWM_TOKEN_POLICY_TEST = "769c4c6e9bc3ba5406b9b89fb7beb6819e638ff2e2de63f008d5bcff"
+        private const val NEWM_TOKEN_NAME_TEST = "744e45574d"
+
         // Charli3 ADA/USD OracleFeed token
         private const val CHARLI3_ADA_USD_POLICY = "08c56c0fa73748a23c3bc1d9e6a60a4187416fc4ff8fe3475506990e"
         private const val CHARLI3_ADA_USD_NAME = "4f7261636c6546656564"
+
+        // Charli3 NEWM/USD OracleFeed token
+        private const val CHARLI3_NEWM_USD_POLICY = "f155a26044efe91b3c44f87a7536d2d631c847717930ff547ae9d05c"
+        private const val CHARLI3_NEWM_USD_NAME = "4f7261636c6546656564"
     }
 }

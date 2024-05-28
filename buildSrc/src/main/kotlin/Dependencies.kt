@@ -15,7 +15,7 @@ object Dependencies {
     }
 
     object KotlinPlugin {
-        const val VERSION = "1.9.24"
+        const val VERSION = "2.0.0"
         const val JVM_ID = "jvm"
         const val SERIALIZATION_ID = "plugin.serialization"
     }
@@ -47,7 +47,7 @@ object Dependencies {
     }
 
     object KotlinXDateTime {
-        private const val VERSION = "0.5.0"
+        private const val VERSION = "0.6.0"
 
         const val DATETIME = "org.jetbrains.kotlinx:kotlinx-datetime:$VERSION"
     }
@@ -132,7 +132,7 @@ object Dependencies {
     }
 
     object FlywayDB {
-        private const val VERSION = "10.12.0"
+        private const val VERSION = "10.13.0"
 
         const val CORE = "org.flywaydb:flyway-core:$VERSION"
         const val POSTGRES = "org.flywaydb:flyway-database-postgresql:$VERSION"
@@ -201,7 +201,7 @@ object Dependencies {
     }
 
     object SpringSecurity {
-        private const val VERSION = "6.2.4"
+        private const val VERSION = "6.3.0"
 
         const val CORE = "org.springframework.security:spring-security-core:$VERSION"
     }
@@ -214,8 +214,8 @@ object Dependencies {
     }
 
     object Aws {
-        private const val VERSION = "1.12.720"
-        private const val VERSION2 = "2.25.50"
+        private const val VERSION = "1.12.730"
+        private const val VERSION2 = "2.25.60"
         private const val JAXB_VERSION = "2.3.1"
 
         const val BOM = "com.amazonaws:aws-java-sdk-bom:$VERSION"
@@ -255,7 +255,7 @@ object Dependencies {
     }
 
     object Mockk {
-        private const val VERSION = "1.13.10"
+        private const val VERSION = "1.13.11"
 
         const val MOCKK = "io.mockk:mockk:$VERSION"
     }
@@ -274,13 +274,13 @@ object Dependencies {
     }
 
     object Newm {
-        private const val VERSION = "2.2.0"
+        private const val VERSION = "2.2.1"
 
         const val KOGMIOS = "io.newm:kogmios:$VERSION"
     }
 
     object Grpc {
-        private const val VERSION = "1.63.0"
+        private const val VERSION = "1.64.0"
 
         const val STUB = "io.grpc:grpc-stub:$VERSION"
         const val API = "io.grpc:grpc-api:$VERSION"
@@ -297,7 +297,7 @@ object Dependencies {
     }
 
     object Protobuf {
-        private const val VERSION = "4.26.1"
+        private const val VERSION = "4.27.0"
 
         const val JAVA_UTIL = "com.google.protobuf:protobuf-java-util:$VERSION"
         const val KOTLIN = "com.google.protobuf:protobuf-kotlin:$VERSION"
@@ -331,7 +331,7 @@ object Dependencies {
     }
 
     object QRCodeKotlin {
-        private const val VERSION = "4.1.1"
+        private const val VERSION = "4.2.0"
 
         const val ALL = "io.github.g0dkar:qrcode-kotlin:$VERSION"
     }

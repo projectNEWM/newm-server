@@ -1,5 +1,6 @@
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 buildscript {
     repositories {
@@ -66,13 +67,13 @@ subprojects {
     }
 
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-        kotlinOptions {
+        compilerOptions {
             freeCompilerArgs =
                 listOf(
                     "-Xjsr305=strict",
                     "-opt-in=kotlin.RequiresOptIn",
                 )
-            jvmTarget = "21"
+            jvmTarget.set(JvmTarget.JVM_21)
         }
     }
 
