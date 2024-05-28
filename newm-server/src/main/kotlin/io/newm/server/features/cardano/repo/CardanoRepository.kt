@@ -41,6 +41,8 @@ interface CardanoRepository {
 
     suspend fun queryAdaUSDPrice(): Long
 
+    suspend fun queryNEWMUSDPrice(): Long
+
     suspend fun queryNativeTokenUSDPrice(
         policyId: String,
         assetName: String

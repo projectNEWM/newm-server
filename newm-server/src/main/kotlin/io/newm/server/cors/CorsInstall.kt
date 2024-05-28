@@ -28,6 +28,6 @@ fun Application.installCORS() {
                 allowHost(host)
             }
         }
-        this@installCORS.log.debug("CORS allowed hosts: $hosts")
+        this@installCORS.log.info("CORS allowed hosts: $hosts")
     }
 }
