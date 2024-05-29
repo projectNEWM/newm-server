@@ -76,6 +76,8 @@ import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf
@@ -98,7 +100,19 @@ internal class CardanoRepositoryImpl(
 
     private var bytesEncryptor: BytesEncryptor? = null
 
-    private val oracleUtxoCache = Caffeine.newBuilder().build<String, Utxo>()
+    private val oracleMutex = Mutex()
+
+    private val oracleUtxoCache =
+        Caffeine
+            .newBuilder()
+            .expireAfterWrite(Duration.ofMinutes(5L))
+            .build<String, Utxo>()
+
+    // It's better to have SOME data than none at all, so use the failover cache even if the data is stale.
+    private val failoverOracleUtxoCache =
+        Caffeine
+            .newBuilder()
+            .build<String, Utxo>()
 
     override suspend fun saveKey(
         key: Key,
@@ -230,45 +244,50 @@ internal class CardanoRepositoryImpl(
         name: String,
         default: Long = 250000L
     ): Long {
-        val now = System.currentTimeMillis()
-        var cachedOracleUtxo = oracleUtxoCache.getIfPresent(cacheKey)
-        val oracleUtxoStartTimestamp =
-            cachedOracleUtxo?.datumOrNull
-                ?.listOrNull?.getListItem(0)
-                ?.listOrNull?.getListItem(0)
-                ?.mapOrNull?.getMapItem(1)
-                ?.mapItemValueOrNull?.int
-                ?: Long.MAX_VALUE
-        val oracleUtxoEndTimestamp =
-            cachedOracleUtxo?.datumOrNull
-                ?.listOrNull?.getListItem(0)
-                ?.listOrNull?.getListItem(0)
-                ?.mapOrNull?.getMapItem(2)
-                ?.mapItemValueOrNull?.int
-                ?: Long.MIN_VALUE
-        if (now < oracleUtxoStartTimestamp || now > oracleUtxoEndTimestamp) {
-            // Outside of range. Get a new oracle utxo
-            cachedOracleUtxo =
-                client.queryUtxoByNativeAsset(
-                    queryByNativeAssetRequest {
-                        this.policy = policy
-                        this.name = name
-                    }
-                )
-            oracleUtxoCache.put(cacheKey, cachedOracleUtxo)
-        }
-        val usdPrice =
-            cachedOracleUtxo?.datumOrNull
-                ?.listOrNull?.getListItem(0)
-                ?.listOrNull?.getListItem(0)
-                ?.mapOrNull?.getMapItem(0)
-                ?.mapItemValueOrNull?.int
-        return usdPrice ?: run {
-            if (isMainnet()) {
-                throw IllegalStateException("Oracle Utxo does not contain a USD price!")
-            } else {
-                // On testnet, we don't have an oracle utxo, so we just return a default price
-                default
+        // We need to lock this operation to prevent too many requests from hitting the newm-chain at the same time
+        oracleMutex.withLock {
+            val now = System.currentTimeMillis()
+            var cachedOracleUtxo = oracleUtxoCache.getIfPresent(cacheKey)
+            val failoverOracleUtxo = failoverOracleUtxoCache.getIfPresent(cacheKey)
+            val oracleUtxoStartTimestamp =
+                cachedOracleUtxo?.datumOrNull
+                    ?.listOrNull?.getListItem(0)
+                    ?.listOrNull?.getListItem(0)
+                    ?.mapOrNull?.getMapItem(1)
+                    ?.mapItemValueOrNull?.int
+                    ?: Long.MAX_VALUE
+            val oracleUtxoEndTimestamp =
+                cachedOracleUtxo?.datumOrNull
+                    ?.listOrNull?.getListItem(0)
+                    ?.listOrNull?.getListItem(0)
+                    ?.mapOrNull?.getMapItem(2)
+                    ?.mapItemValueOrNull?.int
+                    ?: Long.MIN_VALUE
+            if (now < oracleUtxoStartTimestamp || now > oracleUtxoEndTimestamp) {
+                // Outside of range. Get a new oracle utxo
+                cachedOracleUtxo =
+                    client.queryUtxoByNativeAsset(
+                        queryByNativeAssetRequest {
+                            this.policy = policy
+                            this.name = name
+                        }
+                    )
+                oracleUtxoCache.put(cacheKey, cachedOracleUtxo)
+                failoverOracleUtxoCache.put(cacheKey, cachedOracleUtxo)
+            }
+            val usdPrice =
+                (cachedOracleUtxo ?: failoverOracleUtxo)?.datumOrNull
+                    ?.listOrNull?.getListItem(0)
+                    ?.listOrNull?.getListItem(0)
+                    ?.mapOrNull?.getMapItem(0)
+                    ?.mapItemValueOrNull?.int
+            return usdPrice ?: run {
+                if (isMainnet()) {
+                    throw IllegalStateException("Oracle Utxo does not contain a USD price!")
+                } else {
+                    // On testnet, we don't have an oracle utxo, so we just return a default price
+                    default
+                }
             }
         }
     }
