@@ -33,13 +33,13 @@ import io.newm.kogmios.protocols.model.result.UtxoResultItem
 import io.newm.txbuilder.TransactionBuilder
 import io.newm.txbuilder.TransactionBuilder.Companion.transactionBuilder
 import io.newm.txbuilder.ktx.toCborObject
+import java.util.UUID
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
-import java.util.UUID
 
 @Disabled("Disabled until we get demeter working again.")
 class TransactionBuilderTest {
@@ -191,7 +191,7 @@ class TransactionBuilderTest {
                     val sourceUtxosSorted = sortedSetOf<String>()
 
                     val (txId, cborBytes) =
-                        transactionBuilder(protocolParams, calculateTxExecutionUnits) {
+                        transactionBuilder(protocolParams, calculateTxExecutionUnits = calculateTxExecutionUnits) {
                             sourceUtxos {
                                 addAll(
                                     srcUtxos.map {
@@ -494,7 +494,7 @@ class TransactionBuilderTest {
                 }
 
                 val (_, cborByteArray) =
-                    transactionBuilder(protocolParams, calculateTxExecutionUnits) {
+                    transactionBuilder(protocolParams, calculateTxExecutionUnits = calculateTxExecutionUnits) {
                         sourceUtxos {
                             add(
                                 utxo {

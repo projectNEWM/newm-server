@@ -1,5 +1,6 @@
 package io.newm.server.statuspages
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
@@ -9,15 +10,12 @@ import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.response.respond
 import io.newm.server.logging.captureToSentry
 import io.newm.shared.exception.HttpStatusException
-import io.newm.shared.koin.inject
 import org.jetbrains.exposed.dao.exceptions.EntityNotFoundException
 import org.jetbrains.exposed.exceptions.ExposedSQLException
-import org.koin.core.parameter.parametersOf
-import org.slf4j.Logger
 
 fun Application.installStatusPages() {
     install(StatusPages) {
-        val logger: Logger by inject { parametersOf(javaClass.simpleName) }
+        val logger = KotlinLogging.logger {}
         exception<Throwable> { call, cause ->
             when (cause) {
                 is HttpStatusException -> call.respondStatus(cause.statusCode, cause)
@@ -25,13 +23,13 @@ fun Application.installStatusPages() {
                 is BadRequestException -> call.respondStatus(HttpStatusCode.BadRequest, cause)
                 is IllegalArgumentException,
                 is ExposedSQLException -> {
-                    logger.error(cause.message, cause)
+                    logger.error(cause) { "${cause.message}" }
                     call.respondStatus(HttpStatusCode.UnprocessableEntity, cause)
                     cause.captureToSentry()
                 }
 
                 else -> {
-                    logger.error("InternalServerError", cause)
+                    logger.error(cause) { "InternalServerError" }
                     call.respondStatus(HttpStatusCode.InternalServerError, cause)
                     cause.captureToSentry()
                 }

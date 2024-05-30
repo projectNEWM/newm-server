@@ -23,13 +23,16 @@ import io.newm.chain.grpc.outputUtxo
 import io.newm.chain.grpc.redeemer
 import io.newm.chain.util.Blake2b
 import io.newm.chain.util.toHexString
+import io.newm.kogmios.protocols.model.CardanoEra
 import io.newm.kogmios.protocols.model.result.EvaluateTxResult
 import io.newm.kogmios.protocols.model.result.ProtocolParametersResult
 import io.newm.txbuilder.ktx.sign
 import io.newm.txbuilder.ktx.toCborObject
+import io.newm.txbuilder.ktx.toConwayCborObject
 import io.newm.txbuilder.ktx.toNativeAssetCborMap
 import io.newm.txbuilder.ktx.toNativeAssetMap
 import io.newm.txbuilder.ktx.toRedeemerTagAndIndex
+import io.newm.txbuilder.ktx.toSetTag
 import io.newm.txbuilder.ktx.withMinUtxo
 import java.math.BigInteger
 import java.security.SecureRandom
@@ -41,6 +44,7 @@ import kotlin.math.ceil
  */
 class TransactionBuilder(
     private val protocolParameters: ProtocolParametersResult,
+    private val cardanoEra: CardanoEra = CardanoEra.BABBAGE,
     private val calculateTxExecutionUnits: (suspend (ByteArray) -> EvaluateTxResult)? = null,
 ) {
     private val secureRandom by lazy { SecureRandom() }
@@ -51,20 +55,22 @@ class TransactionBuilder(
     private val maxTxExecutionMemory by lazy { protocolParameters.maxExecutionUnitsPerTransaction.memory.toLong() }
     private val maxTxExecutionSteps by lazy { protocolParameters.maxExecutionUnitsPerTransaction.cpu.toLong() }
 
-    private var sourceUtxos: MutableList<Utxo>? = null
-    private var outputUtxos: MutableList<OutputUtxo>? = null
-    private var signingKeys: MutableList<SigningKey>? = null
-    private var signatures: MutableList<Signature>? = null
+    private var sourceUtxos: MutableSet<Utxo>? = null
+    private var outputUtxos: MutableSet<OutputUtxo>? = null
+    private var signingKeys: MutableSet<SigningKey>? = null
+    private var signatures: MutableSet<Signature>? = null
     private var mintTokens: MutableList<NativeAsset>? = null
-    private var referenceInputs: MutableList<Utxo>? = null
+    private var referenceInputs: MutableSet<Utxo>? = null
     private var nativeScripts: MutableList<NativeScript>? = null
     private var plutusV1Scripts: MutableList<ByteArray>? = null
     private var plutusV2Scripts: MutableList<ByteArray>? = null
+    private var plutusV3Scripts: MutableList<ByteArray>? = null
     private var auxNativeScripts: MutableList<NativeScript>? = null
     private var auxPlutusV1Scripts: MutableList<ByteArray>? = null
     private var auxPlutusV2Scripts: MutableList<ByteArray>? = null
-    private var collateralUtxos: MutableList<Utxo>? = null
-    private var requiredSigners: MutableList<ByteArray>? = null
+    private var auxPlutusV3Scripts: MutableList<ByteArray>? = null
+    private var collateralUtxos: MutableSet<Utxo>? = null
+    private var requiredSigners: MutableSet<ByteArray>? = null
     private var redeemers: MutableList<Redeemer>? = null
     private var datums: MutableList<PlutusData>? = null
 
@@ -85,30 +91,30 @@ class TransactionBuilder(
     val transactionId: String
         get() = _transactionId.toHexString()
 
-    fun sourceUtxos(block: MutableList<Utxo>.() -> Unit) {
+    fun sourceUtxos(block: MutableSet<Utxo>.() -> Unit) {
         if (this.sourceUtxos == null) {
-            this.sourceUtxos = mutableListOf()
+            this.sourceUtxos = mutableSetOf()
         }
         block.invoke(this.sourceUtxos!!)
     }
 
-    fun outputUtxos(block: MutableList<OutputUtxo>.() -> Unit) {
+    fun outputUtxos(block: MutableSet<OutputUtxo>.() -> Unit) {
         if (this.outputUtxos == null) {
-            this.outputUtxos = mutableListOf()
+            this.outputUtxos = mutableSetOf()
         }
         block.invoke(this.outputUtxos!!)
     }
 
-    fun signingKeys(block: MutableList<SigningKey>.() -> Unit) {
+    fun signingKeys(block: MutableSet<SigningKey>.() -> Unit) {
         if (this.signingKeys == null) {
-            this.signingKeys = mutableListOf()
+            this.signingKeys = mutableSetOf()
         }
         block.invoke(this.signingKeys!!)
     }
 
-    fun signatures(block: MutableList<Signature>.() -> Unit) {
+    fun signatures(block: MutableSet<Signature>.() -> Unit) {
         if (this.signatures == null) {
-            this.signatures = mutableListOf()
+            this.signatures = mutableSetOf()
         }
         block.invoke(this.signatures!!)
     }
@@ -120,23 +126,23 @@ class TransactionBuilder(
         block.invoke(this.mintTokens!!)
     }
 
-    fun collateralUtxos(block: MutableList<Utxo>.() -> Unit) {
+    fun collateralUtxos(block: MutableSet<Utxo>.() -> Unit) {
         if (this.collateralUtxos == null) {
-            this.collateralUtxos = mutableListOf()
+            this.collateralUtxos = mutableSetOf()
         }
         block.invoke(this.collateralUtxos!!)
     }
 
-    fun requiredSigners(block: MutableList<ByteArray>.() -> Unit) {
+    fun requiredSigners(block: MutableSet<ByteArray>.() -> Unit) {
         if (this.requiredSigners == null) {
-            this.requiredSigners = mutableListOf()
+            this.requiredSigners = mutableSetOf()
         }
         block.invoke(this.requiredSigners!!)
     }
 
-    fun referenceInputs(block: MutableList<Utxo>.() -> Unit) {
+    fun referenceInputs(block: MutableSet<Utxo>.() -> Unit) {
         if (this.referenceInputs == null) {
-            this.referenceInputs = mutableListOf()
+            this.referenceInputs = mutableSetOf()
         }
         block.invoke(this.referenceInputs!!)
     }
@@ -162,6 +168,13 @@ class TransactionBuilder(
         block.invoke(this.plutusV2Scripts!!)
     }
 
+    fun plutusV3Scripts(block: MutableList<ByteArray>.() -> Unit) {
+        if (this.plutusV3Scripts == null) {
+            this.plutusV3Scripts = mutableListOf()
+        }
+        block.invoke(this.plutusV3Scripts!!)
+    }
+
     fun auxNativeScripts(block: MutableList<NativeScript>.() -> Unit) {
         if (this.auxNativeScripts == null) {
             this.auxNativeScripts = mutableListOf()
@@ -181,6 +194,13 @@ class TransactionBuilder(
             this.auxPlutusV2Scripts = mutableListOf()
         }
         block.invoke(this.auxPlutusV2Scripts!!)
+    }
+
+    fun auxPlutusV3Scripts(block: MutableList<ByteArray>.() -> Unit) {
+        if (this.auxPlutusV3Scripts == null) {
+            this.auxPlutusV3Scripts = mutableListOf()
+        }
+        block.invoke(this.auxPlutusV3Scripts!!)
     }
 
     fun redeemers(block: MutableList<Redeemer>.() -> Unit) {
@@ -282,7 +302,11 @@ class TransactionBuilder(
             AUX_DATA_KEY_PLUTUS_V2_SCRIPT to
                 auxPlutusV2Scripts.takeUnless { it.isNullOrEmpty() }?.let {
                     CborArray.create(it.map { plutusV2Script -> CborByteString.create(plutusV2Script) })
-                }
+                },
+            AUX_DATA_KEY_PLUTUS_V3_SCRIPT to
+                auxPlutusV2Scripts.takeUnless { it.isNullOrEmpty() }?.let {
+                    CborArray.create(it.map { plutusV3Script -> CborByteString.create(plutusV3Script) })
+                },
         ).filterValues { it != null }.ifEmpty { null }?.let {
             CborMap.create(it, AUX_DATA_TAG).also { auxData ->
                 auxDataHash = Blake2b.hash256(auxData.toCborByteArray())
@@ -297,7 +321,13 @@ class TransactionBuilder(
             val datumBytes = createDatumWitnesses()?.toCborByteArray() ?: ByteArray(0)
             val languageViewMap =
                 if (!redeemers.isNullOrEmpty()) {
-                    protocolParameters.plutusCostModels.plutusV2!!.toCborObject().toCborByteArray()
+                    if (!plutusV3Scripts.isNullOrEmpty() || !auxPlutusV3Scripts.isNullOrEmpty()) {
+                        // Plutus V3
+                        protocolParameters.plutusCostModels.plutusV3!!.toCborObject().toCborByteArray()
+                    } else {
+                        // Plutus V2
+                        protocolParameters.plutusCostModels.plutusV2!!.toCborObject().toCborByteArray()
+                    }
                 } else {
                     // empty cbor map
                     ByteArray(1) { 0xa0.toByte() }
@@ -421,7 +451,7 @@ class TransactionBuilder(
         return CborMap.create(
             mapOf<CborObject, CborObject?>(
                 // Utxo inputs
-                TX_KEY_UTXO_INPUTS to sourceUtxos!!.toCborObject(),
+                TX_KEY_UTXO_INPUTS to sourceUtxos!!.toCborObject(cardanoEra),
                 // Utxo outputs
                 TX_KEY_UTXO_OUTPUTS to createOutputUtxos(),
                 TX_KEY_FEE to (fee?.let { CborInteger.create(it) } ?: CborInteger.create(DUMMY_TX_FEE)),
@@ -436,17 +466,23 @@ class TransactionBuilder(
                 TX_KEY_VALIDITY_INTERVAL_START to validityIntervalStart?.let { CborInteger.create(it) },
                 TX_KEY_MINT to mintTokens?.toNativeAssetCborMap(),
                 TX_KEY_SCRIPT_DATA_HASH to scriptDataHash?.let { CborByteString.create(it) },
-                TX_KEY_COLLATERAL_INPUTS to collateralUtxos?.toCborObject(),
+                TX_KEY_COLLATERAL_INPUTS to collateralUtxos?.toCborObject(cardanoEra),
                 TX_KEY_REQUIRED_SIGNERS to
                     requiredSigners.takeUnless { it.isNullOrEmpty() }?.let {
-                        CborArray.create(
-                            it.map { requiredSigner -> CborByteString.create(requiredSigner) }
-                        )
+                        CborArray.create(it.map { requiredSigner -> CborByteString.create(requiredSigner) }, cardanoEra.toSetTag())
                     },
                 TX_KEY_NETWORK_ID to networkId?.number?.let { CborInteger.create(it) },
                 TX_KEY_COLLATERAL_RETURN to collateralReturn?.toCborObject(),
                 TX_KEY_TOTAL_COLLATERAL to totalCollateral?.let { CborInteger.create(it) },
-                TX_KEY_REFERENCE_INPUTS to referenceInputs?.toCborObject(),
+                TX_KEY_REFERENCE_INPUTS to referenceInputs?.toCborObject(cardanoEra),
+                // TODO: Implement voting procedures
+                TX_KEY_VOTING_PROCEDURES to null,
+                // TODO: Implement proposal procedures
+                TX_KEY_PROPOSAL_PROCEDURES to null,
+                // TODO: Implement current treasury value
+                TX_KEY_CURRENT_TREASURY_VALUE to null,
+                // TODO: Implement donation
+                TX_KEY_DONATION to null,
             ).filterValues { it != null }
         )
     }
@@ -521,6 +557,7 @@ class TransactionBuilder(
                 WITNESS_SET_KEY_PLUTUS_DATA to createDatumWitnesses(),
                 WITNESS_SET_KEY_REDEEMER to createRedeemerWitnesses(),
                 WITNESS_SET_KEY_PLUTUS_V2_SCRIPT to createPlutusV2ScriptWitnesses(),
+                WITNESS_SET_KEY_PLUTUS_V3_SCRIPT to createPlutusV3ScriptWitnesses(),
             ).filterValues { it != null }
         )
     }
@@ -564,37 +601,69 @@ class TransactionBuilder(
             }
 
         return (rawSignatures + keySignatures + requiredSignerDummySignatures).takeUnless { it.isEmpty() }?.let {
-            CborArray.create(it)
+            CborArray.create(it, cardanoEra.toSetTag(),)
         }
     }
 
     private fun createNativeScriptWitnesses(): CborObject? {
         return nativeScripts.takeUnless { it.isNullOrEmpty() }?.let {
-            CborArray.create(it.map { nativeScript -> nativeScript.toCborObject() })
+            CborArray.create(
+                it.map { nativeScript -> nativeScript.toCborObject() },
+                cardanoEra.toSetTag(),
+            )
         }
     }
 
     private fun createPlutusV1ScriptWitnesses(): CborObject? {
         return plutusV1Scripts.takeUnless { it.isNullOrEmpty() }?.let {
-            CborArray.create(it.map { plutusV1Script -> CborByteString.create(plutusV1Script) })
+            CborArray.create(
+                it.map { plutusV1Script -> CborByteString.create(plutusV1Script) },
+                cardanoEra.toSetTag(),
+            )
         }
     }
 
     private fun createPlutusV2ScriptWitnesses(): CborObject? {
         return plutusV2Scripts.takeUnless { it.isNullOrEmpty() }?.let {
-            CborArray.create(it.map { plutusV2Script -> CborByteString.create(plutusV2Script) })
+            CborArray.create(
+                it.map { plutusV2Script -> CborByteString.create(plutusV2Script) },
+                cardanoEra.toSetTag(),
+            )
+        }
+    }
+
+    private fun createPlutusV3ScriptWitnesses(): CborObject? {
+        return plutusV3Scripts.takeUnless { it.isNullOrEmpty() }?.let {
+            CborArray.create(
+                it.map { plutusV3Script -> CborByteString.create(plutusV3Script) },
+                cardanoEra.toSetTag(),
+            )
         }
     }
 
     private fun createRedeemerWitnesses(): CborObject? {
         return redeemers.takeUnless { it.isNullOrEmpty() }?.let {
-            CborArray.create(it.map { redeemer -> redeemer.toCborObject(maxTxExecutionMemory, maxTxExecutionSteps) })
+            when (cardanoEra) {
+                CardanoEra.CONWAY -> {
+                    CborMap.create(
+                        it.associate { redeemer -> redeemer.toConwayCborObject(maxTxExecutionMemory, maxTxExecutionSteps) }
+                    )
+                }
+                else -> {
+                    CborArray.create(
+                        it.map { redeemer -> redeemer.toCborObject(maxTxExecutionMemory, maxTxExecutionSteps) }
+                    )
+                }
+            }
         }
     }
 
     private fun createDatumWitnesses(): CborObject? {
         return datums.takeUnless { it.isNullOrEmpty() }?.let {
-            CborArray.create(it.map { plutusData -> plutusData.toCborObject() })
+            CborArray.create(
+                it.map { plutusData -> plutusData.toCborObject() },
+                cardanoEra.toSetTag(),
+            )
         }
     }
 
@@ -635,6 +704,10 @@ class TransactionBuilder(
             addAll(request.plutusV2ScriptsList.map { it.toByteArray() })
         }
 
+        plutusV3Scripts {
+            addAll(request.plutusV3ScriptsList.map { it.toByteArray() })
+        }
+
         auxNativeScripts {
             addAll(request.auxNativeScriptsList)
         }
@@ -645,6 +718,10 @@ class TransactionBuilder(
 
         auxPlutusV2Scripts {
             addAll(request.auxPlutusV2ScriptsList.map { it.toByteArray() })
+        }
+
+        auxPlutusV3Scripts {
+            addAll(request.auxPlutusV3ScriptsList.map { it.toByteArray() })
         }
 
         collateralUtxos {
@@ -712,10 +789,11 @@ class TransactionBuilder(
     companion object {
         suspend fun transactionBuilder(
             protocolParameters: ProtocolParametersResult,
+            cardanoEra: CardanoEra = CardanoEra.BABBAGE,
             calculateTxExecutionUnits: (suspend (ByteArray) -> EvaluateTxResult)? = null,
             block: TransactionBuilder.() -> Unit
         ): Pair<String, ByteArray> {
-            val transactionBuilder = TransactionBuilder(protocolParameters, calculateTxExecutionUnits)
+            val transactionBuilder = TransactionBuilder(protocolParameters, cardanoEra, calculateTxExecutionUnits)
             block.invoke(transactionBuilder)
             val cborBytes = transactionBuilder.build()
             return Pair(transactionBuilder.transactionId, cborBytes)
@@ -738,6 +816,10 @@ class TransactionBuilder(
         private val TX_KEY_COLLATERAL_RETURN by lazy { CborInteger.create(16) }
         private val TX_KEY_TOTAL_COLLATERAL by lazy { CborInteger.create(17) }
         private val TX_KEY_REFERENCE_INPUTS by lazy { CborInteger.create(18) }
+        private val TX_KEY_VOTING_PROCEDURES by lazy { CborInteger.create(19) }
+        private val TX_KEY_PROPOSAL_PROCEDURES by lazy { CborInteger.create(20) }
+        private val TX_KEY_CURRENT_TREASURY_VALUE by lazy { CborInteger.create(21) }
+        private val TX_KEY_DONATION by lazy { CborInteger.create(22) }
 
         internal val UTXO_OUTPUT_KEY_ADDRESS by lazy { CborInteger.create(0) }
         internal val UTXO_OUTPUT_KEY_AMOUNT by lazy { CborInteger.create(1) }
@@ -751,11 +833,13 @@ class TransactionBuilder(
         private val WITNESS_SET_KEY_PLUTUS_DATA by lazy { CborInteger.create(4) }
         private val WITNESS_SET_KEY_REDEEMER by lazy { CborInteger.create(5) }
         private val WITNESS_SET_KEY_PLUTUS_V2_SCRIPT by lazy { CborInteger.create(6) }
+        private val WITNESS_SET_KEY_PLUTUS_V3_SCRIPT by lazy { CborInteger.create(7) }
 
         private val AUX_DATA_KEY_METADATA by lazy { CborInteger.create(0) }
         private val AUX_DATA_KEY_NATIVE_SCRIPT by lazy { CborInteger.create(1) }
         private val AUX_DATA_KEY_PLUTUS_V1_SCRIPT by lazy { CborInteger.create(2) }
         private val AUX_DATA_KEY_PLUTUS_V2_SCRIPT by lazy { CborInteger.create(3) }
+        private val AUX_DATA_KEY_PLUTUS_V3_SCRIPT by lazy { CborInteger.create(4) }
 
         internal val DATUM_KEY_HASH by lazy { CborInteger.create(0) }
         internal val DATUM_KEY_INLINE by lazy { CborInteger.create(1) }

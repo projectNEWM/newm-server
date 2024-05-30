@@ -31,6 +31,7 @@ import io.newm.chain.util.toCreatedUtxoMap
 import io.newm.chain.util.toHexString
 import io.newm.kogmios.StateQueryClient
 import io.newm.kogmios.protocols.model.Block
+import io.newm.kogmios.protocols.model.CardanoEra
 import io.newm.kogmios.protocols.model.result.EvaluateTxResult
 import io.newm.objectpool.useInstance
 import io.newm.shared.koin.inject
@@ -42,6 +43,9 @@ import io.newm.txbuilder.ktx.toNativeAssetMap
 import io.newm.txbuilder.ktx.verify
 import io.newm.txbuilder.ktx.withMinUtxo
 import io.sentry.Sentry
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
+import kotlin.experimental.and
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -56,14 +60,12 @@ import kotlinx.coroutines.withTimeoutOrNull
 import org.koin.core.parameter.parametersOf
 import org.koin.core.qualifier.named
 import org.slf4j.Logger
-import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
-import kotlin.experimental.and
 
 class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
     private val log: Logger by inject { parametersOf("NewmChainService") }
     private val ledgerRepository: LedgerRepository by inject()
     private val txSubmitClientPool: TxSubmitClientPool by inject()
+    private val stateQueryClientPool: StateQueryClientPool by inject()
     private val submittedTransactionCache: SubmittedTransactionCache by inject()
     private val confirmedBlockFlow: MutableSharedFlow<Block> by inject(named("confirmedBlockFlow"))
 
@@ -230,6 +232,15 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
         }
     }
 
+    override suspend fun queryCardanoEra(request: CardanoEraRequest): CardanoEraResponse {
+        return cardanoEraResponse {
+            era =
+                stateQueryClientPool.useInstance { client ->
+                    io.newm.chain.grpc.CardanoEra.valueOf(client.health().currentEra.name)
+                }
+        }
+    }
+
     override suspend fun monitorPaymentAddress(request: MonitorPaymentAddressRequest): MonitorPaymentAddressResponse {
         try {
             val requestNativeAssetMap =
@@ -320,9 +331,17 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                         request
                     }
 
+                val cardanoEra =
+                    if (updatedRequest.hasEra()) {
+                        CardanoEra.valueOf(updatedRequest.era.name)
+                    } else {
+                        CardanoEra.BABBAGE
+                    }
+
                 val (txId, cborBytes) =
                     TransactionBuilder.transactionBuilder(
                         protocolParams,
+                        cardanoEra,
                         calculateTxExecutionUnits
                     ) {
                         loadFrom(updatedRequest)

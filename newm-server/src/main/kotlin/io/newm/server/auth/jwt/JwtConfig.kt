@@ -2,6 +2,7 @@ package io.newm.server.auth.jwt
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.server.auth.AuthenticationConfig
 import io.ktor.server.auth.jwt.JWTPrincipal
@@ -11,10 +12,7 @@ import io.newm.server.ktx.getSecureConfigString
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.getConfigString
 import io.newm.shared.ktx.toUUID
-import io.newm.shared.ktx.warn
 import kotlinx.coroutines.runBlocking
-import org.koin.core.parameter.parametersOf
-import org.slf4j.Logger
 
 const val AUTH_JWT = "auth-jwt"
 const val AUTH_JWT_REFRESH = "auth-jwt-refresh"
@@ -32,7 +30,7 @@ private fun AuthenticationConfig.configureJwt(
 ) {
     val environment: ApplicationEnvironment by inject()
     val repository: JwtRepository by inject()
-    val logger: Logger by inject { parametersOf(javaClass.simpleName) }
+    val logger = KotlinLogging.logger {}
 
     jwt(name) {
         this.realm = environment.getConfigString("jwt.realm")
