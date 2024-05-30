@@ -10,6 +10,8 @@ import com.github.benmanes.caffeine.cache.Caffeine
 import com.google.protobuf.ByteString
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.network.util.DefaultByteBufferPool
+import io.newm.chain.grpc.CardanoEra
+import io.newm.chain.grpc.CardanoEraRequest
 import io.newm.chain.grpc.IsMainnetRequest
 import io.newm.chain.grpc.LedgerAssetMetadataItem
 import io.newm.chain.grpc.MonitorAddressResponse
@@ -112,6 +114,11 @@ internal class CardanoRepositoryImpl(
             .newBuilder()
             .build<String, Utxo>()
 
+    private val cardanoEraCache =
+        Caffeine.newBuilder()
+            .expireAfterWrite(Duration.ofMinutes(5L))
+            .build<String, CardanoEra>()
+
     override suspend fun saveKey(
         key: Key,
         name: String?
@@ -155,6 +162,16 @@ internal class CardanoRepositoryImpl(
         }
 
         return isMainnet!!
+    }
+
+    override suspend fun cardanoEra(): CardanoEra {
+        val era = cardanoEraCache.getIfPresent("era")
+        if (era != null) {
+            return era
+        }
+        val response = client.queryCardanoEra(CardanoEraRequest.getDefaultInstance()).era
+        cardanoEraCache.put("era", response)
+        return response
     }
 
     override suspend fun queryLiveUtxos(address: String): List<Utxo> {

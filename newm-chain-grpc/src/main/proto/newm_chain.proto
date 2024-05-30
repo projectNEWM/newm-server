@@ -16,6 +16,7 @@ service NewmChain {
   rpc QueryTransactionConfirmationCount (QueryTransactionConfirmationCountRequest) returns (QueryTransactionConfirmationCountResponse);
   rpc MonitorAddress (MonitorAddressRequest) returns (stream MonitorAddressResponse);
   rpc IsMainnet (IsMainnetRequest) returns (IsMainnetResponse);
+  rpc QueryCardanoEra (CardanoEraRequest) returns (CardanoEraResponse);
   rpc MonitorPaymentAddress (MonitorPaymentAddressRequest) returns (MonitorPaymentAddressResponse);
   rpc TransactionBuilder (TransactionBuilderRequest) returns (TransactionBuilderResponse);
   rpc MonitorNativeAssets (MonitorNativeAssetsRequest) returns (stream MonitorNativeAssetsResponse);
@@ -224,6 +225,12 @@ message IsMainnetResponse {
   bool is_mainnet = 1;
 }
 
+message CardanoEraRequest {}
+
+message CardanoEraResponse {
+  CardanoEra era = 1;
+}
+
 message MonitorPaymentAddressRequest {
   string address = 1;
   string lovelace = 3;
@@ -264,6 +271,9 @@ message TransactionBuilderRequest {
   optional OutputUtxo collateral_return = 25;
   optional uint64 total_collateral = 26;
   optional bytes transaction_metadata_cbor = 27;
+  optional CardanoEra era = 28;
+  repeated bytes plutus_v3_scripts = 29;
+  repeated bytes aux_plutus_v3_scripts = 30;
 }
 
 message TransactionBuilderResponse {
@@ -275,6 +285,16 @@ message TransactionBuilderResponse {
 enum NetworkId {
   TESTNET = 0;
   MAINNET = 1;
+}
+
+enum CardanoEra {
+  BYRON = 0;
+  SHELLEY = 1;
+  ALLEGRA = 2;
+  MARY = 3;
+  ALONZO = 4;
+  BABBAGE = 5;
+  CONWAY = 6;
 }
 
 message MonitorNativeAssetsRequest {

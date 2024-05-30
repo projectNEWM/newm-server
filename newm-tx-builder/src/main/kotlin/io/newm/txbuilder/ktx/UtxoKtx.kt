@@ -5,18 +5,20 @@ import com.google.iot.cbor.CborByteString
 import com.google.iot.cbor.CborInteger
 import com.google.iot.cbor.CborMap
 import com.google.iot.cbor.CborObject
+import com.google.iot.cbor.CborTag
 import io.newm.chain.grpc.NativeAsset
 import io.newm.chain.grpc.OutputUtxo
 import io.newm.chain.grpc.Utxo
 import io.newm.chain.util.Bech32
 import io.newm.chain.util.hexToByteArray
+import io.newm.kogmios.protocols.model.CardanoEra
 import io.newm.txbuilder.TransactionBuilder
 import java.math.BigInteger
 
 /**
  * Convert input utxos into cbor so it can be included in a transaction.
  */
-fun List<Utxo>.toCborObject(): CborObject? {
+fun Set<Utxo>.toCborObject(cardanoEra: CardanoEra): CborObject? {
     if (isEmpty()) {
         return null
     }
@@ -26,7 +28,11 @@ fun List<Utxo>.toCborObject(): CborObject? {
                 listOf(
                     CborByteString.create(sourceUtxo.hash.hexToByteArray()),
                     CborInteger.create(sourceUtxo.ix),
-                )
+                ),
+                when (cardanoEra) {
+                    CardanoEra.CONWAY -> 258
+                    else -> CborTag.UNTAGGED
+                }
             )
         }
     )

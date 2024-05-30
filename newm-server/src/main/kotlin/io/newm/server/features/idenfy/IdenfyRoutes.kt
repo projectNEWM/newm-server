@@ -1,28 +1,26 @@
 package io.newm.server.features.idenfy
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.auth.authenticate
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Routing
 import io.ktor.server.routing.route
 import io.newm.server.auth.jwt.AUTH_JWT
+import io.newm.server.features.idenfy.repo.IdenfyRepository
 import io.newm.server.ktx.myUserId
 import io.newm.server.ktx.receiveAndVerify
-import io.newm.server.features.idenfy.repo.IdenfyRepository
-import io.newm.shared.ktx.error
 import io.newm.shared.ktx.get
 import io.newm.shared.ktx.post
-import org.koin.core.parameter.parametersOf
-import org.koin.ktor.ext.inject
-import org.slf4j.Logger
 import java.security.Key
+import org.koin.ktor.ext.inject
 
 private const val IDENFY_PATH = "/v1/idenfy"
 
 fun Routing.createIdenfyRoutes() {
     val key: Key by inject(IDENFY_KEY_QUALIFIER)
     val repository: IdenfyRepository by inject()
-    val logger: Logger by inject { parametersOf(javaClass.simpleName) }
+    val logger = KotlinLogging.logger {}
 
     route(IDENFY_PATH) {
         authenticate(AUTH_JWT) {

@@ -500,7 +500,7 @@ internal class SongRepositoryImpl(
                 updateSongMintingStatus(songId, MintingStatus.ReadyToDistribute)
             } else {
                 collaborations.filter { it.status != CollaborationStatus.Accepted }.forEach {
-                    logger.info("AwaitingCollaboratorApproval ($songId): ${it.email} - ${it.status}")
+                    logger.info { "AwaitingCollaboratorApproval ($songId): ${it.email} - ${it.status}" }
                 }
             }
         }

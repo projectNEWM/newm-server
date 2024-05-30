@@ -8,6 +8,51 @@ import io.newm.chain.grpc.RedeemerTag
 import io.newm.kogmios.protocols.model.Validator
 
 /**
+ * Convert a redeemer object into conway cbor so it can be included in a transaction.
+ */
+fun Redeemer.toConwayCborObject(
+    dummyExUnitsMemory: Long,
+    dummyExUnitsSteps: Long
+): Pair<CborObject, CborObject> {
+    val key =
+        CborArray.create(
+            listOf(
+                // redeemer tag
+                CborInteger.create(tag.number),
+                // redeemer index
+                CborInteger.create(index),
+            )
+        )
+    val value =
+        CborArray.create(
+            listOf(
+                // plutus_data
+                data.toCborObject(),
+                // ex_units
+                if (hasExUnits()) {
+                    CborArray.create(
+                        listOf(
+                            CborInteger.create(exUnits.mem),
+                            CborInteger.create(exUnits.steps),
+                        )
+                    )
+                } else {
+                    // Dummy exUnits since we haven't calculated them with newmChainClient.evaluateTx() yet.
+                    // We need to provide something so it uses some bytes as a placeholder and the fee
+                    // calculations based on byte size can be correct.
+                    CborArray.create(
+                        listOf(
+                            CborInteger.create(dummyExUnitsMemory),
+                            CborInteger.create(dummyExUnitsSteps),
+                        )
+                    )
+                }
+            )
+        )
+    return key to value
+}
+
+/**
  * Convert a redeemer object into cbor so it can be included in a transaction.
  */
 fun Redeemer.toCborObject(
