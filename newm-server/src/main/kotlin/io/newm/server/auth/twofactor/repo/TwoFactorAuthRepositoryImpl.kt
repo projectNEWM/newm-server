@@ -1,22 +1,12 @@
 package io.newm.server.auth.twofactor.repo
 
-import io.ktor.server.application.ApplicationEnvironment
-import io.ktor.util.logging.Logger
+import io.github.oshai.kotlinlogging.KotlinLogging
+import io.ktor.server.application.*
 import io.newm.server.auth.twofactor.database.TwoFactorAuthEntity
 import io.newm.server.features.email.repo.EmailRepository
 import io.newm.server.features.user.database.UserEntity
-import io.newm.shared.koin.inject
-import io.newm.shared.ktx.debug
-import io.newm.shared.ktx.getConfigChild
-import io.newm.shared.ktx.getInt
-import io.newm.shared.ktx.getLong
-import io.newm.shared.ktx.getString
-import io.newm.shared.ktx.nextDigitCode
-import io.newm.shared.ktx.toHash
-import io.newm.shared.ktx.verify
-import io.newm.shared.ktx.warn
+import io.newm.shared.ktx.*
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.koin.core.parameter.parametersOf
 import java.security.SecureRandom
 import java.time.LocalDateTime
 
@@ -24,7 +14,8 @@ internal class TwoFactorAuthRepositoryImpl(
     private val environment: ApplicationEnvironment,
     private val emailRepository: EmailRepository
 ) : TwoFactorAuthRepository {
-    private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
+    private val logger = KotlinLogging.logger {}
+
     private val random = SecureRandom()
 
     override suspend fun sendCode(

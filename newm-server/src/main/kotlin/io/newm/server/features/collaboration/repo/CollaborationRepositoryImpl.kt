@@ -1,13 +1,9 @@
 package io.newm.server.features.collaboration.repo
 
-import io.ktor.server.application.ApplicationEnvironment
-import io.ktor.util.logging.Logger
+import io.github.oshai.kotlinlogging.KotlinLogging
+import io.ktor.server.application.*
 import io.newm.server.features.collaboration.database.CollaborationEntity
-import io.newm.server.features.collaboration.model.Collaboration
-import io.newm.server.features.collaboration.model.CollaborationFilters
-import io.newm.server.features.collaboration.model.CollaborationStatus
-import io.newm.server.features.collaboration.model.Collaborator
-import io.newm.server.features.collaboration.model.CollaboratorFilters
+import io.newm.server.features.collaboration.model.*
 import io.newm.server.features.email.repo.EmailRepository
 import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.database.SongTable
@@ -22,21 +18,18 @@ import io.newm.server.typealiases.UserId
 import io.newm.shared.exception.HttpConflictException
 import io.newm.shared.exception.HttpForbiddenException
 import io.newm.shared.exception.HttpUnprocessableEntityException
-import io.newm.shared.koin.inject
-import io.newm.shared.ktx.debug
 import io.newm.shared.ktx.getConfigString
 import io.newm.shared.ktx.millisToMinutesSecondsString
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.Transaction
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.koin.core.parameter.parametersOf
-import java.util.UUID
+import java.util.*
 
 internal class CollaborationRepositoryImpl(
     private val environment: ApplicationEnvironment,
     private val emailRepository: EmailRepository
 ) : CollaborationRepository {
-    private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
+    private val logger = KotlinLogging.logger {}
 
     override suspend fun add(
         collaboration: Collaboration,

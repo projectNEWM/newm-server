@@ -1,24 +1,23 @@
 package io.newm.server.features.song
 
 import com.amazonaws.services.sqs.model.Message
-import io.ktor.server.application.ApplicationEnvironment
-import io.ktor.util.logging.Logger
+import io.github.oshai.kotlinlogging.KotlinLogging
+import io.ktor.server.application.*
 import io.newm.server.aws.SqsMessageReceiver
 import io.newm.server.features.song.model.AudioMessage
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.repo.SongRepository
 import io.newm.shared.koin.inject
-import io.newm.shared.ktx.debug
 import io.newm.shared.ktx.getConfigString
 import io.newm.shared.ktx.toUUID
 import kotlinx.serialization.json.Json
-import org.koin.core.parameter.parametersOf
 
 class AudioMessageReceiver : SqsMessageReceiver {
     private val repository: SongRepository by inject()
     private val environment: ApplicationEnvironment by inject()
     private val json: Json by inject()
-    private val logger: Logger by inject { parametersOf(javaClass.simpleName) }
+
+    private val logger = KotlinLogging.logger {}
 
     override suspend fun onMessageReceived(message: Message) {
         val msg: AudioMessage = json.decodeFromString(message.body)

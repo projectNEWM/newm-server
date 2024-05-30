@@ -1,5 +1,6 @@
 package io.newm.server.features.cardano.parser
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.utils.io.core.toByteArray
 import io.newm.chain.grpc.LedgerAssetMetadataItem
 import io.newm.chain.grpc.NativeAsset
@@ -7,15 +8,12 @@ import io.newm.chain.util.hexStringToAssetName
 import io.newm.server.features.cardano.model.NFTSong
 import io.newm.server.features.nftcdn.repo.NftCdnRepository
 import io.newm.shared.koin.inject
-import io.newm.shared.ktx.debug
 import io.newm.shared.ktx.toDurationOrNull
-import io.newm.shared.ktx.warn
 import io.newm.txbuilder.ktx.fingerprint
-import org.koin.core.parameter.parametersOf
-import org.slf4j.Logger
 import java.util.UUID
 
-private val logger: Logger by inject { parametersOf("NFTSongParser") }
+private val logger = KotlinLogging.logger {}
+
 private val nftCdnRepository: NftCdnRepository by inject()
 
 // Used to remove numeric prefixes on legacy SickCity NFT fields ( e.g., "1. Artist Name" and "02. Song Title")

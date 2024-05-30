@@ -115,6 +115,8 @@ dependencies {
     implementation(Dependencies.QRCodeKotlin.ALL)
     implementation(Dependencies.ApacheCurators.RECEIPES)
 
+    implementation(Dependencies.KotlinLogging.ALL)
+
     testImplementation(Dependencies.Ktor.CLIENT_LOGGING)
     testImplementation(Dependencies.JUnit.JUPITER)
     testImplementation(Dependencies.Mockk.MOCKK)

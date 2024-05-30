@@ -335,4 +335,9 @@ object Dependencies {
 
         const val ALL = "io.github.g0dkar:qrcode-kotlin:$VERSION"
     }
+
+    object KotlinLogging {
+        private const val VERSION = "6.0.9"
+        const val ALL = "io.github.oshai:kotlin-logging:$VERSION"
+    }
 }
