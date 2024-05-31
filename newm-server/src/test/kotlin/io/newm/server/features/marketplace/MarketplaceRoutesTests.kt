@@ -1044,6 +1044,7 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
                     location = "location$offset"
                     biography = "biography$offset"
                     pictureUrl = "pictureUrl$offset"
+                    bannerUrl = "bannerUrl$offset"
                     websiteUrl = "websiteUrl$offset"
                     websiteUrl = "websiteUrl$offset"
                     instagramUrl = "instagramUrl$offset"

@@ -17,6 +17,7 @@ data class Artist(
     val location: String?,
     var biography: String?,
     val pictureUrl: String?,
+    val bannerUrl: String?,
     val websiteUrl: String?,
     val twitterUrl: String?,
     val instagramUrl: String?,
