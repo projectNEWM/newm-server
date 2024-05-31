@@ -36,7 +36,6 @@ import org.jetbrains.exposed.sql.innerJoin
 import org.jetbrains.exposed.sql.lowerCase
 import org.jetbrains.exposed.sql.mapLazy
 import org.jetbrains.exposed.sql.or
-import org.jetbrains.exposed.sql.selectAll
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -158,7 +157,7 @@ class MarketplaceSaleEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                         otherTable = UserTable,
                         onColumn = { SongTable.ownerId },
                         otherColumn = { id }
-                    ).selectAll()
+                    ).select(MarketplaceSaleTable.columns)
                         .where(AndOp(ops))
                         .mapLazy(MarketplaceSaleEntity::wrapRow)
                 }

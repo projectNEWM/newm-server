@@ -1061,24 +1061,22 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
                         genres = arrayOf("genre${offset}_0", "genre${offset}_1")
                         mintingStatus = MintingStatus.Released
                     }
-                if (i % 2 == 0) {
-                    MarketplaceSaleEntity.new {
-                        createdAt = LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS)
-                        status = SaleStatus.entries[offset % SaleStatus.entries.size]
-                        songId = song.id
-                        ownerAddress = "ownerAddress$offset"
-                        pointerPolicyId = "pointerPolicyId$offset"
-                        pointerAssetName = "pointerAssetName$offset"
-                        bundlePolicyId = "bundlePolicyId$offset"
-                        bundleAssetName = "bundleAssetName$offset"
-                        bundleAmount = offset + 1L
-                        costPolicyId = "costPolicyId$offset"
-                        costAssetName = "costAssetName$offset"
-                        costAmount = offset.toLong()
-                        maxBundleSize = offset + 100L
-                        totalBundleQuantity = offset + 1000L
-                        availableBundleQuantity = offset + 1000L
-                    }
+                MarketplaceSaleEntity.new {
+                    createdAt = LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS)
+                    status = SaleStatus.entries[offset % SaleStatus.entries.size]
+                    songId = song.id
+                    ownerAddress = "ownerAddress$offset"
+                    pointerPolicyId = "pointerPolicyId$offset"
+                    pointerAssetName = "pointerAssetName$offset"
+                    bundlePolicyId = "bundlePolicyId$offset"
+                    bundleAssetName = "bundleAssetName$offset"
+                    bundleAmount = offset + 1L
+                    costPolicyId = "costPolicyId$offset"
+                    costAssetName = "costAssetName$offset"
+                    costAmount = offset.toLong()
+                    maxBundleSize = offset + 100L
+                    totalBundleQuantity = offset + 1000L
+                    availableBundleQuantity = offset + 1000L
                 }
             }
         }
