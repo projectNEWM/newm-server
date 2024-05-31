@@ -13,7 +13,6 @@ import org.jetbrains.exposed.sql.AndOp
 import org.jetbrains.exposed.sql.Op
 import org.jetbrains.exposed.sql.SizedIterable
 import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
@@ -66,12 +65,17 @@ class MarketplaceArtistEntity(id: EntityID<UserId>) : UserEntity(id) {
     companion object : UUIDEntityClass<MarketplaceArtistEntity>(UserTable) {
         fun all(filters: ArtistFilters): SizedIterable<MarketplaceArtistEntity> {
             val ops = filters.toOps()
-            return UserTable.innerJoin(
-                otherTable = SongTable,
-                onColumn = { id },
-                otherColumn = { ownerId }
-            ).select(UserTable.columns)
-                .where(AndOp(ops))
+            val query =
+                UserTable.innerJoin(
+                    otherTable = SongTable,
+                    onColumn = { id },
+                    otherColumn = { ownerId }
+                ).innerJoin(
+                    otherTable = MarketplaceSaleTable,
+                    onColumn = { SongTable.id },
+                    otherColumn = { songId }
+                ).select(UserTable.columns)
+            return (if (ops.isEmpty()) query else query.where(AndOp(ops)))
                 .groupBy(UserTable.id)
                 .orderBy(UserTable.createdAt to (filters.sortOrder ?: SortOrder.ASC))
                 .mapLazy(MarketplaceArtistEntity::wrapRow)
@@ -79,8 +83,6 @@ class MarketplaceArtistEntity(id: EntityID<UserId>) : UserEntity(id) {
 
         private fun ArtistFilters.toOps(): List<Op<Boolean>> {
             val ops = mutableListOf<Op<Boolean>>()
-            ops += SongTable.archived eq false
-            ops += SongTable.mintingStatus eq MintingStatus.Released
             olderThan?.let {
                 ops += UserTable.createdAt less it
             }
