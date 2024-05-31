@@ -52,6 +52,7 @@ class MarketplaceArtistEntity(id: EntityID<UserId>) : UserEntity(id) {
             location = location,
             biography = biography,
             pictureUrl = pictureUrl,
+            bannerUrl = bannerUrl,
             websiteUrl = websiteUrl,
             twitterUrl = twitterUrl,
             instagramUrl = instagramUrl,
