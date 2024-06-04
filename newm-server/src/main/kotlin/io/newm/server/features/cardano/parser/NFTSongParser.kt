@@ -13,7 +13,6 @@ import io.newm.txbuilder.ktx.fingerprint
 import java.util.UUID
 
 private val logger = KotlinLogging.logger {}
-
 private val nftCdnRepository: NftCdnRepository by inject()
 
 // Used to remove numeric prefixes on legacy SickCity NFT fields ( e.g., "1. Artist Name" and "02. Song Title")

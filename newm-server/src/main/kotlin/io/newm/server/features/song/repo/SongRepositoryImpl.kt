@@ -114,7 +114,7 @@ internal class SongRepositoryImpl(
         val genres = song.genres ?: throw HttpUnprocessableEntityException("missing genres")
         song.checkFieldLengths()
         return transaction {
-            title.checkTitleUnique(ownerId)
+            title.checkTitleUnique(ownerId, song.mintingStatus)
             val releaseId =
                 ReleaseEntity.new {
                     archived = false
@@ -171,7 +171,7 @@ internal class SongRepositoryImpl(
                 archived?.let { songEntity.archived = it }
                 title?.let {
                     if (!it.equals(songEntity.title, ignoreCase = true)) {
-                        it.checkTitleUnique(songEntity.ownerId.value)
+                        it.checkTitleUnique(songEntity.ownerId.value, songEntity.mintingStatus)
                     }
                     songEntity.title = it
                 }
@@ -919,8 +919,11 @@ internal class SongRepositoryImpl(
         }
     }
 
-    private fun String.checkTitleUnique(ownerId: UserId) {
-        if (SongEntity.exists(ownerId, this)) {
+    private fun String.checkTitleUnique(
+        ownerId: UserId,
+        mintingStatus: MintingStatus?
+    ) {
+        if (SongEntity.exists(ownerId, this) && mintingStatus != MintingStatus.Undistributed) {
             throw HttpConflictException("Title already exists: $this")
         }
     }
