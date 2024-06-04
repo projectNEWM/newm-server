@@ -24,17 +24,11 @@ fun CborArray.elementToInt(index: Int): Int {
     return (obj as? Int) ?: (obj as? Long)?.toInt() ?: (obj as BigInteger).toInt()
 }
 
-fun CborArray.elementToByteArray(index: Int): ByteArray {
-    return (elementAt(index) as CborByteString).byteArrayValue()[0]
-}
+fun CborArray.elementToByteArray(index: Int): ByteArray = (elementAt(index) as CborByteString).byteArrayValue()[0]
 
-fun CborArray.elementToHexString(index: Int): String {
-    return elementToByteArray(index).toHexString()
-}
+fun CborArray.elementToHexString(index: Int): String = elementToByteArray(index).toHexString()
 
-fun ByteArray.toHexString(): String {
-    return HexFormat.of().formatHex(this)
-}
+fun ByteArray.toHexString(): String = HexFormat.of().formatHex(this)
 
 fun Array<ByteArray>.toHexString(): String {
     val builder = StringBuilder()
@@ -67,31 +61,27 @@ fun String.b64ToByteArray(): ByteArray {
     }
 }
 
-fun ByteArray.toB64String(): String {
-    return Base64.getEncoder().encodeToString(this)
-}
+fun ByteArray.toB64String(): String = Base64.getEncoder().encodeToString(this)
 
 private val hexRegex = Regex("([a-f\\d]{2})+")
 
-fun String.assetNameToHexString(): String {
-    return if (hexRegex.matches(this)) {
+fun String.assetNameToHexString(): String =
+    if (hexRegex.matches(this)) {
         // it's already hex string
         this
     } else {
         // convert to hex string
         this.toByteArray().toHexString()
     }
-}
 
-fun String.hexStringToAssetName(): String {
-    return if (hexRegex.matches(this)) {
+fun String.hexStringToAssetName(): String =
+    if (hexRegex.matches(this)) {
         // convert it
         String(this.hexToByteArray())
     } else {
         // it's already assetName
         this
     }
-}
 
 fun Int.toHexString(): String = Integer.toHexString(this)
 
@@ -116,19 +106,20 @@ fun ULong.toLittleEndianBytes(): ByteArray {
 
 fun Long.lovelaceToAdaString(): String = "₳${this.toBigDecimal().movePointLeft(6)}"
 
-fun String.toHexPoolId(): String {
-    return try {
+fun String.toHexPoolId(): String =
+    try {
         Bech32.decode(this).bytes.toHexString()
     } catch (e: Throwable) {
         this
     }
-}
 
 fun String.extractStakeAddress(isMainnet: Boolean): String {
     val decodedReceiveAddress = Bech32.decode(this)
 
     // check the length of the address
     require(decodedReceiveAddress.bytes.size == 57) { "Not enough bytes in stake address for: $this" }
+
+    val addressType = decodedReceiveAddress.bytes[0]
 
     // calculate the encoded stake address
     return if (isMainnet) {
@@ -174,15 +165,14 @@ fun String.extractCredentials(): Pair<String, String?> {
 /**
  * Extract the address type from an address
  */
-fun String.addressType(): String {
-    return if (this.startsWith("addr")) {
+fun String.addressType(): String =
+    if (this.startsWith("addr")) {
         val addressBytes = Bech32.decode(this).bytes
         addressBytes[0].toUByte().toString(16).padStart(2, '0')
     } else {
         // TODO: Fix hardcoding for byron stuff
         "82"
     }
-}
 
 /**
  * flatten a list of maps into a single map
@@ -211,7 +201,12 @@ fun paymentAddressFromHash(
     return Bech32.encode(prefix, byteArrayOf(firstByte) + hash)
 }
 
-fun hashFromPaymentAddress(address: String): ByteArray = Bech32.decode(address).bytes.drop(1).toByteArray()
+fun hashFromPaymentAddress(address: String): ByteArray =
+    Bech32
+        .decode(address)
+        .bytes
+        .drop(1)
+        .toByteArray()
 
 /**
  * Computes the Asset fingerprint

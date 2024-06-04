@@ -3,6 +3,7 @@ package io.newm.chain.daemon
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.google.protobuf.kotlin.toByteString
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.server.application.ApplicationEnvironment
 import io.newm.chain.cardano.getEpochForSlot
 import io.newm.chain.cardano.to721Json
@@ -47,9 +48,18 @@ import io.newm.kogmios.protocols.model.result.RollForward
 import io.newm.kogmios.protocols.model.result.ShelleyGenesisConfigResult
 import io.newm.shared.daemon.Daemon
 import io.newm.shared.daemon.Daemon.Companion.RETRY_DELAY_MILLIS
-import io.newm.shared.koin.inject
-import io.newm.shared.ktx.*
+import io.newm.shared.ktx.getConfigBoolean
+import io.newm.shared.ktx.getConfigInt
+import io.newm.shared.ktx.getConfigString
 import io.newm.txbuilder.ktx.cborHexToPlutusData
+import java.io.ByteArrayOutputStream
+import java.io.IOException
+import java.math.BigInteger
+import java.time.Duration
+import java.time.Instant
+import kotlin.math.floor
+import kotlin.math.max
+import kotlin.system.measureTimeMillis
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.channels.BufferOverflow
@@ -61,16 +71,6 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.greaterEq
 import org.jetbrains.exposed.sql.batchInsert
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
-import org.koin.core.parameter.parametersOf
-import org.slf4j.Logger
-import java.io.ByteArrayOutputStream
-import java.io.IOException
-import java.math.BigInteger
-import java.time.Duration
-import java.time.Instant
-import kotlin.math.floor
-import kotlin.math.max
-import kotlin.system.measureTimeMillis
 
 class BlockDaemon(
     private val environment: ApplicationEnvironment,
@@ -79,7 +79,7 @@ class BlockDaemon(
     private val submittedTransactionCache: SubmittedTransactionCache,
     private val confirmedBlockFlow: MutableSharedFlow<Block>,
 ) : Daemon {
-    override val log: Logger by inject { parametersOf("BlockDaemon") }
+    override val log = KotlinLogging.logger {}
 
     private val server by lazy { environment.getConfigString("ogmios.server") }
     private val port by lazy { environment.getConfigInt("ogmios.port") }
@@ -120,14 +120,14 @@ class BlockDaemon(
     private val newmChainService by lazy { NewmChainService() }
 
     override fun start() {
-        log.info("starting...")
+        log.info { "starting..." }
         startProcessBlock()
         startChainSync()
-        log.info("startup complete.")
+        log.info { "startup complete." }
     }
 
     override fun shutdown() {
-        log.info("shutdown complete.")
+        log.info { "shutdown complete." }
     }
 
     private fun startChainSync() {
@@ -149,8 +149,8 @@ class BlockDaemon(
                     }
                     break
                 } catch (e: Throwable) {
-                    log.warn("Error connecting Kogmios!", e)
-                    log.info("Wait 10 seconds to retry...")
+                    log.warn(e) { "Error connecting Kogmios!" }
+                    log.info { "Wait 10 seconds to retry..." }
                     delay(RETRY_DELAY_MILLIS)
                 }
             }
@@ -167,11 +167,11 @@ class BlockDaemon(
                         syncBlockchain(localChainSyncClient)
                     }
                 } catch (e: Throwable) {
-                    log.warn("Error syncing blockchain!", e)
+                    log.warn(e) { "Error syncing blockchain!" }
                     if (e !is TimeoutCancellationException) {
                         e.captureToSentry()
                     }
-                    log.info("Wait 10 seconds to retry...")
+                    log.info { "Wait 10 seconds to retry..." }
                     try {
                         // clear out everything so far since we're going to retry...
                         blockBuffer.clear()
@@ -239,7 +239,7 @@ class BlockDaemon(
                 )
             when (response.result) {
                 is RollBackward -> {
-                    log.info("RollBackward: ${(response.result as RollBackward).point}")
+                    log.info { "RollBackward: ${(response.result as RollBackward).point}" }
                 }
 
                 is RollForward -> {
@@ -254,15 +254,15 @@ class BlockDaemon(
                             if (isTip || tenSecondsAgo.isAfter(lastLogged)) {
                                 val percent =
                                     floor(blockHeight.toDouble() / tipBlockHeight.toDouble() * 10000.0) / 100.0
-                                log.info(
+                                log.info {
                                     "RollForward: block $blockHeight of $tipBlockHeight: %.2f%% sync'd".format(
                                         percent
                                     )
-                                )
+                                }
                                 lastLogged = now
                             }
                         } ?: run {
-                            log.warn("RollForward: block is not BlockPraos: ${rollForward.block.javaClass.simpleName}")
+                            log.warn { "RollForward: block is not BlockPraos: ${rollForward.block.javaClass.simpleName}" }
                         }
                     }
                 }
@@ -399,7 +399,7 @@ class BlockDaemon(
                                         metadataMap.extractAssetMetadata(assetList)
                                     )
                                 } catch (e: Throwable) {
-                                    log.error("metadataError at block ${block.height}, metadataMap: $metadataMap, assetList: $assetList")
+                                    log.error { "metadataError at block ${block.height}, metadataMap: $metadataMap, assetList: $assetList" }
                                     throw e
                                 }
                             }
@@ -410,7 +410,7 @@ class BlockDaemon(
                                     block.toAssetMetadataList(mintedLedgerAssets)
                                 )
                             } catch (e: Throwable) {
-                                log.error("metadataError at block ${block.height}, mintedLedgerAssets: $mintedLedgerAssets")
+                                log.error { "metadataError at block ${block.height}, mintedLedgerAssets: $mintedLedgerAssets" }
                                 throw e
                             }
                         }
@@ -444,13 +444,13 @@ class BlockDaemon(
             if (isTip || tenSecondsAgo.isAfter(lastLoggedCommit)) {
                 val blockHeight = (blocksToCommit.last().block as BlockPraos).height
                 val percent = floor(blockHeight.toDouble() / tipBlockHeight.toDouble() * 10000.0) / 100.0
-                log.info("commitBlock: block $blockHeight of $tipBlockHeight: %.2f%% committed".format(percent))
+                log.info { "commitBlock: block $blockHeight of $tipBlockHeight: %.2f%% committed".format(percent) }
                 lastLoggedCommit = now
             }
             if ((isTip && totalTime > COMMIT_BLOCKS_WARN_LEVEL_MILLIS) || (totalTime > COMMIT_BLOCKS_ERROR_LEVEL_MILLIS)) {
-                log.warn(
+                log.warn {
                     "commitBlocks(${blocksToCommit.size}) total: ${totalTime}ms, rollback: ${rollbackTime}ms, nativeAsset: ${nativeAssetTime}ms, create: ${createTime}ms, spend: ${spendTime}ms, prune: ${pruneTime}ms"
-                )
+                }
             }
 
             // Adjust blockBufferSize based on how long it took to commit these blocks
@@ -540,12 +540,12 @@ class BlockDaemon(
                                         .build()
                                 when (newmChainService.submitTransaction(request).result) {
                                     "MsgAcceptTx" -> {
-                                        log.warn("Re-Submit txid to mempool due to rollback: $transactionId, $index/$lastIndex")
+                                        log.warn { "Re-Submit txid to mempool due to rollback: $transactionId, $index/$lastIndex" }
                                     }
 
                                     else -> {
                                         if (index % 10 == 0 || index == lastIndex) {
-                                            log.info("Re-Submit txid to mempool exists already: $transactionId, $index/$lastIndex")
+                                            log.info { "Re-Submit txid to mempool exists already: $transactionId, $index/$lastIndex" }
                                         }
                                     }
                                 }
@@ -554,7 +554,7 @@ class BlockDaemon(
                     }
                 }
             } ?: run {
-            log.info("No transactions found to re-submit due to rollback.")
+            log.info { "No transactions found to re-submit due to rollback." }
         }
     }
 

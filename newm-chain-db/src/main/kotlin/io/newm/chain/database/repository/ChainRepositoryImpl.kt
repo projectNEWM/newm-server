@@ -28,13 +28,15 @@ import org.slf4j.LoggerFactory
 class ChainRepositoryImpl : ChainRepository {
     private val log: Logger by lazy { LoggerFactory.getLogger("ChainRepository") }
 
-    override fun getFindIntersectPairs(): List<PointDetail> {
-        return transaction {
-            ChainTable.select(
-                ChainTable.slotNumber,
-                ChainTable.hash
-            ).orderBy(ChainTable.slotNumber, SortOrder.DESC)
-                .limit(33).filterIndexed { index, _ ->
+    override fun getFindIntersectPairs(): List<PointDetail> =
+        transaction {
+            ChainTable
+                .select(
+                    ChainTable.slotNumber,
+                    ChainTable.hash
+                ).orderBy(ChainTable.slotNumber, SortOrder.DESC)
+                .limit(33)
+                .filterIndexed { index, _ ->
                     // all powers of 2 including 0th element 0, 2, 4, 8, 16, 32
                     (index == 0) || ((index > 1) && (index and (index - 1) == 0))
                 }.map { row ->
@@ -44,71 +46,87 @@ class ChainRepositoryImpl : ChainRepository {
                     )
                 }
         }
-    }
 
-    override fun getPointAfterSlot(slot: Long): PointDetail? {
-        return transaction {
-            ChainTable.select(
-                ChainTable.slotNumber,
-                ChainTable.hash
-            ).where { ChainTable.slotNumber greater slot }
+    override fun getPointAfterSlot(slot: Long): PointDetail? =
+        transaction {
+            ChainTable
+                .select(
+                    ChainTable.slotNumber,
+                    ChainTable.hash
+                ).where { ChainTable.slotNumber greater slot }
                 .orderBy(ChainTable.slotNumber, SortOrder.ASC)
-                .limit(1).firstOrNull()?.let { row ->
+                .limit(1)
+                .firstOrNull()
+                ?.let { row ->
                     PointDetail(
                         slot = row[ChainTable.slotNumber],
                         id = row[ChainTable.hash],
                     )
                 }
         }
-    }
 
-    override fun getVrfByPoolId(poolId: String): String? {
-        return transaction {
-            ChainTable.select(ChainTable.nodeVrfVkey)
+    override fun getVrfByPoolId(poolId: String): String? =
+        transaction {
+            ChainTable
+                .select(ChainTable.nodeVrfVkey)
                 .where { ChainTable.poolId eq poolId }
                 .orderBy(ChainTable.id, SortOrder.DESC)
                 .limit(1)
-                .firstOrNull()?.let { row ->
+                .firstOrNull()
+                ?.let { row ->
                     row[ChainTable.nodeVrfVkey]
                 }
         }
-    }
+
+    override fun getPaymentAddressByStakeAddress(stakeAddress: String): String? =
+        transaction {
+            PaymentStakeAddressTable
+                .select(PaymentStakeAddressTable.receivingAddress)
+                .where { PaymentStakeAddressTable.stakeAddress eq stakeAddress }
+                .firstOrNull()
+                ?.let { row ->
+                    row[PaymentStakeAddressTable.receivingAddress]
+                }
+        }
 
     override fun insertAll(blocks: List<ChainBlock>) {
         transaction {
             blocks.forEach { block ->
                 ChainTable.deleteWhere { blockNumber greaterEq block.blockNumber }
                 val prevEtaV: String =
-                    ChainTable.select(
-                        ChainTable.etaV
-                    ).where { ChainTable.slotNumber eqSubQuery ChainTable.select(ChainTable.slotNumber.max()) }
-                        .singleOrNull()?.get(ChainTable.etaV)
+                    ChainTable
+                        .select(
+                            ChainTable.etaV
+                        ).where { ChainTable.slotNumber eqSubQuery ChainTable.select(ChainTable.slotNumber.max()) }
+                        .singleOrNull()
+                        ?.get(ChainTable.etaV)
                         ?: Config.shelleyGenesisHash
 
-                ChainTable.insertAndGetId { row ->
-                    row[blockNumber] = block.blockNumber
-                    row[slotNumber] = block.slotNumber
-                    row[hash] = block.hash
-                    row[prevHash] = block.prevHash
-                    row[poolId] = nodeVKeyToPoolId(block.nodeVkey)
-                    row[etaV] = calculateEtaV(prevEtaV, block.etaVrf0)
-                    row[nodeVkey] = block.nodeVkey
-                    row[nodeVrfVkey] = block.nodeVrfVkey
-                    row[blockVrf0] = block.blockVrf
-                    row[blockVrf1] = block.blockVrfProof
-                    row[etaVrf0] = block.etaVrf0
-                    row[etaVrf1] = block.etaVrf1
-                    row[leaderVrf0] = block.leaderVrf0
-                    row[leaderVrf1] = block.leaderVrf1
-                    row[blockSize] = block.blockSize
-                    row[blockBodyHash] = block.blockBodyHash
-                    row[poolOpcert] = block.poolOpcert
-                    row[sequenceNumber] = block.sequenceNumber
-                    row[kesPeriod] = block.kesPeriod
-                    row[sigmaSignature] = block.sigmaSignature
-                    row[protocolMajorVersion] = block.protocolMajorVersion
-                    row[protocolMinorVersion] = block.protocolMinorVersion
-                }.value
+                ChainTable
+                    .insertAndGetId { row ->
+                        row[blockNumber] = block.blockNumber
+                        row[slotNumber] = block.slotNumber
+                        row[hash] = block.hash
+                        row[prevHash] = block.prevHash
+                        row[poolId] = nodeVKeyToPoolId(block.nodeVkey)
+                        row[etaV] = calculateEtaV(prevEtaV, block.etaVrf0)
+                        row[nodeVkey] = block.nodeVkey
+                        row[nodeVrfVkey] = block.nodeVrfVkey
+                        row[blockVrf0] = block.blockVrf
+                        row[blockVrf1] = block.blockVrfProof
+                        row[etaVrf0] = block.etaVrf0
+                        row[etaVrf1] = block.etaVrf1
+                        row[leaderVrf0] = block.leaderVrf0
+                        row[leaderVrf1] = block.leaderVrf1
+                        row[blockSize] = block.blockSize
+                        row[blockBodyHash] = block.blockBodyHash
+                        row[poolOpcert] = block.poolOpcert
+                        row[sequenceNumber] = block.sequenceNumber
+                        row[kesPeriod] = block.kesPeriod
+                        row[sigmaSignature] = block.sigmaSignature
+                        row[protocolMajorVersion] = block.protocolMajorVersion
+                        row[protocolMinorVersion] = block.protocolMinorVersion
+                    }.value
 
                 if (block.stakeDestAddresses.isNotEmpty()) {
                     // Ignore errors as we want to just keep the existing record as-is because it's older
@@ -127,40 +145,44 @@ class ChainRepositoryImpl : ChainRepository {
 
     private var prevEtaVCache = Caffeine.newBuilder().maximumSize(100L).build<Long, String>()
 
-    override fun insert(block: ChainBlock): Long {
-        return transaction {
+    override fun insert(block: ChainBlock): Long =
+        transaction {
             val prevEtaV: String =
-                prevEtaVCache.getIfPresent(block.blockNumber - 1) ?: ChainTable.select(
-                    ChainTable.etaV
-                ).where { ChainTable.blockNumber eq (block.blockNumber - 1) }.singleOrNull()?.get(ChainTable.etaV)
+                prevEtaVCache.getIfPresent(block.blockNumber - 1) ?: ChainTable
+                    .select(
+                        ChainTable.etaV
+                    ).where { ChainTable.blockNumber eq (block.blockNumber - 1) }
+                    .singleOrNull()
+                    ?.get(ChainTable.etaV)
                     ?: Config.shelleyGenesisHash
 
             val newEtaV = calculateEtaV(prevEtaV, block.etaVrf0)
             val chainId =
-                ChainTable.insertAndGetId { row ->
-                    row[blockNumber] = block.blockNumber
-                    row[slotNumber] = block.slotNumber
-                    row[hash] = block.hash
-                    row[prevHash] = block.prevHash
-                    row[poolId] = nodeVKeyToPoolId(block.nodeVkey)
-                    row[etaV] = newEtaV
-                    row[nodeVkey] = block.nodeVkey
-                    row[nodeVrfVkey] = block.nodeVrfVkey
-                    row[blockVrf0] = block.blockVrf
-                    row[blockVrf1] = block.blockVrfProof
-                    row[etaVrf0] = block.etaVrf0
-                    row[etaVrf1] = block.etaVrf1
-                    row[leaderVrf0] = block.leaderVrf0
-                    row[leaderVrf1] = block.leaderVrf1
-                    row[blockSize] = block.blockSize
-                    row[blockBodyHash] = block.blockBodyHash
-                    row[poolOpcert] = block.poolOpcert
-                    row[sequenceNumber] = block.sequenceNumber
-                    row[kesPeriod] = block.kesPeriod
-                    row[sigmaSignature] = block.sigmaSignature
-                    row[protocolMajorVersion] = block.protocolMajorVersion
-                    row[protocolMinorVersion] = block.protocolMinorVersion
-                }.value
+                ChainTable
+                    .insertAndGetId { row ->
+                        row[blockNumber] = block.blockNumber
+                        row[slotNumber] = block.slotNumber
+                        row[hash] = block.hash
+                        row[prevHash] = block.prevHash
+                        row[poolId] = nodeVKeyToPoolId(block.nodeVkey)
+                        row[etaV] = newEtaV
+                        row[nodeVkey] = block.nodeVkey
+                        row[nodeVrfVkey] = block.nodeVrfVkey
+                        row[blockVrf0] = block.blockVrf
+                        row[blockVrf1] = block.blockVrfProof
+                        row[etaVrf0] = block.etaVrf0
+                        row[etaVrf1] = block.etaVrf1
+                        row[leaderVrf0] = block.leaderVrf0
+                        row[leaderVrf1] = block.leaderVrf1
+                        row[blockSize] = block.blockSize
+                        row[blockBodyHash] = block.blockBodyHash
+                        row[poolOpcert] = block.poolOpcert
+                        row[sequenceNumber] = block.sequenceNumber
+                        row[kesPeriod] = block.kesPeriod
+                        row[sigmaSignature] = block.sigmaSignature
+                        row[protocolMajorVersion] = block.protocolMajorVersion
+                        row[protocolMinorVersion] = block.protocolMinorVersion
+                    }.value
             prevEtaVCache.put(block.blockNumber, newEtaV)
 
             if (block.stakeDestAddresses.isNotEmpty()) {
@@ -177,7 +199,6 @@ class ChainRepositoryImpl : ChainRepository {
 
             chainId
         }
-    }
 
     override fun rollback(blockNumber: Long) =
         transaction {
@@ -209,12 +230,14 @@ class ChainRepositoryImpl : ChainRepository {
 
     override fun getFindIntersectPairsAddressChain(address: String): List<PointDetail> =
         transaction {
-            MonitoredAddressChainTable.select(
-                MonitoredAddressChainTable.slot,
-                MonitoredAddressChainTable.hash
-            ).where { MonitoredAddressChainTable.address eq address }
+            MonitoredAddressChainTable
+                .select(
+                    MonitoredAddressChainTable.slot,
+                    MonitoredAddressChainTable.hash
+                ).where { MonitoredAddressChainTable.address eq address }
                 .orderBy(MonitoredAddressChainTable.slot, SortOrder.DESC)
-                .limit(33).filterIndexed { index, _ ->
+                .limit(33)
+                .filterIndexed { index, _ ->
                     // all powers of 2 including 0th element 0, 2, 4, 8, 16, 32
                     (index == 0) || ((index > 1) && (index and (index - 1) == 0))
                 }.map { row ->
@@ -227,23 +250,25 @@ class ChainRepositoryImpl : ChainRepository {
 
     override fun insertMonitoredAddressChain(monitoredAddressChain: MonitoredAddressChain): Long =
         transaction {
-            MonitoredAddressChainTable.insertAndGetId { row ->
-                row[address] = monitoredAddressChain.address
-                row[height] = monitoredAddressChain.height
-                row[slot] = monitoredAddressChain.slot
-                row[hash] = monitoredAddressChain.hash
-            }.value
+            MonitoredAddressChainTable
+                .insertAndGetId { row ->
+                    row[address] = monitoredAddressChain.address
+                    row[height] = monitoredAddressChain.height
+                    row[slot] = monitoredAddressChain.slot
+                    row[hash] = monitoredAddressChain.hash
+                }.value
         }
 
     override fun markTipMonitoredAddressChain(address: String): Long =
         transaction {
             MonitoredAddressChainTable.deleteWhere { MonitoredAddressChainTable.address eq address }
-            MonitoredAddressChainTable.insertAndGetId { row ->
-                row[MonitoredAddressChainTable.address] = address
-                row[height] = -1
-                row[slot] = -1
-                row[hash] = ""
-            }.value
+            MonitoredAddressChainTable
+                .insertAndGetId { row ->
+                    row[MonitoredAddressChainTable.address] = address
+                    row[height] = -1
+                    row[slot] = -1
+                    row[hash] = ""
+                }.value
         }
 
     private fun nodeVKeyToPoolId(nodeVKey: String): String {

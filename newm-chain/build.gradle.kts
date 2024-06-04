@@ -42,10 +42,12 @@ dependencies {
     implementation(Dependencies.Kotlin.STDLIB_JDK8)
 
     implementation(Dependencies.Coroutines.CORE)
-    implementation(Dependencies.Coroutines.JDK8)
+    implementation(Dependencies.Coroutines.JDK9)
 
     implementation(Dependencies.KotlinXSerialization.JSON)
     implementation(Dependencies.KotlinXDateTime.DATETIME)
+
+    implementation(Dependencies.KotlinLogging.ALL)
 
     implementation(Dependencies.Ktor.SERVER_CORE)
     implementation(Dependencies.Ktor.SERVER_CIO)

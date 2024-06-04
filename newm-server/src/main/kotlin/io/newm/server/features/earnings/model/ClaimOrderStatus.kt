@@ -19,4 +19,7 @@ enum class ClaimOrderStatus {
 
     @SerialName("Blocked")
     Blocked,
+
+    @SerialName("Failed")
+    Failed,
 }

@@ -8,6 +8,7 @@ import com.amazonaws.services.kms.model.EncryptRequest
 import com.amazonaws.services.kms.model.EncryptResult
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.google.protobuf.ByteString
+import com.google.protobuf.kotlin.toByteString
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.network.util.DefaultByteBufferPool
 import io.newm.chain.grpc.CardanoEra
@@ -18,6 +19,7 @@ import io.newm.chain.grpc.MonitorAddressResponse
 import io.newm.chain.grpc.MonitorPaymentAddressRequest
 import io.newm.chain.grpc.NativeAsset
 import io.newm.chain.grpc.NewmChainGrpcKt.NewmChainCoroutineStub
+import io.newm.chain.grpc.Signature
 import io.newm.chain.grpc.SnapshotNativeAssetsResponse
 import io.newm.chain.grpc.SubmitTransactionResponse
 import io.newm.chain.grpc.TransactionBuilderRequestKt
@@ -33,13 +35,18 @@ import io.newm.chain.grpc.monitorAddressRequest
 import io.newm.chain.grpc.nativeAsset
 import io.newm.chain.grpc.outputUtxo
 import io.newm.chain.grpc.queryByNativeAssetRequest
+import io.newm.chain.grpc.queryPaymentAddressForStakeAddressRequest
 import io.newm.chain.grpc.queryUtxosOutputRefRequest
 import io.newm.chain.grpc.queryUtxosRequest
 import io.newm.chain.grpc.releaseMutexRequest
+import io.newm.chain.grpc.signature
 import io.newm.chain.grpc.snapshotNativeAssetsRequest
 import io.newm.chain.grpc.submitTransactionRequest
 import io.newm.chain.grpc.verifySignDataRequest
+import io.newm.chain.util.Bech32
 import io.newm.chain.util.Constants
+import io.newm.chain.util.Constants.PAYMENT_STAKE_ADDRESS_KEY_KEY_PREFIX_MAINNET
+import io.newm.chain.util.Constants.PAYMENT_STAKE_ADDRESS_KEY_KEY_PREFIX_TESTNET
 import io.newm.chain.util.b64ToByteArray
 import io.newm.chain.util.toB64String
 import io.newm.chain.util.toHexString
@@ -49,6 +56,7 @@ import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_ENCRYPTI
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_NFTCDN_ENABLED
 import io.newm.server.features.cardano.database.KeyEntity
 import io.newm.server.features.cardano.database.KeyTable
+import io.newm.server.features.cardano.database.ScriptAddressWhitelistEntity
 import io.newm.server.features.cardano.model.EncryptionRequest
 import io.newm.server.features.cardano.model.GetWalletSongsResponse
 import io.newm.server.features.cardano.model.Key
@@ -56,12 +64,22 @@ import io.newm.server.features.cardano.model.NFTSong
 import io.newm.server.features.cardano.model.WalletSong
 import io.newm.server.features.cardano.parser.toNFTSongs
 import io.newm.server.features.cardano.parser.toResourceUrl
+import io.newm.server.features.cardano.repo.CardanoRepository.Companion.CHARLI3_ADA_USD_NAME
+import io.newm.server.features.cardano.repo.CardanoRepository.Companion.CHARLI3_ADA_USD_POLICY
+import io.newm.server.features.cardano.repo.CardanoRepository.Companion.CHARLI3_NEWM_USD_NAME
+import io.newm.server.features.cardano.repo.CardanoRepository.Companion.CHARLI3_NEWM_USD_POLICY
+import io.newm.server.features.cardano.repo.CardanoRepository.Companion.MUTEX_NAME
+import io.newm.server.features.cardano.repo.CardanoRepository.Companion.NEWM_TOKEN_NAME
+import io.newm.server.features.cardano.repo.CardanoRepository.Companion.NEWM_TOKEN_NAME_TEST
+import io.newm.server.features.cardano.repo.CardanoRepository.Companion.NEWM_TOKEN_POLICY
+import io.newm.server.features.cardano.repo.CardanoRepository.Companion.NEWM_TOKEN_POLICY_TEST
 import io.newm.server.features.nftcdn.repo.NftCdnRepository
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongFilters
 import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.features.walletconnection.database.WalletConnectionEntity
 import io.newm.server.ktx.cborHexToUtxo
+import io.newm.server.ktx.sign
 import io.newm.server.model.FilterCriteria
 import io.newm.server.typealiases.UserId
 import io.newm.shared.koin.inject
@@ -70,18 +88,18 @@ import io.newm.shared.ktx.isValidPassword
 import io.newm.txbuilder.ktx.fingerprint
 import io.newm.txbuilder.ktx.mergeAmounts
 import io.newm.txbuilder.ktx.toNativeAssetMap
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import org.jetbrains.exposed.sql.transactions.transaction
-import org.springframework.security.crypto.encrypt.BytesEncryptor
-import org.springframework.security.crypto.encrypt.Encryptors
 import java.time.Duration
 import java.util.UUID
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 import kotlin.time.Duration.Companion.minutes
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import org.jetbrains.exposed.sql.transactions.transaction
+import org.springframework.security.crypto.encrypt.BytesEncryptor
+import org.springframework.security.crypto.encrypt.Encryptors
 
 internal class CardanoRepositoryImpl(
     private val client: NewmChainCoroutineStub,
@@ -113,9 +131,20 @@ internal class CardanoRepositoryImpl(
             .build<String, Utxo>()
 
     private val cardanoEraCache =
-        Caffeine.newBuilder()
+        Caffeine
+            .newBuilder()
             .expireAfterWrite(Duration.ofMinutes(5L))
             .build<String, CardanoEra>()
+
+    private val scriptAddressWhitelistCache =
+        Caffeine
+            .newBuilder()
+            .expireAfterWrite(Duration.ofMinutes(5L))
+            .build<Unit, List<String>> {
+                transaction {
+                    ScriptAddressWhitelistEntity.all().map { it.scriptAddress }
+                }
+            }
 
     override suspend fun saveKey(
         key: Key,
@@ -124,14 +153,15 @@ internal class CardanoRepositoryImpl(
         logger.debug { "add: key = $key, name: $name" }
         val eSkey = encryptSkey(key.skey)
         return transaction {
-            KeyEntity.new {
-                address = key.address
-                skey = eSkey
-                vkey = key.vkey.toHexString()
-                script = key.script
-                scriptAddress = key.scriptAddress
-                this.name = name
-            }.id.value
+            KeyEntity
+                .new {
+                    address = key.address
+                    skey = eSkey
+                    vkey = key.vkey.toHexString()
+                    script = key.script
+                    scriptAddress = key.scriptAddress
+                    this.name = name
+                }.id.value
         }
     }
 
@@ -181,6 +211,25 @@ internal class CardanoRepositoryImpl(
             )
         return response.utxosList
     }
+
+    override fun signTransaction(
+        transactionIdBytes: ByteArray,
+        signingKeys: List<Key>
+    ): List<Signature> =
+        signingKeys.map { key ->
+            signature {
+                vkey = key.vkey.toByteString()
+                sig = key.sign(transactionIdBytes).toByteString()
+            }
+        }
+
+    override fun signTransactionDummy(signingKeys: List<Key>) =
+        signingKeys.map { key ->
+            signature {
+                vkey = key.vkey.toByteString()
+                sig = ByteArray(64).toByteString()
+            }
+        }
 
     override suspend fun buildTransaction(block: TransactionBuilderRequestKt.Dsl.() -> Unit): TransactionBuilderResponse {
         val request =
@@ -263,18 +312,28 @@ internal class CardanoRepositoryImpl(
             var cachedOracleUtxo = oracleUtxoCache.getIfPresent(cacheKey)
             val failoverOracleUtxo = failoverOracleUtxoCache.getIfPresent(cacheKey)
             val oracleUtxoStartTimestamp =
-                cachedOracleUtxo?.datumOrNull
-                    ?.listOrNull?.getListItem(0)
-                    ?.listOrNull?.getListItem(0)
-                    ?.mapOrNull?.getMapItem(1)
-                    ?.mapItemValueOrNull?.int
+                cachedOracleUtxo
+                    ?.datumOrNull
+                    ?.listOrNull
+                    ?.getListItem(0)
+                    ?.listOrNull
+                    ?.getListItem(0)
+                    ?.mapOrNull
+                    ?.getMapItem(1)
+                    ?.mapItemValueOrNull
+                    ?.int
                     ?: Long.MAX_VALUE
             val oracleUtxoEndTimestamp =
-                cachedOracleUtxo?.datumOrNull
-                    ?.listOrNull?.getListItem(0)
-                    ?.listOrNull?.getListItem(0)
-                    ?.mapOrNull?.getMapItem(2)
-                    ?.mapItemValueOrNull?.int
+                cachedOracleUtxo
+                    ?.datumOrNull
+                    ?.listOrNull
+                    ?.getListItem(0)
+                    ?.listOrNull
+                    ?.getListItem(0)
+                    ?.mapOrNull
+                    ?.getMapItem(2)
+                    ?.mapItemValueOrNull
+                    ?.int
                     ?: Long.MIN_VALUE
             if (now < oracleUtxoStartTimestamp || now > oracleUtxoEndTimestamp) {
                 // Outside of range. Get a new oracle utxo
@@ -289,11 +348,16 @@ internal class CardanoRepositoryImpl(
                 failoverOracleUtxoCache.put(cacheKey, cachedOracleUtxo)
             }
             val usdPrice =
-                (cachedOracleUtxo ?: failoverOracleUtxo)?.datumOrNull
-                    ?.listOrNull?.getListItem(0)
-                    ?.listOrNull?.getListItem(0)
-                    ?.mapOrNull?.getMapItem(0)
-                    ?.mapItemValueOrNull?.int
+                (cachedOracleUtxo ?: failoverOracleUtxo)
+                    ?.datumOrNull
+                    ?.listOrNull
+                    ?.getListItem(0)
+                    ?.listOrNull
+                    ?.getListItem(0)
+                    ?.mapOrNull
+                    ?.getMapItem(0)
+                    ?.mapItemValueOrNull
+                    ?.int
             return usdPrice ?: run {
                 if (isMainnet()) {
                     throw IllegalStateException("Oracle Utxo does not contain a USD price!")
@@ -341,14 +405,13 @@ internal class CardanoRepositoryImpl(
     override suspend fun snapshotToken(
         policyId: String,
         name: String,
-    ): SnapshotNativeAssetsResponse {
-        return client.snapshotNativeAssets(
+    ): SnapshotNativeAssetsResponse =
+        client.snapshotNativeAssets(
             snapshotNativeAssetsRequest {
                 this.policy = policyId
                 this.name = name
             }
         )
-    }
 
     override suspend fun <T> withLock(block: suspend () -> T): T {
         try {
@@ -372,33 +435,39 @@ internal class CardanoRepositoryImpl(
     override suspend fun verifySignData(
         signatureHex: String,
         publicKeyHex: String
-    ): VerifySignDataResponse {
-        return client.verifySignData(
+    ): VerifySignDataResponse =
+        client.verifySignData(
             verifySignDataRequest {
                 this.signatureHex = signatureHex
                 this.publicKeyHex = publicKeyHex
             }
         )
-    }
 
-    override suspend fun verifySignTransaction(cborHex: String): VerifySignDataResponse {
-        return client.verifySignTransaction(
+    override suspend fun verifySignTransaction(cborHex: String): VerifySignDataResponse =
+        client.verifySignTransaction(
             submitTransactionRequest {
                 cbor = ByteString.fromHex(cborHex)
             }
         )
-    }
 
     override suspend fun monitorAddress(
         address: String,
         startAfterTxId: String?
-    ): Flow<MonitorAddressResponse> {
-        return client.monitorAddress(
+    ): Flow<MonitorAddressResponse> =
+        client.monitorAddress(
             monitorAddressRequest {
                 this.address = address
                 startAfterTxId?.let { this.startAfterTxId = it }
             }
         )
+
+    override suspend fun saveScriptAddressToWhitelist(scriptAddress: String) {
+        transaction {
+            ScriptAddressWhitelistEntity.new {
+                this.scriptAddress = scriptAddress
+            }
+        }
+        scriptAddressWhitelistCache.invalidate(Unit)
     }
 
     override suspend fun getWalletSongs(
@@ -414,16 +483,17 @@ internal class CardanoRepositoryImpl(
         val updatedFilters = filters.copy(nftNames = FilterCriteria(includes = streamTokenNames))
         val count = songRepository.getAllCount(updatedFilters)
         val songs =
-            songRepository.getAll(
-                filters = updatedFilters,
-                offset = offset,
-                limit = limit,
-            ).map { song: Song ->
-                WalletSong(
-                    song = song,
-                    tokenAmount = nativeAssetMap[song.nftPolicyId]!!.find { it.name == song.nftName }!!.amount!!.toLong(),
-                )
-            }
+            songRepository
+                .getAll(
+                    filters = updatedFilters,
+                    offset = offset,
+                    limit = limit,
+                ).map { song: Song ->
+                    WalletSong(
+                        song = song,
+                        tokenAmount = nativeAssetMap[song.nftPolicyId]!!.find { it.name == song.nftName }!!.amount!!.toLong(),
+                    )
+                }
 
         return GetWalletSongsResponse(
             songs = songs,
@@ -431,6 +501,34 @@ internal class CardanoRepositoryImpl(
             offset = offset,
             limit = limit,
         )
+    }
+
+    override suspend fun getReceiveAddressForStakeAddress(stakeAddress: String): String? {
+        val response =
+            client.queryPaymentAddressForStakeAddress(
+                queryPaymentAddressForStakeAddressRequest { this.stakeAddress = stakeAddress }
+            )
+        if (response.hasPaymentAddress()) {
+            // check to see if this is a script receiving address. If so, verify it's in the whitelist
+            val decodedPaymentStakeAddress = Bech32.decode(response.paymentAddress)
+            return when (decodedPaymentStakeAddress.bytes[0]) {
+                PAYMENT_STAKE_ADDRESS_KEY_KEY_PREFIX_MAINNET,
+                PAYMENT_STAKE_ADDRESS_KEY_KEY_PREFIX_TESTNET,
+                -> response.paymentAddress
+
+                else -> {
+                    if (response.paymentAddress in scriptAddressWhitelistCache.get(Unit) ||
+                        stakeAddress in scriptAddressWhitelistCache.get(Unit)
+                    ) {
+                        response.paymentAddress
+                    } else {
+                        logger.error { "PaymentStakeAddress lookup for $stakeAddress not in whitelist: ${response.paymentAddress}" }
+                        null
+                    }
+                }
+            }
+        }
+        return null
     }
 
     override suspend fun getWalletNFTSongs(
@@ -475,14 +573,14 @@ internal class CardanoRepositoryImpl(
         return nativeAssets.mergeAmounts()
     }
 
-    private suspend fun getAssetMetadata(asset: NativeAsset): List<LedgerAssetMetadataItem> {
-        return client.queryLedgerAssetMetadataListByNativeAsset(
-            queryByNativeAssetRequest {
-                policy = asset.policy
-                name = asset.name
-            }
-        ).ledgerAssetMetadataList
-    }
+    private suspend fun getAssetMetadata(asset: NativeAsset): List<LedgerAssetMetadataItem> =
+        client
+            .queryLedgerAssetMetadataListByNativeAsset(
+                queryByNativeAssetRequest {
+                    policy = asset.policy
+                    name = asset.name
+                }
+            ).ledgerAssetMetadataList
 
     private suspend fun encryptKmsBytes(bytes: ByteArray): String {
         val plaintextBuffer = DefaultByteBufferPool.borrow()
@@ -554,16 +652,12 @@ internal class CardanoRepositoryImpl(
         }
     }
 
-    private suspend fun encryptSkey(bytes: ByteArray): String {
-        return getEncryptor().encrypt(bytes).toB64String()
-    }
+    private suspend fun encryptSkey(bytes: ByteArray): String = getEncryptor().encrypt(bytes).toB64String()
 
-    private suspend fun decryptSkey(ciphertext: String): ByteArray {
-        return getEncryptor().decrypt(ciphertext.b64ToByteArray())
-    }
+    private suspend fun decryptSkey(ciphertext: String): ByteArray = getEncryptor().decrypt(ciphertext.b64ToByteArray())
 
-    private suspend fun getEncryptor(): BytesEncryptor {
-        return bytesEncryptor ?: run {
+    private suspend fun getEncryptor(): BytesEncryptor =
+        bytesEncryptor ?: run {
             require(configRepository.exists(CONFIG_KEY_ENCRYPTION_SALT)) { "$CONFIG_KEY_ENCRYPTION_SALT Not found in db!" }
             require(configRepository.exists(CONFIG_KEY_ENCRYPTION_PASSWORD)) { "$CONFIG_KEY_ENCRYPTION_PASSWORD Not found in db!" }
             val cipherTextSalt = configRepository.getString(CONFIG_KEY_ENCRYPTION_SALT)
@@ -573,25 +667,4 @@ internal class CardanoRepositoryImpl(
             bytesEncryptor = Encryptors.stronger(password, salt)
             bytesEncryptor!!
         }
-    }
-
-    companion object {
-        const val MUTEX_NAME = "newm-server"
-
-        // NEWM token information - mainnet
-        private const val NEWM_TOKEN_POLICY = "682fe60c9918842b3323c43b5144bc3d52a23bd2fb81345560d73f63"
-        private const val NEWM_TOKEN_NAME = "4e45574d"
-
-        // NEWM token information - testnet
-        private const val NEWM_TOKEN_POLICY_TEST = "769c4c6e9bc3ba5406b9b89fb7beb6819e638ff2e2de63f008d5bcff"
-        private const val NEWM_TOKEN_NAME_TEST = "744e45574d"
-
-        // Charli3 ADA/USD OracleFeed token
-        private const val CHARLI3_ADA_USD_POLICY = "08c56c0fa73748a23c3bc1d9e6a60a4187416fc4ff8fe3475506990e"
-        private const val CHARLI3_ADA_USD_NAME = "4f7261636c6546656564"
-
-        // Charli3 NEWM/USD OracleFeed token
-        private const val CHARLI3_NEWM_USD_POLICY = "f155a26044efe91b3c44f87a7536d2d631c847717930ff547ae9d05c"
-        private const val CHARLI3_NEWM_USD_NAME = "4f7261636c6546656564"
-    }
 }

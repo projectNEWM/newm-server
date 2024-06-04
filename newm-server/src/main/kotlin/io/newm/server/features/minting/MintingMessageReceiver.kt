@@ -19,12 +19,14 @@ import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.logging.captureToSentry
 import io.newm.shared.koin.inject
+import kotlin.time.Duration.Companion.minutes
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import org.quartz.JobBuilder.newJob
 import org.quartz.JobKey
 import org.quartz.SimpleScheduleBuilder.simpleSchedule
 import org.quartz.TriggerBuilder.newTrigger
-import kotlin.time.Duration.Companion.minutes
 
 class MintingMessageReceiver : SqsMessageReceiver {
     private val log = KotlinLogging.logger {}
@@ -64,47 +66,52 @@ class MintingMessageReceiver : SqsMessageReceiver {
 
         when (mintingStatusSqsMessage.mintingStatus) {
             MintingStatus.MintingPaymentSubmitted -> {
-                try {
-                    val song = songRepository.get(mintingStatusSqsMessage.songId)
-                    val paymentKey = cardanoRepository.getKey(song.paymentKeyId!!)
-                    val response =
-                        cardanoRepository.awaitPayment(
-                            monitorPaymentAddressRequest {
-                                address = paymentKey.address
-                                lovelace = song.mintCostLovelace!!.toString()
-                                timeoutMs =
-                                    configRepository.getLong(
-                                        CONFIG_KEY_MINT_MONITOR_PAYMENT_ADDRESS_TIMEOUT_MIN
-                                    ).minutes.inWholeMilliseconds
-                            }.also {
-                                log.info { "Awaiting payment for song: ${song.id} on address: ${it.address} for ${it.lovelace} lovelace." }
+                coroutineScope {
+                    // Monitor for payment in a new coroutine so we can continue
+                    // to process other song messages from the SQS Queue.
+                    launch {
+                        try {
+                            val song = songRepository.get(mintingStatusSqsMessage.songId)
+                            val paymentKey = cardanoRepository.getKey(song.paymentKeyId!!)
+                            val response =
+                                cardanoRepository.awaitPayment(
+                                    monitorPaymentAddressRequest {
+                                        address = paymentKey.address
+                                        lovelace = song.mintCostLovelace!!.toString()
+                                        timeoutMs =
+                                            configRepository.getLong(
+                                                CONFIG_KEY_MINT_MONITOR_PAYMENT_ADDRESS_TIMEOUT_MIN
+                                            ).minutes.inWholeMilliseconds
+                                    }.also {
+                                        log.info { "Awaiting payment for song: ${song.id} on address: ${it.address} for ${it.lovelace} lovelace." }
+                                    }
+                                )
+                            if (response.success) {
+                                log.info { "Payment received for song: ${song.id}" }
+                                // We got paid!!! Move -> MintingPaymentReceived
+                                songRepository.updateSongMintingStatus(
+                                    songId = mintingStatusSqsMessage.songId,
+                                    mintingStatus = MintingStatus.MintingPaymentReceived
+                                )
+                            } else {
+                                // We timed out waiting for payment.
+                                val errorMessage = "Timed out waiting for payment!: ${response.message}"
+                                songRepository.updateSongMintingStatus(
+                                    songId = mintingStatusSqsMessage.songId,
+                                    mintingStatus = MintingStatus.MintingPaymentTimeout,
+                                    errorMessage = errorMessage,
+                                )
                             }
-                        )
-                    if (response.success) {
-                        log.info { "Payment received for song: ${song.id}" }
-                        // We got paid!!! Move -> MintingPaymentReceived
-                        songRepository.updateSongMintingStatus(
-                            songId = mintingStatusSqsMessage.songId,
-                            mintingStatus = MintingStatus.MintingPaymentReceived
-                        )
-                    } else {
-                        // We timed out waiting for payment.
-                        val errorMessage = "Timed out waiting for payment!: ${response.message}"
-                        songRepository.updateSongMintingStatus(
-                            songId = mintingStatusSqsMessage.songId,
-                            mintingStatus = MintingStatus.MintingPaymentTimeout,
-                            errorMessage = errorMessage,
-                        )
+                        } catch (e: Throwable) {
+                            val errorMessage = "Error while waiting for payment!"
+                            log.error(e) { errorMessage }
+                            songRepository.updateSongMintingStatus(
+                                songId = mintingStatusSqsMessage.songId,
+                                mintingStatus = MintingStatus.MintingPaymentException,
+                                errorMessage = "$errorMessage: ${e.message}",
+                            )
+                        }
                     }
-                } catch (e: Throwable) {
-                    val errorMessage = "Error while waiting for payment!"
-                    log.error(errorMessage, e)
-                    songRepository.updateSongMintingStatus(
-                        songId = mintingStatusSqsMessage.songId,
-                        mintingStatus = MintingStatus.MintingPaymentException,
-                        errorMessage = "$errorMessage: ${e.message}",
-                    )
-                    throw DistributeAndMintException(errorMessage, e).also { it.captureToSentry() }
                 }
             }
 
@@ -142,7 +149,7 @@ class MintingMessageReceiver : SqsMessageReceiver {
                     )
                 } catch (e: Throwable) {
                     val errorMessage = "Error while distributing!"
-                    log.error(errorMessage, e)
+                    log.error(e) { errorMessage }
                     songRepository.updateSongMintingStatus(
                         songId = mintingStatusSqsMessage.songId,
                         mintingStatus = MintingStatus.DistributionException,
@@ -189,7 +196,7 @@ class MintingMessageReceiver : SqsMessageReceiver {
                     }
                 } catch (e: Throwable) {
                     val errorMessage = "Error while creating distribution check job!"
-                    log.error(errorMessage, e)
+                    log.error(e) { errorMessage }
                     songRepository.updateSongMintingStatus(
                         songId = mintingStatusSqsMessage.songId,
                         mintingStatus = MintingStatus.SubmittedForDistributionException,
@@ -224,7 +231,7 @@ class MintingMessageReceiver : SqsMessageReceiver {
                     }
                 } catch (e: Throwable) {
                     val errorMessage = "Error while uploading song assets to arweave!"
-                    log.error(errorMessage, e)
+                    log.error(e) { errorMessage }
                     songRepository.updateSongMintingStatus(
                         songId = mintingStatusSqsMessage.songId,
                         mintingStatus = MintingStatus.ArweaveUploadException,
@@ -258,7 +265,7 @@ class MintingMessageReceiver : SqsMessageReceiver {
                     )
                 } catch (e: Throwable) {
                     val errorMessage = "Error while minting!"
-                    log.error(errorMessage, e)
+                    log.error(e) { errorMessage }
                     songRepository.updateSongMintingStatus(
                         songId = mintingStatusSqsMessage.songId,
                         mintingStatus = MintingStatus.MintingException,
@@ -298,7 +305,7 @@ class MintingMessageReceiver : SqsMessageReceiver {
                     quartzSchedulerDaemon.scheduleJob(jobDetail, trigger)
                 } catch (e: Throwable) {
                     val errorMessage = "Error while creating OutletReleaseStatusJob!"
-                    log.error(errorMessage, e)
+                    log.error(e) { errorMessage }
                     songRepository.updateSongMintingStatus(
                         songId = mintingStatusSqsMessage.songId,
                         mintingStatus = MintingStatus.ReleaseCheckException,

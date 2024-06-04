@@ -18,8 +18,10 @@ dependencies {
     compileOnly(Dependencies.Kotlin.REFLECTION)
     implementation(Dependencies.Kotlin.STDLIB_JDK8)
 
+    implementation(Dependencies.KotlinLogging.ALL)
+
     implementation(Dependencies.Coroutines.CORE)
-    implementation(Dependencies.Coroutines.JDK8)
+    implementation(Dependencies.Coroutines.JDK9)
 
     implementation(Dependencies.KotlinXSerialization.JSON)
 

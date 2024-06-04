@@ -12,6 +12,7 @@ service NewmChain {
   rpc QueryLiveUtxos (QueryUtxosRequest) returns (QueryUtxosResponse);
   rpc QueryUtxosByOutputRef (QueryUtxosOutputRefRequest) returns (QueryUtxosResponse);
   rpc QueryUtxosByStakeAddress (QueryUtxosRequest) returns (QueryUtxosResponse);
+  rpc QueryPaymentAddressForStakeAddress (QueryPaymentAddressForStakeAddressRequest) returns (QueryPaymentAddressForStakeAddressResponse);
   rpc QueryDatumByHash (QueryDatumByHashRequest) returns (QueryDatumByHashResponse);
   rpc QueryTransactionConfirmationCount (QueryTransactionConfirmationCountRequest) returns (QueryTransactionConfirmationCountResponse);
   rpc MonitorAddress (MonitorAddressRequest) returns (stream MonitorAddressResponse);
@@ -76,6 +77,14 @@ message QueryTransactionConfirmationCountRequest {
 
 message QueryTransactionConfirmationCountResponse {
   map<string, uint64> tx_id_to_confirmation_count = 1;
+}
+
+message QueryPaymentAddressForStakeAddressRequest {
+  string stake_address = 1;
+}
+
+message QueryPaymentAddressForStakeAddressResponse {
+  optional string payment_address = 1;
 }
 
 message Utxo {

@@ -1,6 +1,7 @@
 package io.newm.server.features.daemon
 
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.server.config.ApplicationConfig
 import io.newm.server.aws.SqsMessageReceiver
@@ -10,22 +11,17 @@ import io.newm.server.ktx.markFailed
 import io.newm.server.logging.captureToSentry
 import io.newm.shared.daemon.Daemon
 import io.newm.shared.koin.inject
-import io.newm.shared.ktx.error
 import io.newm.shared.ktx.getConfigChildren
 import io.newm.shared.ktx.getInt
 import io.newm.shared.ktx.getLong
 import io.newm.shared.ktx.getString
-import io.newm.shared.ktx.info
-import io.newm.shared.ktx.warn
+import kotlin.reflect.full.primaryConstructor
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.koin.core.parameter.parametersOf
-import org.slf4j.Logger
-import kotlin.reflect.full.primaryConstructor
 
 class AwsSqsDaemon : Daemon {
-    override val log: Logger by inject { parametersOf(javaClass.simpleName) }
+    override val log = KotlinLogging.logger {}
     private val environment: ApplicationEnvironment by inject()
 
     override fun start() {
@@ -73,7 +69,7 @@ class AwsSqsDaemon : Daemon {
                                 message.delete(queueUrl)
                                 log.info { "$queueUrl -> Deleted SQS message: ${message.body}" }
                             } catch (e: Throwable) {
-                                log.error("Failure processing SQS message: $queueUrl", e)
+                                log.error(e) { "Failure processing SQS message: $queueUrl" }
                                 e.captureToSentry()
                                 try {
                                     message.markFailed(queueUrl)
@@ -83,7 +79,7 @@ class AwsSqsDaemon : Daemon {
                             }
                         }
                     } catch (e: Throwable) {
-                        log.error("Error receiving from SQS queue: $queueUrl", e)
+                        log.error(e) { "Error receiving from SQS queue: $queueUrl" }
                     } finally {
                         delay(delayTimeMs)
                     }

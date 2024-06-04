@@ -8,6 +8,7 @@ import io.newm.server.features.earnings.database.EarningEntity
 import io.newm.server.features.earnings.database.EarningsTable
 import io.newm.server.features.earnings.model.AddSongRoyaltyRequest
 import io.newm.server.features.earnings.model.ClaimOrder
+import io.newm.server.features.earnings.model.ClaimOrder.Companion.ACTIVE_STATUSES
 import io.newm.server.features.earnings.model.Earning
 import io.newm.server.features.song.database.SongTable
 import io.newm.server.features.song.repo.SongRepository
@@ -18,6 +19,8 @@ import java.util.UUID
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.batchInsert
 import org.jetbrains.exposed.sql.transactions.transaction
 
@@ -28,18 +31,19 @@ class EarningsRepositoryImpl(
 ) : EarningsRepository {
     override suspend fun add(earning: Earning): UUID =
         transaction {
-            EarningEntity.new {
-                this.songId = earning.songId?.let { EntityID(it, SongTable) }
-                this.stakeAddress = earning.stakeAddress
-                this.amount = earning.amount
-                this.memo = earning.memo
-                this.startDate = earning.startDate
-                this.endDate = earning.endDate
-                this.claimed = earning.claimed
-                this.claimedAt = earning.claimedAt
-                this.claimOrderId = earning.claimOrderId?.let { EntityID(it, ClaimOrdersTable) }
-                this.createdAt = earning.createdAt
-            }.id.value
+            EarningEntity
+                .new {
+                    this.songId = earning.songId?.let { EntityID(it, SongTable) }
+                    this.stakeAddress = earning.stakeAddress
+                    this.amount = earning.amount
+                    this.memo = earning.memo
+                    this.startDate = earning.startDate
+                    this.endDate = earning.endDate
+                    this.claimed = earning.claimed
+                    this.claimedAt = earning.claimedAt
+                    this.claimOrderId = earning.claimOrderId?.let { EntityID(it, ClaimOrdersTable) }
+                    this.createdAt = earning.createdAt
+                }.id.value
         }
 
     override suspend fun addAll(earnings: List<Earning>) {
@@ -115,16 +119,34 @@ class EarningsRepositoryImpl(
 
     override suspend fun add(claimOrder: ClaimOrder): UUID =
         transaction {
-            ClaimOrderEntity.new {
-                this.stakeAddress = claimOrder.stakeAddress
-                this.keyId = EntityID(claimOrder.keyId, KeyTable)
-                this.status = claimOrder.status.name
-                this.earningsIds = claimOrder.earningsIds.toTypedArray()
-                this.failedEarningsIds = claimOrder.failedEarningsIds?.toTypedArray()
-                this.transactionId = claimOrder.transactionId
-                this.createdAt = claimOrder.createdAt
-            }.id.value
+            ClaimOrderEntity
+                .new {
+                    this.stakeAddress = claimOrder.stakeAddress
+                    this.keyId = EntityID(claimOrder.keyId, KeyTable)
+                    this.paymentAddress = claimOrder.paymentAddress
+                    this.status = claimOrder.status.name
+                    this.earningsIds = claimOrder.earningsIds.toTypedArray()
+                    this.failedEarningsIds = claimOrder.failedEarningsIds?.toTypedArray()
+                    this.transactionId = claimOrder.transactionId
+                    this.createdAt = claimOrder.createdAt
+                    this.errorMessage = claimOrder.errorMessage
+                }.id.value
         }
+
+    override suspend fun update(claimOrder: ClaimOrder) {
+        transaction {
+            val entity = ClaimOrderEntity[claimOrder.id]
+            entity.stakeAddress = claimOrder.stakeAddress
+            entity.keyId = EntityID(claimOrder.keyId, KeyTable)
+            entity.paymentAddress = claimOrder.paymentAddress
+            entity.paymentAmount = claimOrder.paymentAmount
+            entity.status = claimOrder.status.name
+            entity.earningsIds = claimOrder.earningsIds.toTypedArray()
+            entity.failedEarningsIds = claimOrder.failedEarningsIds?.toTypedArray()
+            entity.transactionId = claimOrder.transactionId
+            entity.errorMessage = claimOrder.errorMessage
+        }
+    }
 
     override suspend fun claimed(
         earningIds: List<UUID>,
@@ -147,15 +169,59 @@ class EarningsRepositoryImpl(
 
     override suspend fun getAllBySongId(songId: SongId): List<Earning> =
         transaction {
-            EarningEntity.wrapRows(
-                EarningEntity.searchQuery(EarningsTable.songId eq songId).orderBy(EarningsTable.createdAt, SortOrder.DESC)
-            ).map { it.toModel() }
+            EarningEntity
+                .wrapRows(
+                    EarningEntity.searchQuery(EarningsTable.songId eq songId).orderBy(EarningsTable.createdAt, SortOrder.DESC)
+                ).map { it.toModel() }
         }
 
     override suspend fun getAllByStakeAddress(stakeAddress: String): List<Earning> =
         transaction {
-            EarningEntity.wrapRows(
-                EarningEntity.searchQuery(EarningsTable.stakeAddress eq stakeAddress).orderBy(EarningsTable.createdAt, SortOrder.DESC)
-            ).map { it.toModel() }
+            EarningEntity
+                .wrapRows(
+                    EarningEntity.searchQuery(EarningsTable.stakeAddress eq stakeAddress).orderBy(EarningsTable.createdAt, SortOrder.DESC)
+                ).map { it.toModel() }
+        }
+
+    override suspend fun getAllUnclaimedByStakeAddress(stakeAddress: String): List<Earning> =
+        transaction {
+            EarningEntity
+                .wrapRows(
+                    EarningEntity
+                        .searchQuery(
+                            (EarningsTable.stakeAddress eq stakeAddress) and (EarningsTable.claimed eq false)
+                        ).orderBy(EarningsTable.createdAt, SortOrder.DESC)
+                ).map { it.toModel() }
+        }
+
+    override suspend fun getAllByIds(earningsIds: List<UUID>): List<Earning> =
+        transaction {
+            EarningEntity
+                .wrapRows(
+                    EarningEntity
+                        .searchQuery(
+                            (EarningsTable.id inList earningsIds) and (EarningsTable.claimed eq false)
+                        ).orderBy(EarningsTable.createdAt, SortOrder.DESC)
+                ).map { it.toModel() }
+        }
+
+    override suspend fun getActiveClaimOrderByStakeAddress(stakeAddress: String): ClaimOrder? =
+        transaction {
+            ClaimOrderEntity
+                .wrapRows(
+                    ClaimOrderEntity.searchQuery(
+                        (ClaimOrdersTable.stakeAddress eq stakeAddress) and (ClaimOrdersTable.status inList ACTIVE_STATUSES)
+                    )
+                ).let { list ->
+                    if (list.count() > 1) {
+                        throw IllegalStateException("More than one active claim order found for stake address: $stakeAddress")
+                    }
+                    list.firstOrNull()
+                }?.toModel()
+        }
+
+    override suspend fun getByClaimOrderId(claimOrderId: UUID): ClaimOrder? =
+        transaction {
+            ClaimOrderEntity.findById(claimOrderId)?.toModel()
         }
 }

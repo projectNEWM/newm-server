@@ -7,10 +7,12 @@ import io.ktor.server.auth.authenticate
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Routing
+import io.newm.chain.util.extractStakeAddress
 import io.newm.chain.util.hexToByteArray
 import io.newm.server.auth.jwt.AUTH_JWT
 import io.newm.server.auth.jwt.AUTH_JWT_ADMIN
 import io.newm.server.features.cardano.model.Key
+import io.newm.server.features.cardano.model.ScriptAddressWhitelistRequest
 import io.newm.server.features.cardano.model.SubmitTransactionRequest
 import io.newm.server.features.cardano.model.SubmitTransactionResponse
 import io.newm.server.features.cardano.repo.CardanoRepository
@@ -80,6 +82,30 @@ fun Routing.createCardanoRoutes() {
                 respond(HttpStatusCode.Created)
             } catch (e: Exception) {
                 log.error("Failed to save encryption params!", e)
+                throw e
+            }
+        }
+
+        post("v1/cardano/scriptAddressWhitelist") {
+            try {
+                val scriptAddressWhitelistRequest = receive<ScriptAddressWhitelistRequest>()
+                val scriptAddress = scriptAddressWhitelistRequest.scriptAddress
+                val stakeAddress =
+                    if (scriptAddress.startsWith("stake") ||
+                        scriptAddress.startsWith("stake_test")
+                    ) {
+                        scriptAddress
+                    } else {
+                        scriptAddress.extractStakeAddress(cardanoRepository.isMainnet())
+                    }
+
+                if (scriptAddress != stakeAddress) {
+                    cardanoRepository.saveScriptAddressToWhitelist(scriptAddress)
+                }
+                cardanoRepository.saveScriptAddressToWhitelist(stakeAddress)
+                respond(HttpStatusCode.Created)
+            } catch (e: Exception) {
+                log.error("Failed to add script address to whitelist!", e)
                 throw e
             }
         }
