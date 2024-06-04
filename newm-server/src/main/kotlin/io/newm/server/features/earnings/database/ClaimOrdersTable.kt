@@ -2,14 +2,14 @@ package io.newm.server.features.earnings.database
 
 import io.newm.server.features.cardano.database.KeyTable
 import io.newm.shared.exposed.uuidArray
+import java.time.LocalDateTime
+import java.util.UUID
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.javatime.CurrentDateTime
 import org.jetbrains.exposed.sql.javatime.datetime
-import java.time.LocalDateTime
-import java.util.UUID
 
 object ClaimOrdersTable : UUIDTable(name = "claim_orders") {
     // The user's stake address
@@ -17,6 +17,12 @@ object ClaimOrdersTable : UUIDTable(name = "claim_orders") {
 
     // The key/address used to receive payment for the claiming transaction
     val keyId: Column<EntityID<UUID>> = reference("key_id", KeyTable, onDelete = ReferenceOption.RESTRICT)
+
+    // The payment address used to receive payment for the claiming transaction
+    val paymentAddress: Column<String> = text("payment_address")
+
+    // The payment amount for the claiming transaction
+    val paymentAmount: Column<Long> = long("payment_amount")
 
     // The status of the claim order
     val status: Column<String> = text("status")
@@ -32,4 +38,7 @@ object ClaimOrdersTable : UUIDTable(name = "claim_orders") {
 
     // The time the claim order was created
     val createdAt: Column<LocalDateTime> = datetime("created_at").defaultExpression(CurrentDateTime)
+
+    // The error message for this claim order
+    val errorMessage: Column<String?> = text("error_message").nullable()
 }

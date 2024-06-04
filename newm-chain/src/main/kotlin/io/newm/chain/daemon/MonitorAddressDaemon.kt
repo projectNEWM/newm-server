@@ -1,5 +1,6 @@
 package io.newm.chain.daemon
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.server.application.ApplicationEnvironment
 import io.newm.chain.cardano.getEpochSecondAtSlot
 import io.newm.chain.config.Config
@@ -36,6 +37,12 @@ import io.newm.shared.ktx.getConfigBoolean
 import io.newm.shared.ktx.getConfigInt
 import io.newm.shared.ktx.getConfigString
 import io.newm.txbuilder.ktx.cborHexToPlutusData
+import java.io.ByteArrayOutputStream
+import java.io.IOException
+import java.time.Instant
+import kotlin.math.floor
+import kotlin.math.max
+import kotlin.system.measureTimeMillis
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.channels.BufferOverflow
@@ -50,14 +57,6 @@ import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.batchInsert
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
-import org.koin.core.parameter.parametersOf
-import org.slf4j.Logger
-import java.io.ByteArrayOutputStream
-import java.io.IOException
-import java.time.Instant
-import kotlin.math.floor
-import kotlin.math.max
-import kotlin.system.measureTimeMillis
 
 class MonitorAddressDaemon(
     private val environment: ApplicationEnvironment,
@@ -65,7 +64,7 @@ class MonitorAddressDaemon(
     private val ledgerRepository: LedgerRepository,
     private val monitorAddress: String,
 ) : Daemon {
-    override val log: Logger by inject { parametersOf("Monitor(${monitorAddress.take(15)}...)") }
+    override val log = KotlinLogging.logger("Monitor(${monitorAddress.take(15)}...)")
     private val server by lazy { environment.getConfigString("ogmios.server") }
     private val port by lazy { environment.getConfigInt("ogmios.port") }
     private val secure by lazy { environment.getConfigBoolean("ogmios.secure") }
@@ -84,15 +83,15 @@ class MonitorAddressDaemon(
     private var isTipReached = false
 
     override fun start() {
-        log.info("starting...")
+        log.info { "starting..." }
         startCheckSyncMode()
         startProcessBlock()
         startChainSync()
-        log.info("startup complete.")
+        log.info { "startup complete." }
     }
 
     override fun shutdown() {
-        log.info("shutdown complete.")
+        log.info { "shutdown complete." }
     }
 
     private fun startCheckSyncMode() {
@@ -100,7 +99,7 @@ class MonitorAddressDaemon(
         if (pointDetailList.size == 1 && pointDetailList[0].slot < 0L) {
             // we're already on the tip for this particular address, so we don't need to sync from a different point
             // than the normal blockdaemon.
-            log.info("Use BlockDaemon to sync blockchain.")
+            log.info { "Use BlockDaemon to sync blockchain." }
             isTipReached = true
         }
     }
@@ -124,8 +123,8 @@ class MonitorAddressDaemon(
                     }
                     break
                 } catch (e: Throwable) {
-                    log.warn("Error connecting Kogmios!", e)
-                    log.info("Wait 10 seconds to retry...")
+                    log.warn(e) { "Error connecting Kogmios!" }
+                    log.info { "Wait 10 seconds to retry..." }
                     delay(RETRY_DELAY_MILLIS)
                 }
             }
@@ -142,11 +141,11 @@ class MonitorAddressDaemon(
                         syncBlockchain(localChainSyncClient)
                     }
                 } catch (e: Throwable) {
-                    log.warn("Error syncing blockchain!", e)
+                    log.warn(e) { "Error syncing blockchain!" }
                     if (e !is TimeoutCancellationException) {
                         e.captureToSentry()
                     }
-                    log.info("Wait 10 seconds to retry...")
+                    log.info { "Wait 10 seconds to retry..." }
                     try {
                         // clear out everything so far since we're going to retry...
                         blockBuffer.clear()
@@ -159,7 +158,7 @@ class MonitorAddressDaemon(
                 }
             }
             // tip reached. mark it in the database
-            log.info("Tip reached. ChainSync Exiting...")
+            log.info { "Tip reached. ChainSync Exiting..." }
             chainRepository.markTipMonitoredAddressChain(monitorAddress)
         }
     }
@@ -275,14 +274,14 @@ class MonitorAddressDaemon(
                 val blockHeight = latestBlock.height
                 val percent = floor(blockHeight.toDouble() / tipBlockHeight.toDouble() * 10000.0) / 100.0
                 if (percent < 100.0) {
-                    log.info("commitBlock: block $blockHeight of $tipBlockHeight: %.2f%% committed".format(percent))
+                    log.info { "commitBlock: block $blockHeight of $tipBlockHeight: %.2f%% committed".format(percent) }
                 }
                 lastLoggedCommit = now
             }
             if ((isTip && totalTime > COMMIT_BLOCKS_WARN_LEVEL_MILLIS) || (totalTime > COMMIT_BLOCKS_ERROR_LEVEL_MILLIS)) {
-                log.warn(
+                log.warn {
                     "commitBlocks(${blocksToCommit.size}) total: ${totalTime}ms, rollback: ${rollbackTime}ms, create: ${createTime}ms, prune: ${pruneTime}ms"
-                )
+                }
             }
 
             // Adjust blockBufferSize based on how long it took to commit these blocks
@@ -485,7 +484,7 @@ class MonitorAddressDaemon(
                 )
             when (response.result) {
                 is RollBackward -> {
-                    log.info("RollBackward: ${(response.result as RollBackward).point}")
+                    log.info { "RollBackward: ${(response.result as RollBackward).point}" }
                 }
 
                 is RollForward -> {
@@ -500,15 +499,15 @@ class MonitorAddressDaemon(
                             if (isTip || tenSecondsAgo.isAfter(lastLogged)) {
                                 val percent =
                                     floor(blockHeight.toDouble() / tipBlockHeight.toDouble() * 10000.0) / 100.0
-                                log.info(
+                                log.info {
                                     "RollForward: block $blockHeight of $tipBlockHeight: %.2f%% sync'd".format(
                                         percent
                                     )
-                                )
+                                }
                                 lastLogged = now
                             }
                         } ?: run {
-                            log.warn("RollForward: block is not BlockPraos: ${rollForward.block.javaClass.simpleName}")
+                            log.warn { "RollForward: block is not BlockPraos: ${rollForward.block.javaClass.simpleName}" }
                         }
                     }
                 }

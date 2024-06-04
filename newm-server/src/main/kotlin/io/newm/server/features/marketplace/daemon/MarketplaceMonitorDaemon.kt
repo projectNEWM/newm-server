@@ -1,5 +1,6 @@
 package io.newm.server.features.marketplace.daemon
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.newm.chain.grpc.MonitorAddressResponse
 import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_MONITORING_ENABLED
@@ -20,7 +21,6 @@ import kotlinx.coroutines.launch
 import org.apache.curator.framework.recipes.leader.LeaderLatch
 import org.apache.curator.framework.recipes.leader.LeaderLatchListener
 import org.koin.core.parameter.parametersOf
-import org.slf4j.Logger
 import kotlin.time.Duration.Companion.seconds
 
 private const val LEADER_LATCH_PATH = "/leader-latches/marketplace-monitor"
@@ -30,7 +30,7 @@ class MarketplaceMonitorDaemon(
     private val cardanoRepository: CardanoRepository,
     private val marketplaceRepository: MarketplaceRepository
 ) : Daemon, LeaderLatchListener {
-    override val log: Logger by inject { parametersOf(javaClass.simpleName) }
+    override val log = KotlinLogging.logger {}
     private val leaderLatch: LeaderLatch by inject { parametersOf(LEADER_LATCH_PATH) }
     private val isEnabled: Boolean by coLazy {
         configRepository.getBoolean(CONFIG_KEY_MARKETPLACE_MONITORING_ENABLED)

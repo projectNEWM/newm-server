@@ -43,6 +43,9 @@ import io.newm.chain.util.elementToInt
 import io.newm.chain.util.extractCredentials
 import io.newm.chain.util.hexToByteArray
 import io.newm.chain.util.toHexString
+import java.math.BigInteger
+import java.time.Duration
+import kotlin.math.max
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -63,15 +66,11 @@ import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.max
 import org.jetbrains.exposed.sql.or
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.sum
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 import org.slf4j.LoggerFactory
-import java.math.BigInteger
-import java.time.Duration
-import kotlin.math.max
 
 class LedgerRepositoryImpl : LedgerRepository {
     private val log by lazy { LoggerFactory.getLogger("LedgerRepository") }
@@ -91,8 +90,19 @@ class LedgerRepositoryImpl : LedgerRepository {
 
     override fun queryUtxos(address: String): Set<Utxo> =
         transaction {
+            warnLongQueriesDuration = 1000L
+
             LedgerUtxosTable.innerJoin(LedgerTable, { ledgerId }, { LedgerTable.id }, { LedgerTable.address eq address })
-                .selectAll().where {
+                .select(
+                    LedgerTable.address,
+                    LedgerUtxosTable.id,
+                    LedgerUtxosTable.txId,
+                    LedgerUtxosTable.txIx,
+                    LedgerUtxosTable.lovelace,
+                    LedgerUtxosTable.datumHash,
+                    LedgerUtxosTable.datum,
+                    LedgerUtxosTable.scriptRef
+                ).where {
                     LedgerUtxosTable.blockSpent.isNull()
                 }.map { row ->
                     val ledgerUtxoId = row[LedgerUtxosTable.id].value
@@ -103,7 +113,11 @@ class LedgerRepositoryImpl : LedgerRepository {
                             { ledgerAssetId },
                             { LedgerAssetsTable.id },
                             { LedgerUtxoAssetsTable.ledgerUtxoId eq ledgerUtxoId }
-                        ).selectAll().map { naRow ->
+                        ).select(
+                            LedgerAssetsTable.name,
+                            LedgerAssetsTable.policy,
+                            LedgerUtxoAssetsTable.amount
+                        ).map { naRow ->
                             NativeAsset(
                                 name = naRow[LedgerAssetsTable.name],
                                 policy = naRow[LedgerAssetsTable.policy],
@@ -126,12 +140,23 @@ class LedgerRepositoryImpl : LedgerRepository {
 
     override fun queryUtxosByStakeAddress(address: String): Set<Utxo> =
         transaction {
+            warnLongQueriesDuration = 1000L
+
             LedgerUtxosTable.innerJoin(
                 LedgerTable,
                 { ledgerId },
                 { LedgerTable.id },
                 { LedgerTable.stakeAddress eq address }
-            ).selectAll().where {
+            ).select(
+                LedgerTable.address,
+                LedgerUtxosTable.id,
+                LedgerUtxosTable.txId,
+                LedgerUtxosTable.txIx,
+                LedgerUtxosTable.lovelace,
+                LedgerUtxosTable.datumHash,
+                LedgerUtxosTable.datum,
+                LedgerUtxosTable.scriptRef
+            ).where {
                 LedgerUtxosTable.blockSpent.isNull()
             }.map { row ->
                 val ledgerUtxoId = row[LedgerUtxosTable.id].value
@@ -142,7 +167,11 @@ class LedgerRepositoryImpl : LedgerRepository {
                         { ledgerAssetId },
                         { LedgerAssetsTable.id },
                         { LedgerUtxoAssetsTable.ledgerUtxoId eq ledgerUtxoId }
-                    ).selectAll().map { naRow ->
+                    ).select(
+                        LedgerAssetsTable.name,
+                        LedgerAssetsTable.policy,
+                        LedgerUtxoAssetsTable.amount
+                    ).map { naRow ->
                         NativeAsset(
                             name = naRow[LedgerAssetsTable.name],
                             policy = naRow[LedgerAssetsTable.policy],

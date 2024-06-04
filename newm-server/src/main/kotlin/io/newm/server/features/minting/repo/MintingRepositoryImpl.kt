@@ -7,7 +7,17 @@ import com.google.iot.cbor.CborMap
 import com.google.iot.cbor.CborTextString
 import com.google.protobuf.ByteString
 import com.google.protobuf.kotlin.toByteString
-import io.newm.chain.grpc.*
+import io.newm.chain.grpc.PlutusData
+import io.newm.chain.grpc.RedeemerTag
+import io.newm.chain.grpc.Signature
+import io.newm.chain.grpc.Utxo
+import io.newm.chain.grpc.nativeAsset
+import io.newm.chain.grpc.outputUtxo
+import io.newm.chain.grpc.plutusData
+import io.newm.chain.grpc.plutusDataList
+import io.newm.chain.grpc.plutusDataMap
+import io.newm.chain.grpc.plutusDataMapItem
+import io.newm.chain.grpc.redeemer
 import io.newm.chain.util.Blake2b
 import io.newm.chain.util.Sha3
 import io.newm.chain.util.hexToByteArray
@@ -30,7 +40,6 @@ import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.model.User
 import io.newm.server.features.user.repo.UserRepository
-import io.newm.server.ktx.sign
 import io.newm.server.ktx.toReferenceUtxo
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.coLazy
@@ -39,12 +48,12 @@ import io.newm.shared.ktx.orZero
 import io.newm.shared.ktx.toHexString
 import io.newm.txbuilder.ktx.toCborObject
 import io.newm.txbuilder.ktx.toPlutusData
-import org.jetbrains.exposed.sql.transactions.transaction
-import org.koin.core.parameter.parametersOf
-import org.slf4j.Logger
 import java.math.BigDecimal
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
+import org.jetbrains.exposed.sql.transactions.transaction
+import org.koin.core.parameter.parametersOf
+import org.slf4j.Logger
 
 class MintingRepositoryImpl(
     private val userRepository: UserRepository,
@@ -93,12 +102,14 @@ class MintingRepositoryImpl(
             val cashRegisterCollectionAmount = configRepository.getLong(CONFIG_KEY_MINT_CASH_REGISTER_COLLECTION_AMOUNT)
             val cashRegisterMinAmount = configRepository.getLong(CONFIG_KEY_MINT_CASH_REGISTER_MIN_AMOUNT)
             val paymentUtxo =
-                cardanoRepository.queryLiveUtxos(paymentKey.address)
+                cardanoRepository
+                    .queryLiveUtxos(paymentKey.address)
                     .first { it.lovelace == mintPriceLovelace && it.nativeAssetsCount == 0 }
             val cashRegisterKey =
                 requireNotNull(cardanoRepository.getKeyByName("cashRegister")) { "cashRegister key not defined!" }
             val cashRegisterUtxos =
-                cardanoRepository.queryLiveUtxos(cashRegisterKey.address)
+                cardanoRepository
+                    .queryLiveUtxos(cashRegisterKey.address)
                     .filter { it.nativeAssetsCount == 0 }
                     .sortedByDescending { it.lovelace.toLong() }
                     .take(5)
@@ -113,7 +124,8 @@ class MintingRepositoryImpl(
                 }
             val moneyBoxUtxos =
                 moneyBoxKey?.let {
-                    cardanoRepository.queryLiveUtxos(moneyBoxKey.address)
+                    cardanoRepository
+                        .queryLiveUtxos(moneyBoxKey.address)
                         .filter { it.nativeAssetsCount == 0 }
                         .sortedByDescending { it.lovelace.toLong() }
                         .take(5)
@@ -131,7 +143,8 @@ class MintingRepositoryImpl(
                 requireNotNull(cardanoRepository.getKeyByName("collateral")) { "collateral key not defined!" }
             val collateralUtxo =
                 requireNotNull(
-                    cardanoRepository.queryLiveUtxos(collateralKey.address)
+                    cardanoRepository
+                        .queryLiveUtxos(collateralKey.address)
                         .filter { it.nativeAssetsCount == 0 }
                         .maxByOrNull { it.lovelace.toLong() }
                 ) { "collateral utxo not found!" }
@@ -161,7 +174,7 @@ class MintingRepositoryImpl(
                     requiredSigners = signingKeys,
                     starterTokenUtxoReference = starterTokenUtxoReference,
                     mintScriptUtxoReference = scriptUtxoReference,
-                    signatures = signTransactionDummy(signingKeys)
+                    signatures = cardanoRepository.signTransactionDummy(signingKeys)
                 )
 
             // check for errors in tx building
@@ -191,7 +204,7 @@ class MintingRepositoryImpl(
                     requiredSigners = signingKeys,
                     starterTokenUtxoReference = starterTokenUtxoReference,
                     mintScriptUtxoReference = scriptUtxoReference,
-                    signatures = signTransaction(transactionIdBytes, signingKeys),
+                    signatures = cardanoRepository.signTransaction(transactionIdBytes, signingKeys),
                 )
 
             // check for errors in tx building
@@ -216,27 +229,6 @@ class MintingRepositoryImpl(
     override fun getTokenAgreementFileIndex(policyId: String): Int = if (policyId in legacyPolicyIds) 1 else 0
 
     override fun getAudioClipFileIndex(policyId: String): Int = if (policyId in legacyPolicyIds) 0 else 1
-
-    @VisibleForTesting
-    internal fun signTransaction(
-        transactionIdBytes: ByteArray,
-        signingKeys: List<Key>
-    ): List<Signature> =
-        signingKeys.map { key ->
-            signature {
-                vkey = key.vkey.toByteString()
-                sig = key.sign(transactionIdBytes).toByteString()
-            }
-        }
-
-    @VisibleForTesting
-    internal fun signTransactionDummy(signingKeys: List<Key>) =
-        signingKeys.map { key ->
-            signature {
-                vkey = key.vkey.toByteString()
-                sig = ByteArray(64).toByteString()
-            }
-        }
 
     @VisibleForTesting
     internal suspend fun buildMintingTransaction(
@@ -371,19 +363,20 @@ class MintingRepositoryImpl(
         // Add a simple transaction metadata note for NEWM Mint - See: CIP-20
         transactionMetadataCbor =
             ByteString.copyFrom(
-                CborMap.create(
-                    mapOf(
-                        CborInteger.create(674) to
-                            CborMap.create(
-                                mapOf(
-                                    CborTextString.create("msg") to
-                                        CborArray.create().apply {
-                                            add(CborTextString.create("NEWM Mint"))
-                                        }
+                CborMap
+                    .create(
+                        mapOf(
+                            CborInteger.create(674) to
+                                CborMap.create(
+                                    mapOf(
+                                        CborTextString.create("msg") to
+                                            CborArray.create().apply {
+                                                add(CborTextString.create("NEWM Mint"))
+                                            }
+                                    )
                                 )
-                            )
-                    )
-                ).toCborByteArray()
+                        )
+                    ).toCborByteArray()
             )
     }
 
@@ -406,8 +399,8 @@ class MintingRepositoryImpl(
         song: Song,
         user: User,
         collabs: List<Collaboration>
-    ): PlutusData {
-        return plutusData {
+    ): PlutusData =
+        plutusData {
             constr = 0
             list =
                 plutusDataList {
@@ -454,7 +447,6 @@ class MintingRepositoryImpl(
                     }
                 }
         }
-    }
 
     private fun createPlutusDataRelease(
         release: Release,
@@ -513,16 +505,21 @@ class MintingRepositoryImpl(
                                                             plutusDataList {
                                                                 listItem.addAll(
                                                                     visualArtists.map { collab ->
-                                                                        UserEntity.getByEmail(collab.email!!)!!
-                                                                            .toModel(false).stageOrFullName
+                                                                        UserEntity
+                                                                            .getByEmail(collab.email!!)!!
+                                                                            .toModel(false)
+                                                                            .stageOrFullName
                                                                             .toPlutusData()
                                                                     }
                                                                 )
                                                             }
                                                     }
                                                 } else {
-                                                    UserEntity.getByEmail(visualArtists[0].email!!)!!
-                                                        .toModel(false).stageOrFullName.toPlutusData()
+                                                    UserEntity
+                                                        .getByEmail(visualArtists[0].email!!)!!
+                                                        .toModel(false)
+                                                        .stageOrFullName
+                                                        .toPlutusData()
                                                 }
                                         }
                                     )
@@ -625,7 +622,10 @@ class MintingRepositoryImpl(
                                 plutusDataMapItem {
                                     mapItemKey = "song_duration".toPlutusData()
                                     mapItemValue =
-                                        song.duration!!.milliseconds.inWholeSeconds.seconds.toIsoString().toPlutusData()
+                                        song.duration!!
+                                            .milliseconds.inWholeSeconds.seconds
+                                            .toIsoString()
+                                            .toPlutusData()
                                 }
                             )
                             add(
@@ -695,7 +695,8 @@ class MintingRepositoryImpl(
                                     plutusDataMapItem {
                                         mapItemKey = "explicit".toPlutusData()
                                         mapItemValue =
-                                            (!song.parentalAdvisory.equals("Non-Explicit", ignoreCase = true)).toString()
+                                            (!song.parentalAdvisory.equals("Non-Explicit", ignoreCase = true))
+                                                .toString()
                                                 .toPlutusData()
                                     }
                                 )
@@ -744,8 +745,11 @@ class MintingRepositoryImpl(
                                                         plutusDataList {
                                                             listItem.addAll(
                                                                 lyricists.map { collab ->
-                                                                    UserEntity.getByEmail(collab.email!!)!!
-                                                                        .toModel(false).stageOrFullName.toPlutusData()
+                                                                    UserEntity
+                                                                        .getByEmail(collab.email!!)!!
+                                                                        .toModel(false)
+                                                                        .stageOrFullName
+                                                                        .toPlutusData()
                                                                 }
                                                             )
                                                         }
@@ -795,16 +799,21 @@ class MintingRepositoryImpl(
                                                             plutusDataList {
                                                                 listItem.addAll(
                                                                     mixEngineers.map { collab ->
-                                                                        UserEntity.getByEmail(collab.email!!)!!
-                                                                            .toModel(false).stageOrFullName
+                                                                        UserEntity
+                                                                            .getByEmail(collab.email!!)!!
+                                                                            .toModel(false)
+                                                                            .stageOrFullName
                                                                             .toPlutusData()
                                                                     }
                                                                 )
                                                             }
                                                     }
                                                 } else {
-                                                    UserEntity.getByEmail(mixEngineers[0].email!!)!!
-                                                        .toModel(false).stageOrFullName.toPlutusData()
+                                                    UserEntity
+                                                        .getByEmail(mixEngineers[0].email!!)!!
+                                                        .toModel(false)
+                                                        .stageOrFullName
+                                                        .toPlutusData()
                                                 }
                                         }
                                     )
@@ -816,7 +825,8 @@ class MintingRepositoryImpl(
                                     it.role.equals(
                                         "Mastering Engineer",
                                         ignoreCase = true
-                                    ) && it.credited == true
+                                    ) &&
+                                        it.credited == true
                                 }
                             if (masteringEngineers.isNotEmpty()) {
                                 transaction {
@@ -830,15 +840,21 @@ class MintingRepositoryImpl(
                                                             plutusDataList {
                                                                 listItem.addAll(
                                                                     masteringEngineers.map { collab ->
-                                                                        UserEntity.getByEmail(collab.email!!)!!
-                                                                            .toModel(false).stageOrFullName.toPlutusData()
+                                                                        UserEntity
+                                                                            .getByEmail(collab.email!!)!!
+                                                                            .toModel(false)
+                                                                            .stageOrFullName
+                                                                            .toPlutusData()
                                                                     }
                                                                 )
                                                             }
                                                     }
                                                 } else {
-                                                    UserEntity.getByEmail(masteringEngineers[0].email!!)!!
-                                                        .toModel(false).stageOrFullName.toPlutusData()
+                                                    UserEntity
+                                                        .getByEmail(masteringEngineers[0].email!!)!!
+                                                        .toModel(false)
+                                                        .stageOrFullName
+                                                        .toPlutusData()
                                                 }
                                         }
                                     )
@@ -850,7 +866,8 @@ class MintingRepositoryImpl(
                                     it.role.equals(
                                         "Recording Engineer",
                                         ignoreCase = true
-                                    ) && it.credited == true
+                                    ) &&
+                                        it.credited == true
                                 }
                             if (recordingEngineers.isNotEmpty()) {
                                 transaction {
@@ -864,15 +881,21 @@ class MintingRepositoryImpl(
                                                             plutusDataList {
                                                                 listItem.addAll(
                                                                     recordingEngineers.map { collab ->
-                                                                        UserEntity.getByEmail(collab.email!!)!!
-                                                                            .toModel(false).stageOrFullName.toPlutusData()
+                                                                        UserEntity
+                                                                            .getByEmail(collab.email!!)!!
+                                                                            .toModel(false)
+                                                                            .stageOrFullName
+                                                                            .toPlutusData()
                                                                     }
                                                                 )
                                                             }
                                                     }
                                                 } else {
-                                                    UserEntity.getByEmail(recordingEngineers[0].email!!)!!
-                                                        .toModel(false).stageOrFullName.toPlutusData()
+                                                    UserEntity
+                                                        .getByEmail(recordingEngineers[0].email!!)!!
+                                                        .toModel(false)
+                                                        .stageOrFullName
+                                                        .toPlutusData()
                                                 }
                                         }
                                     )
@@ -895,16 +918,21 @@ class MintingRepositoryImpl(
                                                             plutusDataList {
                                                                 listItem.addAll(
                                                                     producers.map { collab ->
-                                                                        UserEntity.getByEmail(collab.email!!)!!
-                                                                            .toModel(false).stageOrFullName
+                                                                        UserEntity
+                                                                            .getByEmail(collab.email!!)!!
+                                                                            .toModel(false)
+                                                                            .stageOrFullName
                                                                             .toPlutusData()
                                                                     }
                                                                 )
                                                             }
                                                     }
                                                 } else {
-                                                    UserEntity.getByEmail(producers[0].email!!)!!
-                                                        .toModel(false).stageOrFullName.toPlutusData()
+                                                    UserEntity
+                                                        .getByEmail(producers[0].email!!)!!
+                                                        .toModel(false)
+                                                        .stageOrFullName
+                                                        .toPlutusData()
                                                 }
                                         }
                                     )
@@ -941,8 +969,11 @@ class MintingRepositoryImpl(
                                                             plutusDataMapItem {
                                                                 mapItemKey = "name".toPlutusData()
                                                                 mapItemValue =
-                                                                    UserEntity.getByEmail(email)!!
-                                                                        .toModel(false).stageOrFullName.toPlutusData()
+                                                                    UserEntity
+                                                                        .getByEmail(email)!!
+                                                                        .toModel(false)
+                                                                        .stageOrFullName
+                                                                        .toPlutusData()
                                                             }
                                                         )
                                                     }
@@ -963,7 +994,8 @@ class MintingRepositoryImpl(
         plutusDataMapItem {
             val collabUsers =
                 listOf(user) +
-                    collabs.filter { it.credited == true }
+                    collabs
+                        .filter { it.credited == true }
                         .mapNotNull { UserEntity.getByEmail(it.email!!)?.toModel(false) }
 
             val websites = collabUsers.mapNotNull { it.websiteUrl }.distinct()

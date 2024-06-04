@@ -25,7 +25,7 @@ dependencies {
     implementation(Dependencies.Kotlin.STDLIB_JDK8)
 
     implementation(Dependencies.Coroutines.CORE)
-    implementation(Dependencies.Coroutines.JDK8)
+    implementation(Dependencies.Coroutines.JDK9)
 
     implementation(Dependencies.KotlinXSerialization.JSON)
 

@@ -10,8 +10,9 @@ import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.newm.chain.config.Config
 import io.newm.shared.ktx.getConfigString
-import org.jetbrains.exposed.sql.Database
 import java.util.Properties
+import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.DatabaseConfig
 
 fun Application.initializeDatabase() {
     Config.shelleyGenesisHash = environment.getConfigString("database.shelleyGenesisHash")
@@ -38,7 +39,14 @@ fun Application.initializeDatabase() {
                 }
             )
         )
-    Database.connect(ds)
+    Database.connect(
+        ds,
+        databaseConfig =
+            DatabaseConfig {
+                warnLongQueriesDuration = 2000L
+            }
+    )
+
     install(FlywayPlugin) {
         dataSource = ds
         locations = arrayOf("io/newm/chain/database/migration")

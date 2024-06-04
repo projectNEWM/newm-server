@@ -11,6 +11,8 @@ interface ChainRepository {
 
     fun getVrfByPoolId(poolId: String): String?
 
+    fun getPaymentAddressByStakeAddress(stakeAddress: String): String?
+
     fun insertAll(blocks: List<ChainBlock>)
 
     fun insert(block: ChainBlock): Long

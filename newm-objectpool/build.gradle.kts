@@ -18,7 +18,7 @@ if (!project.hasProperty("isGithubActions")) {
 java.sourceCompatibility = JavaVersion.VERSION_21
 java.targetCompatibility = JavaVersion.VERSION_21
 
-version = "0.1.0-SNAPSHOT"
+version = "0.2.0-SNAPSHOT"
 
 ktlint {
     version.set(Dependencies.KtLint.VERSION)
@@ -36,7 +36,7 @@ dependencies {
     implementation(Dependencies.Kotlin.STDLIB_JDK8)
 
     implementation(Dependencies.Coroutines.CORE)
-    implementation(Dependencies.Coroutines.JDK8)
+    implementation(Dependencies.Coroutines.JDK9)
 
     implementation(Dependencies.LogBack.CLASSIC)
 

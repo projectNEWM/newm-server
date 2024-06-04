@@ -8,6 +8,7 @@ import com.google.iot.cbor.CborReader
 import com.google.iot.cbor.CborSimple
 import com.google.iot.cbor.CborTextString
 import com.google.protobuf.kotlin.toByteString
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.newm.chain.cardano.address.Address
 import io.newm.chain.cardano.address.AddressCredential
 import io.newm.chain.cardano.address.BIP32PublicKey
@@ -15,6 +16,7 @@ import io.newm.chain.cardano.calculateTransactionId
 import io.newm.chain.cardano.getCurrentEpoch
 import io.newm.chain.cardano.toLedgerAssetMetadataItem
 import io.newm.chain.config.Config
+import io.newm.chain.database.repository.ChainRepository
 import io.newm.chain.database.repository.LedgerRepository
 import io.newm.chain.ledger.SubmittedTransactionCache
 import io.newm.chain.model.toNativeAssetMap
@@ -35,8 +37,6 @@ import io.newm.kogmios.protocols.model.CardanoEra
 import io.newm.kogmios.protocols.model.result.EvaluateTxResult
 import io.newm.objectpool.useInstance
 import io.newm.shared.koin.inject
-import io.newm.shared.ktx.info
-import io.newm.shared.ktx.warn
 import io.newm.txbuilder.TransactionBuilder
 import io.newm.txbuilder.ktx.cborHexToPlutusData
 import io.newm.txbuilder.ktx.toNativeAssetMap
@@ -46,6 +46,7 @@ import io.sentry.Sentry
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.experimental.and
+import kotlin.system.measureTimeMillis
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -57,12 +58,11 @@ import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withTimeoutOrNull
-import org.koin.core.parameter.parametersOf
 import org.koin.core.qualifier.named
-import org.slf4j.Logger
 
 class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
-    private val log: Logger by inject { parametersOf("NewmChainService") }
+    private val log = KotlinLogging.logger {}
+    private val chainRepository: ChainRepository by inject()
     private val ledgerRepository: LedgerRepository by inject()
     private val txSubmitClientPool: TxSubmitClientPool by inject()
     private val stateQueryClientPool: StateQueryClientPool by inject()
@@ -75,20 +75,25 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
     override suspend fun queryLiveUtxos(request: QueryUtxosRequest): QueryUtxosResponse =
         ledgerRepository.queryLiveUtxos(request.address).toQueryUtxosResponse()
 
-    override suspend fun queryUtxosByOutputRef(request: QueryUtxosOutputRefRequest): QueryUtxosResponse {
-        return ledgerRepository.queryUtxosByOutputRef(request.hash, request.ix.toInt()).toQueryUtxosResponse()
-    }
+    override suspend fun queryUtxosByOutputRef(request: QueryUtxosOutputRefRequest): QueryUtxosResponse =
+        ledgerRepository.queryUtxosByOutputRef(request.hash, request.ix.toInt()).toQueryUtxosResponse()
 
-    override suspend fun queryPublicKeyHashByOutputRef(request: QueryUtxosOutputRefRequest): QueryPublicKeyHashResponse {
-        return ledgerRepository.queryPublicKeyHashByOutputRef(request.hash, request.ix.toInt())?.let {
+    override suspend fun queryPublicKeyHashByOutputRef(request: QueryUtxosOutputRefRequest): QueryPublicKeyHashResponse =
+        ledgerRepository.queryPublicKeyHashByOutputRef(request.hash, request.ix.toInt())?.let {
             queryPublicKeyHashResponse {
                 publicKeyHash = it
             }
         } ?: queryPublicKeyHashResponse { }
-    }
 
     override suspend fun queryUtxosByStakeAddress(request: QueryUtxosRequest): QueryUtxosResponse {
-        return ledgerRepository.queryUtxosByStakeAddress(request.address).toQueryUtxosResponse()
+        log.debug { "queryUtxosByStakeAddress(${request.address}) started." }
+        val response: QueryUtxosResponse
+        measureTimeMillis {
+            response = ledgerRepository.queryUtxosByStakeAddress(request.address).toQueryUtxosResponse()
+        }.also {
+            log.debug { "queryUtxosByStakeAddress(${request.address}) completed in $it ms." }
+        }
+        return response
     }
 
     private fun Set<io.newm.chain.model.Utxo>.toQueryUtxosResponse(): QueryUtxosResponse =
@@ -118,32 +123,38 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
             )
         }
 
-    override suspend fun queryDatumByHash(request: QueryDatumByHashRequest): QueryDatumByHashResponse {
-        return queryDatumByHashResponse {
+    override suspend fun queryDatumByHash(request: QueryDatumByHashRequest): QueryDatumByHashResponse =
+        queryDatumByHashResponse {
             ledgerRepository.queryDatumByHash(request.datumHash)?.cborHexToPlutusData()?.let {
                 datum = it
             }
         }
-    }
 
-    override suspend fun queryCurrentEpoch(request: QueryCurrentEpochRequest): QueryCurrentEpochResponse {
-        return queryCurrentEpochResponse {
+    override suspend fun queryPaymentAddressForStakeAddress(
+        request: QueryPaymentAddressForStakeAddressRequest
+    ): QueryPaymentAddressForStakeAddressResponse =
+        queryPaymentAddressForStakeAddressResponse {
+            chainRepository.getPaymentAddressByStakeAddress(request.stakeAddress)?.let {
+                paymentAddress = it
+            }
+        }
+
+    override suspend fun queryCurrentEpoch(request: QueryCurrentEpochRequest): QueryCurrentEpochResponse =
+        queryCurrentEpochResponse {
             epoch = getCurrentEpoch()
         }
-    }
 
     override suspend fun queryTransactionConfirmationCount(
         request: QueryTransactionConfirmationCountRequest
-    ): QueryTransactionConfirmationCountResponse {
-        return queryTransactionConfirmationCountResponse {
+    ): QueryTransactionConfirmationCountResponse =
+        queryTransactionConfirmationCountResponse {
             txIdToConfirmationCount.putAll(
                 ledgerRepository.queryTransactionConfirmationCounts(request.txIdsList)
             )
         }
-    }
 
-    override suspend fun submitTransaction(request: SubmitTransactionRequest): SubmitTransactionResponse {
-        return try {
+    override suspend fun submitTransaction(request: SubmitTransactionRequest): SubmitTransactionResponse =
+        try {
             val cbor = request.cbor.toByteArray()
             txSubmitClientPool.useInstance { client ->
                 val response = client.submit(cbor.toHexString())
@@ -163,16 +174,15 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
             }
         } catch (e: Throwable) {
             Sentry.addBreadcrumb(request.toString(), "NewmChainService")
-            log.error("submitTransaction(${request.cbor.toByteArray().toHexString()}) failed.", e)
+            log.error(e) { "submitTransaction(${request.cbor.toByteArray().toHexString()}) failed." }
             submitTransactionResponse {
                 result =
                     "submitTransaction(${request.cbor.toByteArray().toHexString()}) failed. Exception: ${e.message}"
             }
         }
-    }
 
     override fun monitorAddress(request: MonitorAddressRequest): Flow<MonitorAddressResponse> {
-        log.warn("monitorAddress($request) started.")
+        log.warn { "monitorAddress($request) started." }
         val responseFlow = MutableSharedFlow<MonitorAddressResponse>(replay = 1)
         val messageHandlerJob: Job =
             CoroutineScope(context).launch {
@@ -189,14 +199,15 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                     while (true) {
                         while (true) {
                             val monitorAddressResponseList =
-                                ledgerRepository.queryAddressTxLogsAfter(
-                                    request.address.trim(),
-                                    startAfterTxId,
-                                    limit,
-                                    offset,
-                                ).map {
-                                    MonitorAddressResponse.parseFrom(it)
-                                }
+                                ledgerRepository
+                                    .queryAddressTxLogsAfter(
+                                        request.address.trim(),
+                                        startAfterTxId,
+                                        limit,
+                                        offset,
+                                    ).map {
+                                        MonitorAddressResponse.parseFrom(it)
+                                    }
 
                             if (monitorAddressResponseList.isNotEmpty()) {
                                 monitorAddressResponseList.forEach { monitorAddressResponse ->
@@ -215,49 +226,50 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                     }
                 } catch (e: Throwable) {
                     if (e !is CancellationException) {
-                        log.error(e.message, e)
+                        log.error(e) { e.message }
                     }
                 }
             }
 
         messageHandlerJob.invokeOnCompletion {
-            log.warn("invokeOnCompletion: ${it?.message}")
+            log.warn { "invokeOnCompletion: ${it?.message}" }
         }
         return responseFlow
     }
 
-    override suspend fun isMainnet(request: IsMainnetRequest): IsMainnetResponse {
-        return isMainnetResponse {
+    override suspend fun isMainnet(request: IsMainnetRequest): IsMainnetResponse =
+        isMainnetResponse {
             isMainnet = Config.isMainnet
         }
-    }
 
-    override suspend fun queryCardanoEra(request: CardanoEraRequest): CardanoEraResponse {
-        return cardanoEraResponse {
+    override suspend fun queryCardanoEra(request: CardanoEraRequest): CardanoEraResponse =
+        cardanoEraResponse {
             era =
                 stateQueryClientPool.useInstance { client ->
-                    io.newm.chain.grpc.CardanoEra.valueOf(client.health().currentEra.name)
+                    io.newm.chain.grpc.CardanoEra
+                        .valueOf(client.health().currentEra.name)
                 }
         }
-    }
 
     override suspend fun monitorPaymentAddress(request: MonitorPaymentAddressRequest): MonitorPaymentAddressResponse {
         try {
             val requestNativeAssetMap =
-                request.nativeAssetsList.map {
-                    io.newm.chain.model.NativeAsset(
-                        policy = it.policy,
-                        name = it.name,
-                        amount = it.amount.toBigInteger()
-                    )
-                }.toNativeAssetMap()
+                request.nativeAssetsList
+                    .map {
+                        io.newm.chain.model.NativeAsset(
+                            policy = it.policy,
+                            name = it.name,
+                            amount = it.amount.toBigInteger()
+                        )
+                    }.toNativeAssetMap()
 
             return withTimeoutOrNull(request.timeoutMs) {
                 // Check utxos immediately to see if payment has already arrived
                 val liveUtxosResponse = queryLiveUtxos(queryUtxosRequest { address = request.address })
                 val existingUtxo =
                     liveUtxosResponse.utxosList.firstOrNull { utxo ->
-                        (utxo.lovelace == request.lovelace) && // lovelace matches
+                        (utxo.lovelace == request.lovelace) &&
+                            // lovelace matches
                             (requestNativeAssetMap == utxo.nativeAssetsList.toNativeAssetMap()) // nativeAssets match exactly
                     }
                 if (existingUtxo != null) {
@@ -268,13 +280,16 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                 } else {
                     // Wait for payment to arrive
                     val matchingUtxo =
-                        confirmedBlockFlow.mapNotNull { block ->
-                            block.toCreatedUtxoMap().values.flatten().firstOrNull { createdUtxo ->
-                                (createdUtxo.address == request.address) && // address matches
-                                    (createdUtxo.lovelace == request.lovelace.toBigInteger()) && // lovelace matches
-                                    (requestNativeAssetMap == createdUtxo.nativeAssets.toNativeAssetMap()) // nativeAssets match exactly
-                            }
-                        }.firstOrNull()
+                        confirmedBlockFlow
+                            .mapNotNull { block ->
+                                block.toCreatedUtxoMap().values.flatten().firstOrNull { createdUtxo ->
+                                    (createdUtxo.address == request.address) &&
+                                        // address matches
+                                        (createdUtxo.lovelace == request.lovelace.toBigInteger()) &&
+                                        // lovelace matches
+                                        (requestNativeAssetMap == createdUtxo.nativeAssets.toNativeAssetMap()) // nativeAssets match exactly
+                                }
+                            }.firstOrNull()
 
                     matchingUtxo?.let {
                         // Make sure this utxo is not spent by checking liveUtxos on the address
@@ -300,13 +315,13 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
             }
         } catch (e: Throwable) {
             Sentry.addBreadcrumb(request.toString(), "NewmChainService")
-            log.error("monitorPaymentAddress error!", e)
+            log.error(e) { "monitorPaymentAddress error!" }
             throw e
         }
     }
 
-    override suspend fun transactionBuilder(request: TransactionBuilderRequest): TransactionBuilderResponse {
-        return try {
+    override suspend fun transactionBuilder(request: TransactionBuilderRequest): TransactionBuilderResponse =
+        try {
             txSubmitClientPool.useInstance { txSubmitClient ->
                 val stateQueryClient = txSubmitClient as StateQueryClient
                 val protocolParams = stateQueryClient.protocolParameters().result
@@ -319,12 +334,15 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                     if (request.signaturesCount == 0 && request.signingKeysCount == 0 && request.requiredSignersCount == 0) {
                         // Calculate the number of different payment keys associated with all input utxos
                         val requiredSigners =
-                            (request.sourceUtxosList + request.collateralUtxosList).mapNotNull { utxo ->
-                                ledgerRepository.queryPublicKeyHashByOutputRef(utxo.hash, utxo.ix.toInt())
-                            }.distinct().map {
-                                it.hexToByteArray().toByteString()
-                            }
-                        request.toBuilder()
+                            (request.sourceUtxosList + request.collateralUtxosList)
+                                .mapNotNull { utxo ->
+                                    ledgerRepository.queryPublicKeyHashByOutputRef(utxo.hash, utxo.ix.toInt())
+                                }.distinct()
+                                .map {
+                                    it.hexToByteArray().toByteString()
+                                }
+                        request
+                            .toBuilder()
                             .addAllRequiredSigners(requiredSigners)
                             .build()
                     } else {
@@ -353,14 +371,13 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
             }
         } catch (e: Throwable) {
             Sentry.addBreadcrumb(request.toString(), "NewmChainService")
-            log.error("TransactionBuilder error!", e)
+            log.error(e) { "TransactionBuilder error!" }
             transactionBuilderResponse {
                 transactionId = ""
                 transactionCbor = ByteArray(0).toByteString()
                 errorMessage = e.message ?: "TransactionBuilder error!: $e"
             }
         }
-    }
 
     override fun monitorNativeAssets(request: MonitorNativeAssetsRequest): Flow<MonitorNativeAssetsResponse> {
         log.info { "monitorNativeAssets request: $request" }
@@ -386,7 +403,8 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                             if (nativeAssetLogList.isNotEmpty()) {
                                 nativeAssetLogList.forEach { nativeAssetLog ->
                                     responseFlow.emit(
-                                        MonitorNativeAssetsResponse.parseFrom(nativeAssetLog.second)
+                                        MonitorNativeAssetsResponse
+                                            .parseFrom(nativeAssetLog.second)
                                             .toBuilder()
                                             .setId(nativeAssetLog.first)
                                             .build()
@@ -406,13 +424,13 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                 } catch (e: Throwable) {
                     if (e !is CancellationException) {
                         Sentry.addBreadcrumb(request.toString(), "NewmChainService")
-                        log.error(e.message, e)
+                        log.error(e) { e.message }
                     }
                 }
             }
 
         messageHandlerJob.invokeOnCompletion {
-            log.warn("invokeOnCompletion: ${it?.message}")
+            log.warn { "invokeOnCompletion: ${it?.message}" }
         }
         return responseFlow
     }
@@ -426,7 +444,7 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
             }
         } catch (e: Throwable) {
             Sentry.addBreadcrumb(request.toString(), "NewmChainService")
-            log.error("calculateMinUtxoForOutput error!", e)
+            log.error(e) { "calculateMinUtxoForOutput error!" }
             throw e
         }
     }
@@ -445,7 +463,7 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
             }
         } catch (e: Throwable) {
             Sentry.addBreadcrumb(request.toString(), "NewmChainService")
-            log.error("snapshotNativeAssets error!", e)
+            log.error(e) { "snapshotNativeAssets error!" }
             throw e
         }
     }
@@ -483,7 +501,7 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
             }
         } catch (e: Throwable) {
             Sentry.addBreadcrumb(request.toString(), "NewmChainService")
-            log.error("deriveWalletAddresses error!", e)
+            log.error(e) { "deriveWalletAddresses error!" }
             throw e
         }
     }
@@ -501,11 +519,12 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                     val paymentPk = rolePk.derive(index)
                     val paymentCredential = AddressCredential.fromKey(paymentPk)
                     stakeCredential?.let {
-                        Address.fromPaymentStakeAddressCredentialsKeyKey(
-                            paymentCredential,
-                            it,
-                            Config.isMainnet
-                        ).address
+                        Address
+                            .fromPaymentStakeAddressCredentialsKeyKey(
+                                paymentCredential,
+                                it,
+                                Config.isMainnet
+                            ).address
                     } ?: Address.fromPaymentAddressCredential(paymentCredential, Config.isMainnet).address
                 }
             val usedAddresses = ledgerRepository.queryUsedAddresses(paymentAddresses)
@@ -563,7 +582,7 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
             }
         } catch (e: Throwable) {
             Sentry.addBreadcrumb(request.toString(), "NewmChainService")
-            log.error("queryWalletControlledLiveUtxos error!", e)
+            log.error(e) { "queryWalletControlledLiveUtxos error!" }
             return queryWalletControlledUtxosResponse {
                 errorMessage = e.message ?: "queryWalletControlledLiveUtxos error!: $e"
             }
@@ -594,7 +613,7 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
             } ?: utxo { }
         } catch (e: Throwable) {
             Sentry.addBreadcrumb(request.toString(), "NewmChainService")
-            log.error("queryUtxoByNativeAsset error!", e)
+            log.error(e) { "queryUtxoByNativeAsset error!" }
             throw e
         }
     }
@@ -634,7 +653,7 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
             }
         } catch (e: Throwable) {
             Sentry.addBreadcrumb(request.toString(), "NewmChainService")
-            log.error("acquireMutex error!", e)
+            log.error(e) { "acquireMutex error!" }
             throw e
         }
     }
@@ -660,16 +679,15 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
             }
         } catch (e: Throwable) {
             Sentry.addBreadcrumb(request.toString(), "NewmChainService")
-            log.error("releaseMutex error!", e)
+            log.error(e) { "releaseMutex error!" }
             throw e
         }
     }
 
-    override suspend fun ping(request: PingRequest): PongResponse {
-        return pongResponse {
+    override suspend fun ping(request: PingRequest): PongResponse =
+        pongResponse {
             message = request.message
         }
-    }
 
     override suspend fun queryLedgerAssetMetadataListByNativeAsset(request: QueryByNativeAssetRequest): LedgerAssetMetadataListResponse {
         try {
@@ -680,7 +698,7 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
             }
         } catch (e: Throwable) {
             Sentry.addBreadcrumb(request.toString(), "NewmChainService")
-            log.error("queryLedgerAssetMetadataListByNativeAsset error!", e)
+            log.error(e) { "queryLedgerAssetMetadataListByNativeAsset error!" }
             throw e
         }
     }
@@ -700,7 +718,8 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
             val protectedHeaderStakeAddressBytes =
                 (protectedHeader.get("address") as CborByteString).byteArrayValue()[0]
             require(
-                protectedHeaderStakeAddressBytes[0] == Constants.STAKE_ADDRESS_KEY_PREFIX_TESTNET || protectedHeaderStakeAddressBytes[0] == Constants.STAKE_ADDRESS_KEY_PREFIX_MAINNET
+                protectedHeaderStakeAddressBytes[0] == Constants.STAKE_ADDRESS_KEY_PREFIX_TESTNET ||
+                    protectedHeaderStakeAddressBytes[0] == Constants.STAKE_ADDRESS_KEY_PREFIX_MAINNET
             ) {
                 "Invalid stake address prefix! : ${protectedHeaderStakeAddressBytes.sliceArray(0..0).toHexString()}"
             }
@@ -728,16 +747,18 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
             ) { "Stake address mismatch!, challenge: $challengeStakeAddress, header: $protectedHeaderStakeAddress" }
 
             val signature1Payload =
-                CborArray.create().apply {
-                    // context
-                    add(CborTextString.create("Signature1"))
-                    // protected header cbor
-                    add(CborByteString.create(sigData.elementToByteArray(0)))
-                    // sign protected (not present in this case)
-                    add(CborByteString.create(ByteArray(0)))
-                    // payload data bytes
-                    add(CborByteString.create(challengeBytes))
-                }.toCborByteArray()
+                CborArray
+                    .create()
+                    .apply {
+                        // context
+                        add(CborTextString.create("Signature1"))
+                        // protected header cbor
+                        add(CborByteString.create(sigData.elementToByteArray(0)))
+                        // sign protected (not present in this case)
+                        add(CborByteString.create(ByteArray(0)))
+                        // payload data bytes
+                        add(CborByteString.create(challengeBytes))
+                    }.toCborByteArray()
 
             // process the COSE_Sign1 key
             val coseKey =
@@ -782,7 +803,7 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
             }
         } catch (e: Throwable) {
             Sentry.addBreadcrumb(request.toString(), "NewmChainService")
-            log.error("verifySignData error!", e)
+            log.error(e) { "verifySignData error!" }
             return verifySignDataResponse {
                 verified = false
                 challenge = ""
@@ -864,7 +885,7 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
             }
         } catch (e: Throwable) {
             Sentry.addBreadcrumb(request.toString(), "NewmChainService")
-            log.error("verifySignTransaction error!", e)
+            log.error(e) { "verifySignTransaction error!" }
             return verifySignDataResponse {
                 verified = false
                 challenge = ""

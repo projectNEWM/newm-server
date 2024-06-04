@@ -329,7 +329,9 @@ class MintingRepositoryTest : BaseApplicationTests() {
                 )
 
             val plutusDataHex =
-                mintingRepository.buildStreamTokenMetadata(release, song, primaryArtist, collabs).toCborObject()
+                mintingRepository
+                    .buildStreamTokenMetadata(release, song, primaryArtist, collabs)
+                    .toCborObject()
                     .toCborByteArray()
                     .toHexString()
 
@@ -512,7 +514,7 @@ class MintingRepositoryTest : BaseApplicationTests() {
                     requiredSigners = signingKeys,
                     starterTokenUtxoReference = starterTokenUtxoReference,
                     mintScriptUtxoReference = mintScriptUtxoReference,
-                    signatures = mintingRepository.signTransactionDummy(signingKeys)
+                    signatures = cardanoRepository.signTransactionDummy(signingKeys)
                 )
 
             println("transactionId: ${response.transactionId}")
@@ -553,7 +555,7 @@ class MintingRepositoryTest : BaseApplicationTests() {
                     requiredSigners = signingKeys,
                     starterTokenUtxoReference = starterTokenUtxoReference,
                     mintScriptUtxoReference = mintScriptUtxoReference,
-                    signatures = mintingRepository.signTransaction(transactionIdBytes, signingKeys),
+                    signatures = cardanoRepository.signTransaction(transactionIdBytes, signingKeys),
                 )
 
             println("transactionId: ${response.transactionId}")

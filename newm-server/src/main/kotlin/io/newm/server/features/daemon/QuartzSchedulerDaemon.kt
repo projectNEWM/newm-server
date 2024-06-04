@@ -1,20 +1,19 @@
 package io.newm.server.features.daemon
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_SCHEDULER_EVEARA_SYNC
 import io.newm.server.features.scheduler.ArweaveCheckAndFundJob
 import io.newm.server.features.scheduler.EvearaSyncJob
 import io.newm.shared.daemon.Daemon
 import io.newm.shared.koin.inject
-import io.newm.shared.ktx.debug
-import io.newm.shared.ktx.info
 import io.newm.shared.ktx.propertiesFromResource
-import io.newm.shared.ktx.warn
+import java.util.Date
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.koin.core.parameter.parametersOf
 import org.quartz.CronScheduleBuilder.cronSchedule
 import org.quartz.JobBuilder.newJob
 import org.quartz.JobDetail
@@ -25,12 +24,9 @@ import org.quartz.Trigger
 import org.quartz.TriggerBuilder.newTrigger
 import org.quartz.TriggerKey
 import org.quartz.impl.StdSchedulerFactory
-import org.slf4j.Logger
-import java.util.Date
-import java.util.concurrent.TimeUnit
 
 class QuartzSchedulerDaemon : Daemon {
-    override val log: Logger by inject { parametersOf(javaClass.simpleName) }
+    override val log = KotlinLogging.logger {}
     private val configRepository: ConfigRepository by inject()
 
     private lateinit var scheduler: Scheduler
@@ -41,7 +37,7 @@ class QuartzSchedulerDaemon : Daemon {
             try {
                 initializeQuartzScheduler().apply { start() }
             } catch (e: Throwable) {
-                log.error("Error initializing Quartz!", e)
+                log.error(e) { "Error initializing Quartz!" }
                 return
             }
         startEvearaSync(scheduler)
@@ -114,7 +110,7 @@ class QuartzSchedulerDaemon : Daemon {
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Throwable) {
-                    log.error("Error validating scheduled jobs!", e)
+                    log.error(e) { "Error validating scheduled jobs!" }
                 }
                 delay(TimeUnit.MINUTES.toMillis(1))
             }
@@ -145,7 +141,7 @@ class QuartzSchedulerDaemon : Daemon {
         } catch (e: CancellationException) {
             throw e
         } catch (e: Throwable) {
-            log.error("Error validating scheduled jobs!", e)
+            log.error(e) { "Error validating scheduled jobs!" }
         }
     }
 

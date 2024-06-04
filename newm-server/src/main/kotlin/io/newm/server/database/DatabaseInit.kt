@@ -9,11 +9,19 @@ import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.newm.shared.koin.inject
 import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.DatabaseConfig
 
 fun Application.initializeDatabase() {
     val hikariDataSource: HikariDataSource by inject()
 
-    Database.connect(hikariDataSource)
+    Database.connect(
+        hikariDataSource,
+        databaseConfig =
+            DatabaseConfig {
+                warnLongQueriesDuration = 2000L
+            }
+    )
+
     install(FlywayPlugin) {
         dataSource = hikariDataSource
         locations = arrayOf("io/newm/server/database/migration")

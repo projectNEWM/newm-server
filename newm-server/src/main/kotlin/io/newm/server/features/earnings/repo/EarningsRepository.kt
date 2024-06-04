@@ -4,7 +4,7 @@ import io.newm.server.features.earnings.model.AddSongRoyaltyRequest
 import io.newm.server.features.earnings.model.ClaimOrder
 import io.newm.server.features.earnings.model.Earning
 import io.newm.server.typealiases.SongId
-import java.util.*
+import java.util.UUID
 
 interface EarningsRepository {
     /**
@@ -31,6 +31,11 @@ interface EarningsRepository {
     suspend fun add(claimOrder: ClaimOrder): UUID
 
     /**
+     * Update a claim order
+     */
+    suspend fun update(claimOrder: ClaimOrder)
+
+    /**
      * Mark the earnings as claimed by a claim order
      */
     suspend fun claimed(
@@ -52,4 +57,24 @@ interface EarningsRepository {
      * Get all earnings by stake address
      */
     suspend fun getAllByStakeAddress(stakeAddress: String): List<Earning>
+
+    /**
+     * Get all earnings by stake address and claimed status
+     */
+    suspend fun getAllUnclaimedByStakeAddress(stakeAddress: String): List<Earning>
+
+    /**
+     * Get all earnings by ids
+     */
+    suspend fun getAllByIds(earningsIds: List<UUID>): List<Earning>
+
+    /**
+     * Get the active claim order by stake address. null if there is no active claim order
+     */
+    suspend fun getActiveClaimOrderByStakeAddress(stakeAddress: String): ClaimOrder?
+
+    /**
+     * Get a claim order by id
+     */
+    suspend fun getByClaimOrderId(claimOrderId: UUID): ClaimOrder?
 }
