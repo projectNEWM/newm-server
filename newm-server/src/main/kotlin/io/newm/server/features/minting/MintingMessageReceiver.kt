@@ -1,6 +1,7 @@
 package io.newm.server.features.minting
 
 import com.amazonaws.services.sqs.model.Message
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.newm.chain.grpc.monitorPaymentAddressRequest
 import io.newm.server.aws.SqsMessageReceiver
 import io.newm.server.config.repo.ConfigRepository
@@ -18,19 +19,15 @@ import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.logging.captureToSentry
 import io.newm.shared.koin.inject
-import io.newm.shared.ktx.info
-import io.newm.shared.ktx.warn
 import kotlinx.serialization.json.Json
-import org.koin.core.parameter.parametersOf
 import org.quartz.JobBuilder.newJob
 import org.quartz.JobKey
 import org.quartz.SimpleScheduleBuilder.simpleSchedule
 import org.quartz.TriggerBuilder.newTrigger
-import org.slf4j.Logger
 import kotlin.time.Duration.Companion.minutes
 
 class MintingMessageReceiver : SqsMessageReceiver {
-    private val log: Logger by inject { parametersOf(javaClass.simpleName) }
+    private val log = KotlinLogging.logger {}
     private val songRepository: SongRepository by inject()
     private val cardanoRepository: CardanoRepository by inject()
     private val arweaveRepository: ArweaveRepository by inject()
@@ -177,9 +174,15 @@ class MintingMessageReceiver : SqsMessageReceiver {
 
                     quartzSchedulerDaemon.scheduleJob(jobDetail, trigger)
 
-                    if (!cardanoRepository.isMainnet() && song.title?.contains("[NoForce]", true) != true) {
+                    if (!cardanoRepository.isMainnet()) {
+                        // force a track into the “An error occurred” status when I attempt to distribute a song in the TestNet environment
+                        if (song.title?.contains("[ForceError]", true) == true) {
+                            throw ForceTrackToFailException("An error was forced to occur for testing purposes")
+                        }
                         // If we are on testnet, pretend that the song is already successfully distributed
-                        songRepository.update(song.id!!, Song(forceDistributed = true))
+                        if (song.title?.contains("[NoForce]", true) != true) {
+                            songRepository.update(song.id!!, Song(forceDistributed = true))
+                        }
                     }
                 } catch (e: Throwable) {
                     val errorMessage = "Error while creating distribution check job!"
