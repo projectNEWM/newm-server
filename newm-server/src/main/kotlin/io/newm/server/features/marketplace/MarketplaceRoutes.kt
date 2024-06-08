@@ -27,35 +27,29 @@ fun Routing.createMarketplaceRoutes() {
     route(ROOT_PATH) {
         route("sales") {
             get {
-                // TODO: re-enable when WebApp fixed
-                // recaptchaRepository.verify("get_sales", request)
+                recaptchaRepository.verify("get_sales", request)
                 respond(marketplaceRepository.getSales(saleFilters, offset, limit))
             }
             get("count") {
-                // TODO: re-enable when WebApp fixed
-                // recaptchaRepository.verify("get_sale_count", request)
+                recaptchaRepository.verify("get_sale_count", request)
                 respond(CountResponse(marketplaceRepository.getSaleCount(saleFilters)))
             }
             get("{saleId}") {
-                // TODO: re-enable when WebApp fixed
-                // recaptchaRepository.verify("get_sale", request)
+                recaptchaRepository.verify("get_sale", request)
                 respond(marketplaceRepository.getSale(saleId))
             }
         }
         route("artists") {
             get {
-                // TODO: re-enable when WebApp fixed
-                // recaptchaRepository.verify("get_artists", request)
+                recaptchaRepository.verify("get_artists", request)
                 respond(marketplaceRepository.getArtists(artistFilters, offset, limit))
             }
             get("count") {
-                // TODO: re-enable when WebApp fixed
-                // recaptchaRepository.verify("get_artist_count", request)
+                recaptchaRepository.verify("get_artist_count", request)
                 respond(CountResponse(marketplaceRepository.getArtistCount(artistFilters)))
             }
             get("{artistId}") {
-                // TODO: re-enable when WebApp fixed
-                // recaptchaRepository.verify("get_artist", request)
+                recaptchaRepository.verify("get_artist", request)
                 respond(marketplaceRepository.getArtist(artistId))
             }
         }
