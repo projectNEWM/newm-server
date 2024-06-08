@@ -15,6 +15,7 @@ import io.newm.server.features.cardano.model.SubmitTransactionRequest
 import io.newm.server.features.cardano.model.SubmitTransactionResponse
 import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.song.model.MintingStatus
+import io.newm.server.features.song.model.songFilters
 import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.ktx.limit
 import io.newm.server.ktx.myUserId
@@ -100,7 +101,7 @@ fun Routing.createCardanoRoutes() {
         post("/v1/cardano/songs") {
             try {
                 val request = receive<List<String>>()
-                val response = cardanoRepository.getWalletSongs(request, offset, limit)
+                val response = cardanoRepository.getWalletSongs(request, songFilters, offset, limit)
                 respond(response)
             } catch (e: Exception) {
                 log.error("Failed to get wallet songs: ${e.message}")

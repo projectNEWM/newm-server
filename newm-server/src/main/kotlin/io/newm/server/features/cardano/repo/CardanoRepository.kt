@@ -15,9 +15,10 @@ import io.newm.server.features.cardano.model.EncryptionRequest
 import io.newm.server.features.cardano.model.GetWalletSongsResponse
 import io.newm.server.features.cardano.model.Key
 import io.newm.server.features.cardano.model.NFTSong
+import io.newm.server.features.song.model.SongFilters
 import io.newm.server.typealiases.UserId
-import java.util.UUID
 import kotlinx.coroutines.flow.Flow
+import java.util.UUID
 
 interface CardanoRepository {
     suspend fun saveKey(
@@ -75,6 +76,7 @@ interface CardanoRepository {
 
     suspend fun getWalletSongs(
         request: List<String>,
+        filters: SongFilters,
         offset: Int,
         limit: Int
     ): GetWalletSongsResponse

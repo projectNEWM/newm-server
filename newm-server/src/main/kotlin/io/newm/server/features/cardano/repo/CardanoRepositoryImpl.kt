@@ -71,19 +71,18 @@ import io.newm.shared.ktx.isValidPassword
 import io.newm.txbuilder.ktx.fingerprint
 import io.newm.txbuilder.ktx.mergeAmounts
 import io.newm.txbuilder.ktx.toNativeAssetMap
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import org.jetbrains.exposed.sql.transactions.transaction
+import org.springframework.security.crypto.encrypt.BytesEncryptor
+import org.springframework.security.crypto.encrypt.Encryptors
 import java.time.Duration
 import java.util.UUID
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 import kotlin.time.Duration.Companion.minutes
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.transactions.transaction
-import org.springframework.security.crypto.encrypt.BytesEncryptor
-import org.springframework.security.crypto.encrypt.Encryptors
 
 internal class CardanoRepositoryImpl(
     private val client: NewmChainCoroutineStub,
@@ -405,46 +404,19 @@ internal class CardanoRepositoryImpl(
 
     override suspend fun getWalletSongs(
         request: List<String>,
+        filters: SongFilters,
         offset: Int,
         limit: Int
     ): GetWalletSongsResponse {
-        logger.debug { "getWalletSongs: request = $request, offset = $offset, limit = $limit" }
+        logger.debug { "getWalletSongs: request = $request, filters = $filters, offset = $offset, limit = $limit" }
         val utxos = request.map { it.cborHexToUtxo() }
         val nativeAssetMap = utxos.map { it.nativeAssetsList }.flatten().toNativeAssetMap()
         val streamTokenNames = nativeAssetMap.values.flatten().map { it.name }
-        val count =
-            songRepository.getAllCount(
-                filters =
-                    SongFilters(
-                        archived = false,
-                        sortOrder = SortOrder.DESC,
-                        olderThan = null,
-                        newerThan = null,
-                        ids = null,
-                        ownerIds = null,
-                        genres = null,
-                        moods = null,
-                        mintingStatuses = null,
-                        phrase = null,
-                        nftNames = FilterCriteria(includes = streamTokenNames)
-                    )
-            )
+        val updatedFilters = filters.copy(nftNames = FilterCriteria(includes = streamTokenNames))
+        val count = songRepository.getAllCount(updatedFilters)
         val songs =
             songRepository.getAll(
-                filters =
-                    SongFilters(
-                        archived = false,
-                        sortOrder = SortOrder.DESC,
-                        olderThan = null,
-                        newerThan = null,
-                        ids = null,
-                        ownerIds = null,
-                        genres = null,
-                        moods = null,
-                        mintingStatuses = null,
-                        phrase = null,
-                        nftNames = FilterCriteria(includes = streamTokenNames),
-                    ),
+                filters = updatedFilters,
                 offset = offset,
                 limit = limit,
             ).map { song: Song ->
