@@ -126,6 +126,13 @@ class MintingMessageReceiver : SqsMessageReceiver {
 
             MintingStatus.ReadyToDistribute -> {
                 try {
+                    if (!cardanoRepository.isMainnet()) {
+                        // force a track into the “An error occurred” status when I attempt to distribute a song in the TestNet environment
+                        val song = songRepository.get(mintingStatusSqsMessage.songId)
+                        if (song.title?.contains("[ForceError]", true) == true) {
+                            throw ForceTrackToFailException("An error was forced to occur for testing purposes")
+                        }
+                    }
                     songRepository.distribute(mintingStatusSqsMessage.songId)
 
                     // Done submitting distributing. Move -> SubmittedForDistribution
@@ -175,10 +182,6 @@ class MintingMessageReceiver : SqsMessageReceiver {
                     quartzSchedulerDaemon.scheduleJob(jobDetail, trigger)
 
                     if (!cardanoRepository.isMainnet()) {
-                        // force a track into the “An error occurred” status when I attempt to distribute a song in the TestNet environment
-                        if (song.title?.contains("[ForceError]", true) == true) {
-                            throw ForceTrackToFailException("An error was forced to occur for testing purposes")
-                        }
                         // If we are on testnet, pretend that the song is already successfully distributed
                         if (song.title?.contains("[NoForce]", true) != true) {
                             songRepository.update(song.id!!, Song(forceDistributed = true))
