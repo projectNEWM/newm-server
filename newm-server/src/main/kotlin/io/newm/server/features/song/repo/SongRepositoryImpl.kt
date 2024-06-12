@@ -245,6 +245,7 @@ internal class SongRepositoryImpl(
                 releaseDate?.let { releaseEntity.releaseDate = it }
                 publicationDate?.let { releaseEntity.publicationDate = it }
                 releaseType?.let { releaseEntity.releaseType = it }
+                preSavePage?.let { releaseEntity.preSavePage = it }
 
                 if (requesterId == null) {
                     // don't allow updating these fields when invoked from REST API
