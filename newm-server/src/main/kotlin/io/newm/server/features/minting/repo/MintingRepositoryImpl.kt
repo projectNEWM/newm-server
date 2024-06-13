@@ -67,7 +67,7 @@ class MintingRepositoryImpl(
             val streamTokensTotal = 100_000_000L
             var streamTokensRemaining = 100_000_000L
             val splitCollabs =
-                collabs.filter { it.royaltyRate!! > BigDecimal.ZERO }.sortedByDescending { it.royaltyRate }
+                collabs.filter { it.royaltyRate.orZero() > BigDecimal.ZERO }.sortedByDescending { it.royaltyRate }
             log.info { "splitCollabs for songId: ${song.id} - $splitCollabs" }
             val royaltySum = splitCollabs.sumOf { it.royaltyRate!! }
             require(royaltySum.compareTo(100.toBigDecimal()) == 0) { "Collaboration royalty rates must sum to 100 but was $royaltySum" }
