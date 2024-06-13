@@ -37,6 +37,7 @@ class ReleaseEntity(id: EntityID<ReleaseId>) : UUIDEntity(id) {
     var hasSubmittedForDistribution: Boolean by ReleaseTable.hasSubmittedForDistribution
     var errorMessage: String? by ReleaseTable.errorMessage
     var forceDistributed: Boolean? by ReleaseTable.forceDistributed
+    var preSavePage: String? by ReleaseTable.preSavePage
 
     fun toModel(): Release =
         Release(
@@ -56,6 +57,7 @@ class ReleaseEntity(id: EntityID<ReleaseId>) : UUIDEntity(id) {
             hasSubmittedForDistribution = hasSubmittedForDistribution,
             errorMessage = errorMessage,
             forceDistributed = forceDistributed,
+            preSavePage = preSavePage
         )
 
     companion object : UUIDEntityClass<ReleaseEntity>(ReleaseTable) {

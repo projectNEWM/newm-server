@@ -3,6 +3,7 @@ package io.newm.server.features.distribution.eveara
 import com.amazonaws.HttpMethod
 import com.amazonaws.services.s3.AmazonS3
 import com.github.benmanes.caffeine.cache.Caffeine
+import io.newm.chain.util.toB64String
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.plugins.*
@@ -1935,7 +1936,8 @@ class EvearaDistributionRepositoryImpl(
                 Release(
                     distributionReleaseId = response.releaseId,
                     barcodeNumber = barcode,
-                    barcodeType = barcodeType
+                    barcodeType = barcodeType,
+                    preSavePage = response.releaseId.toString().toByteArray().toB64String()
                 )
             )
         } else {

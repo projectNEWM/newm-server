@@ -36,4 +36,5 @@ object ReleaseTable : UUIDTable(name = "releases") {
     val hasSubmittedForDistribution: Column<Boolean> = bool("has_submitted_for_distribution").default(false)
     val errorMessage: Column<String?> = text("error_message").nullable()
     val forceDistributed: Column<Boolean?> = bool("force_distributed").nullable()
+    val preSavePage: Column<String?> = text("pre_save_page").nullable()
 }
