@@ -39,7 +39,6 @@ import io.newm.chain.grpc.releaseMutexRequest
 import io.newm.chain.grpc.snapshotNativeAssetsRequest
 import io.newm.chain.grpc.submitTransactionRequest
 import io.newm.chain.grpc.verifySignDataRequest
-import io.newm.chain.grpc.walletRequest
 import io.newm.chain.util.Constants
 import io.newm.chain.util.b64ToByteArray
 import io.newm.chain.util.toB64String
@@ -432,50 +431,6 @@ internal class CardanoRepositoryImpl(
             offset = offset,
             limit = limit,
         )
-    }
-
-    // TODO: remove xpubKey support after client migrate to new Wallet Connection method
-    override suspend fun getWalletNFTSongs(
-        xpubKey: String,
-        includeLegacy: Boolean
-    ): List<NFTSong> {
-        val assets = getWalletAssets(xpubKey)
-        val nftSongs = mutableListOf<NFTSong>()
-        val isNftCdnEnabled = configRepository.getBoolean(CONFIG_KEY_NFTCDN_ENABLED)
-        for (asset in assets) {
-            val metadata = getAssetMetadata(asset)
-            if (includeLegacy || metadata.any { it.key.equals("music_metadata_version", true) }) {
-                nftSongs += metadata.toNFTSongs(asset, isNftCdnEnabled)
-            }
-        }
-        return nftSongs
-    }
-
-    // TODO: remove xpubKey support after client migrate to new Wallet Connection method
-    override suspend fun getWalletImages(xpubKey: String): List<String> {
-        val assets = getWalletAssets(xpubKey)
-        return if (configRepository.getBoolean(CONFIG_KEY_NFTCDN_ENABLED)) {
-            assets.map { nftCdnRepository.generateImageUrl(it.fingerprint()) }
-        } else {
-            assets.mapNotNull { asset ->
-                getAssetMetadata(asset).firstOrNull { it.key == "image" }?.value?.let(String::toResourceUrl)
-            }
-        }
-    }
-
-    // TODO: remove xpubKey support after client migrate to new Wallet Connection method
-    private suspend fun getWalletAssets(xpubKey: String): List<NativeAsset> {
-        val response =
-            client.queryWalletControlledLiveUtxos(
-                walletRequest {
-                    accountXpubKey = xpubKey
-                }
-            )
-        require(!response.hasErrorMessage()) { "Error querying wallet controlled utxos: ${response.errorMessage}, xpubKey: $xpubKey" }
-
-        return response.addressUtxosList.flatMap {
-            it.utxosList.flatMap(Utxo::getNativeAssetsList)
-        }.mergeAmounts()
     }
 
     override suspend fun getWalletNFTSongs(
