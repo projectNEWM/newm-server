@@ -112,18 +112,10 @@ fun Routing.createCardanoRoutes() {
         get("/v1/cardano/nft/songs") {
             try {
                 respond(
-                    request.queryParameters["xpub"]?.let { xpubKey ->
-                        // TODO: remove xpubKey support after client migrate to new Wallet Connection method
-                        cardanoRepository.getWalletNFTSongs(
-                            xpubKey = xpubKey,
-                            includeLegacy = parameters["legacy"]?.toBoolean() ?: false
-                        )
-                    } ?: run {
-                        cardanoRepository.getWalletNFTSongs(
-                            userId = myUserId,
-                            includeLegacy = parameters["legacy"]?.toBoolean() ?: false
-                        )
-                    }
+                    cardanoRepository.getWalletNFTSongs(
+                        userId = myUserId,
+                        includeLegacy = parameters["legacy"]?.toBoolean() ?: false
+                    )
                 )
             } catch (e: Exception) {
                 log.error(e) { "Failed to get NFT Songs" }
@@ -133,14 +125,7 @@ fun Routing.createCardanoRoutes() {
 
         get("/v1/cardano/images") {
             try {
-                respond(
-                    request.queryParameters["xpub"]?.let { xpubKey ->
-                        // TODO: remove xpubKey support after client migrate to new Wallet Connection method
-                        cardanoRepository.getWalletImages(xpubKey)
-                    } ?: run {
-                        cardanoRepository.getWalletImages(myUserId)
-                    }
-                )
+                respond(cardanoRepository.getWalletImages(myUserId))
             } catch (e: Exception) {
                 log.error(e) { "Failed to get images" }
                 throw e
