@@ -9,5 +9,5 @@ import org.koin.dsl.module
 val marketplaceKoinModule =
     module {
         single<Daemon> { MarketplaceMonitorDaemon(get(), get(), get()) }
-        single<MarketplaceRepository> { MarketplaceRepositoryImpl(get(), get(), get()) }
+        single<MarketplaceRepository> { MarketplaceRepositoryImpl(get(), get()) }
     }

@@ -8,7 +8,11 @@ import io.newm.server.features.marketplace.model.OrderAmountResponse
 import io.newm.server.features.marketplace.model.OrderTransactionRequest
 import io.newm.server.features.marketplace.model.OrderTransactionResponse
 import io.newm.server.features.marketplace.model.Sale
+import io.newm.server.features.marketplace.model.SaleAmountRequest
+import io.newm.server.features.marketplace.model.SaleAmountResponse
 import io.newm.server.features.marketplace.model.SaleFilters
+import io.newm.server.features.marketplace.model.SaleTransactionRequest
+import io.newm.server.features.marketplace.model.SaleTransactionResponse
 import io.newm.server.typealiases.UserId
 import java.util.UUID
 
@@ -32,6 +36,10 @@ interface MarketplaceRepository {
     ): List<Artist>
 
     suspend fun getArtistCount(filters: ArtistFilters): Long
+
+    suspend fun generateSaleAmount(request: SaleAmountRequest): SaleAmountResponse
+
+    suspend fun generateSaleTransaction(request: SaleTransactionRequest): SaleTransactionResponse
 
     suspend fun generateOrderAmount(request: OrderAmountRequest): OrderAmountResponse
 

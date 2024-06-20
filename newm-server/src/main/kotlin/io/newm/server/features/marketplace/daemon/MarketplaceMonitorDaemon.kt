@@ -1,15 +1,17 @@
 package io.newm.server.features.marketplace.daemon
 
-import io.ktor.server.application.ApplicationEnvironment
 import io.newm.chain.grpc.MonitorAddressResponse
+import io.newm.server.config.repo.ConfigRepository
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_MONITORING_ENABLED
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_MONITORING_RETRY_DELAY
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_QUEUE_CONTRACT_ADDRESS
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_SALE_CONTRACT_ADDRESS
 import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.marketplace.repo.MarketplaceRepository
-import io.newm.server.ktx.getSecureConfigString
 import io.newm.shared.daemon.Daemon
 import io.newm.shared.koin.inject
+import io.newm.shared.ktx.coLazy
 import io.newm.shared.ktx.error
-import io.newm.shared.ktx.getConfigBoolean
-import io.newm.shared.ktx.getConfigLong
 import io.newm.shared.ktx.info
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.cancelChildren
@@ -24,13 +26,15 @@ import kotlin.time.Duration.Companion.seconds
 private const val LEADER_LATCH_PATH = "/leader-latches/marketplace-monitor"
 
 class MarketplaceMonitorDaemon(
-    private val environment: ApplicationEnvironment,
+    private val configRepository: ConfigRepository,
     private val cardanoRepository: CardanoRepository,
     private val marketplaceRepository: MarketplaceRepository
 ) : Daemon, LeaderLatchListener {
     override val log: Logger by inject { parametersOf(javaClass.simpleName) }
     private val leaderLatch: LeaderLatch by inject { parametersOf(LEADER_LATCH_PATH) }
-    private val isEnabled = environment.getConfigBoolean("marketplace.enabled")
+    private val isEnabled: Boolean by coLazy {
+        configRepository.getBoolean(CONFIG_KEY_MARKETPLACE_MONITORING_ENABLED)
+    }
 
     override fun start() {
         if (isEnabled) {
@@ -54,15 +58,15 @@ class MarketplaceMonitorDaemon(
         // only the leader runs
         log.info { "This is instance is now the leader" }
         launch {
-            run(
-                path = "marketplace.sale",
+            monitorContractAddress(
+                addressKey = CONFIG_KEY_MARKETPLACE_SALE_CONTRACT_ADDRESS,
                 getTip = marketplaceRepository::getSaleTransactionTip,
                 processTransaction = marketplaceRepository::processSaleTransaction
             )
         }
         launch {
-            run(
-                path = "marketplace.queue",
+            monitorContractAddress(
+                addressKey = CONFIG_KEY_MARKETPLACE_QUEUE_CONTRACT_ADDRESS,
                 getTip = marketplaceRepository::getQueueTransactionTip,
                 processTransaction = marketplaceRepository::processQueueTransaction
             )
@@ -74,8 +78,8 @@ class MarketplaceMonitorDaemon(
         log.info { "This is instance is not currently the leader" }
     }
 
-    private suspend fun run(
-        path: String,
+    private suspend fun monitorContractAddress(
+        addressKey: String,
         getTip: suspend () -> String?,
         processTransaction: suspend (MonitorAddressResponse) -> Unit
     ) {
@@ -85,8 +89,8 @@ class MarketplaceMonitorDaemon(
             return
         }
 
-        val address = environment.getSecureConfigString("$path.contractAddress")
-        val retryDelay = environment.getConfigLong("$path.retryDelay")
+        val address = configRepository.getString(addressKey)
+        val retryDelay = configRepository.getLong(CONFIG_KEY_MARKETPLACE_MONITORING_RETRY_DELAY)
         while (true) {
             try {
                 val tip = getTip()
