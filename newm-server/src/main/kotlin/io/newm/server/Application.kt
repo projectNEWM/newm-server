@@ -28,7 +28,6 @@ import io.newm.server.logging.installCallLogging
 import io.newm.server.staticcontent.createStaticContentRoutes
 import io.newm.server.statuspages.installStatusPages
 import io.newm.shared.daemon.initializeDaemons
-import io.newm.shared.ktx.getConfigBoolean
 
 fun main(args: Array<String>) = io.ktor.server.cio.EngineMain.main(args)
 
@@ -37,9 +36,7 @@ fun Application.module() {
     initializeSentry()
     installDependencyInjection()
     initializeDatabase()
-    if (environment.getConfigBoolean("marketplace.enabled")) {
-        installCurator()
-    }
+    installCurator()
 
     installCallLogging()
     installContentNegotiation()

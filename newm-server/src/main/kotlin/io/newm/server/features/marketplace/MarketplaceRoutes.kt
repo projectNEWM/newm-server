@@ -38,6 +38,14 @@ fun Routing.createMarketplaceRoutes() {
                 recaptchaRepository.verify("get_sale", request)
                 respond(marketplaceRepository.getSale(saleId))
             }
+            post("amount") {
+                recaptchaRepository.verify("generate_sale_amount", request)
+                respond(marketplaceRepository.generateSaleAmount(receive()))
+            }
+            post("transaction") {
+                recaptchaRepository.verify("generate_sale_transaction", request)
+                respond(marketplaceRepository.generateSaleTransaction(receive()))
+            }
         }
         route("artists") {
             get {

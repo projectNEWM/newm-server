@@ -2,21 +2,31 @@ package io.newm.server.features.marketplace.repo
 
 import com.google.iot.cbor.CborArray
 import com.google.iot.cbor.CborInteger
-import io.ktor.server.application.ApplicationEnvironment
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.newm.chain.grpc.MonitorAddressResponse
 import io.newm.chain.grpc.nativeAsset
 import io.newm.chain.grpc.outputUtxo
 import io.newm.chain.util.toAdaString
 import io.newm.chain.util.toHexString
 import io.newm.server.config.repo.ConfigRepository
-import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_MIN_INCENTIVE_AMOUNT
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_CURRENCY_ASSET_NAME
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_CURRENCY_POLICY_ID
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_INCENTIVE_MIN_AMOUNT
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_ORDER_LOVELACE
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_PENDING_ORDER_TTL
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_PENDING_SALE_TTL
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_POINTER_POLICY_ID
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_QUEUE_CONTRACT_ADDRESS
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_SALE_CONTRACT_ADDRESS
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_SALE_LOVELACE
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_NFTCDN_ENABLED
 import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.marketplace.builders.buildQueueDatum
+import io.newm.server.features.marketplace.builders.buildSaleDatum
 import io.newm.server.features.marketplace.database.MarketplaceArtistEntity
 import io.newm.server.features.marketplace.database.MarketplaceBookmarkEntity
 import io.newm.server.features.marketplace.database.MarketplacePendingOrderEntity
+import io.newm.server.features.marketplace.database.MarketplacePendingSaleEntity
 import io.newm.server.features.marketplace.database.MarketplacePurchaseEntity
 import io.newm.server.features.marketplace.database.MarketplaceSaleEntity
 import io.newm.server.features.marketplace.model.Artist
@@ -25,60 +35,39 @@ import io.newm.server.features.marketplace.model.OrderAmountRequest
 import io.newm.server.features.marketplace.model.OrderAmountResponse
 import io.newm.server.features.marketplace.model.OrderTransactionRequest
 import io.newm.server.features.marketplace.model.OrderTransactionResponse
+import io.newm.server.features.marketplace.model.QueueTransaction
 import io.newm.server.features.marketplace.model.Sale
+import io.newm.server.features.marketplace.model.SaleAmountRequest
+import io.newm.server.features.marketplace.model.SaleAmountResponse
 import io.newm.server.features.marketplace.model.SaleFilters
 import io.newm.server.features.marketplace.model.SaleStatus
+import io.newm.server.features.marketplace.model.SaleTransactionRequest
+import io.newm.server.features.marketplace.model.SaleTransactionResponse
 import io.newm.server.features.marketplace.model.Token
 import io.newm.server.features.marketplace.parser.parseQueue
 import io.newm.server.features.marketplace.parser.parseSale
 import io.newm.server.features.song.database.SongTable
-import io.newm.server.ktx.getSecureConfigString
 import io.newm.server.typealiases.UserId
 import io.newm.shared.exception.HttpPaymentRequiredException
 import io.newm.shared.exception.HttpUnprocessableEntityException
-import io.newm.shared.koin.inject
-import io.newm.shared.ktx.coLazy
-import io.newm.shared.ktx.debug
 import io.newm.shared.ktx.epochSecondsToLocalDateTime
-import io.newm.shared.ktx.getConfigLong
-import io.newm.shared.ktx.info
 import io.newm.shared.ktx.orZero
-import io.newm.shared.ktx.warn
 import io.newm.txbuilder.ktx.mergeAmounts
 import io.newm.txbuilder.ktx.toCborObject
 import io.newm.txbuilder.ktx.toNativeAssetCborMap
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.koin.core.parameter.parametersOf
-import org.slf4j.Logger
-import java.math.BigInteger
 import java.util.UUID
 
 private const val SALE_TIP_KEY = "saleTip"
 private const val QUEUE_TIP_KEY = "queueTip"
 
 internal class MarketplaceRepositoryImpl(
-    private val environment: ApplicationEnvironment,
     private val configRepository: ConfigRepository,
     private val cardanoRepository: CardanoRepository
 ) : MarketplaceRepository {
-    private val log: Logger by inject { parametersOf(javaClass.simpleName) }
-    private val queueContractAddress: String by coLazy {
-        environment.getSecureConfigString("marketplace.queue.contractAddress")
-    }
-    private val pointerPolicyId: String by coLazy {
-        environment.getSecureConfigString("marketplace.pointerPolicyId")
-    }
-    private val incentivePolicyId: String by coLazy {
-        environment.getSecureConfigString("marketplace.incentive.policyId")
-    }
-    private val incentiveAssetName: String by coLazy {
-        environment.getSecureConfigString("marketplace.incentive.assetName")
-    }
-    private val pendingOrderTimeToLive: Long by lazy {
-        environment.getConfigLong("marketplace.pendingOrderTimeToLive")
-    }
+    private val log = KotlinLogging.logger {}
 
     override suspend fun getSale(saleId: UUID): Sale {
         log.debug { "getSale: saleId = $saleId" }
@@ -141,6 +130,114 @@ internal class MarketplaceRepositoryImpl(
         }
     }
 
+    override suspend fun generateSaleAmount(request: SaleAmountRequest): SaleAmountResponse {
+        log.debug { "generateSaleAmount: $request" }
+
+        val nativeAssets =
+            listOf(
+                nativeAsset {
+                    policy = request.bundlePolicyId
+                    name = request.bundleAssetName
+                    amount = computeAmount(request.bundleAmount, request.totalBundleQuantity)
+                }
+            )
+
+        val lovelace = configRepository.getLong(CONFIG_KEY_MARKETPLACE_SALE_LOVELACE)
+        val amount =
+            CborArray.create(
+                listOf(
+                    CborInteger.create(lovelace.toBigInteger()),
+                    nativeAssets.toNativeAssetCborMap()
+                )
+            )
+
+        val pendingSaleTimeToLive = configRepository.getLong(CONFIG_KEY_MARKETPLACE_PENDING_SALE_TTL)
+        val costPolicyId = request.costPolicyId ?: configRepository.getString(CONFIG_KEY_MARKETPLACE_CURRENCY_POLICY_ID)
+        val costAssetName =
+            request.costAssetName ?: configRepository.getString(CONFIG_KEY_MARKETPLACE_CURRENCY_ASSET_NAME)
+        val sale =
+            transaction {
+                MarketplacePendingSaleEntity.deleteAllExpired(pendingSaleTimeToLive)
+                MarketplacePendingSaleEntity.new {
+                    this.ownerAddress = request.ownerAddress
+                    this.bundlePolicyId = request.bundlePolicyId
+                    this.bundleAssetName = request.bundleAssetName
+                    this.bundleAmount = request.bundleAmount
+                    this.costPolicyId = costPolicyId
+                    this.costAssetName = costAssetName
+                    this.costAmount = request.costAmount
+                    this.totalBundleQuantity = request.totalBundleQuantity
+                }
+            }
+
+        return SaleAmountResponse(
+            saleId = sale.id.value,
+            amountCborHex = amount.toCborByteArray().toHexString()
+        )
+    }
+
+    override suspend fun generateSaleTransaction(request: SaleTransactionRequest): SaleTransactionResponse {
+        log.debug { "generateSaleTransaction: $request" }
+
+        if (request.utxos.isEmpty()) {
+            throw HttpPaymentRequiredException("Missing UTXO's")
+        }
+
+        val pendingSaleTimeToLive = configRepository.getLong(CONFIG_KEY_MARKETPLACE_PENDING_SALE_TTL)
+        val sale =
+            transaction {
+                MarketplacePendingSaleEntity.deleteAllExpired(pendingSaleTimeToLive)
+                MarketplacePendingSaleEntity[request.saleId]
+            }
+
+        val contractAddress = configRepository.getString(CONFIG_KEY_MARKETPLACE_SALE_CONTRACT_ADDRESS)
+        val lovelace = configRepository.getLong(CONFIG_KEY_MARKETPLACE_SALE_LOVELACE)
+        val transaction =
+            cardanoRepository.buildTransaction {
+                sourceUtxos.addAll(request.utxos)
+                outputUtxos.add(
+                    outputUtxo {
+                        address = contractAddress
+                        this.lovelace = lovelace.toString()
+                        nativeAssets.addAll(
+                            listOf(
+                                nativeAsset {
+                                    policy = sale.bundlePolicyId
+                                    name = sale.bundleAssetName
+                                    amount = computeAmount(sale.bundleAmount, sale.totalBundleQuantity)
+                                }
+                            )
+                        )
+                        datum =
+                            buildSaleDatum(
+                                ownerAddress = sale.ownerAddress,
+                                bundleToken =
+                                    Token(
+                                        policyId = sale.bundlePolicyId,
+                                        assetName = sale.bundleAssetName,
+                                        amount = sale.bundleAmount
+                                    ),
+                                costToken =
+                                    Token(
+                                        policyId = sale.costPolicyId,
+                                        assetName = sale.costAssetName,
+                                        amount = sale.costAmount
+                                    ),
+                                maxBundleSize = sale.totalBundleQuantity // TODO: revisit this value
+                            ).toCborObject().toCborByteArray().toHexString()
+                    }
+                )
+                changeAddress = request.changeAddress
+            }
+        if (transaction.hasErrorMessage()) {
+            throw HttpUnprocessableEntityException("Failed to build sale transaction: ${transaction.errorMessage}")
+        }
+        transaction {
+            sale.delete()
+        }
+        return SaleTransactionResponse(transaction.transactionCbor.toByteArray().toHexString())
+    }
+
     override suspend fun generateOrderAmount(request: OrderAmountRequest): OrderAmountResponse {
         log.debug { "generateOrderAmount: $request" }
 
@@ -149,25 +246,27 @@ internal class MarketplaceRepositoryImpl(
             "Bundle quantity (${request.bundleQuantity}) exceeds sale availability (${sale.availableBundleQuantity})"
         }
 
-        val minIncentiveAmount = configRepository.getLong(CONFIG_KEY_MARKETPLACE_MIN_INCENTIVE_AMOUNT)
+        val incentiveMinAmount = configRepository.getLong(CONFIG_KEY_MARKETPLACE_INCENTIVE_MIN_AMOUNT)
         val incentiveAmount =
             request.incentiveAmount?.also {
-                require(it >= minIncentiveAmount) {
-                    "Incentive amount ($it) is less than minimum required ($minIncentiveAmount)"
+                require(it >= incentiveMinAmount) {
+                    "Incentive amount ($it) is less than minimum required ($incentiveMinAmount)"
                 }
-            } ?: minIncentiveAmount
+            } ?: incentiveMinAmount
 
+        val incentivePolicyId = configRepository.getString(CONFIG_KEY_MARKETPLACE_CURRENCY_POLICY_ID)
+        val incentiveAssetName = configRepository.getString(CONFIG_KEY_MARKETPLACE_CURRENCY_ASSET_NAME)
         val nativeAssets =
             listOf(
                 nativeAsset {
                     policy = sale.costPolicyId
                     name = sale.costAssetName
-                    amount = (sale.costAmount.toBigInteger() * request.bundleQuantity.toBigInteger()).toString()
+                    amount = computeAmount(sale.costAmount, request.bundleQuantity)
                 },
                 nativeAsset {
                     policy = incentivePolicyId
                     name = incentiveAssetName
-                    amount = (incentiveAmount.toBigInteger() * BigInteger.TWO).toString()
+                    amount = computeAmount(incentiveAmount, 2)
                 }
             )
 
@@ -180,12 +279,13 @@ internal class MarketplaceRepositoryImpl(
                 )
             )
 
+        val pendingOrderTimeToLive = configRepository.getLong(CONFIG_KEY_MARKETPLACE_PENDING_ORDER_TTL)
         val order =
             transaction {
                 MarketplacePendingOrderEntity.deleteAllExpired(pendingOrderTimeToLive)
                 MarketplacePendingOrderEntity.new {
-                    saleId = sale.id
-                    bundleQuantity = request.bundleQuantity
+                    this.saleId = sale.id
+                    this.bundleQuantity = request.bundleQuantity
                     this.incentiveAmount = incentiveAmount
                 }
             }
@@ -203,6 +303,7 @@ internal class MarketplaceRepositoryImpl(
             throw HttpPaymentRequiredException("Missing UTXO's")
         }
 
+        val pendingOrderTimeToLive = configRepository.getLong(CONFIG_KEY_MARKETPLACE_PENDING_ORDER_TTL)
         val (order, sale) =
             transaction {
                 MarketplacePendingOrderEntity.deleteAllExpired(pendingOrderTimeToLive)
@@ -211,25 +312,27 @@ internal class MarketplaceRepositoryImpl(
 
         val lovelace = configRepository.getLong(CONFIG_KEY_MARKETPLACE_ORDER_LOVELACE)
 
+        val contractAddress = configRepository.getString(CONFIG_KEY_MARKETPLACE_QUEUE_CONTRACT_ADDRESS)
+        val incentivePolicyId = configRepository.getString(CONFIG_KEY_MARKETPLACE_CURRENCY_POLICY_ID)
+        val incentiveAssetName = configRepository.getString(CONFIG_KEY_MARKETPLACE_CURRENCY_ASSET_NAME)
         val transaction =
             cardanoRepository.buildTransaction {
                 sourceUtxos.addAll(request.utxos)
                 outputUtxos.add(
                     outputUtxo {
-                        address = queueContractAddress
+                        address = contractAddress
                         this.lovelace = lovelace.toString()
                         nativeAssets.addAll(
                             listOf(
                                 nativeAsset {
                                     policy = sale.costPolicyId
                                     name = sale.costAssetName
-                                    amount =
-                                        (sale.costAmount.toBigInteger() * order.bundleQuantity.toBigInteger()).toString()
+                                    amount = computeAmount(sale.costAmount, order.bundleQuantity)
                                 },
                                 nativeAsset {
                                     policy = incentivePolicyId
                                     name = incentiveAssetName
-                                    amount = (order.incentiveAmount.toBigInteger() * BigInteger.TWO).toString()
+                                    amount = computeAmount(order.incentiveAmount, 2)
                                 }
                             ).mergeAmounts()
                         )
@@ -237,9 +340,12 @@ internal class MarketplaceRepositoryImpl(
                             buildQueueDatum(
                                 ownerAddress = sale.ownerAddress,
                                 numberOfBundles = order.bundleQuantity,
-                                incentivePolicyId = incentivePolicyId,
-                                incentiveAssetName = incentiveAssetName,
-                                incentiveAmount = order.incentiveAmount,
+                                incentiveToken =
+                                    Token(
+                                        policyId = incentivePolicyId,
+                                        assetName = incentiveAssetName,
+                                        amount = order.incentiveAmount
+                                    ),
                                 pointerAssetName = sale.pointerAssetName
                             ).toCborObject().toCborByteArray().toHexString()
                     }
@@ -252,9 +358,7 @@ internal class MarketplaceRepositoryImpl(
         transaction {
             order.delete()
         }
-        return OrderTransactionResponse(
-            transaction.transactionCbor.toByteArray().toHexString()
-        )
+        return OrderTransactionResponse(transaction.transactionCbor.toByteArray().toHexString())
     }
 
     override suspend fun getSaleTransactionTip(): String? {
@@ -277,6 +381,7 @@ internal class MarketplaceRepositoryImpl(
         val isMainnet = cardanoRepository.isMainnet()
         val input = response.spentUtxosList.firstOrNull()?.parseSale(isMainnet)
         val output = response.createdUtxosList.firstOrNull()?.parseSale(isMainnet)
+        val pointerPolicyId = configRepository.getString(CONFIG_KEY_MARKETPLACE_POINTER_POLICY_ID)
         val inputPointer = input?.getToken(pointerPolicyId)
         val outputPointer = output?.getToken(pointerPolicyId)
 
@@ -291,21 +396,21 @@ internal class MarketplaceRepositoryImpl(
                     transaction {
                         val songId = output.bundle.getMatchingSongId() ?: return@transaction false
                         MarketplaceSaleEntity.new {
-                            createdAt = response.timestamp.epochSecondsToLocalDateTime()
-                            status = SaleStatus.Started
+                            this.createdAt = response.timestamp.epochSecondsToLocalDateTime()
+                            this.status = SaleStatus.Started
                             this.songId = songId
-                            ownerAddress = output.ownerAddress
-                            pointerPolicyId = outputPointer.policyId
-                            pointerAssetName = outputPointer.assetName
-                            bundlePolicyId = output.bundle.policyId
-                            bundleAssetName = output.bundle.assetName
-                            bundleAmount = output.bundle.amount
-                            costPolicyId = output.cost.policyId
-                            costAssetName = output.cost.assetName
-                            costAmount = output.cost.amount
-                            maxBundleSize = output.maxBundleSize
-                            totalBundleQuantity = output.bundleQuantity
-                            availableBundleQuantity = output.bundleQuantity
+                            this.ownerAddress = output.ownerAddress
+                            this.pointerPolicyId = outputPointer.policyId
+                            this.pointerAssetName = outputPointer.assetName
+                            this.bundlePolicyId = output.bundle.policyId
+                            this.bundleAssetName = output.bundle.assetName
+                            this.bundleAmount = output.bundle.amount
+                            this.costPolicyId = output.cost.policyId
+                            this.costAssetName = output.cost.assetName
+                            this.costAmount = output.cost.amount
+                            this.maxBundleSize = output.maxBundleSize
+                            this.totalBundleQuantity = output.bundleQuantity
+                            this.availableBundleQuantity = output.bundleQuantity
                         }
                         true
                     }
@@ -338,9 +443,9 @@ internal class MarketplaceRepositoryImpl(
                             if (isSoldOut) status = SaleStatus.SoldOut
                             availableBundleQuantity = outputBundleQuantity
                             MarketplacePurchaseEntity.new {
-                                createdAt = response.timestamp.epochSecondsToLocalDateTime()
-                                saleId = this@run.id
-                                bundleQuantity = purchaseBundleQuantity
+                                this.createdAt = response.timestamp.epochSecondsToLocalDateTime()
+                                this.saleId = this@run.id
+                                this.bundleQuantity = purchaseBundleQuantity
                             }
                         } != null
                     }
@@ -349,17 +454,25 @@ internal class MarketplaceRepositoryImpl(
                 }
             }
         }
-        transaction {
-            MarketplaceBookmarkEntity.update(SALE_TIP_KEY, response)
-        }
+        updateSaleTip(response)
     }
 
     override suspend fun processQueueTransaction(response: MonitorAddressResponse) {
         log.info { "Processing queue transaction ${response.txId}, block ${response.block}, slot ${response.slot}" }
 
         val isMainnet = cardanoRepository.isMainnet()
-        val input = response.spentUtxosList.firstOrNull()?.parseQueue(isMainnet)
-        val output = response.createdUtxosList.firstOrNull()?.parseQueue(isMainnet)
+        val input: QueueTransaction?
+        val output: QueueTransaction?
+        try {
+            input = response.spentUtxosList.firstOrNull()?.parseQueue(isMainnet)
+            output = response.createdUtxosList.firstOrNull()?.parseQueue(isMainnet)
+        } catch (e: Throwable) {
+            log.error(e) { "Failed to parse queue transaction: ${response.txId}" }
+            updateQueueTip(response)
+            return
+        }
+
+        val pointerPolicyId = configRepository.getString(CONFIG_KEY_MARKETPLACE_POINTER_POLICY_ID)
         val sale =
             output?.let {
                 transaction {
@@ -386,10 +499,25 @@ internal class MarketplaceRepositoryImpl(
                 log.info { "Detected REFUND ONLY (because of sold-out sale): $input" }
             }
         }
+        updateQueueTip(response)
+    }
+
+    private fun updateSaleTip(response: MonitorAddressResponse) {
+        transaction {
+            MarketplaceBookmarkEntity.update(SALE_TIP_KEY, response)
+        }
+    }
+
+    private fun updateQueueTip(response: MonitorAddressResponse) {
         transaction {
             MarketplaceBookmarkEntity.update(QUEUE_TIP_KEY, response)
         }
     }
+
+    private fun computeAmount(
+        multiplier: Long,
+        multiplicand: Long
+    ) = (multiplier.toBigInteger() * multiplicand.toBigInteger()).toString()
 
     private fun Token.getMatchingSongId(): EntityID<UUID>? =
         SongTable.select(SongTable.id).where {
