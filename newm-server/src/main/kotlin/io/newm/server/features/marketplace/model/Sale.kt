@@ -1,14 +1,14 @@
 package io.newm.server.features.marketplace.model
 
 import io.newm.shared.serialization.LocalDateTimeSerializer
-import io.newm.shared.serialization.UUIDSerializer
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 import java.time.LocalDateTime
 import java.util.UUID
 
 @Serializable
 data class Sale(
-    @Serializable(with = UUIDSerializer::class)
+    @Contextual
     val id: UUID,
     @Serializable(with = LocalDateTimeSerializer::class)
     val createdAt: LocalDateTime,
@@ -27,9 +27,9 @@ data class Sale(
 ) {
     @Serializable
     data class Song(
-        @Serializable(with = UUIDSerializer::class)
+        @Contextual
         val id: UUID,
-        @Serializable(with = UUIDSerializer::class)
+        @Contextual
         val artistId: UUID,
         val artistName: String?,
         val artistPictureUrl: String?,
@@ -47,7 +47,7 @@ data class Sale(
 
     @Serializable
     data class SongCollaborator(
-        @Serializable(with = UUIDSerializer::class)
+        @Contextual
         val id: UUID,
         val name: String?,
         val pictureUrl: String?,

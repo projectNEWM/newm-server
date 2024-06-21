@@ -5,7 +5,7 @@ import io.newm.server.typealiases.SongId
 import io.newm.server.typealiases.UserId
 import io.newm.shared.serialization.LocalDateSerializer
 import io.newm.shared.serialization.LocalDateTimeSerializer
-import io.newm.shared.serialization.UUIDSerializer
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import java.time.LocalDate
@@ -14,10 +14,10 @@ import java.util.UUID
 
 @Serializable
 data class Song(
-    @Serializable(with = UUIDSerializer::class)
+    @Contextual
     val id: SongId? = null,
     val archived: Boolean? = null,
-    @Serializable(with = UUIDSerializer::class)
+    @Contextual
     val ownerId: UserId? = null,
     @Serializable(with = LocalDateTimeSerializer::class)
     val createdAt: LocalDateTime? = null,
@@ -27,7 +27,7 @@ data class Song(
     // FIXME: Keep coverArtUrl for now since the UI/UX expects it. Eventually this will only be on the Release instead of the Song.
     val coverArtUrl: String? = null,
     val description: String? = null,
-    @Serializable(with = UUIDSerializer::class)
+    @Contextual
     val releaseId: ReleaseId? = null,
     val track: Int? = null,
     val language: String? = null,
@@ -62,7 +62,7 @@ data class Song(
     val mintingStatus: MintingStatus? = null,
     val mintingTxId: String? = null,
     val marketplaceStatus: MarketplaceStatus? = null,
-    @Serializable(with = UUIDSerializer::class)
+    @Contextual
     val paymentKeyId: UUID? = null,
     @Transient
     val arweaveLyricsUrl: String? = null,

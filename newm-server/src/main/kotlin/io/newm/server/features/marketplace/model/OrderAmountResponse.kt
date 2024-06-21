@@ -1,12 +1,12 @@
 package io.newm.server.features.marketplace.model
 
-import io.newm.shared.serialization.UUIDSerializer
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 import java.util.UUID
 
 @Serializable
 data class OrderAmountResponse(
-    @Serializable(with = UUIDSerializer::class)
+    @Contextual
     val orderId: UUID,
     val amountCborHex: String
 )

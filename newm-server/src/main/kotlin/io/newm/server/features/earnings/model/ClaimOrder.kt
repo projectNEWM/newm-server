@@ -1,26 +1,25 @@
 package io.newm.server.features.earnings.model
 
 import io.newm.shared.serialization.LocalDateTimeSerializer
-import io.newm.shared.serialization.UUIDSerializer
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 import java.time.LocalDateTime
 import java.util.UUID
 
 @Serializable
 data class ClaimOrder(
-    @Serializable(with = UUIDSerializer::class)
+    @Contextual
     val id: UUID,
     val stakeAddress: String,
-    @Serializable(with = UUIDSerializer::class)
+    @Contextual
     val keyId: UUID,
     val status: ClaimOrderStatus,
     val earningsIds: List<
-        @Serializable(with = UUIDSerializer::class)
+        @Contextual
         UUID
     >,
     val failedEarningsIds: List<
-        @Serializable(with = UUIDSerializer::class)
-        UUID
+        @Contextual UUID
     >?,
     val transactionId: String?,
     @Serializable(with = LocalDateTimeSerializer::class)
