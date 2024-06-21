@@ -9,7 +9,7 @@ private val monitorClaimOrderSchedulerDaemon by lazy { MonitorClaimOrderSchedule
 
 val earningsKoinModule =
     module {
-        single { EarningsRepositoryImpl(get(), get(), get()) }
+        single { EarningsRepositoryImpl(get(), get(), get(), get(), get()) }
         single<MonitorClaimOrderSchedulerDaemon> { monitorClaimOrderSchedulerDaemon }
         single<Daemon> { monitorClaimOrderSchedulerDaemon }
     }
