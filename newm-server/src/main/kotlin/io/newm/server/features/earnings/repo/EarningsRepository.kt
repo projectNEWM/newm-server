@@ -31,6 +31,11 @@ interface EarningsRepository {
     suspend fun add(claimOrder: ClaimOrder): UUID
 
     /**
+     * Create a new claim order for a stake address
+     */
+    suspend fun createClaimOrder(stakeAddress: String): ClaimOrder?
+
+    /**
      * Update a claim order
      */
     suspend fun update(claimOrder: ClaimOrder)
