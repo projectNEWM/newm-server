@@ -18,8 +18,8 @@ import kotlin.coroutines.suspendCoroutine
 
 private val sqs: AmazonSQSAsync by inject()
 
-suspend fun SendMessageRequest.await(): SendMessageResult {
-    return suspendCoroutine { continuation ->
+suspend fun SendMessageRequest.await(): SendMessageResult =
+    suspendCoroutine { continuation ->
         sqs.sendMessageAsync(
             this,
             object : AsyncHandler<SendMessageRequest, SendMessageResult> {
@@ -36,10 +36,9 @@ suspend fun SendMessageRequest.await(): SendMessageResult {
             }
         )
     }
-}
 
-suspend fun ReceiveMessageRequest.await(): ReceiveMessageResult {
-    return suspendCoroutine { continuation ->
+suspend fun ReceiveMessageRequest.await(): ReceiveMessageResult =
+    suspendCoroutine { continuation ->
         sqs.receiveMessageAsync(
             this,
             object : AsyncHandler<ReceiveMessageRequest, ReceiveMessageResult> {
@@ -56,10 +55,9 @@ suspend fun ReceiveMessageRequest.await(): ReceiveMessageResult {
             }
         )
     }
-}
 
-suspend fun Message.delete(queueUrl: String): DeleteMessageResult {
-    return suspendCoroutine { continuation ->
+suspend fun Message.delete(queueUrl: String): DeleteMessageResult =
+    suspendCoroutine { continuation ->
         sqs.deleteMessageAsync(
             queueUrl,
             receiptHandle,
@@ -77,10 +75,9 @@ suspend fun Message.delete(queueUrl: String): DeleteMessageResult {
             }
         )
     }
-}
 
-suspend fun Message.markFailed(queueUrl: String): ChangeMessageVisibilityResult {
-    return suspendCoroutine { continuation ->
+suspend fun Message.markFailed(queueUrl: String): ChangeMessageVisibilityResult =
+    suspendCoroutine { continuation ->
         sqs.changeMessageVisibilityAsync(
             queueUrl,
             receiptHandle,
@@ -99,4 +96,3 @@ suspend fun Message.markFailed(queueUrl: String): ChangeMessageVisibilityResult 
             }
         )
     }
-}

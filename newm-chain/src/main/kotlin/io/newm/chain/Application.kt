@@ -42,7 +42,8 @@ fun main(args: Array<String>) {
         createJwtUser = args[args.indexOf("JWT") + 1]
     }
 
-    io.newm.ktor.server.grpc.EngineMain.main(args, null, GrpcConfig.init)
+    io.newm.ktor.server.grpc.EngineMain
+        .main(args, null, GrpcConfig.init)
 }
 
 @Suppress("unused")

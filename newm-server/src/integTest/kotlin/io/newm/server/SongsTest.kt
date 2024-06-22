@@ -119,11 +119,10 @@ class SongsTest {
             assertThat(resp.count).isAtLeast(0L)
         }
 
-    private suspend fun createSong(song: Song): HttpResponse {
-        return TestContext.client.post("${TestContext.baseUrl}/v1/songs") {
+    private suspend fun createSong(song: Song): HttpResponse =
+        TestContext.client.post("${TestContext.baseUrl}/v1/songs") {
             bearerAuth(TestContext.loginResponse.accessToken)
             contentType(ContentType.Application.Json)
             setBody(song)
         }
-    }
 }

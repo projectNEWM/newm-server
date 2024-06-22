@@ -23,7 +23,8 @@ class SubmittedTransactionCacheImpl : SubmittedTransactionCache {
      * Hold transactions in case we need to re-submit due to rollbacks
      */
     private val submittedTransactionCache: Cache<String, ByteArray> =
-        Caffeine.newBuilder()
+        Caffeine
+            .newBuilder()
             .removalListener(
                 RemovalListener<String, ByteArray> { key, _, cause ->
                     if (cause == RemovalCause.REPLACED) {
@@ -33,8 +34,7 @@ class SubmittedTransactionCacheImpl : SubmittedTransactionCache {
                         orderedSubmittedTransactionMap.remove(key)
                     }
                 }
-            )
-            .expireAfterWrite(Duration.ofHours(48))
+            ).expireAfterWrite(Duration.ofHours(48))
             .build()
 
     override fun put(
@@ -61,7 +61,5 @@ class SubmittedTransactionCacheImpl : SubmittedTransactionCache {
                 orderedSubmittedTransactionMap.keys
             }
 
-    suspend inline fun <T> withLock(action: () -> T): T {
-        return cacheMutex.withLock(null, action)
-    }
+    suspend inline fun <T> withLock(action: () -> T): T = cacheMutex.withLock(null, action)
 }

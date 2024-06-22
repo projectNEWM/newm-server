@@ -29,7 +29,9 @@ import io.newm.server.staticcontent.createStaticContentRoutes
 import io.newm.server.statuspages.installStatusPages
 import io.newm.shared.daemon.initializeDaemons
 
-fun main(args: Array<String>) = io.ktor.server.cio.EngineMain.main(args)
+fun main(args: Array<String>) =
+    io.ktor.server.cio.EngineMain
+        .main(args)
 
 @Suppress("unused")
 fun Application.module() {

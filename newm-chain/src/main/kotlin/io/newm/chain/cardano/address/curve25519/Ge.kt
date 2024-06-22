@@ -6,7 +6,12 @@ package io.newm.chain.cardano.address.curve25519
  * which maps to coordinates using the following equations: X = x/z Y = y/z X * Y = t/z
  */
 @OptIn(ExperimentalUnsignedTypes::class)
-data class Ge(internal val x: Fe, internal val y: Fe, internal val z: Fe, internal val t: Fe) {
+data class Ge(
+    internal val x: Fe,
+    internal val y: Fe,
+    internal val z: Fe,
+    internal val t: Fe
+) {
     operator fun plus(rhs: GePrecomp): GeP1P1 {
         val y1PlusX1 = y + x
         val y1MinusX1 = y - x
@@ -38,9 +43,7 @@ data class Ge(internal val x: Fe, internal val y: Fe, internal val z: Fe, intern
         return GeP1P1(x3, y3, z3, t3)
     }
 
-    fun doublePartial(): GePartial {
-        return doubleP1P1().toPartial()
-    }
+    fun doublePartial(): GePartial = doubleP1P1().toPartial()
 
     private fun doubleP1P1(): GeP1P1 {
         val xx = x.square()
@@ -66,9 +69,7 @@ data class Ge(internal val x: Fe, internal val y: Fe, internal val z: Fe, intern
         return GeAffine(x, y)
     }
 
-    fun toBytes(): ByteArray {
-        return toAffine().toBytes()
-    }
+    fun toBytes(): ByteArray = toAffine().toBytes()
 
     fun toCached(): GeCached {
         val yPlusX = y + x
@@ -110,7 +111,12 @@ data class Ge(internal val x: Fe, internal val y: Fe, internal val z: Fe, intern
                 val r = h + t
                 h = r.toFull()
             }
-            h = h.doublePartial().double().double().doubleFull()
+            h =
+                h
+                    .doublePartial()
+                    .double()
+                    .double()
+                    .doubleFull()
 
             for (j in 0..31) {
                 val i = j * 2
@@ -128,9 +134,7 @@ data class Ge(internal val x: Fe, internal val y: Fe, internal val z: Fe, intern
          * The compressed bytes representation is the y coordinate (255 bits)
          * and the sign of the x coordinate (1 bit) as the highest bit.
          */
-        fun fromBytes(s: ByteArray): Ge? {
-            return GeAffine.fromBytes(s)?.let { fromAffine(it) }
-        }
+        fun fromBytes(s: ByteArray): Ge? = GeAffine.fromBytes(s)?.let { fromAffine(it) }
 
         /**
          * Create a group element from affine coordinate

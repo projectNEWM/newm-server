@@ -979,12 +979,13 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
             transaction {
                 val title = "title$offset ${phraseOrEmpty(3)} blah blah"
                 val releaseId =
-                    ReleaseEntity.new {
-                        ownerId = artist.id
-                        this.title = title
-                        arweaveCoverArtUrl = "ar://coverArtUrl$offset"
-                        releaseType = ReleaseType.SINGLE
-                    }.id.value
+                    ReleaseEntity
+                        .new {
+                            ownerId = artist.id
+                            this.title = title
+                            arweaveCoverArtUrl = "ar://coverArtUrl$offset"
+                            releaseType = ReleaseType.SINGLE
+                        }.id.value
                 SongEntity.new {
                     ownerId = artist.id
                     this.title = title
@@ -1010,27 +1011,28 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
         }
 
         return transaction {
-            MarketplaceSaleEntity.new {
-                createdAt = LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS)
-                status = SaleStatus.entries[offset % SaleStatus.entries.size]
-                songId = song.id
-                ownerAddress = "ownerAddress$offset"
-                pointerPolicyId = "pointerPolicyId$offset"
-                pointerAssetName = "pointerAssetName$offset"
-                bundlePolicyId = "bundlePolicyId$offset"
-                bundleAssetName = "bundleAssetName$offset"
-                bundleAmount = offset + 1L
-                costPolicyId = "costPolicyId$offset"
-                costAssetName = "costAssetName$offset"
-                costAmount = offset.toLong()
-                maxBundleSize = offset + 100L
-                totalBundleQuantity = offset + 1000L
-                availableBundleQuantity = offset + 1000L
-            }.toModel(
-                isMainnet = false,
-                isNftCdnEnabled = false,
-                costAmountUsd = (offset.toBigInteger() * COST_TOKEN_USD_PRICE.toBigInteger()).toAdaString()
-            )
+            MarketplaceSaleEntity
+                .new {
+                    createdAt = LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS)
+                    status = SaleStatus.entries[offset % SaleStatus.entries.size]
+                    songId = song.id
+                    ownerAddress = "ownerAddress$offset"
+                    pointerPolicyId = "pointerPolicyId$offset"
+                    pointerAssetName = "pointerAssetName$offset"
+                    bundlePolicyId = "bundlePolicyId$offset"
+                    bundleAssetName = "bundleAssetName$offset"
+                    bundleAmount = offset + 1L
+                    costPolicyId = "costPolicyId$offset"
+                    costAssetName = "costAssetName$offset"
+                    costAmount = offset.toLong()
+                    maxBundleSize = offset + 100L
+                    totalBundleQuantity = offset + 1000L
+                    availableBundleQuantity = offset + 1000L
+                }.toModel(
+                    isMainnet = false,
+                    isNftCdnEnabled = false,
+                    costAmountUsd = (offset.toBigInteger() * COST_TOKEN_USD_PRICE.toBigInteger()).toAdaString()
+                )
         }
     }
 

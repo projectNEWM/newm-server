@@ -157,7 +157,10 @@ object Bech32 {
         return Decoded(prefix, fromWords(words.toIntArray()))
     }
 
-    data class Decoded(val prefix: String, val bytes: ByteArray) {
+    data class Decoded(
+        val prefix: String,
+        val bytes: ByteArray
+    ) {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (javaClass != other?.javaClass) return false

@@ -11,7 +11,9 @@ private const val MAX_CAPACITY = Int.MAX_VALUE / MULTIPLIER
 /**
  * Default implementation
  */
-abstract class DefaultPool<T : Any>(final override val capacity: Int) : ObjectPool<T> {
+abstract class DefaultPool<T : Any>(
+    final override val capacity: Int
+) : ObjectPool<T> {
     init {
         require(capacity > 0) { "capacity must be > 0, but it was $capacity" }
         require(capacity <= MAX_CAPACITY) {
@@ -39,9 +41,7 @@ abstract class DefaultPool<T : Any>(final override val capacity: Int) : ObjectPo
     /**
      * Clear state before re-use
      */
-    protected open suspend fun clearInstance(instance: T): T {
-        return instance
-    }
+    protected open suspend fun clearInstance(instance: T): T = instance
 
     /**
      * Validate that all is good with this instance

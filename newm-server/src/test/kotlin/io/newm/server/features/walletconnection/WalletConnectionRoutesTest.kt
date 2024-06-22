@@ -114,10 +114,11 @@ class WalletConnectionRoutesTest : BaseApplicationTests() {
             val startTime = LocalDateTime.now()
             val challengeId =
                 transaction {
-                    WalletConnectionChallengeEntity.new {
-                        method = ChallengeMethod.SignedData
-                        stakeAddress = TEST_STAKE_ADDRESS
-                    }.id.value
+                    WalletConnectionChallengeEntity
+                        .new {
+                            method = ChallengeMethod.SignedData
+                            stakeAddress = TEST_STAKE_ADDRESS
+                        }.id.value
                 }
 
             val expectedSignature = "7b22636f6e6e656374546f223a224e45574d204d6f62696c652066343238333539302d3461"
@@ -206,10 +207,11 @@ class WalletConnectionRoutesTest : BaseApplicationTests() {
             val startTime = LocalDateTime.now()
             val challengeId =
                 transaction {
-                    WalletConnectionChallengeEntity.new {
-                        method = ChallengeMethod.SignedTransaction
-                        stakeAddress = TEST_STAKE_ADDRESS
-                    }.id.value
+                    WalletConnectionChallengeEntity
+                        .new {
+                            method = ChallengeMethod.SignedTransaction
+                            stakeAddress = TEST_STAKE_ADDRESS
+                        }.id.value
                 }
 
             val expectedSignature = "7b22636f6e6e656374546f223a224e45574d204d6f62696c652066343238333539302d3461"
@@ -254,9 +256,10 @@ class WalletConnectionRoutesTest : BaseApplicationTests() {
         runBlocking {
             val connectionId =
                 transaction {
-                    WalletConnectionEntity.new {
-                        stakeAddress = TEST_STAKE_ADDRESS
-                    }.id.value
+                    WalletConnectionEntity
+                        .new {
+                            stakeAddress = TEST_STAKE_ADDRESS
+                        }.id.value
                 }
 
             val response =
@@ -284,15 +287,17 @@ class WalletConnectionRoutesTest : BaseApplicationTests() {
         runBlocking {
             val userId =
                 transaction {
-                    UserEntity.new {
-                        email = "testuser@newm.io"
-                    }.id.value
+                    UserEntity
+                        .new {
+                            email = "testuser@newm.io"
+                        }.id.value
                 }
             val connectionId =
                 transaction {
-                    WalletConnectionEntity.new {
-                        stakeAddress = TEST_STAKE_ADDRESS
-                    }.id.value
+                    WalletConnectionEntity
+                        .new {
+                            stakeAddress = TEST_STAKE_ADDRESS
+                        }.id.value
                 }
 
             val response =
@@ -321,16 +326,18 @@ class WalletConnectionRoutesTest : BaseApplicationTests() {
         runBlocking {
             val userId =
                 transaction {
-                    UserEntity.new {
-                        email = "testuser@newm.io"
-                    }.id.value
+                    UserEntity
+                        .new {
+                            email = "testuser@newm.io"
+                        }.id.value
                 }
             val connectionId =
                 transaction {
-                    WalletConnectionEntity.new {
-                        stakeAddress = TEST_STAKE_ADDRESS
-                        this.userId = EntityID(userId, UserTable)
-                    }.id.value
+                    WalletConnectionEntity
+                        .new {
+                            stakeAddress = TEST_STAKE_ADDRESS
+                            this.userId = EntityID(userId, UserTable)
+                        }.id.value
                 }
 
             val response =
@@ -349,12 +356,13 @@ class WalletConnectionRoutesTest : BaseApplicationTests() {
         runBlocking {
             val userId =
                 transaction {
-                    UserEntity.new {
-                        email = "testuser@newm.io"
-                    }.id
+                    UserEntity
+                        .new {
+                            email = "testuser@newm.io"
+                        }.id
                 }
             val expectedConnections = mutableListOf<WalletConnection>()
-            for (i in 0..4)
+            for (i in 0..4) {
                 expectedConnections +=
                     transaction {
                         WalletConnectionEntity.new {
@@ -362,6 +370,7 @@ class WalletConnectionRoutesTest : BaseApplicationTests() {
                             this.userId = userId
                         }
                     }.toModel()
+            }
 
             val response =
                 client.get("v1/wallet-connections") {

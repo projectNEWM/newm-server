@@ -41,7 +41,8 @@ class OutletReleaseStatusJob : Job {
                 val song = songRepository.get(songId)
                 // if we're force distributing or we're on testnet and at this point, it doesn't make sense to check
                 // spotify because the song will never actually go there. Just assume it's released.
-                if (song.forceDistributed == true || !cardanoRepository.isMainnet() ||
+                if (song.forceDistributed == true ||
+                    !cardanoRepository.isMainnet() ||
                     outletReleaseRepository.isSongReleased(songId)
                 ) {
                     songRepository.updateSongMintingStatus(songId, MintingStatus.Released)

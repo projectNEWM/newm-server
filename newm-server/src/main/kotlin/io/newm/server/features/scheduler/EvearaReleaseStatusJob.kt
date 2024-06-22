@@ -59,12 +59,14 @@ class EvearaReleaseStatusJob : Job {
                             OutletStatusCode.DISTRIBUTED
                         }
                     } else {
-                        distributionReleaseStatusResponse.outletReleaseStatuses?.find {
-                            it.storeName.equals(
-                                "Spotify",
-                                ignoreCase = true
-                            )
-                        }?.outletStatus?.statusCode
+                        distributionReleaseStatusResponse.outletReleaseStatuses
+                            ?.find {
+                                it.storeName.equals(
+                                    "Spotify",
+                                    ignoreCase = true
+                                )
+                            }?.outletStatus
+                            ?.statusCode
                     }
 
                 when (spotifyOutletStatusCode) {

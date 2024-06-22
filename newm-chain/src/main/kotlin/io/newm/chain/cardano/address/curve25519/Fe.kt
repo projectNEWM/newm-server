@@ -11,7 +11,9 @@ import io.newm.chain.util.toULong
  * Sandy2x: New Curve25519 Speed Records
  */
 @OptIn(ExperimentalUnsignedTypes::class)
-data class Fe(private val values: ULongArray) {
+data class Fe(
+    private val values: ULongArray
+) {
     operator fun plus(rhs: Fe): Fe {
         val f0 = values[0]
         val f1 = values[1]
@@ -412,13 +414,9 @@ data class Fe(private val values: ULongArray) {
         return out
     }
 
-    fun isNegative(): Boolean {
-        return (this.toPacked()[0] and 1uL) != 0uL
-    }
+    fun isNegative(): Boolean = (this.toPacked()[0] and 1uL) != 0uL
 
-    fun isNonZero(): Boolean {
-        return !ZERO_BYTES.contentEquals(this.toBytes())
-    }
+    fun isNonZero(): Boolean = !ZERO_BYTES.contentEquals(this.toBytes())
 
     companion object {
         // mask

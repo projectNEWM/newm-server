@@ -18,21 +18,27 @@ internal class OutletReleaseRepositoryImpl(
     private val logger = KotlinLogging.logger {}
 
     override suspend fun isSongReleased(songId: SongId): Boolean {
-        val isrc = songRepository.get(songId).isrc!!.lowercase().replace("-", "")
+        val isrc =
+            songRepository
+                .get(songId)
+                .isrc!!
+                .lowercase()
+                .replace("-", "")
         logger.debug { "isSongReleased: songId = $songId, isrc = $isrc" }
 
         val response =
-            httpClient.get(SPOTIFY_SEARCH_API_URL) {
-                url {
-                    with(parameters) {
-                        append("market", "US")
-                        append("limit", "1")
-                        append("type", "track")
-                        append("q", "isrc:$isrc")
+            httpClient
+                .get(SPOTIFY_SEARCH_API_URL) {
+                    url {
+                        with(parameters) {
+                            append("market", "US")
+                            append("limit", "1")
+                            append("type", "track")
+                            append("q", "isrc:$isrc")
+                        }
                     }
-                }
-                accept(ContentType.Application.Json)
-            }.checkedBody<SpotifySearchResponse>()
+                    accept(ContentType.Application.Json)
+                }.checkedBody<SpotifySearchResponse>()
         return response.tracks.total > 0
     }
 }

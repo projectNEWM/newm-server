@@ -27,7 +27,14 @@ fun Routing.createDistributionRoutes() {
                 respond(distributionRepository.getRoles().roles)
             }
             get("count") {
-                respond(CountResponse(distributionRepository.getRoles().roles.size.toLong()))
+                respond(
+                    CountResponse(
+                        distributionRepository
+                            .getRoles()
+                            .roles.size
+                            .toLong()
+                    )
+                )
             }
         }
         route(GENRES_PATH) {
@@ -35,7 +42,14 @@ fun Routing.createDistributionRoutes() {
                 respond(distributionRepository.getGenres().genres)
             }
             get("count") {
-                respond(CountResponse(distributionRepository.getGenres().genres.size.toLong()))
+                respond(
+                    CountResponse(
+                        distributionRepository
+                            .getGenres()
+                            .genres.size
+                            .toLong()
+                    )
+                )
             }
         }
         route(COUNTRIES_PATH) {
@@ -43,7 +57,14 @@ fun Routing.createDistributionRoutes() {
                 respond(distributionRepository.getCountries().countries)
             }
             get("count") {
-                respond(CountResponse(distributionRepository.getCountries().countries.size.toLong()))
+                respond(
+                    CountResponse(
+                        distributionRepository
+                            .getCountries()
+                            .countries.size
+                            .toLong()
+                    )
+                )
             }
         }
         route(LANGUAGES_PATH) {
@@ -51,7 +72,14 @@ fun Routing.createDistributionRoutes() {
                 respond(distributionRepository.getLanguages().languages)
             }
             get("count") {
-                respond(CountResponse(distributionRepository.getLanguages().languages.size.toLong()))
+                respond(
+                    CountResponse(
+                        distributionRepository
+                            .getLanguages()
+                            .languages.size
+                            .toLong()
+                    )
+                )
             }
         }
         get(EARLIEST_RELEASE_DATE_PATH) {

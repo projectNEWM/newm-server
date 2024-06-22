@@ -21,24 +21,27 @@ import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.innerJoin
 import org.jetbrains.exposed.sql.mapLazy
 
-class MarketplaceArtistEntity(id: EntityID<UserId>) : UserEntity(id) {
+class MarketplaceArtistEntity(
+    id: EntityID<UserId>
+) : UserEntity(id) {
     val releasedSongCount: Long
         get() =
-            SongTable.select(SongTable.id)
+            SongTable
+                .select(SongTable.id)
                 .where {
                     (SongTable.ownerId eq this@MarketplaceArtistEntity.id) and
                         (SongTable.archived eq false) and
                         (SongTable.mintingStatus eq MintingStatus.Released)
-                }
-                .count()
+                }.count()
 
     val marketplaceSongCount: Long
         get() =
-            SongTable.innerJoin(
-                otherTable = MarketplaceSaleTable,
-                onColumn = { id },
-                otherColumn = { songId }
-            ).select(SongTable.id)
+            SongTable
+                .innerJoin(
+                    otherTable = MarketplaceSaleTable,
+                    onColumn = { id },
+                    otherColumn = { songId }
+                ).select(SongTable.id)
                 .where { SongTable.ownerId eq this@MarketplaceArtistEntity.id }
                 .groupBy(SongTable.id)
                 .count()
@@ -67,15 +70,16 @@ class MarketplaceArtistEntity(id: EntityID<UserId>) : UserEntity(id) {
         fun all(filters: ArtistFilters): SizedIterable<MarketplaceArtistEntity> {
             val ops = filters.toOps()
             val query =
-                UserTable.innerJoin(
-                    otherTable = SongTable,
-                    onColumn = { id },
-                    otherColumn = { ownerId }
-                ).innerJoin(
-                    otherTable = MarketplaceSaleTable,
-                    onColumn = { SongTable.id },
-                    otherColumn = { songId }
-                ).select(UserTable.columns)
+                UserTable
+                    .innerJoin(
+                        otherTable = SongTable,
+                        onColumn = { id },
+                        otherColumn = { ownerId }
+                    ).innerJoin(
+                        otherTable = MarketplaceSaleTable,
+                        onColumn = { SongTable.id },
+                        otherColumn = { songId }
+                    ).select(UserTable.columns)
             return (if (ops.isEmpty()) query else query.where(AndOp(ops)))
                 .groupBy(UserTable.id)
                 .orderBy(UserTable.createdAt to (filters.sortOrder ?: SortOrder.ASC))

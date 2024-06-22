@@ -79,11 +79,14 @@ class MintingMessageReceiver : SqsMessageReceiver {
                                         address = paymentKey.address
                                         lovelace = song.mintCostLovelace!!.toString()
                                         timeoutMs =
-                                            configRepository.getLong(
-                                                CONFIG_KEY_MINT_MONITOR_PAYMENT_ADDRESS_TIMEOUT_MIN
-                                            ).minutes.inWholeMilliseconds
+                                            configRepository
+                                                .getLong(
+                                                    CONFIG_KEY_MINT_MONITOR_PAYMENT_ADDRESS_TIMEOUT_MIN
+                                                ).minutes.inWholeMilliseconds
                                     }.also {
-                                        log.info { "Awaiting payment for song: ${song.id} on address: ${it.address} for ${it.lovelace} lovelace." }
+                                        log.info {
+                                            "Awaiting payment for song: ${song.id} on address: ${it.address} for ${it.lovelace} lovelace."
+                                        }
                                     }
                                 )
                             if (response.success) {
@@ -183,8 +186,7 @@ class MintingMessageReceiver : SqsMessageReceiver {
                                 simpleSchedule()
                                     .withIntervalInMinutes(configRepository.getInt(CONFIG_KEY_EVEARA_STATUS_CHECK_MINUTES))
                                     .repeatForever()
-                            )
-                            .build()
+                            ).build()
 
                     quartzSchedulerDaemon.scheduleJob(jobDetail, trigger)
 
@@ -299,8 +301,7 @@ class MintingMessageReceiver : SqsMessageReceiver {
                                 simpleSchedule()
                                     .withIntervalInMinutes(configRepository.getInt(CONFIG_KEY_OUTLET_STATUS_CHECK_MINUTES))
                                     .repeatForever()
-                            )
-                            .build()
+                            ).build()
 
                     quartzSchedulerDaemon.scheduleJob(jobDetail, trigger)
                 } catch (e: Throwable) {

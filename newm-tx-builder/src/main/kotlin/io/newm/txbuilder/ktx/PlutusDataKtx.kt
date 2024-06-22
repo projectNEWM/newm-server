@@ -26,7 +26,8 @@ fun String.cborHexToPlutusData(): PlutusData = CborReader.createFromByteArray(th
 fun CborObject.toPlutusData(cborHex: String? = null): PlutusData {
     val fields = this
     return PlutusData
-        .newBuilder().apply {
+        .newBuilder()
+        .apply {
             cborHex?.let {
                 this.cborHex = it
             }
@@ -43,28 +44,38 @@ fun CborObject.toPlutusData(cborHex: String? = null): PlutusData {
                 is CborInteger -> int = fields.longValue()
                 is CborByteString ->
                     bytes =
-                        fields.byteArrayValue().takeUnless { it.isEmpty() }?.get(0)?.toByteString() ?: ByteString.EMPTY
+                        fields
+                            .byteArrayValue()
+                            .takeUnless { it.isEmpty() }
+                            ?.get(0)
+                            ?.toByteString() ?: ByteString.EMPTY
 
                 is CborArray ->
                     list =
-                        PlutusDataList.newBuilder().apply {
-                            addAllListItem(
-                                fields.map { it.toPlutusData() }
-                            )
-                        }.build()
+                        PlutusDataList
+                            .newBuilder()
+                            .apply {
+                                addAllListItem(
+                                    fields.map { it.toPlutusData() }
+                                )
+                            }.build()
 
                 is CborMap ->
                     map =
-                        PlutusDataMap.newBuilder().apply {
-                            addAllMapItem(
-                                fields.mapValue().map { (k, v) ->
-                                    PlutusDataMapItem.newBuilder().apply {
-                                        mapItemKey = k.toPlutusData()
-                                        mapItemValue = v.toPlutusData()
-                                    }.build()
-                                }
-                            )
-                        }.build()
+                        PlutusDataMap
+                            .newBuilder()
+                            .apply {
+                                addAllMapItem(
+                                    fields.mapValue().map { (k, v) ->
+                                        PlutusDataMapItem
+                                            .newBuilder()
+                                            .apply {
+                                                mapItemKey = k.toPlutusData()
+                                                mapItemValue = v.toPlutusData()
+                                            }.build()
+                                    }
+                                )
+                            }.build()
 
                 else -> throw IllegalArgumentException(
                     "plutus_data fields must be int, bytes, array, or map!: ${
@@ -72,8 +83,7 @@ fun CborObject.toPlutusData(cborHex: String? = null): PlutusData {
                     }, type: ${fields.javaClass.name}, cborHex: $cborHex"
                 )
             }
-        }
-        .build()
+        }.build()
 }
 
 /**
@@ -119,9 +129,13 @@ fun PlutusData.toCborObject(): CborObject {
         PlutusData.PlutusDataWrapperCase.BYTES -> {
             if (bytes.size() > 64) {
                 val chunks =
-                    bytes.toByteArray().asList().chunked(64).map { chunk ->
-                        chunk.toByteArray()
-                    }.toTypedArray()
+                    bytes
+                        .toByteArray()
+                        .asList()
+                        .chunked(64)
+                        .map { chunk ->
+                            chunk.toByteArray()
+                        }.toTypedArray()
                 CborByteString.wrap(chunks, cborTag, true, null)
             } else {
                 CborByteString.create(
@@ -137,18 +151,10 @@ fun PlutusData.toCborObject(): CborObject {
     }
 }
 
-fun String.toPlutusData(): PlutusData {
-    return plutusData { bytes = this@toPlutusData.toByteStringUtf8() }
-}
+fun String.toPlutusData(): PlutusData = plutusData { bytes = this@toPlutusData.toByteStringUtf8() }
 
-fun Number.toPlutusData(): PlutusData {
-    return plutusData { int = this@toPlutusData.toLong() }
-}
+fun Number.toPlutusData(): PlutusData = plutusData { int = this@toPlutusData.toLong() }
 
-fun ByteArray.toPlutusData(): PlutusData {
-    return plutusData { bytes = this@toPlutusData.toByteString() }
-}
+fun ByteArray.toPlutusData(): PlutusData = plutusData { bytes = this@toPlutusData.toByteString() }
 
-operator fun PlutusDataMap.get(key: PlutusData): PlutusData? {
-    return this.mapItemList.find { it.mapItemKey == key }?.mapItemValue
-}
+operator fun PlutusDataMap.get(key: PlutusData): PlutusData? = this.mapItemList.find { it.mapItemKey == key }?.mapItemValue

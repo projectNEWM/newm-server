@@ -1193,16 +1193,17 @@ fun addSongToDatabase(
     val title = "title$offset ${phraseOrEmpty(3)} blah blah"
     val releaseId =
         transaction {
-            ReleaseEntity.new {
-                this.title = title
-                this.ownerId = ownerEntityId
-                releaseType = ReleaseType.SINGLE
-                coverArtUrl = "https://newm.io/cover$offset"
-                barcodeType = ReleaseBarcodeType.entries[offset % ReleaseBarcodeType.entries.size]
-                barcodeNumber = "barcodeNumber$offset"
-                releaseDate = LocalDate.of(2023, 1, offset % 31 + 1)
-                publicationDate = LocalDate.of(2023, 1, offset % 31 + 1)
-            }.id.value
+            ReleaseEntity
+                .new {
+                    this.title = title
+                    this.ownerId = ownerEntityId
+                    releaseType = ReleaseType.SINGLE
+                    coverArtUrl = "https://newm.io/cover$offset"
+                    barcodeType = ReleaseBarcodeType.entries[offset % ReleaseBarcodeType.entries.size]
+                    barcodeNumber = "barcodeNumber$offset"
+                    releaseDate = LocalDate.of(2023, 1, offset % 31 + 1)
+                    publicationDate = LocalDate.of(2023, 1, offset % 31 + 1)
+                }.id.value
         }
     val release = transaction { ReleaseEntity[releaseId].toModel() }
     return transaction {

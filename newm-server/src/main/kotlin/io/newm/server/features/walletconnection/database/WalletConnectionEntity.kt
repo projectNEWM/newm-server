@@ -14,7 +14,9 @@ import org.jetbrains.exposed.sql.deleteWhere
 import java.time.LocalDateTime
 import java.util.UUID
 
-class WalletConnectionEntity(id: EntityID<UUID>) : UUIDEntity(id) {
+class WalletConnectionEntity(
+    id: EntityID<UUID>
+) : UUIDEntity(id) {
     val createdAt: LocalDateTime by WalletConnectionTable.createdAt
     var stakeAddress: String by WalletConnectionTable.stakeAddress
     var userId: EntityID<UserId>? by WalletConnectionTable.userId

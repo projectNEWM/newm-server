@@ -27,15 +27,17 @@ private val source by lazy { "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwx
 private val random by lazy { SecureRandom() }
 
 fun randomString(length: Long) =
-    random.ints(length, 0, source.length)
+    random
+        .ints(length, 0, source.length)
         .asSequence()
         .map(source::get)
         .joinToString("")
 
 fun randomHex(numBytes: Int) =
-    ByteArray(numBytes).apply {
-        random.nextBytes(this)
-    }.toHexString()
+    ByteArray(numBytes)
+        .apply {
+            random.nextBytes(this)
+        }.toHexString()
 
 fun randomPercentage(bound: Int) = random.nextInt(bound)
 
@@ -119,7 +121,8 @@ fun getLastSlotOfYear(): Long {
     val transTimeEnd = genesisStartTimeSec + byronToShelleyEpochs * shelleyGenesis.epochLength
     val transSlots = byronToShelleyEpochs * shelleyGenesis.epochLength / 20
     val lastSecondOfYear =
-        LocalDateTime.now(ZoneOffset.UTC)
+        LocalDateTime
+            .now(ZoneOffset.UTC)
             .with(TemporalAdjusters.lastDayOfYear())
             .withHour(23)
             .withMinute(59)
@@ -182,6 +185,4 @@ fun calculateTransactionId(txBody: CborMap): String {
     return calculateTransactionId(txBodyCborBytes)
 }
 
-fun calculateTransactionId(txBodyCborBytes: ByteArray): String {
-    return Blake2b.hash256(txBodyCborBytes).toHexString()
-}
+fun calculateTransactionId(txBodyCborBytes: ByteArray): String = Blake2b.hash256(txBodyCborBytes).toHexString()

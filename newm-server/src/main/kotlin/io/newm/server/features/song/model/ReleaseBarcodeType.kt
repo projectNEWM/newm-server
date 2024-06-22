@@ -6,8 +6,8 @@ enum class ReleaseBarcodeType {
     Jan, // Japanese Article Number (JAN) - 2
 }
 
-fun String.toSongBarcodeType(): ReleaseBarcodeType {
-    return if (this.equals("upc", ignoreCase = true)) {
+fun String.toSongBarcodeType(): ReleaseBarcodeType =
+    if (this.equals("upc", ignoreCase = true)) {
         ReleaseBarcodeType.Upc
     } else if (this.equals("ean", ignoreCase = true)) {
         ReleaseBarcodeType.Ean
@@ -16,4 +16,3 @@ fun String.toSongBarcodeType(): ReleaseBarcodeType {
     } else {
         throw IllegalArgumentException("Invalid barcode type: $this")
     }
-}

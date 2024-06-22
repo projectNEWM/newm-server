@@ -6,10 +6,12 @@ import io.newm.server.features.distribution.model.DistributionOutletReleaseStatu
 import io.newm.server.features.distribution.model.GetAlbumResponse
 import io.newm.server.features.minting.MintingStatusSqsMessage
 import io.newm.shared.serialization.BigDecimalSerializer
+import io.newm.shared.serialization.UUIDSerializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import org.junit.jupiter.api.Test
 import java.math.BigDecimal
+import java.util.*
 
 class TestJsonDecoding {
     val json =
@@ -20,6 +22,7 @@ class TestJsonDecoding {
             serializersModule =
                 SerializersModule {
                     contextual(BigDecimal::class, BigDecimalSerializer)
+                    contextual(UUID::class, UUIDSerializer)
                 }
         }
 

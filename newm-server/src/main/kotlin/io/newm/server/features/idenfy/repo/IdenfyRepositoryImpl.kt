@@ -32,20 +32,21 @@ class IdenfyRepositoryImpl(
         logger.debug { "createSession: $userId" }
 
         return with(environment.getConfigChild("idenfy")) {
-            httpClient.post(getString("sessionUrl")) {
-                contentType(ContentType.Application.Json)
-                basicAuth(
-                    username = getSecureString("apiKey"),
-                    password = getSecureString("apiSecret"),
-                )
-                setBody(
-                    IdenfyCreateSessionRequest(
-                        clientId = userId.toString(),
-                        successUrl = getString("successUrl"),
-                        errorUrl = getString("errorUrl")
+            httpClient
+                .post(getString("sessionUrl")) {
+                    contentType(ContentType.Application.Json)
+                    basicAuth(
+                        username = getSecureString("apiKey"),
+                        password = getSecureString("apiSecret"),
                     )
-                )
-            }.checkedBody()
+                    setBody(
+                        IdenfyCreateSessionRequest(
+                            clientId = userId.toString(),
+                            successUrl = getString("successUrl"),
+                            errorUrl = getString("errorUrl")
+                        )
+                    )
+                }.checkedBody()
         }
     }
 

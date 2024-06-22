@@ -56,10 +56,15 @@ fun OutputUtxo.withMinUtxo(utxoCostPerByte: Long): OutputUtxo {
     // and the entry in the UTxO map data structure (20 words * 8 bytes). CIP-0055
     val overheadConstant = 160L
     val cborSerializedLength =
-        this.toBuilder().setLovelace(
-            // dummy value of 5 ada to get the byte length correct
-            "5000000"
-        ).build().toCborObject().toCborByteArray().size
+        this
+            .toBuilder()
+            .setLovelace(
+                // dummy value of 5 ada to get the byte length correct
+                "5000000"
+            ).build()
+            .toCborObject()
+            .toCborByteArray()
+            .size
     val minUtxoLovelace = (overheadConstant + cborSerializedLength) * utxoCostPerByte
 
     val userDefinedLovelace = this.lovelace.takeUnless { it.isNullOrBlank() }?.toLong() ?: 0L
@@ -73,8 +78,8 @@ fun OutputUtxo.withMinUtxo(utxoCostPerByte: Long): OutputUtxo {
 /**
  * Convert an OutputUtxo to cbor for including in a transaction.
  */
-fun OutputUtxo.toCborObject(): CborObject {
-    return CborMap.create(
+fun OutputUtxo.toCborObject(): CborObject =
+    CborMap.create(
         mapOf(
             TransactionBuilder.UTXO_OUTPUT_KEY_ADDRESS to CborByteString.create(Bech32.decode(address).bytes),
             TransactionBuilder.UTXO_OUTPUT_KEY_AMOUNT to
@@ -116,4 +121,3 @@ fun OutputUtxo.toCborObject(): CborObject {
                 }
         ).filterValues { it != null }
     )
-}

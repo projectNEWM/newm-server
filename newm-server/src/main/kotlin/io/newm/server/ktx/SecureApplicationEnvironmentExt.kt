@@ -24,7 +24,8 @@ private val secretsManager: AWSSecretsManagerAsync by inject()
 private val json: Json by inject()
 private val secretsMutex = Mutex()
 private val secretsCache =
-    Caffeine.newBuilder()
+    Caffeine
+        .newBuilder()
         .expireAfterWrite(Duration.ofMinutes(10)) // approximately 4500 requests per month
         .build<String, Map<String, String>>()
 

@@ -35,7 +35,8 @@ private fun AuthenticationConfig.configureJwt(
     jwt(name) {
         this.realm = environment.getConfigString("jwt.realm")
         verifier(
-            JWT.require(Algorithm.HMAC256(runBlocking { environment.getSecureConfigString("jwt.secret") }))
+            JWT
+                .require(Algorithm.HMAC256(runBlocking { environment.getSecureConfigString("jwt.secret") }))
                 .withAudience(environment.getConfigString("jwt.audience"))
                 .withIssuer(environment.getConfigString("jwt.issuer"))
                 .withClaim("type", type.name)
@@ -43,8 +44,7 @@ private fun AuthenticationConfig.configureJwt(
                     if (name == AUTH_JWT_ADMIN) {
                         withClaim("admin", true)
                     }
-                }
-                .build()
+                }.build()
         )
         validate { credential ->
             with(credential) {
@@ -61,7 +61,9 @@ private fun AuthenticationConfig.configureJwt(
                 if (isValid) {
                     JWTPrincipal(payload)
                 } else {
-                    logger.warn { "JWT Auth Failed: audience: $audience, issuer: $issuer, issuedAt: $issuedAt, expiresAt: $expiresAt, admin: $admin" }
+                    logger.warn {
+                        "JWT Auth Failed: audience: $audience, issuer: $issuer, issuedAt: $issuedAt, expiresAt: $expiresAt, admin: $admin"
+                    }
                     null
                 }
             }

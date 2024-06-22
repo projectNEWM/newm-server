@@ -58,30 +58,37 @@ internal class FacebookUserProvider(
             val token = tokens.accessToken ?: throw HttpBadRequestException("Facebook OAuth requires accessToken")
             val pictureJob =
                 async {
-                    httpClient.get("$userInfoUrl/picture") {
-                        parameter(key = "type", value = "large")
-                        parameter(key = "redirect", value = false)
-                        headers {
-                            accept(ContentType.Application.Json)
-                            bearerAuth(token)
-                        }
-                    }.checkedBody<Picture>()
+                    httpClient
+                        .get("$userInfoUrl/picture") {
+                            parameter(key = "type", value = "large")
+                            parameter(key = "redirect", value = false)
+                            headers {
+                                accept(ContentType.Application.Json)
+                                bearerAuth(token)
+                            }
+                        }.checkedBody<Picture>()
                 }
             val userJob =
                 async {
-                    httpClient.get(userInfoUrl) {
-                        parameter(
-                            key = "fields",
-                            value = "id,first_name,last_name,email"
-                        )
-                        headers {
-                            accept(ContentType.Application.Json)
-                            bearerAuth(token)
-                        }
-                    }.checkedBody<FacebookUser>()
+                    httpClient
+                        .get(userInfoUrl) {
+                            parameter(
+                                key = "fields",
+                                value = "id,first_name,last_name,email"
+                            )
+                            headers {
+                                accept(ContentType.Application.Json)
+                                bearerAuth(token)
+                            }
+                        }.checkedBody<FacebookUser>()
                 }
             userJob.await().apply {
-                pictureUrl = pictureJob.await().data?.url.orEmpty()
+                pictureUrl =
+                    pictureJob
+                        .await()
+                        .data
+                        ?.url
+                        .orEmpty()
             }
         }
 }

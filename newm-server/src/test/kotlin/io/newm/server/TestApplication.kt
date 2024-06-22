@@ -19,7 +19,9 @@ import io.newm.server.features.walletconnection.createWalletConnectionRoutes
 import io.newm.server.staticcontent.createStaticContentRoutes
 import io.newm.server.statuspages.installStatusPages
 
-fun main(args: Array<String>) = io.ktor.server.cio.EngineMain.main(args)
+fun main(args: Array<String>) =
+    io.ktor.server.cio.EngineMain
+        .main(args)
 
 @Suppress("unused")
 fun Application.testModule() {

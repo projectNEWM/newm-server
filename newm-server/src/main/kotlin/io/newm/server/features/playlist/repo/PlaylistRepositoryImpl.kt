@@ -27,10 +27,11 @@ internal class PlaylistRepositoryImpl : PlaylistRepository {
         val name = playlist.name ?: throw HttpUnprocessableEntityException("missing name")
         playlist.checkFieldLengths()
         return transaction {
-            PlaylistEntity.new {
-                this.ownerId = EntityID(ownerId, UserTable)
-                this.name = name
-            }.id.value
+            PlaylistEntity
+                .new {
+                    this.ownerId = EntityID(ownerId, UserTable)
+                    this.name = name
+                }.id.value
         }
     }
 
@@ -74,7 +75,8 @@ internal class PlaylistRepositoryImpl : PlaylistRepository {
     ): List<Playlist> {
         logger.debug { "getAll: filters = $filters, offset = $offset, limit = $limit" }
         return transaction {
-            PlaylistEntity.all(filters)
+            PlaylistEntity
+                .all(filters)
                 .limit(n = limit, offset = offset.toLong())
                 .map(PlaylistEntity::toModel)
         }

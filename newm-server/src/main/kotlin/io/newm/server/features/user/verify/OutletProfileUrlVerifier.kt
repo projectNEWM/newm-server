@@ -11,4 +11,6 @@ interface OutletProfileUrlVerifier {
     )
 }
 
-class OutletProfileUrlVerificationException(message: String) : Exception(message)
+class OutletProfileUrlVerificationException(
+    message: String
+) : Exception(message)

@@ -9,7 +9,8 @@ import java.time.Duration
 
 internal class ConfigRepositoryImpl : ConfigRepository {
     private val configCache =
-        Caffeine.newBuilder()
+        Caffeine
+            .newBuilder()
             .expireAfterWrite(Duration.ofMinutes(5))
             .build<String, String> { key ->
                 transaction {

@@ -4,7 +4,9 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-enum class OutletStatusCode(val code: Int) {
+enum class OutletStatusCode(
+    val code: Int
+) {
     @SerialName("1021")
     DRAFT(1021),
 

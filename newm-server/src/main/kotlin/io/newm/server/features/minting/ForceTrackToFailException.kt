@@ -1,3 +1,5 @@
 package io.newm.server.features.minting
 
-class ForceTrackToFailException(message: String) : RuntimeException(message)
+class ForceTrackToFailException(
+    message: String
+) : RuntimeException(message)

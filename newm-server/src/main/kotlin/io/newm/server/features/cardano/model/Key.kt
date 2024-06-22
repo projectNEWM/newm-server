@@ -69,12 +69,10 @@ data class Key(
         return result
     }
 
-    fun requiredSigner(): ByteArray {
-        return Bech32.decode(address).bytes.copyOfRange(1, 29)
-    }
+    fun requiredSigner(): ByteArray = Bech32.decode(address).bytes.copyOfRange(1, 29)
 
-    fun toCliKeyPair(name: String): CliKeyPair {
-        return CliKeyPair(
+    fun toCliKeyPair(name: String): CliKeyPair =
+        CliKeyPair(
             name = name,
             skey =
                 CliKey(
@@ -89,14 +87,12 @@ data class Key(
                     cborHex = CborByteString.create(vkey).toCborByteArray().toHexString(),
                 )
         )
-    }
 
-    fun toSigningKey(): SigningKey {
-        return signingKey {
+    fun toSigningKey(): SigningKey =
+        signingKey {
             this.skey = ByteString.copyFrom(this@Key.skey)
             this.vkey = ByteString.copyFrom(this@Key.vkey)
         }
-    }
 
     companion object {
         private val cardanoRepository: CardanoRepository by inject()
@@ -130,13 +126,15 @@ data class Key(
             val skeyBytes =
                 keyPair.skey?.let { skey ->
                     (
-                        CborReader.createFromByteArray(skey.cborHex.hexToByteArray(), 0, 1)
+                        CborReader
+                            .createFromByteArray(skey.cborHex.hexToByteArray(), 0, 1)
                             .readDataItem() as CborByteString
                     ).byteArrayValue()[0]
                 } ?: ByteArray(0)
             val vkeyBytes =
                 (
-                    CborReader.createFromByteArray(keyPair.vkey.cborHex.hexToByteArray(), 0, 1)
+                    CborReader
+                        .createFromByteArray(keyPair.vkey.cborHex.hexToByteArray(), 0, 1)
                         .readDataItem() as CborByteString
                 ).byteArrayValue()[0]
 
@@ -157,26 +155,26 @@ data class Key(
             return key.copy(script = script.toHexString(), scriptAddress = address)
         }
 
-        private fun createMultiSigAllOfScript(vararg keys: Key): ByteArray {
-            return CborArray.create(
-                listOf(
-                    // allOf
-                    CborInteger.create(1L),
-                    CborArray.create(
-                        keys.map { key ->
-                            val keyHash = Blake2b.hash224(key.vkey)
-                            CborArray.create(
-                                listOf(
-                                    // sig
-                                    CborInteger.create(0L),
-                                    CborByteString.create(keyHash)
+        private fun createMultiSigAllOfScript(vararg keys: Key): ByteArray =
+            CborArray
+                .create(
+                    listOf(
+                        // allOf
+                        CborInteger.create(1L),
+                        CborArray.create(
+                            keys.map { key ->
+                                val keyHash = Blake2b.hash224(key.vkey)
+                                CborArray.create(
+                                    listOf(
+                                        // sig
+                                        CborInteger.create(0L),
+                                        CborByteString.create(keyHash)
+                                    )
                                 )
-                            )
-                        }
+                            }
+                        )
                     )
-                )
-            ).toCborByteArray()
-        }
+                ).toCborByteArray()
 
         private suspend fun vkeyToAddress(vkey: ByteArray): String {
             val hash = Blake2b.hash224(vkey)
@@ -208,7 +206,6 @@ data class Key(
     /**
      * Prevent skey from being leaked to logs.
      */
-    override fun toString(): String {
-        return "Key(id=$id, skey=*******, vkey='${vkey.toHexString()}', address='$address', scriptAddress='$scriptAddress', createdAt=$createdAt)"
-    }
+    override fun toString(): String =
+        "Key(id=$id, skey=*******, vkey='${vkey.toHexString()}', address='$address', scriptAddress='$scriptAddress', createdAt=$createdAt)"
 }

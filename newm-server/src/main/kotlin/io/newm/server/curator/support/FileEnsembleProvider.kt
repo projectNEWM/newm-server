@@ -3,7 +3,9 @@ package io.newm.server.curator.support
 import org.apache.curator.ensemble.EnsembleProvider
 import java.io.File
 
-class FileEnsembleProvider(val filePath: String) : EnsembleProvider {
+class FileEnsembleProvider(
+    val filePath: String
+) : EnsembleProvider {
     override fun close() {}
 
     override fun start() {}

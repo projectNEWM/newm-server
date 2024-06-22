@@ -44,16 +44,17 @@ internal class CollaborationRepositoryImpl(
         return transaction {
             checkSongState(songId, requesterId)
             checkUniqueEmail(songId, email)
-            CollaborationEntity.new {
-                this.songId = EntityID(songId, SongTable)
-                this.email = email
-                this.role = collaboration.role
-                this.royaltyRate = collaboration.royaltyRate?.toFloat()
-                collaboration.credited?.let { this.credited = it }
-                collaboration.featured?.let { this.featured = it }
-                collaboration.distributionArtistId?.let { this.distributionArtistId = it }
-                collaboration.distributionParticipantId?.let { this.distributionParticipantId = it }
-            }.id.value
+            CollaborationEntity
+                .new {
+                    this.songId = EntityID(songId, SongTable)
+                    this.email = email
+                    this.role = collaboration.role
+                    this.royaltyRate = collaboration.royaltyRate?.toFloat()
+                    collaboration.credited?.let { this.credited = it }
+                    collaboration.featured?.let { this.featured = it }
+                    collaboration.distributionArtistId?.let { this.distributionArtistId = it }
+                    collaboration.distributionParticipantId?.let { this.distributionParticipantId = it }
+                }.id.value
         }
     }
 
@@ -124,7 +125,8 @@ internal class CollaborationRepositoryImpl(
     ): List<Collaboration> {
         logger.debug { "getAll: userId = $userId, filters = $filters, offset = $offset, limit = $limit" }
         return transaction {
-            CollaborationEntity.all(userId, filters)
+            CollaborationEntity
+                .all(userId, filters)
                 .limit(n = limit, offset = offset.toLong())
                 .map(CollaborationEntity::toModel)
         }
@@ -148,7 +150,8 @@ internal class CollaborationRepositoryImpl(
     ): List<Collaborator> {
         logger.debug { "getCollaborators: userId = $userId, filters = $filters, offset = $offset, limit = $limit" }
         return transaction {
-            CollaborationEntity.collaborators(userId, filters)
+            CollaborationEntity
+                .collaborators(userId, filters)
                 .limit(n = limit, offset = offset.toLong())
                 .map { (email, songCount) ->
                     Collaborator(
@@ -232,7 +235,11 @@ internal class CollaborationRepositoryImpl(
                 messageArgs =
                     mapOf(
                         "title" to song.title,
-                        "duration" to song.duration?.toLong()?.millisToMinutesSecondsString().orEmpty()
+                        "duration" to
+                            song.duration
+                                ?.toLong()
+                                ?.millisToMinutesSecondsString()
+                                .orEmpty()
                     )
             )
         }

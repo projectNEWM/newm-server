@@ -92,7 +92,8 @@ class LedgerRepositoryImpl : LedgerRepository {
         transaction {
             warnLongQueriesDuration = 1000L
 
-            LedgerUtxosTable.innerJoin(LedgerTable, { ledgerId }, { LedgerTable.id }, { LedgerTable.address eq address })
+            LedgerUtxosTable
+                .innerJoin(LedgerTable, { ledgerId }, { LedgerTable.id }, { LedgerTable.address eq address })
                 .select(
                     LedgerTable.address,
                     LedgerUtxosTable.id,
@@ -108,22 +109,23 @@ class LedgerRepositoryImpl : LedgerRepository {
                     val ledgerUtxoId = row[LedgerUtxosTable.id].value
 
                     val nativeAssets =
-                        LedgerUtxoAssetsTable.innerJoin(
-                            LedgerAssetsTable,
-                            { ledgerAssetId },
-                            { LedgerAssetsTable.id },
-                            { LedgerUtxoAssetsTable.ledgerUtxoId eq ledgerUtxoId }
-                        ).select(
-                            LedgerAssetsTable.name,
-                            LedgerAssetsTable.policy,
-                            LedgerUtxoAssetsTable.amount
-                        ).map { naRow ->
-                            NativeAsset(
-                                name = naRow[LedgerAssetsTable.name],
-                                policy = naRow[LedgerAssetsTable.policy],
-                                amount = BigInteger(naRow[LedgerUtxoAssetsTable.amount])
-                            )
-                        }
+                        LedgerUtxoAssetsTable
+                            .innerJoin(
+                                LedgerAssetsTable,
+                                { ledgerAssetId },
+                                { LedgerAssetsTable.id },
+                                { LedgerUtxoAssetsTable.ledgerUtxoId eq ledgerUtxoId }
+                            ).select(
+                                LedgerAssetsTable.name,
+                                LedgerAssetsTable.policy,
+                                LedgerUtxoAssetsTable.amount
+                            ).map { naRow ->
+                                NativeAsset(
+                                    name = naRow[LedgerAssetsTable.name],
+                                    policy = naRow[LedgerAssetsTable.policy],
+                                    amount = BigInteger(naRow[LedgerUtxoAssetsTable.amount])
+                                )
+                            }
 
                     Utxo(
                         address = row[LedgerTable.address],
@@ -142,54 +144,56 @@ class LedgerRepositoryImpl : LedgerRepository {
         transaction {
             warnLongQueriesDuration = 1000L
 
-            LedgerUtxosTable.innerJoin(
-                LedgerTable,
-                { ledgerId },
-                { LedgerTable.id },
-                { LedgerTable.stakeAddress eq address }
-            ).select(
-                LedgerTable.address,
-                LedgerUtxosTable.id,
-                LedgerUtxosTable.txId,
-                LedgerUtxosTable.txIx,
-                LedgerUtxosTable.lovelace,
-                LedgerUtxosTable.datumHash,
-                LedgerUtxosTable.datum,
-                LedgerUtxosTable.scriptRef
-            ).where {
-                LedgerUtxosTable.blockSpent.isNull()
-            }.map { row ->
-                val ledgerUtxoId = row[LedgerUtxosTable.id].value
+            LedgerUtxosTable
+                .innerJoin(
+                    LedgerTable,
+                    { ledgerId },
+                    { LedgerTable.id },
+                    { LedgerTable.stakeAddress eq address }
+                ).select(
+                    LedgerTable.address,
+                    LedgerUtxosTable.id,
+                    LedgerUtxosTable.txId,
+                    LedgerUtxosTable.txIx,
+                    LedgerUtxosTable.lovelace,
+                    LedgerUtxosTable.datumHash,
+                    LedgerUtxosTable.datum,
+                    LedgerUtxosTable.scriptRef
+                ).where {
+                    LedgerUtxosTable.blockSpent.isNull()
+                }.map { row ->
+                    val ledgerUtxoId = row[LedgerUtxosTable.id].value
 
-                val nativeAssets =
-                    LedgerUtxoAssetsTable.innerJoin(
-                        LedgerAssetsTable,
-                        { ledgerAssetId },
-                        { LedgerAssetsTable.id },
-                        { LedgerUtxoAssetsTable.ledgerUtxoId eq ledgerUtxoId }
-                    ).select(
-                        LedgerAssetsTable.name,
-                        LedgerAssetsTable.policy,
-                        LedgerUtxoAssetsTable.amount
-                    ).map { naRow ->
-                        NativeAsset(
-                            name = naRow[LedgerAssetsTable.name],
-                            policy = naRow[LedgerAssetsTable.policy],
-                            amount = BigInteger(naRow[LedgerUtxoAssetsTable.amount])
-                        )
-                    }
+                    val nativeAssets =
+                        LedgerUtxoAssetsTable
+                            .innerJoin(
+                                LedgerAssetsTable,
+                                { ledgerAssetId },
+                                { LedgerAssetsTable.id },
+                                { LedgerUtxoAssetsTable.ledgerUtxoId eq ledgerUtxoId }
+                            ).select(
+                                LedgerAssetsTable.name,
+                                LedgerAssetsTable.policy,
+                                LedgerUtxoAssetsTable.amount
+                            ).map { naRow ->
+                                NativeAsset(
+                                    name = naRow[LedgerAssetsTable.name],
+                                    policy = naRow[LedgerAssetsTable.policy],
+                                    amount = BigInteger(naRow[LedgerUtxoAssetsTable.amount])
+                                )
+                            }
 
-                Utxo(
-                    address = row[LedgerTable.address],
-                    hash = row[LedgerUtxosTable.txId],
-                    ix = row[LedgerUtxosTable.txIx].toLong(),
-                    lovelace = BigInteger(row[LedgerUtxosTable.lovelace]),
-                    nativeAssets = nativeAssets,
-                    datumHash = row[LedgerUtxosTable.datumHash],
-                    datum = row[LedgerUtxosTable.datum],
-                    scriptRef = row[LedgerUtxosTable.scriptRef],
-                )
-            }.toHashSet()
+                    Utxo(
+                        address = row[LedgerTable.address],
+                        hash = row[LedgerUtxosTable.txId],
+                        ix = row[LedgerUtxosTable.txIx].toLong(),
+                        lovelace = BigInteger(row[LedgerUtxosTable.lovelace]),
+                        nativeAssets = nativeAssets,
+                        datumHash = row[LedgerUtxosTable.datumHash],
+                        datum = row[LedgerUtxosTable.datum],
+                        scriptRef = row[LedgerUtxosTable.scriptRef],
+                    )
+                }.toHashSet()
         }
 
     override fun queryUtxoByNativeAsset(
@@ -197,47 +201,52 @@ class LedgerRepositoryImpl : LedgerRepository {
         policy: String
     ): Utxo? =
         transaction {
-            LedgerTable.innerJoin(
-                LedgerUtxosTable,
-                { LedgerTable.id },
-                { ledgerId },
-            ).innerJoin(
-                LedgerUtxoAssetsTable,
-                { LedgerUtxosTable.id },
-                { ledgerUtxoId },
-            ).innerJoin(
-                LedgerAssetsTable,
-                { LedgerUtxoAssetsTable.ledgerAssetId },
-                { LedgerAssetsTable.id },
-            ).selectAll().where {
-                LedgerUtxosTable.blockSpent.isNull() and
-                    (LedgerAssetsTable.name eq name) and (LedgerAssetsTable.policy eq policy)
-            }.firstOrNull()?.let { row ->
-                val ledgerUtxoId = row[LedgerUtxosTable.id].value
-                val nativeAssets =
-                    LedgerUtxoAssetsTable.innerJoin(
-                        LedgerAssetsTable,
-                        { ledgerAssetId },
-                        { LedgerAssetsTable.id },
-                        { LedgerUtxoAssetsTable.ledgerUtxoId eq ledgerUtxoId }
-                    ).selectAll().map { naRow ->
-                        NativeAsset(
-                            name = naRow[LedgerAssetsTable.name],
-                            policy = naRow[LedgerAssetsTable.policy],
-                            amount = BigInteger(naRow[LedgerUtxoAssetsTable.amount])
-                        )
-                    }
-                Utxo(
-                    address = row[LedgerTable.address],
-                    hash = row[LedgerUtxosTable.txId],
-                    ix = row[LedgerUtxosTable.txIx].toLong(),
-                    lovelace = BigInteger(row[LedgerUtxosTable.lovelace]),
-                    nativeAssets = nativeAssets,
-                    datumHash = row[LedgerUtxosTable.datumHash],
-                    datum = row[LedgerUtxosTable.datum],
-                    scriptRef = row[LedgerUtxosTable.scriptRef],
-                )
-            }
+            LedgerTable
+                .innerJoin(
+                    LedgerUtxosTable,
+                    { LedgerTable.id },
+                    { ledgerId },
+                ).innerJoin(
+                    LedgerUtxoAssetsTable,
+                    { LedgerUtxosTable.id },
+                    { ledgerUtxoId },
+                ).innerJoin(
+                    LedgerAssetsTable,
+                    { LedgerUtxoAssetsTable.ledgerAssetId },
+                    { LedgerAssetsTable.id },
+                ).selectAll()
+                .where {
+                    LedgerUtxosTable.blockSpent.isNull() and
+                        (LedgerAssetsTable.name eq name) and (LedgerAssetsTable.policy eq policy)
+                }.firstOrNull()
+                ?.let { row ->
+                    val ledgerUtxoId = row[LedgerUtxosTable.id].value
+                    val nativeAssets =
+                        LedgerUtxoAssetsTable
+                            .innerJoin(
+                                LedgerAssetsTable,
+                                { ledgerAssetId },
+                                { LedgerAssetsTable.id },
+                                { LedgerUtxoAssetsTable.ledgerUtxoId eq ledgerUtxoId }
+                            ).selectAll()
+                            .map { naRow ->
+                                NativeAsset(
+                                    name = naRow[LedgerAssetsTable.name],
+                                    policy = naRow[LedgerAssetsTable.policy],
+                                    amount = BigInteger(naRow[LedgerUtxoAssetsTable.amount])
+                                )
+                            }
+                    Utxo(
+                        address = row[LedgerTable.address],
+                        hash = row[LedgerUtxosTable.txId],
+                        ix = row[LedgerUtxosTable.txIx].toLong(),
+                        lovelace = BigInteger(row[LedgerUtxosTable.lovelace]),
+                        nativeAssets = nativeAssets,
+                        datumHash = row[LedgerUtxosTable.datumHash],
+                        datum = row[LedgerUtxosTable.datum],
+                        scriptRef = row[LedgerUtxosTable.scriptRef],
+                    )
+                }
         }
 
     override fun queryPublicKeyHashByOutputRef(
@@ -245,15 +254,23 @@ class LedgerRepositoryImpl : LedgerRepository {
         ix: Int
     ): String? =
         transaction {
-            LedgerUtxosTable.innerJoin(LedgerTable, { ledgerId }, { LedgerTable.id })
-                .selectAll().where {
+            LedgerUtxosTable
+                .innerJoin(LedgerTable, { ledgerId }, { LedgerTable.id })
+                .selectAll()
+                .where {
                     (LedgerUtxosTable.txId eq hash) and
                         (LedgerUtxosTable.txIx eq ix) and
                         LedgerUtxosTable.blockSpent.isNull()
                 }.map { row ->
                     val address = row[LedgerTable.address]
                     if (address.startsWith("addr")) {
-                        Bech32.decode(address).bytes.drop(1).take(28).toByteArray().toHexString()
+                        Bech32
+                            .decode(address)
+                            .bytes
+                            .drop(1)
+                            .take(28)
+                            .toByteArray()
+                            .toHexString()
                     } else {
                         null
                     }
@@ -265,38 +282,43 @@ class LedgerRepositoryImpl : LedgerRepository {
         ix: Int
     ): Set<Utxo> =
         transaction {
-            LedgerUtxosTable.innerJoin(LedgerTable, { ledgerId }, { LedgerTable.id }).selectAll().where {
-                (LedgerUtxosTable.txId eq hash) and
-                    (LedgerUtxosTable.txIx eq ix) and
-                    LedgerUtxosTable.blockSpent.isNull()
-            }.map { row ->
-                val ledgerUtxoId = row[LedgerUtxosTable.id].value
+            LedgerUtxosTable
+                .innerJoin(LedgerTable, { ledgerId }, { LedgerTable.id })
+                .selectAll()
+                .where {
+                    (LedgerUtxosTable.txId eq hash) and
+                        (LedgerUtxosTable.txIx eq ix) and
+                        LedgerUtxosTable.blockSpent.isNull()
+                }.map { row ->
+                    val ledgerUtxoId = row[LedgerUtxosTable.id].value
 
-                val nativeAssets =
-                    LedgerUtxoAssetsTable.innerJoin(
-                        LedgerAssetsTable,
-                        { ledgerAssetId },
-                        { LedgerAssetsTable.id },
-                        { LedgerUtxoAssetsTable.ledgerUtxoId eq ledgerUtxoId }
-                    ).selectAll().map { naRow ->
-                        NativeAsset(
-                            name = naRow[LedgerAssetsTable.name],
-                            policy = naRow[LedgerAssetsTable.policy],
-                            amount = BigInteger(naRow[LedgerUtxoAssetsTable.amount])
-                        )
-                    }
+                    val nativeAssets =
+                        LedgerUtxoAssetsTable
+                            .innerJoin(
+                                LedgerAssetsTable,
+                                { ledgerAssetId },
+                                { LedgerAssetsTable.id },
+                                { LedgerUtxoAssetsTable.ledgerUtxoId eq ledgerUtxoId }
+                            ).selectAll()
+                            .map { naRow ->
+                                NativeAsset(
+                                    name = naRow[LedgerAssetsTable.name],
+                                    policy = naRow[LedgerAssetsTable.policy],
+                                    amount = BigInteger(naRow[LedgerUtxoAssetsTable.amount])
+                                )
+                            }
 
-                Utxo(
-                    address = row[LedgerTable.address],
-                    hash = row[LedgerUtxosTable.txId],
-                    ix = row[LedgerUtxosTable.txIx].toLong(),
-                    lovelace = BigInteger(row[LedgerUtxosTable.lovelace]),
-                    nativeAssets = nativeAssets,
-                    datumHash = row[LedgerUtxosTable.datumHash],
-                    datum = row[LedgerUtxosTable.datum],
-                    scriptRef = row[LedgerUtxosTable.scriptRef],
-                )
-            }.toHashSet()
+                    Utxo(
+                        address = row[LedgerTable.address],
+                        hash = row[LedgerUtxosTable.txId],
+                        ix = row[LedgerUtxosTable.txIx].toLong(),
+                        lovelace = BigInteger(row[LedgerUtxosTable.lovelace]),
+                        nativeAssets = nativeAssets,
+                        datumHash = row[LedgerUtxosTable.datumHash],
+                        datum = row[LedgerUtxosTable.datum],
+                        scriptRef = row[LedgerUtxosTable.scriptRef],
+                    )
+                }.toHashSet()
         }
 
     override suspend fun queryLiveUtxos(address: String): Set<Utxo> {
@@ -309,15 +331,16 @@ class LedgerRepositoryImpl : LedgerRepository {
         chainUtxos: MutableSet<Utxo>
     ): Set<Utxo> {
         utxoMutex.withLock {
-            return chainUtxos.apply {
-                // add in any liveUtxos from pending transactions
-                liveUtxoMap[address]?.let {
-                    addAll(it)
-                }
-            }.filterNot { chainUtxo ->
-                // remove any chain utxos that are already "spent" in a pending transaction
-                spentUtxoSet.contains(SpentUtxo("dummy", chainUtxo.hash, chainUtxo.ix))
-            }.toSet()
+            return chainUtxos
+                .apply {
+                    // add in any liveUtxos from pending transactions
+                    liveUtxoMap[address]?.let {
+                        addAll(it)
+                    }
+                }.filterNot { chainUtxo ->
+                    // remove any chain utxos that are already "spent" in a pending transaction
+                    spentUtxoSet.contains(SpentUtxo("dummy", chainUtxo.hash, chainUtxo.ix))
+                }.toSet()
         }
     }
 
@@ -534,7 +557,8 @@ class LedgerRepositoryImpl : LedgerRepository {
                         if (liveUtxoMap.containsKey(immutableUtxo.address)) {
                             val utxoSet = liveUtxoMap[immutableUtxo.address]!!
                             val newUtxoSet =
-                                utxoSet.filterNot { utxo -> utxo.hash == immutableUtxo.hash && utxo.ix == immutableUtxo.ix }
+                                utxoSet
+                                    .filterNot { utxo -> utxo.hash == immutableUtxo.hash && utxo.ix == immutableUtxo.ix }
                                     .toSet()
                             if (newUtxoSet.isEmpty()) {
                                 liveUtxoMap.remove(immutableUtxo.address)?.let {
@@ -582,65 +606,73 @@ class LedgerRepositoryImpl : LedgerRepository {
     override fun queryLedgerAsset(
         policyId: String,
         hexName: String
-    ): LedgerAsset? {
-        return LedgerAssetsTable.selectAll().where {
-            (LedgerAssetsTable.policy eq policyId) and
-                (LedgerAssetsTable.name eq hexName)
-        }.firstOrNull()?.let { row ->
-            LedgerAsset(
-                id = row[LedgerAssetsTable.id].value,
-                policy = row[LedgerAssetsTable.policy],
-                name = row[LedgerAssetsTable.name],
-                supply = row[LedgerAssetsTable.supply].toBigInteger()
-            )
-        }
-    }
+    ): LedgerAsset? =
+        LedgerAssetsTable
+            .selectAll()
+            .where {
+                (LedgerAssetsTable.policy eq policyId) and
+                    (LedgerAssetsTable.name eq hexName)
+            }.firstOrNull()
+            ?.let { row ->
+                LedgerAsset(
+                    id = row[LedgerAssetsTable.id].value,
+                    policy = row[LedgerAssetsTable.policy],
+                    name = row[LedgerAssetsTable.name],
+                    supply = row[LedgerAssetsTable.supply].toBigInteger()
+                )
+            }
 
-    override fun queryLedgerAssets(ledgerAssetList: List<LedgerAsset>): List<LedgerAsset> {
-        return LedgerAssetsTable.selectAll().where {
-            ledgerAssetList.map { ledgerAsset ->
-                (LedgerAssetsTable.policy eq ledgerAsset.policy) and
-                    (LedgerAssetsTable.name eq ledgerAsset.name)
-            }.reduce { acc, expression -> acc or expression }
-        }.map { row ->
-            val policy = row[LedgerAssetsTable.policy]
-            val name = row[LedgerAssetsTable.name]
-            LedgerAsset(
-                id = row[LedgerAssetsTable.id].value,
-                policy = policy,
-                name = name,
-                supply = row[LedgerAssetsTable.supply].toBigInteger(),
-                txId = ledgerAssetList.first { it.policy == policy && it.name == name }.txId,
-            )
-        }
-    }
+    override fun queryLedgerAssets(ledgerAssetList: List<LedgerAsset>): List<LedgerAsset> =
+        LedgerAssetsTable
+            .selectAll()
+            .where {
+                ledgerAssetList
+                    .map { ledgerAsset ->
+                        (LedgerAssetsTable.policy eq ledgerAsset.policy) and
+                            (LedgerAssetsTable.name eq ledgerAsset.name)
+                    }.reduce { acc, expression -> acc or expression }
+            }.map { row ->
+                val policy = row[LedgerAssetsTable.policy]
+                val name = row[LedgerAssetsTable.name]
+                LedgerAsset(
+                    id = row[LedgerAssetsTable.id].value,
+                    policy = policy,
+                    name = name,
+                    supply = row[LedgerAssetsTable.supply].toBigInteger(),
+                    txId = ledgerAssetList.first { it.policy == policy && it.name == name }.txId,
+                )
+            }
 
     override fun upcertLedgerAssets(ledgerAssets: List<LedgerAsset>): List<LedgerAsset> {
         val mintedLedgerAssets = mutableMapOf<Long, LedgerAsset>()
         ledgerAssets.map { ledgerAsset ->
-            LedgerAssetsTable.selectAll().where {
-                (LedgerAssetsTable.policy eq ledgerAsset.policy) and
-                    (LedgerAssetsTable.name eq ledgerAsset.name)
-            }.firstOrNull()?.let { existingRow ->
-                val id: Long = existingRow[LedgerAssetsTable.id].value
-                val newSupply = existingRow[LedgerAssetsTable.supply].toBigInteger() + ledgerAsset.supply
-                // Do update
-                LedgerAssetsTable.update({ LedgerAssetsTable.id eq id }) { row ->
-                    row[policy] = ledgerAsset.policy
-                    row[name] = ledgerAsset.name
-                    row[supply] = newSupply.toString()
-                }
-                if (ledgerAsset.supply > BigInteger.ZERO) {
-                    mintedLedgerAssets[id] = ledgerAsset.copy(id = id, supply = newSupply)
-                }
-            } ?: run {
-                // Do insert
-                val id =
-                    LedgerAssetsTable.insertAndGetId { row ->
+            LedgerAssetsTable
+                .selectAll()
+                .where {
+                    (LedgerAssetsTable.policy eq ledgerAsset.policy) and
+                        (LedgerAssetsTable.name eq ledgerAsset.name)
+                }.firstOrNull()
+                ?.let { existingRow ->
+                    val id: Long = existingRow[LedgerAssetsTable.id].value
+                    val newSupply = existingRow[LedgerAssetsTable.supply].toBigInteger() + ledgerAsset.supply
+                    // Do update
+                    LedgerAssetsTable.update({ LedgerAssetsTable.id eq id }) { row ->
                         row[policy] = ledgerAsset.policy
                         row[name] = ledgerAsset.name
-                        row[supply] = ledgerAsset.supply.toString()
-                    }.value
+                        row[supply] = newSupply.toString()
+                    }
+                    if (ledgerAsset.supply > BigInteger.ZERO) {
+                        mintedLedgerAssets[id] = ledgerAsset.copy(id = id, supply = newSupply)
+                    }
+                } ?: run {
+                // Do insert
+                val id =
+                    LedgerAssetsTable
+                        .insertAndGetId { row ->
+                            row[policy] = ledgerAsset.policy
+                            row[name] = ledgerAsset.name
+                            row[supply] = ledgerAsset.supply.toString()
+                        }.value
 
                 if (ledgerAsset.supply > BigInteger.ZERO) {
                     mintedLedgerAssets[id] = ledgerAsset.copy(id = id)
@@ -663,15 +695,16 @@ class LedgerRepositoryImpl : LedgerRepository {
         parentId: Long?
     ) {
         val id =
-            LedgerAssetMetadataTable.insertAndGetId {
-                it[assetId] = ledgerAssetMetadata.assetId
-                it[keyType] = ledgerAssetMetadata.keyType
-                it[key] = ledgerAssetMetadata.key.replace("\u0000", "\\u0000")
-                it[valueType] = ledgerAssetMetadata.valueType
-                it[value] = ledgerAssetMetadata.value.replace("\u0000", "\\u0000")
-                it[nestLevel] = ledgerAssetMetadata.nestLevel
-                it[LedgerAssetMetadataTable.parentId] = parentId
-            }.value
+            LedgerAssetMetadataTable
+                .insertAndGetId {
+                    it[assetId] = ledgerAssetMetadata.assetId
+                    it[keyType] = ledgerAssetMetadata.keyType
+                    it[key] = ledgerAssetMetadata.key.replace("\u0000", "\\u0000")
+                    it[valueType] = ledgerAssetMetadata.valueType
+                    it[value] = ledgerAssetMetadata.value.replace("\u0000", "\\u0000")
+                    it[nestLevel] = ledgerAssetMetadata.nestLevel
+                    it[LedgerAssetMetadataTable.parentId] = parentId
+                }.value
 
         ledgerAssetMetadata.children.forEach { insertLedgerAssetMetadata(it, id) }
     }
@@ -683,21 +716,24 @@ class LedgerRepositoryImpl : LedgerRepository {
         val parentIdExpression =
             parentId?.let { (LedgerAssetMetadataTable.parentId eq it) }
                 ?: LedgerAssetMetadataTable.parentId.isNull()
-        return LedgerAssetMetadataTable.selectAll().where {
-            (LedgerAssetMetadataTable.assetId eq assetId) and parentIdExpression
-        }.orderBy(LedgerAssetMetadataTable.id).map { row ->
-            val id = row[LedgerAssetMetadataTable.id].value
-            LedgerAssetMetadata(
-                id = id,
-                assetId = row[LedgerAssetMetadataTable.assetId],
-                keyType = row[LedgerAssetMetadataTable.keyType],
-                key = row[LedgerAssetMetadataTable.key],
-                valueType = row[LedgerAssetMetadataTable.valueType],
-                value = row[LedgerAssetMetadataTable.value],
-                nestLevel = row[LedgerAssetMetadataTable.nestLevel],
-                children = queryLedgerAssetMetadataList(assetId, id),
-            )
-        }
+        return LedgerAssetMetadataTable
+            .selectAll()
+            .where {
+                (LedgerAssetMetadataTable.assetId eq assetId) and parentIdExpression
+            }.orderBy(LedgerAssetMetadataTable.id)
+            .map { row ->
+                val id = row[LedgerAssetMetadataTable.id].value
+                LedgerAssetMetadata(
+                    id = id,
+                    assetId = row[LedgerAssetMetadataTable.assetId],
+                    keyType = row[LedgerAssetMetadataTable.keyType],
+                    key = row[LedgerAssetMetadataTable.key],
+                    valueType = row[LedgerAssetMetadataTable.valueType],
+                    value = row[LedgerAssetMetadataTable.value],
+                    nestLevel = row[LedgerAssetMetadataTable.nestLevel],
+                    children = queryLedgerAssetMetadataList(assetId, id),
+                )
+            }
     }
 
     override fun queryLedgerAssetMetadataListByNativeAsset(
@@ -711,13 +747,16 @@ class LedgerRepositoryImpl : LedgerRepository {
                 name
             }
         return transaction {
-            LedgerAssetsTable.selectAll().where {
-                (LedgerAssetsTable.name eq referenceTokenName) and
-                    (LedgerAssetsTable.policy eq policy)
-            }.firstOrNull()?.let { row ->
-                val assetId = row[LedgerAssetsTable.id].value
-                queryLedgerAssetMetadataList(assetId, null)
-            }.orEmpty()
+            LedgerAssetsTable
+                .selectAll()
+                .where {
+                    (LedgerAssetsTable.name eq referenceTokenName) and
+                        (LedgerAssetsTable.policy eq policy)
+                }.firstOrNull()
+                ?.let { row ->
+                    val assetId = row[LedgerAssetsTable.id].value
+                    queryLedgerAssetMetadataList(assetId, null)
+                }.orEmpty()
         }
     }
 
@@ -754,40 +793,50 @@ class LedgerRepositoryImpl : LedgerRepository {
     ) {
         createdUtxos.forEach { createdUtxo ->
             val ledgerTableId =
-                LedgerTable.select(LedgerTable.id).where {
-                    LedgerTable.address eq createdUtxo.address
-                }.limit(1).firstOrNull()
+                LedgerTable
+                    .select(LedgerTable.id)
+                    .where {
+                        LedgerTable.address eq createdUtxo.address
+                    }.limit(1)
+                    .firstOrNull()
                     ?.let { row ->
                         row[LedgerTable.id].value
-                    } ?: LedgerTable.insertAndGetId { row ->
-                    row[address] = createdUtxo.address
-                    row[stakeAddress] = createdUtxo.stakeAddress
-                    row[addressType] = createdUtxo.addressType
-                }.value
+                    } ?: LedgerTable
+                    .insertAndGetId { row ->
+                        row[address] = createdUtxo.address
+                        row[stakeAddress] = createdUtxo.stakeAddress
+                        row[addressType] = createdUtxo.addressType
+                    }.value
 
             val ledgerUtxoTableId =
-                LedgerUtxosTable.insertAndGetId { row ->
-                    row[ledgerId] = ledgerTableId
-                    row[txId] = createdUtxo.hash
-                    row[txIx] = createdUtxo.ix.toInt()
-                    row[datumHash] = createdUtxo.datumHash ?: createdUtxo.datum?.hexToByteArray()
-                        ?.let { Blake2b.hash256(it).toHexString() }
-                    row[datum] = createdUtxo.datum
-                    row[scriptRef] = createdUtxo.scriptRef
-                    row[lovelace] = createdUtxo.lovelace.toString()
-                    row[blockCreated] = blockNumber
-                    row[blockSpent] = null
-                    row[transactionSpent] = null
-                    row[cbor] = createdUtxo.cbor
-                    row[paymentCred] = createdUtxo.paymentCred
-                    row[stakeCred] = createdUtxo.stakeCred
-                }.value
+                LedgerUtxosTable
+                    .insertAndGetId { row ->
+                        row[ledgerId] = ledgerTableId
+                        row[txId] = createdUtxo.hash
+                        row[txIx] = createdUtxo.ix.toInt()
+                        row[datumHash] = createdUtxo.datumHash ?: createdUtxo.datum
+                            ?.hexToByteArray()
+                            ?.let { Blake2b.hash256(it).toHexString() }
+                        row[datum] = createdUtxo.datum
+                        row[scriptRef] = createdUtxo.scriptRef
+                        row[lovelace] = createdUtxo.lovelace.toString()
+                        row[blockCreated] = blockNumber
+                        row[blockSpent] = null
+                        row[transactionSpent] = null
+                        row[cbor] = createdUtxo.cbor
+                        row[paymentCred] = createdUtxo.paymentCred
+                        row[stakeCred] = createdUtxo.stakeCred
+                    }.value
 
             createdUtxo.nativeAssets.forEach { nativeAsset ->
                 val ledgerAssetTableId =
-                    LedgerAssetsTable.selectAll().where {
-                        (LedgerAssetsTable.policy eq nativeAsset.policy) and (LedgerAssetsTable.name eq nativeAsset.name)
-                    }.limit(1).first()[LedgerAssetsTable.id].value
+                    LedgerAssetsTable
+                        .selectAll()
+                        .where {
+                            (LedgerAssetsTable.policy eq nativeAsset.policy) and (LedgerAssetsTable.name eq nativeAsset.name)
+                        }.limit(1)
+                        .first()[LedgerAssetsTable.id]
+                        .value
 
                 LedgerUtxoAssetsTable.insert { row ->
                     row[ledgerUtxoId] = ledgerUtxoTableId
@@ -825,23 +874,27 @@ class LedgerRepositoryImpl : LedgerRepository {
     }
 
     private val stakeRegistrationsCache =
-        Caffeine.newBuilder()
+        Caffeine
+            .newBuilder()
             .expireAfterWrite(Duration.ofMinutes(10))
             .build<Triple<Long, Int, Int>, StakeRegistration?> { (slot, txIndex, certIndex) ->
                 transaction {
-                    StakeRegistrationsTable.selectAll().where {
-                        (StakeRegistrationsTable.slot eq slot) and
-                            (StakeRegistrationsTable.txIndex eq txIndex) and
-                            (StakeRegistrationsTable.certIndex eq certIndex)
-                    }.firstOrNull()?.let { row ->
-                        StakeRegistration(
-                            id = row[StakeRegistrationsTable.id].value,
-                            stakeAddress = row[StakeRegistrationsTable.stakeAddress],
-                            slot = row[StakeRegistrationsTable.slot],
-                            txIndex = row[StakeRegistrationsTable.txIndex],
-                            certIndex = row[StakeRegistrationsTable.certIndex],
-                        )
-                    }
+                    StakeRegistrationsTable
+                        .selectAll()
+                        .where {
+                            (StakeRegistrationsTable.slot eq slot) and
+                                (StakeRegistrationsTable.txIndex eq txIndex) and
+                                (StakeRegistrationsTable.certIndex eq certIndex)
+                        }.firstOrNull()
+                        ?.let { row ->
+                            StakeRegistration(
+                                id = row[StakeRegistrationsTable.id].value,
+                                stakeAddress = row[StakeRegistrationsTable.stakeAddress],
+                                slot = row[StakeRegistrationsTable.slot],
+                                txIndex = row[StakeRegistrationsTable.txIndex],
+                                certIndex = row[StakeRegistrationsTable.certIndex],
+                            )
+                        }
                 }
             }
 
@@ -866,16 +919,20 @@ class LedgerRepositoryImpl : LedgerRepository {
         currentEpoch: Long
     ): Long =
         transaction {
-            StakeDelegationsTable.selectAll().where {
-                (StakeDelegationsTable.stakeAddress eq stakeAddress) and
-                    (StakeDelegationsTable.epoch lessEq currentEpoch) and
-                    (StakeDelegationsTable.poolId eq poolId)
-            }.orderBy(
-                Pair(StakeDelegationsTable.blockNumber, SortOrder.DESC),
-                Pair(StakeDelegationsTable.id, SortOrder.DESC)
-            ).limit(1).firstOrNull()?.let { row ->
-                currentEpoch - (row[StakeDelegationsTable.epoch] + 2L)
-            } ?: 0L
+            StakeDelegationsTable
+                .selectAll()
+                .where {
+                    (StakeDelegationsTable.stakeAddress eq stakeAddress) and
+                        (StakeDelegationsTable.epoch lessEq currentEpoch) and
+                        (StakeDelegationsTable.poolId eq poolId)
+                }.orderBy(
+                    Pair(StakeDelegationsTable.blockNumber, SortOrder.DESC),
+                    Pair(StakeDelegationsTable.id, SortOrder.DESC)
+                ).limit(1)
+                .firstOrNull()
+                ?.let { row ->
+                    currentEpoch - (row[StakeDelegationsTable.epoch] + 2L)
+                } ?: 0L
         }
 
     override fun queryAdaHandle(adaHandleName: String): String? =
@@ -885,29 +942,27 @@ class LedgerRepositoryImpl : LedgerRepository {
                     otherTable = LedgerUtxosTable,
                     onColumn = { LedgerTable.id },
                     otherColumn = { ledgerId }
-                )
-                .innerJoin(
+                ).innerJoin(
                     otherTable = LedgerUtxoAssetsTable,
                     onColumn = { LedgerUtxosTable.id },
                     otherColumn = { ledgerUtxoId }
-                )
-                .innerJoin(
+                ).innerJoin(
                     otherTable = LedgerAssetsTable,
                     onColumn = { LedgerUtxoAssetsTable.ledgerAssetId },
                     otherColumn = { LedgerAssetsTable.id }
-                )
-                .select(LedgerTable.address)
+                ).select(LedgerTable.address)
                 .where {
                     (LedgerAssetsTable.policy eq ADA_HANDLES_POLICY) and
                         (LedgerAssetsTable.name eq adaHandleName.toByteArray().toHexString()) and
                         LedgerUtxosTable.blockSpent.isNull()
-                }
-                .firstOrNull()?.let { row -> row[LedgerTable.address] }
+                }.firstOrNull()
+                ?.let { row -> row[LedgerTable.address] }
         }
 
     private val idCount = LedgerUtxosTable.id.count()
     private val siblingHashCountCache =
-        Caffeine.newBuilder()
+        Caffeine
+            .newBuilder()
             .expireAfterWrite(Duration.ofMinutes(1))
             .build<String, Long> { hash ->
                 transaction {
@@ -919,15 +974,17 @@ class LedgerRepositoryImpl : LedgerRepository {
 
     override fun queryPayerAddress(receivedUtxo: Utxo): String =
         transaction {
-            LedgerTable.innerJoin(
-                otherTable = LedgerUtxosTable,
-                onColumn = { LedgerTable.id },
-                otherColumn = { ledgerId }
-            )
-                .select(LedgerTable.address)
+            LedgerTable
+                .innerJoin(
+                    otherTable = LedgerUtxosTable,
+                    onColumn = { LedgerTable.id },
+                    otherColumn = { ledgerId }
+                ).select(LedgerTable.address)
                 .where {
                     LedgerUtxosTable.transactionSpent eq receivedUtxo.hash
-                }.limit(1).firstOrNull()?.let { row -> row[LedgerTable.address] }
+                }.limit(1)
+                .firstOrNull()
+                ?.let { row -> row[LedgerTable.address] }
                 ?: throw IllegalArgumentException("Cannot find payer address that funded utxo: ${receivedUtxo.hash}:${receivedUtxo.ix}")
         }
 
@@ -936,16 +993,18 @@ class LedgerRepositoryImpl : LedgerRepository {
         ix: Int
     ): String? =
         transaction {
-            LedgerTable.innerJoin(
-                otherTable = LedgerUtxosTable,
-                onColumn = { LedgerTable.id },
-                otherColumn = { ledgerId }
-            )
-                .select(LedgerTable.address)
+            LedgerTable
+                .innerJoin(
+                    otherTable = LedgerUtxosTable,
+                    onColumn = { LedgerTable.id },
+                    otherColumn = { ledgerId }
+                ).select(LedgerTable.address)
                 .where {
                     (LedgerUtxosTable.txId eq hash) and
                         (LedgerUtxosTable.txIx eq ix)
-                }.limit(1).firstOrNull()?.let { row -> row[LedgerTable.address] }
+                }.limit(1)
+                .firstOrNull()
+                ?.let { row -> row[LedgerTable.address] }
         }
 
     override fun queryUtxoHavingAddress(
@@ -954,21 +1013,25 @@ class LedgerRepositoryImpl : LedgerRepository {
         ix: Int
     ): Utxo? =
         transaction {
-            LedgerUtxosTable.innerJoin(LedgerTable, { ledgerId }, { LedgerTable.id }, { LedgerTable.address eq address })
-                .selectAll().where {
+            LedgerUtxosTable
+                .innerJoin(LedgerTable, { ledgerId }, { LedgerTable.id }, { LedgerTable.address eq address })
+                .selectAll()
+                .where {
                     (LedgerUtxosTable.txId eq hash) and
                         (LedgerUtxosTable.txIx eq ix)
-                }.firstOrNull()?.let { row ->
+                }.firstOrNull()
+                ?.let { row ->
                     val ledgerUtxoId = row[LedgerUtxosTable.id].value
 
                     val nativeAssets =
-                        LedgerUtxoAssetsTable.innerJoin(
-                            LedgerAssetsTable,
-                            { ledgerAssetId },
-                            { LedgerAssetsTable.id },
-                            { LedgerUtxoAssetsTable.ledgerUtxoId eq ledgerUtxoId }
-                        )
-                            .selectAll().map { naRow ->
+                        LedgerUtxoAssetsTable
+                            .innerJoin(
+                                LedgerAssetsTable,
+                                { ledgerAssetId },
+                                { LedgerAssetsTable.id },
+                                { LedgerUtxoAssetsTable.ledgerUtxoId eq ledgerUtxoId }
+                            ).selectAll()
+                            .map { naRow ->
                                 NativeAsset(
                                     name = naRow[LedgerAssetsTable.name],
                                     policy = naRow[LedgerAssetsTable.policy],
@@ -1048,9 +1111,12 @@ class LedgerRepositoryImpl : LedgerRepository {
         transaction {
             val afterId: Long =
                 afterTxId?.let {
-                    AddressTxLogTable.select(AddressTxLogTable.id).where {
-                        (AddressTxLogTable.address eq address) and (AddressTxLogTable.txId eq it)
-                    }.firstOrNull()?.let { row -> row[AddressTxLogTable.id].value } ?: -1L
+                    AddressTxLogTable
+                        .select(AddressTxLogTable.id)
+                        .where {
+                            (AddressTxLogTable.address eq address) and (AddressTxLogTable.txId eq it)
+                        }.firstOrNull()
+                        ?.let { row -> row[AddressTxLogTable.id].value } ?: -1L
                 } ?: -1L
 
             if (afterId == -1L && afterTxId != null) {
@@ -1065,13 +1131,17 @@ class LedgerRepositoryImpl : LedgerRepository {
                     } ?: 0L
                 ) - STABILITY_WINDOW
 
-            AddressTxLogTable.selectAll().where {
-                (AddressTxLogTable.address eq address) and
-                    (AddressTxLogTable.id greater afterId) and
-                    (AddressTxLogTable.blockNumber lessEq maxBlockNumber)
-            }.orderBy(AddressTxLogTable.id).limit(limit, offset).map { row ->
-                row[AddressTxLogTable.monitorAddressResponseBytes]
-            }
+            AddressTxLogTable
+                .selectAll()
+                .where {
+                    (AddressTxLogTable.address eq address) and
+                        (AddressTxLogTable.id greater afterId) and
+                        (AddressTxLogTable.blockNumber lessEq maxBlockNumber)
+                }.orderBy(AddressTxLogTable.id)
+                .limit(limit, offset)
+                .map { row ->
+                    row[AddressTxLogTable.monitorAddressResponseBytes]
+                }
         }
 
     override fun queryNativeAssetLogsAfter(
@@ -1082,9 +1152,12 @@ class LedgerRepositoryImpl : LedgerRepository {
         transaction {
             val afterId: Long =
                 afterTableId?.let {
-                    NativeAssetMonitorLogTable.select(NativeAssetMonitorLogTable.id).where {
-                        NativeAssetMonitorLogTable.id eq it
-                    }.firstOrNull()?.let { row -> row[NativeAssetMonitorLogTable.id].value } ?: -1L
+                    NativeAssetMonitorLogTable
+                        .select(NativeAssetMonitorLogTable.id)
+                        .where {
+                            NativeAssetMonitorLogTable.id eq it
+                        }.firstOrNull()
+                        ?.let { row -> row[NativeAssetMonitorLogTable.id].value } ?: -1L
                 } ?: -1L
 
             val maxBlockNumberExpression = ChainTable.blockNumber.max()
@@ -1095,16 +1168,20 @@ class LedgerRepositoryImpl : LedgerRepository {
                     } ?: 0L
                 ) - STABILITY_WINDOW
 
-            NativeAssetMonitorLogTable.selectAll().where {
-                (NativeAssetMonitorLogTable.id greater afterId) and
-                    (NativeAssetMonitorLogTable.blockNumber lessEq maxBlockNumber)
-            }.orderBy(NativeAssetMonitorLogTable.id).limit(limit, offset).map { row ->
-                row[NativeAssetMonitorLogTable.id].value to row[NativeAssetMonitorLogTable.monitorNativeAssetsResponseBytes]
-            }
+            NativeAssetMonitorLogTable
+                .selectAll()
+                .where {
+                    (NativeAssetMonitorLogTable.id greater afterId) and
+                        (NativeAssetMonitorLogTable.blockNumber lessEq maxBlockNumber)
+                }.orderBy(NativeAssetMonitorLogTable.id)
+                .limit(limit, offset)
+                .map { row ->
+                    row[NativeAssetMonitorLogTable.id].value to row[NativeAssetMonitorLogTable.monitorNativeAssetsResponseBytes]
+                }
         }
 
-    override fun queryTransactionConfirmationCounts(txIds: List<String>): Map<String, Long> {
-        return transaction {
+    override fun queryTransactionConfirmationCounts(txIds: List<String>): Map<String, Long> =
+        transaction {
             val tipBlockExpression = LedgerUtxosTable.blockCreated.max()
             val tipBlock: Long =
                 LedgerUtxosTable.select(tipBlockExpression).firstOrNull()?.let {
@@ -1114,7 +1191,9 @@ class LedgerRepositoryImpl : LedgerRepository {
             val ledgerMap =
                 LedgerUtxosTable
                     .select(LedgerUtxosTable.txId, LedgerUtxosTable.blockCreated)
-                    .where { LedgerUtxosTable.txId inList txIds }.withDistinct().associate { row ->
+                    .where { LedgerUtxosTable.txId inList txIds }
+                    .withDistinct()
+                    .associate { row ->
                         val txId = row[LedgerUtxosTable.txId]
                         val blockCreated = row[LedgerUtxosTable.blockCreated]
                         txId to max(tipBlock - blockCreated, 0L)
@@ -1122,21 +1201,19 @@ class LedgerRepositoryImpl : LedgerRepository {
 
             txIds.associateWith { txId -> (ledgerMap[txId] ?: 0L) }
         }
-    }
 
-    override fun queryDatumByHash(datumHashHex: String): String? {
-        return transaction {
+    override fun queryDatumByHash(datumHashHex: String): String? =
+        transaction {
             LedgerUtxosTable.selectAll().where { LedgerUtxosTable.datumHash eq datumHashHex }.firstOrNull()?.let { row ->
                 row[LedgerUtxosTable.datum]
             }
         }
-    }
 
     override fun snapshotNativeAssets(
         policy: String,
         name: String
-    ): Map<String, Long> {
-        return transaction {
+    ): Map<String, Long> =
+        transaction {
             var totalSupply = 0L
             val stakeAddressToAssetCountMap = mutableMapOf<String, Long>()
             val countExpression = LedgerTable.stakeAddress.count()
@@ -1152,18 +1229,15 @@ class LedgerRepositoryImpl : LedgerRepository {
                         otherTable = LedgerUtxosTable,
                         onColumn = { LedgerTable.id },
                         otherColumn = { ledgerId }
-                    )
-                    .innerJoin(
+                    ).innerJoin(
                         otherTable = LedgerUtxoAssetsTable,
                         onColumn = { LedgerUtxosTable.id },
                         otherColumn = { ledgerUtxoId }
-                    )
-                    .innerJoin(
+                    ).innerJoin(
                         otherTable = LedgerAssetsTable,
                         onColumn = { LedgerUtxoAssetsTable.ledgerAssetId },
                         otherColumn = { LedgerAssetsTable.id }
-                    )
-                    .select(LedgerTable.stakeAddress, countExpression)
+                    ).select(LedgerTable.stakeAddress, countExpression)
                     .where {
                         if (isEmpty) {
                             (LedgerAssetsTable.policy eq policy) and
@@ -1181,8 +1255,7 @@ class LedgerRepositoryImpl : LedgerRepository {
                                 LedgerTable.stakeAddress.isNotNull() and
                                 LedgerUtxosTable.blockSpent.isNull()
                         }
-                    }
-                    .groupBy(LedgerTable.stakeAddress)
+                    }.groupBy(LedgerTable.stakeAddress)
                     .forEach { row ->
                         row[LedgerTable.stakeAddress]?.let { stakeAddress ->
                             val currentCount = stakeAddressToAssetCountMap[stakeAddress] ?: 0L
@@ -1197,25 +1270,21 @@ class LedgerRepositoryImpl : LedgerRepository {
                         otherTable = LedgerUtxosTable,
                         onColumn = { LedgerTable.id },
                         otherColumn = { ledgerId }
-                    )
-                    .innerJoin(
+                    ).innerJoin(
                         otherTable = LedgerUtxoAssetsTable,
                         onColumn = { LedgerUtxosTable.id },
                         otherColumn = { ledgerUtxoId }
-                    )
-                    .innerJoin(
+                    ).innerJoin(
                         otherTable = LedgerAssetsTable,
                         onColumn = { LedgerUtxoAssetsTable.ledgerAssetId },
                         otherColumn = { LedgerAssetsTable.id }
-                    )
-                    .select(LedgerTable.stakeAddress, sumExpression)
+                    ).select(LedgerTable.stakeAddress, sumExpression)
                     .where {
                         (LedgerAssetsTable.policy eq policy) and
                             (LedgerAssetsTable.name eq name) and
                             LedgerTable.stakeAddress.isNotNull() and
                             LedgerUtxosTable.blockSpent.isNull()
-                    }
-                    .groupBy(LedgerTable.stakeAddress)
+                    }.groupBy(LedgerTable.stakeAddress)
                     .forEach { row ->
                         row[LedgerTable.stakeAddress]?.let { stakeAddress ->
                             val currentCount = stakeAddressToAssetCountMap[stakeAddress] ?: 0L
@@ -1231,17 +1300,15 @@ class LedgerRepositoryImpl : LedgerRepository {
 
             stakeAddressToAssetCountMap
         }
-    }
 
-    override fun queryUsedAddresses(addresses: List<String>): Set<String> {
-        return transaction {
+    override fun queryUsedAddresses(addresses: List<String>): Set<String> =
+        transaction {
             LedgerTable
                 .select(LedgerTable.address)
                 .where { LedgerTable.address inList addresses }
                 .mapNotNull { row -> row[LedgerTable.address] }
                 .toHashSet()
         }
-    }
 
     companion object {
         private const val ADA_HANDLES_POLICY = "f0ff48bbb7bbe9d59a40f1ce90e9e9d0ff5002ec48f232b49ca0fb9a"

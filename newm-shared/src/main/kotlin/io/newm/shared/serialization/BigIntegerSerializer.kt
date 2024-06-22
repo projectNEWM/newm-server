@@ -18,7 +18,5 @@ object BigIntegerSerializer : KSerializer<BigInteger> {
         encoder.encodeString(value.toString(10))
     }
 
-    override fun deserialize(decoder: Decoder): BigInteger {
-        return BigInteger(decoder.decodeString(), 10)
-    }
+    override fun deserialize(decoder: Decoder): BigInteger = BigInteger(decoder.decodeString(), 10)
 }

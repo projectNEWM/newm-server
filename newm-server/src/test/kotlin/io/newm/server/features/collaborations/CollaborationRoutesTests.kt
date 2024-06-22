@@ -57,11 +57,12 @@ class CollaborationRoutesTests : BaseApplicationTests() {
             // Add Song directly into database
             val songId =
                 transaction {
-                    SongEntity.new {
-                        ownerId = EntityID(testUserId, UserTable)
-                        title = "Song"
-                        genres = arrayOf("Genre")
-                    }.id.value
+                    SongEntity
+                        .new {
+                            ownerId = EntityID(testUserId, UserTable)
+                            title = "Song"
+                            genres = arrayOf("Genre")
+                        }.id.value
                 }
 
             val expectedCollaboration =
@@ -841,9 +842,10 @@ class CollaborationRoutesTests : BaseApplicationTests() {
             // filter out 1st and last
             val expectedCollaborators = allCollaborators.subList(1, allCollaborators.size - 1)
             val songIds =
-                allCollaborations.filter {
-                    it.email != allCollaborators.first().email && it.email != allCollaborators.last().email
-                }.joinToString { it.songId.toString() }
+                allCollaborations
+                    .filter {
+                        it.email != allCollaborators.first().email && it.email != allCollaborators.last().email
+                    }.joinToString { it.songId.toString() }
 
             // Get all collaborations forcing pagination
             var offset = 0
@@ -898,9 +900,10 @@ class CollaborationRoutesTests : BaseApplicationTests() {
             // filter out 1st and last
             val expectedCollaborators = allCollaborators.subList(1, allCollaborators.size - 1)
             val songIds =
-                allCollaborations.filterNot {
-                    it.email != allCollaborators.first().email && it.email != allCollaborators.last().email
-                }.joinToString { "-${it.songId}" }
+                allCollaborations
+                    .filterNot {
+                        it.email != allCollaborators.first().email && it.email != allCollaborators.last().email
+                    }.joinToString { "-${it.songId}" }
 
             // Get all collaborations forcing pagination
             var offset = 0
@@ -955,9 +958,10 @@ class CollaborationRoutesTests : BaseApplicationTests() {
             // filter out 1st and last
             val expectedCollaborators = allCollaborators.subList(1, allCollaborators.size - 1)
             val emails =
-                allCollaborations.filter {
-                    it.email != allCollaborators.first().email && it.email != allCollaborators.last().email
-                }.joinToString { it.email!! }
+                allCollaborations
+                    .filter {
+                        it.email != allCollaborators.first().email && it.email != allCollaborators.last().email
+                    }.joinToString { it.email!! }
 
             // Get all collaborations forcing pagination
             var offset = 0
@@ -1012,9 +1016,10 @@ class CollaborationRoutesTests : BaseApplicationTests() {
             // filter out 1st and last
             val expectedCollaborators = allCollaborators.subList(1, allCollaborators.size - 1)
             val emails =
-                allCollaborations.filterNot {
-                    it.email != allCollaborators.first().email && it.email != allCollaborators.last().email
-                }.joinToString { "-${it.email}" }
+                allCollaborations
+                    .filterNot {
+                        it.email != allCollaborators.first().email && it.email != allCollaborators.last().email
+                    }.joinToString { "-${it.email}" }
 
             // Get all collaborations forcing pagination
             var offset = 0
@@ -1192,11 +1197,12 @@ private fun addCollaborationToDatabase(
         }.id
     val songId =
         transaction {
-            SongEntity.new {
-                this.ownerId = ownerEntityId
-                title = "Song$offset"
-                genres = arrayOf("Genre$offset")
-            }.id
+            SongEntity
+                .new {
+                    this.ownerId = ownerEntityId
+                    title = "Song$offset"
+                    genres = arrayOf("Genre$offset")
+                }.id
         }
     return transaction {
         CollaborationEntity.new {

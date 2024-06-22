@@ -26,9 +26,7 @@ object GRPC : ApplicationEngineFactory<GRPCApplicationEngine, GRPCApplicationEng
     override fun create(
         environment: ApplicationEngineEnvironment,
         configure: GRPCApplicationEngine.Configuration.() -> Unit
-    ): GRPCApplicationEngine {
-        return GRPCApplicationEngine(environment, configure)
-    }
+    ): GRPCApplicationEngine = GRPCApplicationEngine(environment, configure)
 }
 
 class GRPCApplicationEngine(

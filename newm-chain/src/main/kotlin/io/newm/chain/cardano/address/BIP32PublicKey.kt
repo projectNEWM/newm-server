@@ -8,7 +8,9 @@ import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 import kotlin.concurrent.getOrSet
 
-class BIP32PublicKey(val bech32XPub: String) {
+class BIP32PublicKey(
+    val bech32XPub: String
+) {
     val pk: ByteArray
     val chaincode: ByteArray
 
@@ -77,14 +79,13 @@ class BIP32PublicKey(val bech32XPub: String) {
         cc.copyInto(out, 32, 0, CHAIN_CODE_SIZE)
     }
 
-    private fun le32(i: UInt): ByteArray {
-        return byteArrayOf(
+    private fun le32(i: UInt): ByteArray =
+        byteArrayOf(
             i.toByte(),
             (i shr 8).toByte(),
             (i shr 16).toByte(),
             (i shr 24).toByte()
         )
-    }
 
     private fun add28Mul8(
         x: ByteArray,
@@ -135,7 +136,8 @@ class BIP32PublicKey(val bech32XPub: String) {
         private val iMacThreadLocal = ThreadLocal<Mac>()
 
         private val publicKeyDerivationCache =
-            Caffeine.newBuilder()
+            Caffeine
+                .newBuilder()
                 .maximumSize(1073741824L) // 1GB - 2^30
                 .build<String, BIP32PublicKey>()
     }

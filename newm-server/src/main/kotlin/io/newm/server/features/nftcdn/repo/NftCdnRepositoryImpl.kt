@@ -11,7 +11,9 @@ import kotlin.concurrent.getOrSet
 
 // Reference: https://github.com/nftcdn/support.nftcdn.io
 
-internal class NftCdnRepositoryImpl(environment: ApplicationEnvironment) : NftCdnRepository {
+internal class NftCdnRepositoryImpl(
+    environment: ApplicationEnvironment
+) : NftCdnRepository {
     private val subdomain: String by coLazy {
         environment.getSecureConfigString("nftCdn.subdomain")
     }

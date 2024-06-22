@@ -39,13 +39,14 @@ internal class AppleUserProvider(
     environment: ApplicationEnvironment
 ) : OAuthUserProvider {
     private val verifier: JWTVerifier =
-        JWT.require(
-            Algorithm.RSA256(
-                JwkProviderBuilder(environment.getConfigString("oauth.apple.publicKeysUrl"))
-                    .build()
-                    .toRSAKeyProvider()
-            )
-        ).withAnyOfIssuer(environment.getConfigStrings("oauth.apple.issuers"))
+        JWT
+            .require(
+                Algorithm.RSA256(
+                    JwkProviderBuilder(environment.getConfigString("oauth.apple.publicKeysUrl"))
+                        .build()
+                        .toRSAKeyProvider()
+                )
+            ).withAnyOfIssuer(environment.getConfigStrings("oauth.apple.issuers"))
             .withAnyOfAudience(runBlocking { environment.getSecureConfigStrings("oauth.apple.audiences") })
             .withClaimPresence("sub")
             .withClaimPresence("email")

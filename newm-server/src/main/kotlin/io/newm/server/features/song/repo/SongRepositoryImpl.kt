@@ -116,42 +116,44 @@ internal class SongRepositoryImpl(
         return transaction {
             title.checkTitleUnique(ownerId, song.mintingStatus)
             val releaseId =
-                ReleaseEntity.new {
-                    archived = false
+                ReleaseEntity
+                    .new {
+                        archived = false
+                        this.ownerId = EntityID(ownerId, UserTable)
+                        this.title = title
+                        // TODO: Refactor 'single' hardcoding once we have album support in the UI/UX
+                        releaseType = ReleaseType.SINGLE
+                        barcodeType = song.barcodeType
+                        barcodeNumber = song.barcodeNumber
+                        releaseDate = song.releaseDate
+                        publicationDate = song.publicationDate
+                        coverArtUrl = song.coverArtUrl?.asValidUrl()
+                        hasSubmittedForDistribution = false
+                        errorMessage = song.errorMessage
+                    }.id.value
+            SongEntity
+                .new {
+                    archived = song.archived ?: false
                     this.ownerId = EntityID(ownerId, UserTable)
                     this.title = title
-                    // TODO: Refactor 'single' hardcoding once we have album support in the UI/UX
-                    releaseType = ReleaseType.SINGLE
-                    barcodeType = song.barcodeType
-                    barcodeNumber = song.barcodeNumber
-                    releaseDate = song.releaseDate
-                    publicationDate = song.publicationDate
-                    coverArtUrl = song.coverArtUrl?.asValidUrl()
-                    hasSubmittedForDistribution = false
-                    errorMessage = song.errorMessage
+                    this.genres = genres.toTypedArray()
+                    moods = song.moods?.toTypedArray()
+                    description = song.description
+                    this.releaseId = EntityID(releaseId, ReleaseTable)
+                    track = song.track
+                    language = song.language
+                    coverRemixSample = song.coverRemixSample ?: false
+                    compositionCopyrightOwner = song.compositionCopyrightOwner
+                    compositionCopyrightYear = song.compositionCopyrightYear
+                    phonographicCopyrightOwner = song.phonographicCopyrightOwner
+                    phonographicCopyrightYear = song.phonographicCopyrightYear
+                    parentalAdvisory = song.parentalAdvisory
+                    isrc = song.isrc
+                    iswc = song.iswc
+                    ipis = song.ipis?.toTypedArray()
+                    lyricsUrl = song.lyricsUrl?.asValidUrl()
+                    instrumental = song.instrumental ?: song.genres.contains("Instrumental")
                 }.id.value
-            SongEntity.new {
-                archived = song.archived ?: false
-                this.ownerId = EntityID(ownerId, UserTable)
-                this.title = title
-                this.genres = genres.toTypedArray()
-                moods = song.moods?.toTypedArray()
-                description = song.description
-                this.releaseId = EntityID(releaseId, ReleaseTable)
-                track = song.track
-                language = song.language
-                coverRemixSample = song.coverRemixSample ?: false
-                compositionCopyrightOwner = song.compositionCopyrightOwner
-                compositionCopyrightYear = song.compositionCopyrightYear
-                phonographicCopyrightOwner = song.phonographicCopyrightOwner
-                phonographicCopyrightYear = song.phonographicCopyrightYear
-                parentalAdvisory = song.parentalAdvisory
-                isrc = song.isrc
-                iswc = song.iswc
-                ipis = song.ipis?.toTypedArray()
-                lyricsUrl = song.lyricsUrl?.asValidUrl()
-                instrumental = song.instrumental ?: song.genres.contains("Instrumental")
-            }.id.value
         }
     }
 
@@ -306,7 +308,8 @@ internal class SongRepositoryImpl(
     ): List<Song> {
         logger.debug { "getAll: filters = $filters, offset = $offset, limit = $limit" }
         return transaction {
-            SongEntity.all(filters)
+            SongEntity
+                .all(filters)
                 .limit(n = limit, offset = offset.toLong())
                 .map {
                     val release = ReleaseEntity[it.releaseId!!].toModel()
@@ -326,9 +329,10 @@ internal class SongRepositoryImpl(
         logger.debug { "getAllByReleaseId: id = $id" }
         return transaction {
             val release = ReleaseEntity[id].toModel()
-            SongEntity.wrapRows(
-                SongTable.selectAll().where { SongTable.releaseId eq id }
-            ).map { it.toModel(release) }
+            SongEntity
+                .wrapRows(
+                    SongTable.selectAll().where { SongTable.releaseId eq id }
+                ).map { it.toModel(release) }
         }
     }
 
@@ -339,7 +343,8 @@ internal class SongRepositoryImpl(
     ): List<String> {
         logger.debug { "getGenres: filters = $filters, offset = $offset, limit = $limit" }
         return transaction {
-            SongEntity.genres(filters)
+            SongEntity
+                .genres(filters)
                 .limit(n = limit, offset = offset.toLong())
                 .toList()
         }
@@ -423,11 +428,12 @@ internal class SongRepositoryImpl(
 
         // fix up the url so that the url does not point to old cloudfront distros
         val streamUrl =
-            URLBuilder().apply {
-                protocol = URLProtocol.createOrDefault(mediaHostUrl.protocol)
-                host = mediaHostUrl.host
-                encodedPath = songStreamUrl.path
-            }.build()
+            URLBuilder()
+                .apply {
+                    protocol = URLProtocol.createOrDefault(mediaHostUrl.protocol)
+                    host = mediaHostUrl.host
+                    encodedPath = songStreamUrl.path
+                }.build()
 
         return cloudfrontAudioStreamData {
             url = streamUrl.toString()
@@ -531,7 +537,8 @@ internal class SongRepositoryImpl(
         logger.debug { "getMintingPaymentAmount: songId = $songId" }
         // TODO: We might need to change this code in the future if we're charging NEWM tokens in addition to ada
         val numberOfCollaborators =
-            collaborationRepository.getAllBySongId(songId)
+            collaborationRepository
+                .getAllBySongId(songId)
                 .count { it.royaltyRate.orZero() > BigDecimal.ZERO }
         val mintCostBase = configRepository.getLong(CONFIG_KEY_MINT_PRICE)
         // defined in whole usd cents with 6 decimals
@@ -565,8 +572,11 @@ internal class SongRepositoryImpl(
     ): MintPaymentResponse {
         val changeAmountLovelace = 1000000L // 1 ada
         val dspPriceLovelace =
-            dspPriceUsd.toBigDecimal().divide(usdAdaExchangeRate.toBigDecimal(), 6, RoundingMode.CEILING)
-                .times(1000000.toBigDecimal()).toBigInteger()
+            dspPriceUsd
+                .toBigDecimal()
+                .divide(usdAdaExchangeRate.toBigDecimal(), 6, RoundingMode.CEILING)
+                .times(1000000.toBigDecimal())
+                .toBigInteger()
 
         val sendTokenFee = (numberOfCollaborators * minUtxo)
         val mintCostLovelace = mintCostBase + sendTokenFee
@@ -583,7 +593,9 @@ internal class SongRepositoryImpl(
         // we send an extra changeAmountLovelace to ensure we have enough ada to cover a return utxo
         return MintPaymentResponse(
             cborHex =
-                CborInteger.create(mintCostLovelace + dspPriceLovelace.toLong() + changeAmountLovelace).toCborByteArray()
+                CborInteger
+                    .create(mintCostLovelace + dspPriceLovelace.toLong() + changeAmountLovelace)
+                    .toCborByteArray()
                     .toHexString(),
             adaPrice = (mintCostLovelace.toBigInteger() + dspPriceLovelace).toAdaString(),
             usdPrice = usdPrice.toAdaString(),
@@ -640,7 +652,8 @@ internal class SongRepositoryImpl(
         val cashRegisterKey =
             requireNotNull(cardanoRepository.getKeyByName("cashRegister")) { "cashRegister key not defined!" }
         val cashRegisterUtxos =
-            cardanoRepository.queryLiveUtxos(cashRegisterKey.address)
+            cardanoRepository
+                .queryLiveUtxos(cashRegisterKey.address)
                 .filter { it.nativeAssetsCount == 0 }
                 .sortedByDescending { it.lovelace.toLong() }
                 .take(5)
@@ -827,7 +840,8 @@ internal class SongRepositoryImpl(
             }
 
         val collaborations =
-            collaborationRepository.getAllBySongId(song.id.value)
+            collaborationRepository
+                .getAllBySongId(song.id.value)
                 .filter { it.royaltyRate.orZero() > BigDecimal.ZERO }
 
         val collaborators =
@@ -849,8 +863,10 @@ internal class SongRepositoryImpl(
                     "collabs" to
                         collaborations.joinToString(separator = "") { collaboration ->
                             "<li>${
-                                collaborators.firstOrNull { it.email.equals(collaboration.email, ignoreCase = true) }
-                                    ?.user?.stageOrFullName ?: collaboration.email
+                                collaborators
+                                    .firstOrNull { it.email.equals(collaboration.email, ignoreCase = true) }
+                                    ?.user
+                                    ?.stageOrFullName ?: collaboration.email
                             }: ${collaboration.royaltyRate}%</li>"
                         },
                     "errors" to release.errorMessage.orEmpty()

@@ -35,7 +35,9 @@ import org.jetbrains.exposed.sql.selectAll
 import java.time.LocalDateTime
 import java.util.UUID
 
-class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
+class CollaborationEntity(
+    id: EntityID<UUID>
+) : UUIDEntity(id) {
     val createdAt: LocalDateTime by CollaborationTable.createdAt
     var songId: EntityID<SongId> by CollaborationTable.songId
     var email: String by CollaborationTable.email
@@ -75,18 +77,19 @@ class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             ownerId: UserId,
             email: String,
             status: CollaborationStatus
-        ): Boolean {
-            return CollaborationTable.innerJoin(
-                otherTable = SongTable,
-                onColumn = { songId },
-                otherColumn = { id }
-            ).selectAll().where {
-                (SongTable.archived eq false) and
-                    (SongTable.ownerId eq ownerId) and
-                    (CollaborationTable.email.lowerCase() eq email.lowercase()) and
-                    (CollaborationTable.status eq status)
-            }.any()
-        }
+        ): Boolean =
+            CollaborationTable
+                .innerJoin(
+                    otherTable = SongTable,
+                    onColumn = { songId },
+                    otherColumn = { id }
+                ).selectAll()
+                .where {
+                    (SongTable.archived eq false) and
+                        (SongTable.ownerId eq ownerId) and
+                        (CollaborationTable.email.lowerCase() eq email.lowercase()) and
+                        (CollaborationTable.status eq status)
+                }.any()
 
         fun all(
             userId: UserId,
@@ -138,11 +141,13 @@ class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                     find(andOp)
                 } else {
                     CollaborationEntity.wrapRows(
-                        CollaborationTable.innerJoin(
-                            otherTable = SongTable,
-                            onColumn = { songId },
-                            otherColumn = { id }
-                        ).selectAll().where(andOp)
+                        CollaborationTable
+                            .innerJoin(
+                                otherTable = SongTable,
+                                onColumn = { songId },
+                                otherColumn = { id }
+                            ).selectAll()
+                            .where(andOp)
                     )
                 }
             return res.orderBy(CollaborationTable.createdAt to (filters.sortOrder ?: SortOrder.ASC))
@@ -179,15 +184,16 @@ class CollaborationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                         (UserTable.firstName.lowerCase() like pattern) or
                         (UserTable.lastName.lowerCase() like pattern)
                 }
-                return CollaborationTable.innerJoin(
-                    otherTable = SongTable,
-                    onColumn = { songId },
-                    otherColumn = { id }
-                ).leftJoin(
-                    otherTable = UserTable,
-                    onColumn = { CollaborationTable.email.lowerCase() },
-                    otherColumn = { email.lowerCase() }
-                ).select(CollaborationTable.email.lowerCase(), SongTable.id.count())
+                return CollaborationTable
+                    .innerJoin(
+                        otherTable = SongTable,
+                        onColumn = { songId },
+                        otherColumn = { id }
+                    ).leftJoin(
+                        otherTable = UserTable,
+                        onColumn = { CollaborationTable.email.lowerCase() },
+                        otherColumn = { email.lowerCase() }
+                    ).select(CollaborationTable.email.lowerCase(), SongTable.id.count())
                     .where(AndOp(ops))
                     .groupBy(CollaborationTable.email.lowerCase())
                     .orderBy(CollaborationTable.email.lowerCase(), filters.sortOrder ?: SortOrder.ASC)

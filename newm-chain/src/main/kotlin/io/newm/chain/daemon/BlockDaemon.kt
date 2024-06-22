@@ -111,7 +111,8 @@ class BlockDaemon(
      * in the event of a rollback.
      */
     private val blockRollbackCache: Cache<Long, Set<String>> =
-        Caffeine.newBuilder()
+        Caffeine
+            .newBuilder()
             .expireAfterWrite(Duration.ofHours(1))
             .build()
 
@@ -208,7 +209,11 @@ class BlockDaemon(
 
     private suspend fun findBlockchainIntersect(client: ChainSyncClient) {
         val intersectPoints: MutableList<PointDetailOrOrigin> = chainRepository.getFindIntersectPairs().toMutableList()
-        val startSlot = environment.config.property("ogmios.startSlot").getString().toLong()
+        val startSlot =
+            environment.config
+                .property("ogmios.startSlot")
+                .getString()
+                .toLong()
         if (startSlot > -1) {
             intersectPoints.add(
                 PointDetail(
@@ -339,7 +344,9 @@ class BlockDaemon(
                             val tip = isTip && block == lastBlock
                             if (tip || blockRollbackCache.getIfPresent(block.height) != null) {
                                 val ourTransactionIdsInBlock =
-                                    createdUtxos.map { createdUtxo -> createdUtxo.hash }.toSet()
+                                    createdUtxos
+                                        .map { createdUtxo -> createdUtxo.hash }
+                                        .toSet()
                                         .filter { transactionId ->
                                             submittedTransactionCache.get(transactionId)?.also {
                                                 log.debug { "Our transaction $transactionId was seen in a block!" }
@@ -464,30 +471,31 @@ class BlockDaemon(
         }
     }
 
-    private fun cip68UtxoOutputsTo721MetadataMap(createdUtxos: Set<CreatedUtxo>): List<Pair<MetadataMap, List<LedgerAsset>>> {
-        return createdUtxos.filter { createdUtxo ->
-            createdUtxo.nativeAssets.any { nativeAsset ->
-                nativeAsset.name.matches(CIP68_REFERENCE_TOKEN_REGEX)
-            }
-        }.mapNotNull { cip68CreatedUtxo ->
-            cip68CreatedUtxo.datum?.let { datum ->
-                val cip68PlutusData = datum.cborHexToPlutusData()
-                if (cip68PlutusData.hasConstr() && cip68PlutusData.constr == 0) {
-                    cip68CreatedUtxo.nativeAssets.filter { nativeAsset ->
-                        nativeAsset.name.matches(CIP68_REFERENCE_TOKEN_REGEX)
-                    }.map { nativeAsset ->
-                        val metadataMap = cip68PlutusData.toMetadataMap(nativeAsset.policy, nativeAsset.name)
-                        metadataMap to
-                            cip68CreatedUtxo.nativeAssets.map { na ->
-                                ledgerRepository.queryLedgerAsset(na.policy, na.name)!!
-                            }
-                    }
-                } else {
-                    null
+    private fun cip68UtxoOutputsTo721MetadataMap(createdUtxos: Set<CreatedUtxo>): List<Pair<MetadataMap, List<LedgerAsset>>> =
+        createdUtxos
+            .filter { createdUtxo ->
+                createdUtxo.nativeAssets.any { nativeAsset ->
+                    nativeAsset.name.matches(CIP68_REFERENCE_TOKEN_REGEX)
                 }
-            }
-        }.flatten()
-    }
+            }.mapNotNull { cip68CreatedUtxo ->
+                cip68CreatedUtxo.datum?.let { datum ->
+                    val cip68PlutusData = datum.cborHexToPlutusData()
+                    if (cip68PlutusData.hasConstr() && cip68PlutusData.constr == 0) {
+                        cip68CreatedUtxo.nativeAssets
+                            .filter { nativeAsset ->
+                                nativeAsset.name.matches(CIP68_REFERENCE_TOKEN_REGEX)
+                            }.map { nativeAsset ->
+                                val metadataMap = cip68PlutusData.toMetadataMap(nativeAsset.policy, nativeAsset.name)
+                                metadataMap to
+                                    cip68CreatedUtxo.nativeAssets.map { na ->
+                                        ledgerRepository.queryLedgerAsset(na.policy, na.name)!!
+                                    }
+                            }
+                    } else {
+                        null
+                    }
+                }
+            }.flatten()
 
     private suspend fun checkBlockRollbacks(
         blockHeight: Long,
@@ -514,7 +522,8 @@ class BlockDaemon(
         transactionIdsInBlock: Set<String>,
     ) {
         // get the first transactionId in the rolled-back block that isn't in the new block
-        rolledBackBlockTransactionList.find { transactionId -> transactionIdsInBlock.none { it == transactionId } }
+        rolledBackBlockTransactionList
+            .find { transactionId -> transactionIdsInBlock.none { it == transactionId } }
             ?.let { firstTransactionIdNotInBlock ->
                 val keys = submittedTransactionCache.keys
                 val startIndex =
@@ -587,7 +596,8 @@ class BlockDaemon(
                 val metadataLedgerAsset =
                     if (ledgerAsset.name.matches(CIP68_USER_TOKEN_REGEX)) {
                         val name = "$CIP68_REFERENCE_TOKEN_PREFIX${ledgerAsset.name.substring(8)}"
-                        ledgerRepository.queryLedgerAsset(ledgerAsset.policy, name)
+                        ledgerRepository
+                            .queryLedgerAsset(ledgerAsset.policy, name)
                             ?.copy(txId = ledgerAsset.txId) ?: run {
                             log.warn {
                                 "No LedgerAsset REF Token found for: '${ledgerAsset.policy}.${ledgerAsset.name}' -> '${ledgerAsset.policy}.$name' !"
@@ -619,66 +629,72 @@ class BlockDaemon(
 
         // handle metadata updates for CIP-68
         batch.addAll(
-            createdUtxos.mapNotNull { createdUtxo ->
-                createdUtxo.datum?.let {
-                    createdUtxo.nativeAssets.filter { nativeAsset ->
-                        nativeAsset.name.matches(CIP68_REFERENCE_TOKEN_REGEX)
+            createdUtxos
+                .mapNotNull { createdUtxo ->
+                    createdUtxo.datum?.let {
+                        createdUtxo.nativeAssets.filter { nativeAsset ->
+                            nativeAsset.name.matches(CIP68_REFERENCE_TOKEN_REGEX)
+                        }
                     }
-                }
-            }.flatten().flatMap { updatedNativeAsset ->
-                val metadataBatch = mutableListOf<ByteArray>()
-                ledgerRepository.queryLedgerAsset(
-                    updatedNativeAsset.policy,
-                    updatedNativeAsset.name
-                )?.let { nativeAsset ->
-                    val ledgerAssetMetadataList =
-                        ledgerRepository.queryLedgerAssetMetadataList(nativeAsset.id!!)
-                    val bos = ByteArrayOutputStream()
-                    // Create a response for the cip68 reference token itself
-                    monitorNativeAssetsResponse {
-                        policy = updatedNativeAsset.policy
-                        name = updatedNativeAsset.name
-                        nativeAssetMetadataJson =
-                            ledgerAssetMetadataList.to721Json(
-                                updatedNativeAsset.policy,
-                                updatedNativeAsset.name
-                            )
-                        slot = block.slot
-                        this.block = block.height
-                        txHash = ledgerAssets.firstOrNull {
-                            it.name == updatedNativeAsset.name && it.policy == updatedNativeAsset.policy
-                        }?.txId ?: ""
-                    }.writeTo(bos)
-                    metadataBatch.add(bos.toByteArray())
-
-                    val prefixes = listOf("000de140", "0014df10", "001bc280") // (222), (333), (444)
-
-                    prefixes.forEach { prefix ->
-                        val name = prefix + updatedNativeAsset.name.substring(8)
-                        ledgerRepository.queryLedgerAsset(updatedNativeAsset.policy, name)
-                            ?.let { nativeAsset ->
-                                val bos1 = ByteArrayOutputStream()
-                                // Create a response for any cip68 user token based on the reference token
-                                monitorNativeAssetsResponse {
-                                    this.policy = nativeAsset.policy
-                                    this.name = nativeAsset.name
-                                    nativeAssetMetadataJson =
-                                        ledgerAssetMetadataList.to721Json(
-                                            nativeAsset.policy,
-                                            nativeAsset.name
-                                        )
-                                    slot = block.slot
-                                    this.block = block.height
-                                    txHash = ledgerAssets.firstOrNull {
-                                        it.name == nativeAsset.name && it.policy == nativeAsset.policy
+                }.flatten()
+                .flatMap { updatedNativeAsset ->
+                    val metadataBatch = mutableListOf<ByteArray>()
+                    ledgerRepository
+                        .queryLedgerAsset(
+                            updatedNativeAsset.policy,
+                            updatedNativeAsset.name
+                        )?.let { nativeAsset ->
+                            val ledgerAssetMetadataList =
+                                ledgerRepository.queryLedgerAssetMetadataList(nativeAsset.id!!)
+                            val bos = ByteArrayOutputStream()
+                            // Create a response for the cip68 reference token itself
+                            monitorNativeAssetsResponse {
+                                policy = updatedNativeAsset.policy
+                                name = updatedNativeAsset.name
+                                nativeAssetMetadataJson =
+                                    ledgerAssetMetadataList.to721Json(
+                                        updatedNativeAsset.policy,
+                                        updatedNativeAsset.name
+                                    )
+                                slot = block.slot
+                                this.block = block.height
+                                txHash = ledgerAssets
+                                    .firstOrNull {
+                                        it.name == updatedNativeAsset.name && it.policy == updatedNativeAsset.policy
                                     }?.txId ?: ""
-                                }.writeTo(bos1)
-                                metadataBatch.add(bos1.toByteArray())
+                            }.writeTo(bos)
+                            metadataBatch.add(bos.toByteArray())
+
+                            val prefixes = listOf("000de140", "0014df10", "001bc280") // (222), (333), (444)
+
+                            prefixes.forEach { prefix ->
+                                val name = prefix + updatedNativeAsset.name.substring(8)
+                                ledgerRepository
+                                    .queryLedgerAsset(updatedNativeAsset.policy, name)
+                                    ?.let { nativeAsset ->
+                                        val bos1 = ByteArrayOutputStream()
+                                        // Create a response for any cip68 user token based on the reference token
+                                        monitorNativeAssetsResponse {
+                                            this.policy = nativeAsset.policy
+                                            this.name = nativeAsset.name
+                                            nativeAssetMetadataJson =
+                                                ledgerAssetMetadataList.to721Json(
+                                                    nativeAsset.policy,
+                                                    nativeAsset.name
+                                                )
+                                            slot = block.slot
+                                            this.block = block.height
+                                            txHash = ledgerAssets
+                                                .firstOrNull {
+                                                    it.name == nativeAsset.name && it.policy == nativeAsset.policy
+                                                }?.txId ?: ""
+                                        }.writeTo(bos1)
+                                        metadataBatch.add(bos1.toByteArray())
+                                    }
                             }
-                    }
+                        }
+                    metadataBatch
                 }
-                metadataBatch
-            }
         )
 
         // Update the db for native asset changes

@@ -87,7 +87,8 @@ class TransactionBuilderTest {
                         }
 
                         // dummy change address
-                        changeAddress = "addr_test1qqa9e0qfjgge2r39lxrh4dat6c7s2m23t0tysga9m6pacfjnm243cyjk69v32rkjvwlvpplx5cgfk3jmq9gwncamgf5sg8turc"
+                        changeAddress =
+                            "addr_test1qqa9e0qfjgge2r39lxrh4dat6c7s2m23t0tysga9m6pacfjnm243cyjk69v32rkjvwlvpplx5cgfk3jmq9gwncamgf5sg8turc"
 
                         // ensures this tx is expired because of 1 time to live
                         ttlAbsoluteSlot = 1L
@@ -145,13 +146,19 @@ class TransactionBuilderTest {
                 // get the vkey for funds address
                 val fundsVkey = javaClass.getResource("/contract_chaining_preprod_test.vkey")!!.readText()
                 val fundsVkeyJsonElement = json.parseToJsonElement(fundsVkey)
-                val fundsVkeyCbor = fundsVkeyJsonElement.jsonObject["cborHex"]!!.jsonPrimitive.content.hexToByteArray()
+                val fundsVkeyCbor =
+                    fundsVkeyJsonElement.jsonObject["cborHex"]!!
+                        .jsonPrimitive.content
+                        .hexToByteArray()
                 val fundsVkeyBytes = (CborReader.createFromByteArray(fundsVkeyCbor).readDataItem() as CborByteString).byteArrayValue()[0]
 
                 // get the skey for funds address
                 val fundsSkey = javaClass.getResource("/contract_chaining_preprod_test.skey")!!.readText()
                 val fundsSkeyJsonElement = json.parseToJsonElement(fundsSkey)
-                val fundsSkeyCbor = fundsSkeyJsonElement.jsonObject["cborHex"]!!.jsonPrimitive.content.hexToByteArray()
+                val fundsSkeyCbor =
+                    fundsSkeyJsonElement.jsonObject["cborHex"]!!
+                        .jsonPrimitive.content
+                        .hexToByteArray()
                 val fundsSkeyBytes = (CborReader.createFromByteArray(fundsSkeyCbor).readDataItem() as CborByteString).byteArrayValue()[0]
 
                 val utxosResponse =
@@ -198,7 +205,9 @@ class TransactionBuilderTest {
                                         utxo {
                                             hash = it.transaction.id
                                             ix = it.index.toLong()
-                                            lovelace = it.value.ada.ada.lovelace.toString()
+                                            lovelace =
+                                                it.value.ada.ada.lovelace
+                                                    .toString()
                                         }.also { sourceUtxosSorted.add("${it.hash}${it.ix.toHexString()}") }
                                     }
                                 )
@@ -206,7 +215,9 @@ class TransactionBuilderTest {
                                     utxo {
                                         hash = contractUtxo.transaction.id
                                         ix = contractUtxo.index.toLong()
-                                        lovelace = contractUtxo.value.ada.ada.lovelace.toString()
+                                        lovelace =
+                                            contractUtxo.value.ada.ada.lovelace
+                                                .toString()
                                     }.also { sourceUtxosSorted.add("${it.hash}${it.ix.toHexString()}") }
                                 )
                             }
@@ -238,7 +249,9 @@ class TransactionBuilderTest {
                                         utxo {
                                             hash = it.transaction.id
                                             ix = it.index.toLong()
-                                            lovelace = it.value.ada.ada.lovelace.toString()
+                                            lovelace =
+                                                it.value.ada.ada.lovelace
+                                                    .toString()
                                         }
                                     }
                                 )
@@ -250,7 +263,8 @@ class TransactionBuilderTest {
                                     redeemer {
                                         tag = RedeemerTag.SPEND
                                         index =
-                                            sourceUtxosSorted.indexOf("${contractUtxo.transaction.id}${contractUtxo.index.toHexString()}")
+                                            sourceUtxosSorted
+                                                .indexOf("${contractUtxo.transaction.id}${contractUtxo.index.toHexString()}")
                                                 .toLong()
                                         data =
                                             plutusData {
@@ -290,9 +304,10 @@ class TransactionBuilderTest {
                                 (
                                     (
                                         (
-                                            CborReader.createFromByteArray(
-                                                cborBytes
-                                            ).readDataItem() as CborArray
+                                            CborReader
+                                                .createFromByteArray(
+                                                    cborBytes
+                                                ).readDataItem() as CborArray
                                         ).elementAt(
                                             0
                                         ) as CborMap
@@ -860,8 +875,8 @@ class TransactionBuilderTest {
             }
         }
 
-    private fun createTestMetadata(tokenName: String): CborMap {
-        return CborMap.create(
+    private fun createTestMetadata(tokenName: String): CborMap =
+        CborMap.create(
             mapOf(
                 CborInteger.create(721) to
                     CborMap.create(
@@ -997,5 +1012,4 @@ class TransactionBuilderTest {
                     )
             )
         )
-    }
 }

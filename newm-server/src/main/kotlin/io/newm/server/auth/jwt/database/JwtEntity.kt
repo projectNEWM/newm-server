@@ -9,7 +9,9 @@ import org.jetbrains.exposed.sql.deleteWhere
 import java.time.LocalDateTime
 import java.util.UUID
 
-class JwtEntity(id: EntityID<UUID>) : UUIDEntity(id) {
+class JwtEntity(
+    id: EntityID<UUID>
+) : UUIDEntity(id) {
     var userId: EntityID<UserId> by JwtTable.userId
     var expiresAt: LocalDateTime by JwtTable.expiresAt
 

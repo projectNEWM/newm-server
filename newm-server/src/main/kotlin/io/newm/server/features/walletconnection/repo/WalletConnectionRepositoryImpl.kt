@@ -72,26 +72,32 @@ internal class WalletConnectionRepositoryImpl(
 
                             // require the stake key to sign the transaction
                             requiredSigners.add(
-                                Bech32.decode(request.stakeAddress).bytes.copyOfRange(1, 29).toByteString()
+                                Bech32
+                                    .decode(request.stakeAddress)
+                                    .bytes
+                                    .copyOfRange(1, 29)
+                                    .toByteString()
                             )
 
                             // put the challenge into the transaction metadata so it is displayed in the wallet
                             transactionMetadataCbor =
-                                CborMap.create(
-                                    mapOf(
-                                        CborInteger.create(674) to
-                                            CborMap.create(
-                                                mapOf(
-                                                    CborTextString.create("msg") to
-                                                        CborArray.create().apply {
-                                                            challengeString.chunked(64).forEach {
-                                                                add(CborTextString.create(it))
+                                CborMap
+                                    .create(
+                                        mapOf(
+                                            CborInteger.create(674) to
+                                                CborMap.create(
+                                                    mapOf(
+                                                        CborTextString.create("msg") to
+                                                            CborArray.create().apply {
+                                                                challengeString.chunked(64).forEach {
+                                                                    add(CborTextString.create(it))
+                                                                }
                                                             }
-                                                        }
+                                                    )
                                                 )
-                                            )
-                                    )
-                                ).toCborByteArray().toByteString()
+                                        )
+                                    ).toCborByteArray()
+                                    .toByteString()
                         }
 
                     require(!transactionBuilderResponse.hasErrorMessage()) {
@@ -166,7 +172,8 @@ internal class WalletConnectionRepositoryImpl(
         if (transaction { !WalletConnectionEntity.existsHavingId(connectionId) }) {
             throw HttpNotFoundException("Wallet connection doesn't exist: $connectionId")
         }
-        return QRCode.ofSquares()
+        return QRCode
+            .ofSquares()
             .withInnerSpacing(0)
             .withColor(Colors.BLACK)
             .withBackgroundColor(Colors.TRANSPARENT)

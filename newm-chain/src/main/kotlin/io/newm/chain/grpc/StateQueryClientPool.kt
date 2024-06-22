@@ -25,8 +25,8 @@ class StateQueryClientPool(
         ogmiosConfig.property("secure").getString().toBoolean()
     }
 
-    override suspend fun produceInstance(): StateQueryClient {
-        return try {
+    override suspend fun produceInstance(): StateQueryClient =
+        try {
             val client = createStateQueryClient(websocketHost, websocketPort, secure)
             val connectResult = client.connect()
             require(connectResult) { "Could not connect to ogmios!" }
@@ -36,7 +36,6 @@ class StateQueryClientPool(
             log.error("Could not produceInstance()!", e)
             throw e
         }
-    }
 
     override suspend fun validateInstance(instance: StateQueryClient) {
         try {
