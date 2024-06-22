@@ -2,7 +2,7 @@ package io.newm.server.features.earnings.model
 
 import io.newm.server.typealiases.SongId
 import io.newm.shared.serialization.LocalDateTimeSerializer
-import io.newm.shared.serialization.UUIDSerializer
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 import java.time.LocalDateTime
 import java.util.UUID
@@ -13,9 +13,9 @@ import java.util.UUID
  */
 @Serializable
 data class Earning(
-    @Serializable(with = UUIDSerializer::class)
+    @Contextual
     val id: UUID? = null,
-    @Serializable(with = UUIDSerializer::class)
+    @Contextual
     val songId: SongId? = null,
     val stakeAddress: String,
     val amount: Long,
@@ -27,7 +27,7 @@ data class Earning(
     val claimed: Boolean = false,
     @Serializable(with = LocalDateTimeSerializer::class)
     val claimedAt: LocalDateTime? = null,
-    @Serializable(with = UUIDSerializer::class)
+    @Contextual
     val claimOrderId: UUID? = null,
     @Serializable(with = LocalDateTimeSerializer::class)
     val createdAt: LocalDateTime

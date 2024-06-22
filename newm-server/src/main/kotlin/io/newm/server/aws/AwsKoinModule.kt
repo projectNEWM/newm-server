@@ -20,31 +20,36 @@ val AWS_REGION = named("aws.region")
 val awsKoinModule =
     module {
         single<AmazonS3> {
-            AmazonS3ClientBuilder.standard()
+            AmazonS3ClientBuilder
+                .standard()
                 .withRegion(get<String>(AWS_REGION))
                 .build()
         }
 
         single<AmazonSQSAsync> {
-            AmazonSQSAsyncClientBuilder.standard()
+            AmazonSQSAsyncClientBuilder
+                .standard()
                 .withRegion(get<String>(AWS_REGION))
                 .build()
         }
 
         single<AWSKMSAsync> {
-            AWSKMSAsyncClientBuilder.standard()
+            AWSKMSAsyncClientBuilder
+                .standard()
                 .withRegion(get<String>(AWS_REGION))
                 .build()
         }
 
         single<AWSSecretsManagerAsync> {
-            AWSSecretsManagerAsyncClientBuilder.standard()
+            AWSSecretsManagerAsyncClientBuilder
+                .standard()
                 .withRegion(get<String>(AWS_REGION))
                 .build()
         }
 
         single<AWSLambdaAsync> {
-            AWSLambdaAsyncClientBuilder.standard()
+            AWSLambdaAsyncClientBuilder
+                .standard()
                 .withRegion(get<String>(AWS_REGION))
                 .build()
         }

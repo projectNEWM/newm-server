@@ -1,7 +1,11 @@
 package io.newm.chain.cardano.address.curve25519
 
 @OptIn(ExperimentalUnsignedTypes::class)
-data class GePrecomp(internal val yPlusX: Fe, internal val yMinusX: Fe, internal val xy2d: Fe) {
+data class GePrecomp(
+    internal val yPlusX: Fe,
+    internal val yMinusX: Fe,
+    internal val xy2d: Fe
+) {
     companion object {
         private val GE_BASE: Array<Array<GePrecomp>> =
             arrayOf(

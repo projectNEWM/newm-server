@@ -46,6 +46,7 @@ import io.newm.server.recaptcha.repo.RecaptchaRepository
 import io.newm.shared.auth.Password
 import io.newm.shared.serialization.BigDecimalSerializer
 import io.newm.shared.serialization.BigIntegerSerializer
+import io.newm.shared.serialization.UUIDSerializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import org.jetbrains.exposed.dao.id.EntityID
@@ -78,34 +79,36 @@ open class BaseApplicationTests {
         }
 
     protected val client: HttpClient by lazy {
-        application.createClient {
-            install(ContentNegotiation) {
-                json(
-                    json =
-                        Json {
-                            ignoreUnknownKeys = true
-                            explicitNulls = false
-                            isLenient = true
-                            serializersModule =
-                                SerializersModule {
-                                    contextual(BigDecimal::class, BigDecimalSerializer)
-                                    contextual(BigInteger::class, BigIntegerSerializer)
-                                }
-                        }
+        application
+            .createClient {
+                install(ContentNegotiation) {
+                    json(
+                        json =
+                            Json {
+                                ignoreUnknownKeys = true
+                                explicitNulls = false
+                                isLenient = true
+                                serializersModule =
+                                    SerializersModule {
+                                        contextual(BigDecimal::class, BigDecimalSerializer)
+                                        contextual(BigInteger::class, BigIntegerSerializer)
+                                        contextual(UUID::class, UUIDSerializer)
+                                    }
+                            }
+                    )
+                }
+                install(HttpTimeout) {
+                    requestTimeoutMillis = 2.minutes.inWholeMilliseconds
+                    connectTimeoutMillis = 10.seconds.inWholeMilliseconds
+                    socketTimeoutMillis = 30.seconds.inWholeMilliseconds
+                }
+            }.also { client ->
+                loadKoinModules(
+                    module {
+                        single { client }
+                    }
                 )
             }
-            install(HttpTimeout) {
-                requestTimeoutMillis = 2.minutes.inWholeMilliseconds
-                connectTimeoutMillis = 10.seconds.inWholeMilliseconds
-                socketTimeoutMillis = 30.seconds.inWholeMilliseconds
-            }
-        }.also { client ->
-            loadKoinModules(
-                module {
-                    single { client }
-                }
-            )
-        }
     }
 
     protected val testUserEmail: String = "tester@projectnewm.io"
@@ -212,14 +215,15 @@ open class BaseApplicationTests {
 
     protected fun addCollabToDatabase(collab: Collaboration): UUID =
         transaction {
-            CollaborationEntity.new {
-                email = collab.email!!
-                songId = EntityID(collab.songId!!, SongTable)
-                role = collab.role
-                credited = collab.credited!!
-                royaltyRate = collab.royaltyRate?.toFloat()
-                status = CollaborationStatus.Accepted
-            }.id.value
+            CollaborationEntity
+                .new {
+                    email = collab.email!!
+                    songId = EntityID(collab.songId!!, SongTable)
+                    role = collab.role
+                    credited = collab.credited!!
+                    royaltyRate = collab.royaltyRate?.toFloat()
+                    status = CollaborationStatus.Accepted
+                }.id.value
         }
 
     protected fun addSongToDatabase(
@@ -228,46 +232,48 @@ open class BaseApplicationTests {
     ): UUID =
         transaction {
             val releaseId =
-                ReleaseEntity.new {
-                    archived = false
-                    this.ownerId = EntityID(release.ownerId!!, UserTable)
-                    this.title = release.title!!
-                    // TODO: Refactor 'single' hardcoding once we have album support in the UI/UX
-                    releaseType = ReleaseType.SINGLE
-                    barcodeType = release.barcodeType
-                    barcodeNumber = release.barcodeNumber
-                    releaseDate = release.releaseDate
-                    publicationDate = release.publicationDate
-                    coverArtUrl = release.coverArtUrl?.asValidUrl()
-                    arweaveCoverArtUrl = release.arweaveCoverArtUrl
-                    hasSubmittedForDistribution = false
-                    errorMessage = song.errorMessage
-                    forceDistributed = false
+                ReleaseEntity
+                    .new {
+                        archived = false
+                        this.ownerId = EntityID(release.ownerId!!, UserTable)
+                        this.title = release.title!!
+                        // TODO: Refactor 'single' hardcoding once we have album support in the UI/UX
+                        releaseType = ReleaseType.SINGLE
+                        barcodeType = release.barcodeType
+                        barcodeNumber = release.barcodeNumber
+                        releaseDate = release.releaseDate
+                        publicationDate = release.publicationDate
+                        coverArtUrl = release.coverArtUrl?.asValidUrl()
+                        arweaveCoverArtUrl = release.arweaveCoverArtUrl
+                        hasSubmittedForDistribution = false
+                        errorMessage = song.errorMessage
+                        forceDistributed = false
+                    }.id.value
+            SongEntity
+                .new {
+                    ownerId = EntityID(song.ownerId!!, UserTable)
+                    title = song.title!!
+                    genres = song.genres!!.toTypedArray()
+                    moods = song.moods?.toTypedArray()
+                    description = song.description
+                    this.releaseId = EntityID(releaseId, ReleaseTable)
+                    track = song.track
+                    language = song.language
+                    compositionCopyrightOwner = song.compositionCopyrightOwner
+                    compositionCopyrightYear = song.compositionCopyrightYear
+                    phonographicCopyrightOwner = song.phonographicCopyrightOwner
+                    phonographicCopyrightYear = song.phonographicCopyrightYear
+                    parentalAdvisory = song.parentalAdvisory
+                    isrc = song.isrc
+                    iswc = song.iswc
+                    ipis = song.ipis?.toTypedArray()
+                    lyricsUrl = song.lyricsUrl?.asValidUrl()
+                    arweaveClipUrl = song.arweaveClipUrl
+                    arweaveLyricsUrl = song.arweaveLyricsUrl
+                    arweaveTokenAgreementUrl = song.arweaveTokenAgreementUrl
+                    duration = song.duration
+                    originalAudioUrl = song.originalAudioUrl
                 }.id.value
-            SongEntity.new {
-                ownerId = EntityID(song.ownerId!!, UserTable)
-                title = song.title!!
-                genres = song.genres!!.toTypedArray()
-                moods = song.moods?.toTypedArray()
-                description = song.description
-                this.releaseId = EntityID(releaseId, ReleaseTable)
-                track = song.track
-                language = song.language
-                compositionCopyrightOwner = song.compositionCopyrightOwner
-                compositionCopyrightYear = song.compositionCopyrightYear
-                phonographicCopyrightOwner = song.phonographicCopyrightOwner
-                phonographicCopyrightYear = song.phonographicCopyrightYear
-                parentalAdvisory = song.parentalAdvisory
-                isrc = song.isrc
-                iswc = song.iswc
-                ipis = song.ipis?.toTypedArray()
-                lyricsUrl = song.lyricsUrl?.asValidUrl()
-                arweaveClipUrl = song.arweaveClipUrl
-                arweaveLyricsUrl = song.arweaveLyricsUrl
-                arweaveTokenAgreementUrl = song.arweaveTokenAgreementUrl
-                duration = song.duration
-                originalAudioUrl = song.originalAudioUrl
-            }.id.value
         }
 
     protected fun addConfigToDatabase(

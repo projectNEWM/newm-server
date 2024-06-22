@@ -169,7 +169,8 @@ class OutletProfileUrlVerifiersTest : BaseApplicationTests() {
             val privateKey: ECKey = KeyFactory.getInstance("EC").generatePrivate(keySpec) as ECKey
             val algorithm = Algorithm.ECDSA256(privateKey)
             val token =
-                JWT.create()
+                JWT
+                    .create()
                     .withKeyId(appleKeyId)
                     .withIssuer(appleTeamId)
                     .withExpiresAt(Date.from(Instant.now().plus(15777000L, ChronoUnit.SECONDS))) // 6 months

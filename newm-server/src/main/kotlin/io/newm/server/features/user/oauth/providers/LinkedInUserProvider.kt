@@ -32,9 +32,14 @@ private data class LinkedInUser(
 ) : OAuthUser {
     override val pictureUrl: String?
         get() =
-            picture?.image?.elements?.run {
-                firstOrNull { it.isPreferred } ?: firstOrNull()
-            }?.identifiers?.firstOrNull()?.identifier
+            picture
+                ?.image
+                ?.elements
+                ?.run {
+                    firstOrNull { it.isPreferred } ?: firstOrNull()
+                }?.identifiers
+                ?.firstOrNull()
+                ?.identifier
 
     override var email: String? = null
 
@@ -127,30 +132,32 @@ internal class LinkedInUserProvider(
             val token = tokens.accessToken ?: throw HttpBadRequestException("LinkedIn OAuth requires accessToken")
             val emailJob =
                 async {
-                    httpClient.get(userExtraInfoUrl) {
-                        parameter(key = "q", value = "members")
-                        parameter(
-                            key = "projection",
-                            value = "(elements*(primary,type,handle~))"
-                        )
-                        headers {
-                            accept(ContentType.Application.Json)
-                            bearerAuth(token)
-                        }
-                    }.checkedBody<EmailHandle>()
+                    httpClient
+                        .get(userExtraInfoUrl) {
+                            parameter(key = "q", value = "members")
+                            parameter(
+                                key = "projection",
+                                value = "(elements*(primary,type,handle~))"
+                            )
+                            headers {
+                                accept(ContentType.Application.Json)
+                                bearerAuth(token)
+                            }
+                        }.checkedBody<EmailHandle>()
                 }
             val userJob =
                 async {
-                    httpClient.get(userInfoUrl) {
-                        parameter(
-                            key = "projection",
-                            value = "(id,localizedFirstName,localizedLastName,profilePicture(displayImage~:playableStreams))"
-                        )
-                        headers {
-                            accept(ContentType.Application.Json)
-                            bearerAuth(token)
-                        }
-                    }.checkedBody<LinkedInUser>()
+                    httpClient
+                        .get(userInfoUrl) {
+                            parameter(
+                                key = "projection",
+                                value = "(id,localizedFirstName,localizedLastName,profilePicture(displayImage~:playableStreams))"
+                            )
+                            headers {
+                                accept(ContentType.Application.Json)
+                                bearerAuth(token)
+                            }
+                        }.checkedBody<LinkedInUser>()
                 }
             val emailElement = emailJob.await().bestElement
             userJob.await().apply {

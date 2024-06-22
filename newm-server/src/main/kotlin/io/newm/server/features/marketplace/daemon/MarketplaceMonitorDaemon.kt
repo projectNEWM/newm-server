@@ -29,7 +29,8 @@ class MarketplaceMonitorDaemon(
     private val configRepository: ConfigRepository,
     private val cardanoRepository: CardanoRepository,
     private val marketplaceRepository: MarketplaceRepository
-) : Daemon, LeaderLatchListener {
+) : Daemon,
+    LeaderLatchListener {
     override val log = KotlinLogging.logger {}
     private val leaderLatch: LeaderLatch by inject { parametersOf(LEADER_LATCH_PATH) }
     private val isEnabled: Boolean by coLazy {

@@ -2,13 +2,13 @@ package io.newm.server.features.marketplace.model
 
 import io.newm.chain.grpc.Utxo
 import io.newm.server.ktx.cborHexToUtxos
-import io.newm.shared.serialization.UUIDSerializer
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 import java.util.UUID
 
 @Serializable
 data class SaleTransactionRequest(
-    @Serializable(with = UUIDSerializer::class)
+    @Contextual
     val saleId: UUID,
     val changeAddress: String,
     val utxoCborHexList: List<String>,

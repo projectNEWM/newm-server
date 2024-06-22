@@ -33,25 +33,28 @@ val cardanoKoinModule =
             val jwt = runBlocking { environment.getSecureConfigString("newmChain.jwt") }
             val secure = environment.getConfigBoolean("newmChain.secure")
             val channel =
-                ManagedChannelBuilder.forAddress(host, port).apply {
-                    keepAliveTime(30L, TimeUnit.SECONDS)
-                    keepAliveTimeout(20L, TimeUnit.SECONDS)
-                    keepAliveWithoutCalls(true)
-                    if (secure) {
-                        useTransportSecurity()
-                    } else {
-                        usePlaintext()
-                    }
-                }.build()
-            NewmChainCoroutineStub(channel).withInterceptors(
-                MetadataUtils.newAttachHeadersInterceptor(
-                    Metadata().apply {
-                        put(
-                            Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER),
-                            "Bearer $jwt"
-                        )
-                    }
-                )
-            ).withWaitForReady()
+                ManagedChannelBuilder
+                    .forAddress(host, port)
+                    .apply {
+                        keepAliveTime(30L, TimeUnit.SECONDS)
+                        keepAliveTimeout(20L, TimeUnit.SECONDS)
+                        keepAliveWithoutCalls(true)
+                        if (secure) {
+                            useTransportSecurity()
+                        } else {
+                            usePlaintext()
+                        }
+                    }.build()
+            NewmChainCoroutineStub(channel)
+                .withInterceptors(
+                    MetadataUtils.newAttachHeadersInterceptor(
+                        Metadata().apply {
+                            put(
+                                Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER),
+                                "Bearer $jwt"
+                            )
+                        }
+                    )
+                ).withWaitForReady()
         }
     }

@@ -11,7 +11,8 @@ import java.time.Duration
 
 class UsersRepositoryImpl : UsersRepository {
     private val usersByIdCache =
-        Caffeine.newBuilder()
+        Caffeine
+            .newBuilder()
             .expireAfterWrite(Duration.ofMinutes(15))
             .build<Long, User?> { userId ->
                 transaction {
@@ -26,8 +27,8 @@ class UsersRepositoryImpl : UsersRepository {
 
     override fun get(userId: Long): User? = usersByIdCache[userId]
 
-    override fun getByName(name: String): User? {
-        return transaction {
+    override fun getByName(name: String): User? =
+        transaction {
             UsersTable.selectAll().where { UsersTable.name eq name }.limit(1).firstOrNull()?.let { row ->
                 User(
                     id = row[UsersTable.id].value,
@@ -35,21 +36,21 @@ class UsersRepositoryImpl : UsersRepository {
                 )
             }
         }
-    }
 
-    override fun insert(user: User): Long {
-        return transaction {
-            UsersTable.insertAndGetId { row ->
-                row[name] = user.name
-            }.value.also { usersByIdCache.invalidate(it) }
+    override fun insert(user: User): Long =
+        transaction {
+            UsersTable
+                .insertAndGetId { row ->
+                    row[name] = user.name
+                }.value
+                .also { usersByIdCache.invalidate(it) }
         }
-    }
 
-    override fun update(user: User): Int {
-        return transaction {
-            UsersTable.update({ UsersTable.id eq user.id!! }) { row ->
-                row[name] = user.name
-            }.also { usersByIdCache.invalidate(user.id) }
+    override fun update(user: User): Int =
+        transaction {
+            UsersTable
+                .update({ UsersTable.id eq user.id!! }) { row ->
+                    row[name] = user.name
+                }.also { usersByIdCache.invalidate(user.id) }
         }
-    }
 }

@@ -37,7 +37,9 @@ import org.jetbrains.exposed.sql.selectAll
 import java.time.LocalDateTime
 import java.util.UUID
 
-class SongEntity(id: EntityID<SongId>) : UUIDEntity(id) {
+class SongEntity(
+    id: EntityID<SongId>
+) : UUIDEntity(id) {
     var archived: Boolean by SongTable.archived
     val createdAt: LocalDateTime by SongTable.createdAt
     var ownerId: EntityID<UserId> by SongTable.ownerId
@@ -135,11 +137,13 @@ class SongEntity(id: EntityID<SongId>) : UUIDEntity(id) {
                 filters.phrase == null -> find(AndOp(ops))
                 else ->
                     SongEntity.wrapRows(
-                        SongTable.innerJoin(
-                            otherTable = UserTable,
-                            onColumn = { ownerId },
-                            otherColumn = { id }
-                        ).selectAll().where(AndOp(ops))
+                        SongTable
+                            .innerJoin(
+                                otherTable = UserTable,
+                                onColumn = { ownerId },
+                                otherColumn = { id }
+                            ).selectAll()
+                            .where(AndOp(ops))
                     )
             }.orderBy(SongTable.createdAt to (filters.sortOrder ?: SortOrder.ASC))
         }
@@ -159,7 +163,8 @@ class SongEntity(id: EntityID<SongId>) : UUIDEntity(id) {
                 }
             val fields = table.select(SongTable.id.count(), genre)
             val query = if (ops.isEmpty()) fields else fields.where(AndOp(ops))
-            return query.groupBy(genre)
+            return query
+                .groupBy(genre)
                 .orderBy(SongTable.id.count(), filters.sortOrder ?: SortOrder.DESC)
                 .mapLazy { it[genre] }
         }

@@ -25,7 +25,9 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.*
 
-class JwtAuthorizationServerInterceptor(jwtConfig: ApplicationConfig) : ServerInterceptor {
+class JwtAuthorizationServerInterceptor(
+    jwtConfig: ApplicationConfig
+) : ServerInterceptor {
     private val log: Logger by inject { parametersOf("JwtAuthorizationServerInterceptor") }
     private val usersRepository: UsersRepository by inject()
 
@@ -44,7 +46,8 @@ class JwtAuthorizationServerInterceptor(jwtConfig: ApplicationConfig) : ServerIn
     }
 
     private val jwtVerifier: JWTVerifier by lazy {
-        JWT.require(algorithm)
+        JWT
+            .require(algorithm)
             .withAudience(audience)
             .withIssuer(issuer)
             .build()
@@ -85,7 +88,8 @@ class JwtAuthorizationServerInterceptor(jwtConfig: ApplicationConfig) : ServerIn
 
     fun createJwtUser(name: String) {
         val token =
-            JWT.create()
+            JWT
+                .create()
                 .withAudience(audience)
                 .withIssuer(issuer)
                 .withClaim("user", name)

@@ -5,14 +5,14 @@ import io.newm.server.auth.oauth.model.OAuthType
 import io.newm.server.typealiases.UserId
 import io.newm.shared.auth.Password
 import io.newm.shared.serialization.LocalDateTimeSerializer
-import io.newm.shared.serialization.UUIDSerializer
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import java.time.LocalDateTime
 
 @Serializable
 data class User(
-    @Serializable(with = UUIDSerializer::class)
+    @Contextual
     val id: UserId? = null,
     @Serializable(with = LocalDateTimeSerializer::class)
     val createdAt: LocalDateTime? = null,

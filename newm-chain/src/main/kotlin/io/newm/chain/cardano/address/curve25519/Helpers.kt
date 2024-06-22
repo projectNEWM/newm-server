@@ -25,13 +25,9 @@ internal fun load(
 internal fun mul128(
     a: ULong,
     b: ULong
-): BigInteger {
-    return a.toBigInteger() * b.toBigInteger()
-}
+): BigInteger = a.toBigInteger() * b.toBigInteger()
 
 internal fun shl128(
     v: BigInteger,
     shift: Int
-): ULong {
-    return ((v shl shift) shr 64).toString(16).toULong(16)
-}
+): ULong = ((v shl shift) shr 64).toString(16).toULong(16)

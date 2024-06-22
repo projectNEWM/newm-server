@@ -680,13 +680,15 @@ class NFTSongParserTests : BaseApplicationTests() {
 
     private fun buildClient(): NewmChainCoroutineStub {
         val channel =
-            ManagedChannelBuilder.forAddress(TEST_HOST, TEST_PORT).apply {
-                if (TEST_SECURE) {
-                    useTransportSecurity()
-                } else {
-                    usePlaintext()
-                }
-            }.build()
+            ManagedChannelBuilder
+                .forAddress(TEST_HOST, TEST_PORT)
+                .apply {
+                    if (TEST_SECURE) {
+                        useTransportSecurity()
+                    } else {
+                        usePlaintext()
+                    }
+                }.build()
         return NewmChainCoroutineStub(channel).withInterceptors(
             MetadataUtils.newAttachHeadersInterceptor(
                 Metadata().apply {

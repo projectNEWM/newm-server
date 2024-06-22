@@ -23,10 +23,16 @@ object EngineMain {
                 configure.invoke(this, applicationEnvironment.config)
             }
         val gracePeriod =
-            engine.environment.config.propertyOrNull("ktor.deployment.shutdownGracePeriod")?.getString()?.toLong()
+            engine.environment.config
+                .propertyOrNull("ktor.deployment.shutdownGracePeriod")
+                ?.getString()
+                ?.toLong()
                 ?: 50
         val timeout =
-            engine.environment.config.propertyOrNull("ktor.deployment.shutdownTimeout")?.getString()?.toLong()
+            engine.environment.config
+                .propertyOrNull("ktor.deployment.shutdownTimeout")
+                ?.getString()
+                ?.toLong()
                 ?: 5000
         engine.addShutdownHook {
             engine.stop(gracePeriod, timeout)

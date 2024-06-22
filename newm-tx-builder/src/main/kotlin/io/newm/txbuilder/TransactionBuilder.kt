@@ -49,7 +49,10 @@ class TransactionBuilder(
 ) {
     private val secureRandom by lazy { SecureRandom() }
 
-    private val txFeeFixed by lazy { protocolParameters.minFeeConstant.ada.lovelace.toLong() }
+    private val txFeeFixed by lazy {
+        protocolParameters.minFeeConstant.ada.lovelace
+            .toLong()
+    }
     private val txFeePerByte by lazy { protocolParameters.minFeeCoefficient.toLong() }
     private val utxoCostPerByte by lazy { protocolParameters.minUtxoDepositCoefficient.toLong() }
     private val maxTxExecutionMemory by lazy { protocolParameters.maxExecutionUnitsPerTransaction.memory.toLong() }
@@ -237,12 +240,14 @@ class TransactionBuilder(
         // assemble the final transaction now that fees and collateral are correct
         val txBody = createTxBody()
         _transactionId = Blake2b.hash256(txBody.toCborByteArray())
-        return CborArray.create().apply {
-            add(txBody)
-            add(createTxWitnessSet())
-            add(CborSimple.TRUE)
-            add(auxData ?: CborSimple.NULL)
-        }.toCborByteArray()
+        return CborArray
+            .create()
+            .apply {
+                add(txBody)
+                add(createTxWitnessSet())
+                add(CborSimple.TRUE)
+                add(auxData ?: CborSimple.NULL)
+            }.toCborByteArray()
     }
 
     private fun validateInputs() {
@@ -280,15 +285,20 @@ class TransactionBuilder(
                     address = collateralReturnAddress!!
                     lovelace = collateralReturnLovelace.toString()
                     nativeAssets.addAll(
-                        collateralUtxos!!.map { it.nativeAssetsList }.flatten().toNativeAssetMap().values.flatten()
+                        collateralUtxos!!
+                            .map { it.nativeAssetsList }
+                            .flatten()
+                            .toNativeAssetMap()
+                            .values
+                            .flatten()
                     )
                 }
         }
     }
 
     @VisibleForTesting
-    internal fun createAuxData(): CborObject? {
-        return mapOf<CborObject, CborObject?>(
+    internal fun createAuxData(): CborObject? =
+        mapOf<CborObject, CborObject?>(
             // Metadata
             AUX_DATA_KEY_METADATA to transactionMetadata,
             AUX_DATA_KEY_NATIVE_SCRIPT to
@@ -312,7 +322,6 @@ class TransactionBuilder(
                 auxDataHash = Blake2b.hash256(auxData.toCborByteArray())
             }
         }
-    }
 
     private fun createScriptDataHash() {
         if (scriptDataHash == null && (!redeemers.isNullOrEmpty() || !datums.isNullOrEmpty())) {
@@ -323,10 +332,14 @@ class TransactionBuilder(
                 if (!redeemers.isNullOrEmpty()) {
                     if (!plutusV3Scripts.isNullOrEmpty() || !auxPlutusV3Scripts.isNullOrEmpty()) {
                         // Plutus V3
-                        protocolParameters.plutusCostModels.plutusV3!!.toCborObject().toCborByteArray()
+                        protocolParameters.plutusCostModels.plutusV3!!
+                            .toCborObject()
+                            .toCborByteArray()
                     } else {
                         // Plutus V2
-                        protocolParameters.plutusCostModels.plutusV2!!.toCborObject().toCborByteArray()
+                        protocolParameters.plutusCostModels.plutusV2!!
+                            .toCborObject()
+                            .toCborByteArray()
                     }
                 } else {
                     // empty cbor map
@@ -349,7 +362,12 @@ class TransactionBuilder(
                     address = collateralReturnAddress!!
                     lovelace = collateralReturnLovelace.toString()
                     nativeAssets.addAll(
-                        collateralUtxos!!.map { it.nativeAssetsList }.flatten().toNativeAssetMap().values.flatten()
+                        collateralUtxos!!
+                            .map { it.nativeAssetsList }
+                            .flatten()
+                            .toNativeAssetMap()
+                            .values
+                            .flatten()
                     )
                 }
         }
@@ -363,22 +381,24 @@ class TransactionBuilder(
             secureRandom.nextBytes(_transactionId)
 
             var dummyTxCbor =
-                CborArray.create().apply {
-                    add(txBody)
-                    add(createTxWitnessSet(true))
-                    add(CborSimple.TRUE)
-                    add(auxData ?: CborSimple.NULL)
-                }.toCborByteArray()
+                CborArray
+                    .create()
+                    .apply {
+                        add(txBody)
+                        add(createTxWitnessSet(true))
+                        add(CborSimple.TRUE)
+                        add(auxData ?: CborSimple.NULL)
+                    }.toCborByteArray()
 
             // Calculate minimum transaction fee
             val maxComputationalFee =
                 if (totalCollateral != null) {
                     ceil(
                         (
-                            protocolParameters.scriptExecutionPrices.memory.multiply(
-                                protocolParameters.maxExecutionUnitsPerTransaction.memory
-                            )
-                                .add(
+                            protocolParameters.scriptExecutionPrices.memory
+                                .multiply(
+                                    protocolParameters.maxExecutionUnitsPerTransaction.memory
+                                ).add(
                                     protocolParameters.scriptExecutionPrices.cpu.multiply(
                                         protocolParameters.maxExecutionUnitsPerTransaction.cpu
                                     )
@@ -423,7 +443,8 @@ class TransactionBuilder(
                 val computationalFee: Long =
                     ceil(
                         (
-                            protocolParameters.scriptExecutionPrices.memory.multiply(totalMemory)
+                            protocolParameters.scriptExecutionPrices.memory
+                                .multiply(totalMemory)
                                 .add(protocolParameters.scriptExecutionPrices.cpu.multiply(totalSteps))
                         ).toDouble()
                     ).toLong()
@@ -435,20 +456,22 @@ class TransactionBuilder(
                 secureRandom.nextBytes(_transactionId)
 
                 dummyTxCbor =
-                    CborArray.create().apply {
-                        add(txBody)
-                        add(createTxWitnessSet(true))
-                        add(CborSimple.TRUE)
-                        add(auxData ?: CborSimple.NULL)
-                    }.toCborByteArray()
+                    CborArray
+                        .create()
+                        .apply {
+                            add(txBody)
+                            add(createTxWitnessSet(true))
+                            add(CborSimple.TRUE)
+                            add(auxData ?: CborSimple.NULL)
+                        }.toCborByteArray()
 
                 updateFeesAndCollateral(dummyTxCbor.size, computationalFee)
             }
         }
     }
 
-    private fun createTxBody(): CborObject {
-        return CborMap.create(
+    private fun createTxBody(): CborObject =
+        CborMap.create(
             mapOf<CborObject, CborObject?>(
                 // Utxo inputs
                 TX_KEY_UTXO_INPUTS to sourceUtxos!!.toCborObject(cardanoEra),
@@ -485,7 +508,6 @@ class TransactionBuilder(
                 TX_KEY_DONATION to null,
             ).filterValues { it != null }
         )
-    }
 
     private fun createOutputUtxos(): CborObject {
         val changeNativeAssets = mutableListOf<NativeAsset>()
@@ -527,13 +549,15 @@ class TransactionBuilder(
         val changeUtxos =
             if (changeLovelace > 0) {
                 listOf(
-                    OutputUtxo.newBuilder().apply {
-                        address = changeAddress
-                        lovelace = changeLovelace.toString()
-                        if (changeNativeAssetMap.isNotEmpty()) {
-                            addAllNativeAssets(changeNativeAssetMap.values.flatten())
-                        }
-                    }.build()
+                    OutputUtxo
+                        .newBuilder()
+                        .apply {
+                            address = changeAddress
+                            lovelace = changeLovelace.toString()
+                            if (changeNativeAssetMap.isNotEmpty()) {
+                                addAllNativeAssets(changeNativeAssetMap.values.flatten())
+                            }
+                        }.build()
                 )
             } else {
                 emptyList()
@@ -546,8 +570,8 @@ class TransactionBuilder(
         )
     }
 
-    private fun createTxWitnessSet(isFeeCalculation: Boolean = false): CborObject {
-        return CborMap.create(
+    private fun createTxWitnessSet(isFeeCalculation: Boolean = false): CborObject =
+        CborMap.create(
             mapOf<CborObject, CborObject?>(
                 WITNESS_SET_KEY_VKEYWITNESS to createVKeyWitnesses(isFeeCalculation),
                 WITNESS_SET_KEY_NATIVE_SCRIPT to createNativeScriptWitnesses(),
@@ -560,42 +584,44 @@ class TransactionBuilder(
                 WITNESS_SET_KEY_PLUTUS_V3_SCRIPT to createPlutusV3ScriptWitnesses(),
             ).filterValues { it != null }
         )
-    }
 
     private fun createVKeyWitnesses(isFeeCalculation: Boolean): CborObject? {
         val rawSignatures =
-            signatures?.map { signature ->
-                CborArray.create(
-                    listOf(
-                        CborByteString.create(signature.vkey.toByteArray()),
-                        CborByteString.create(signature.sig.toByteArray()),
-                    )
-                )
-            }.orEmpty()
-
-        val keySignatures =
-            signingKeys?.map { signingKey ->
-                CborArray.create(
-                    listOf(
-                        CborByteString.create(signingKey.vkey.toByteArray()),
-                        CborByteString.create(
-                            signingKey.sign(_transactionId)
+            signatures
+                ?.map { signature ->
+                    CborArray.create(
+                        listOf(
+                            CborByteString.create(signature.vkey.toByteArray()),
+                            CborByteString.create(signature.sig.toByteArray()),
                         )
                     )
-                )
-            }.orEmpty()
+                }.orEmpty()
+
+        val keySignatures =
+            signingKeys
+                ?.map { signingKey ->
+                    CborArray.create(
+                        listOf(
+                            CborByteString.create(signingKey.vkey.toByteArray()),
+                            CborByteString.create(
+                                signingKey.sign(_transactionId)
+                            )
+                        )
+                    )
+                }.orEmpty()
 
         val requiredSignerDummySignatures =
             if (isFeeCalculation && rawSignatures.isEmpty() && keySignatures.isEmpty()) {
                 // We have no signatures. Use dummy signatures to calculate the fee.
-                requiredSigners?.map { _ ->
-                    CborArray.create(
-                        listOf(
-                            CborByteString.create(ByteArray(32) { 0 }),
-                            CborByteString.create(ByteArray(64) { 0 }),
+                requiredSigners
+                    ?.map { _ ->
+                        CborArray.create(
+                            listOf(
+                                CborByteString.create(ByteArray(32) { 0 }),
+                                CborByteString.create(ByteArray(64) { 0 }),
+                            )
                         )
-                    )
-                }.orEmpty()
+                    }.orEmpty()
             } else {
                 emptyList()
             }
@@ -605,44 +631,40 @@ class TransactionBuilder(
         }
     }
 
-    private fun createNativeScriptWitnesses(): CborObject? {
-        return nativeScripts.takeUnless { it.isNullOrEmpty() }?.let {
+    private fun createNativeScriptWitnesses(): CborObject? =
+        nativeScripts.takeUnless { it.isNullOrEmpty() }?.let {
             CborArray.create(
                 it.map { nativeScript -> nativeScript.toCborObject() },
                 cardanoEra.toSetTag(),
             )
         }
-    }
 
-    private fun createPlutusV1ScriptWitnesses(): CborObject? {
-        return plutusV1Scripts.takeUnless { it.isNullOrEmpty() }?.let {
+    private fun createPlutusV1ScriptWitnesses(): CborObject? =
+        plutusV1Scripts.takeUnless { it.isNullOrEmpty() }?.let {
             CborArray.create(
                 it.map { plutusV1Script -> CborByteString.create(plutusV1Script) },
                 cardanoEra.toSetTag(),
             )
         }
-    }
 
-    private fun createPlutusV2ScriptWitnesses(): CborObject? {
-        return plutusV2Scripts.takeUnless { it.isNullOrEmpty() }?.let {
+    private fun createPlutusV2ScriptWitnesses(): CborObject? =
+        plutusV2Scripts.takeUnless { it.isNullOrEmpty() }?.let {
             CborArray.create(
                 it.map { plutusV2Script -> CborByteString.create(plutusV2Script) },
                 cardanoEra.toSetTag(),
             )
         }
-    }
 
-    private fun createPlutusV3ScriptWitnesses(): CborObject? {
-        return plutusV3Scripts.takeUnless { it.isNullOrEmpty() }?.let {
+    private fun createPlutusV3ScriptWitnesses(): CborObject? =
+        plutusV3Scripts.takeUnless { it.isNullOrEmpty() }?.let {
             CborArray.create(
                 it.map { plutusV3Script -> CborByteString.create(plutusV3Script) },
                 cardanoEra.toSetTag(),
             )
         }
-    }
 
-    private fun createRedeemerWitnesses(): CborObject? {
-        return redeemers.takeUnless { it.isNullOrEmpty() }?.let {
+    private fun createRedeemerWitnesses(): CborObject? =
+        redeemers.takeUnless { it.isNullOrEmpty() }?.let {
             when (cardanoEra) {
                 CardanoEra.CONWAY -> {
                     CborMap.create(
@@ -656,16 +678,14 @@ class TransactionBuilder(
                 }
             }
         }
-    }
 
-    private fun createDatumWitnesses(): CborObject? {
-        return datums.takeUnless { it.isNullOrEmpty() }?.let {
+    private fun createDatumWitnesses(): CborObject? =
+        datums.takeUnless { it.isNullOrEmpty() }?.let {
             CborArray.create(
                 it.map { plutusData -> plutusData.toCborObject() },
                 cardanoEra.toSetTag(),
             )
         }
-    }
 
     fun loadFrom(request: TransactionBuilderRequest) {
         sourceUtxos {

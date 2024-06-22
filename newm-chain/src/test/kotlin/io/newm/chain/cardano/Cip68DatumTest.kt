@@ -129,39 +129,41 @@ class Cip68DatumTest {
 
     private fun cip68UtxoOutputsTo721MetadataMap(createdUtxos: Set<CreatedUtxo>): List<Pair<MetadataMap, List<LedgerAsset>>> {
         var i = 1L
-        return createdUtxos.filter { createdUtxo ->
-            createdUtxo.nativeAssets.any { nativeAsset ->
-                nativeAsset.name.matches(CIP68_REFERENCE_TOKEN_REGEX).also {
-                    if (it) {
-                        println("found: ${nativeAsset.policy}.${nativeAsset.name}")
+        return createdUtxos
+            .filter { createdUtxo ->
+                createdUtxo.nativeAssets.any { nativeAsset ->
+                    nativeAsset.name.matches(CIP68_REFERENCE_TOKEN_REGEX).also {
+                        if (it) {
+                            println("found: ${nativeAsset.policy}.${nativeAsset.name}")
+                        }
                     }
                 }
-            }
-        }.mapNotNull { cip68CreatedUtxo ->
-            println("cip68CreatedUtxo: $cip68CreatedUtxo")
-            cip68CreatedUtxo.datum?.let { datum ->
-                val cip68PlutusData = datum.cborHexToPlutusData()
-                if (cip68PlutusData.hasConstr() && cip68PlutusData.constr == 0) {
-                    cip68CreatedUtxo.nativeAssets.filter { nativeAsset ->
-                        nativeAsset.name.matches(CIP68_REFERENCE_TOKEN_REGEX)
-                    }.map { nativeAsset ->
-                        val metadataMap = cip68PlutusData.toMetadataMap(nativeAsset.policy, nativeAsset.name)
-                        metadataMap to
-                            cip68CreatedUtxo.nativeAssets.map { na ->
-                                // dummy in the data
-                                LedgerAsset(
-                                    id = i++,
-                                    policy = na.policy,
-                                    name = na.name,
-                                    supply = BigInteger.ONE
-                                )
+            }.mapNotNull { cip68CreatedUtxo ->
+                println("cip68CreatedUtxo: $cip68CreatedUtxo")
+                cip68CreatedUtxo.datum?.let { datum ->
+                    val cip68PlutusData = datum.cborHexToPlutusData()
+                    if (cip68PlutusData.hasConstr() && cip68PlutusData.constr == 0) {
+                        cip68CreatedUtxo.nativeAssets
+                            .filter { nativeAsset ->
+                                nativeAsset.name.matches(CIP68_REFERENCE_TOKEN_REGEX)
+                            }.map { nativeAsset ->
+                                val metadataMap = cip68PlutusData.toMetadataMap(nativeAsset.policy, nativeAsset.name)
+                                metadataMap to
+                                    cip68CreatedUtxo.nativeAssets.map { na ->
+                                        // dummy in the data
+                                        LedgerAsset(
+                                            id = i++,
+                                            policy = na.policy,
+                                            name = na.name,
+                                            supply = BigInteger.ONE
+                                        )
+                                    }
                             }
+                    } else {
+                        null
                     }
-                } else {
-                    null
                 }
-            }
-        }.flatten()
+            }.flatten()
     }
 
     companion object {

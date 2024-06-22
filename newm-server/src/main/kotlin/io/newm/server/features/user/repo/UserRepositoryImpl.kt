@@ -68,32 +68,33 @@ internal class UserRepositoryImpl(
 
         return transaction {
             email.checkEmailUnique()
-            UserEntity.new {
-                this.firstName = user.firstName?.asValidName()
-                this.lastName = user.lastName?.asValidName()
-                this.nickname = user.nickname
-                this.pictureUrl = user.pictureUrl?.asValidUrl()
-                this.bannerUrl = user.bannerUrl?.asValidUrl()
-                this.websiteUrl = user.websiteUrl?.asValidUrl()
-                this.twitterUrl = user.twitterUrl?.asValidUrl()
-                this.instagramUrl = user.instagramUrl?.asValidUrl()
-                this.spotifyProfile = user.spotifyProfile.asUrlWithHost("open.spotify.com")
-                this.soundCloudProfile = user.soundCloudProfile.asUrlWithHost("soundcloud.com")
-                this.appleMusicProfile = user.appleMusicProfile.asUrlWithHost("music.apple.com")
-                this.location = user.location
-                this.role = user.role
-                this.genre = user.genre
-                this.biography = user.biography
-                this.walletAddress = user.walletAddress
-                this.email = email
-                this.isni = user.isni
-                this.ipi = user.ipi
-                this.passwordHash = passwordHash
-                this.companyName = user.companyName
-                this.companyLogoUrl = user.companyLogoUrl?.asValidUrl()
-                this.companyIpRights = user.companyIpRights
-                this.dspPlanSubscribed = user.dspPlanSubscribed ?: false
-            }.id.value
+            UserEntity
+                .new {
+                    this.firstName = user.firstName?.asValidName()
+                    this.lastName = user.lastName?.asValidName()
+                    this.nickname = user.nickname
+                    this.pictureUrl = user.pictureUrl?.asValidUrl()
+                    this.bannerUrl = user.bannerUrl?.asValidUrl()
+                    this.websiteUrl = user.websiteUrl?.asValidUrl()
+                    this.twitterUrl = user.twitterUrl?.asValidUrl()
+                    this.instagramUrl = user.instagramUrl?.asValidUrl()
+                    this.spotifyProfile = user.spotifyProfile.asUrlWithHost("open.spotify.com")
+                    this.soundCloudProfile = user.soundCloudProfile.asUrlWithHost("soundcloud.com")
+                    this.appleMusicProfile = user.appleMusicProfile.asUrlWithHost("music.apple.com")
+                    this.location = user.location
+                    this.role = user.role
+                    this.genre = user.genre
+                    this.biography = user.biography
+                    this.walletAddress = user.walletAddress
+                    this.email = email
+                    this.isni = user.isni
+                    this.ipi = user.ipi
+                    this.passwordHash = passwordHash
+                    this.companyName = user.companyName
+                    this.companyLogoUrl = user.companyLogoUrl?.asValidUrl()
+                    this.companyIpRights = user.companyIpRights
+                    this.dspPlanSubscribed = user.dspPlanSubscribed ?: false
+                }.id.value
         }
     }
 
@@ -174,7 +175,8 @@ internal class UserRepositoryImpl(
     ): List<User> {
         logger.debug { "getAll: filters = $filters, offset = $offset, limit = $limit" }
         return transaction {
-            UserEntity.all(filters)
+            UserEntity
+                .all(filters)
                 .limit(n = limit, offset = offset.toLong())
                 .map { it.toModel(includeAll = false) }
         }
@@ -216,17 +218,20 @@ internal class UserRepositoryImpl(
             try {
                 user.spotifyProfile?.let {
                     entity.spotifyProfile =
-                        it.asUrlWithHost("open.spotify.com")
+                        it
+                            .asUrlWithHost("open.spotify.com")
                             ?.also { profile -> spotifyProfileUrlVerifier.verify(profile, entity.stageOrFullName) }
                 }
                 user.soundCloudProfile?.let {
                     entity.soundCloudProfile =
-                        it.asUrlWithHost("soundcloud.com")
+                        it
+                            .asUrlWithHost("soundcloud.com")
                             ?.also { profile -> soundCloudProfileUrlVerifier.verify(profile, entity.stageOrFullName) }
                 }
                 user.appleMusicProfile?.let {
                     entity.appleMusicProfile =
-                        it.asUrlWithHost("music.apple.com")
+                        it
+                            .asUrlWithHost("music.apple.com")
                             ?.also { profile -> appleMusicProfileUrlVerifier.verify(profile, entity.stageOrFullName) }
                 }
             } catch (exception: OutletProfileUrlVerificationException) {

@@ -157,9 +157,7 @@ class ArweaveTest {
 
             val function: Function1<Future<Any>, Future<Any>> =
                 object : Function1<Future<Any>, Future<Any>> {
-                    override fun invoke(p1: Future<Any>): Future<Any> {
-                        return p1
-                    }
+                    override fun invoke(p1: Future<Any>): Future<Any> = p1
                 }
             val submitFuture = txApi.submit(signedTransaction, config, function)
             val submitResponse = toJava(submitFuture).await() as Response<*>
@@ -194,9 +192,7 @@ class ArweaveTest {
                     override fun <A : Any, B : Any> flatMap(
                         fa: Future<Any>,
                         f: scala.Function1<A, Future<Any>>
-                    ): Future<Any> {
-                        return fa
-                    }
+                    ): Future<Any> = fa
 
                     override fun <A : Any, B : Any> tailRecM(
                         a: A,
@@ -214,9 +210,7 @@ class ArweaveTest {
 
             val function: FunctionK<*, Future<Any>> =
                 object : FunctionK<Future<Any>, Future<Any>> {
-                    override fun <A : Any> apply(fa: Future<Any>): Future<Any> {
-                        return fa
-                    }
+                    override fun <A : Any> apply(fa: Future<Any>): Future<Any> = fa
                 }
 
             @Suppress("UNCHECKED_CAST")
@@ -270,7 +264,13 @@ class ArweaveTest {
                     config,
                     future.futureJsonHandlerEncodedStringHandler(executionContext)
                 ) as Future<Winston>
-            val balance = toJava(balanceFuture).await().amount().toString().toBigDecimal().movePointLeft(12)
+            val balance =
+                toJava(balanceFuture)
+                    .await()
+                    .amount()
+                    .toString()
+                    .toBigDecimal()
+                    .movePointLeft(12)
             println("balance: $balance AR")
             assertThat(balance).isGreaterThan(BigDecimal.ZERO)
         }

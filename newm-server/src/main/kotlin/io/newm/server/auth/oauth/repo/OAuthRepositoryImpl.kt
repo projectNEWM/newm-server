@@ -26,17 +26,18 @@ class OAuthRepositoryImpl(
         logger.debug { "getTokens: type = $type, redirectUri=$redirectUri" }
 
         with(environment.getConfigChild("oauth.${type.name.lowercase()}")) {
-            return httpClient.submitForm(
-                url = getString("accessTokenUrl"),
-                formParameters =
-                    Parameters.build {
-                        append("grant_type", "authorization_code")
-                        append("code", code)
-                        redirectUri?.let { append("redirect_uri", it) }
-                        append("client_id", getSecureString("clientId"))
-                        append("client_secret", getSecureString("clientSecret"))
-                    }
-            ).checkedBody()
+            return httpClient
+                .submitForm(
+                    url = getString("accessTokenUrl"),
+                    formParameters =
+                        Parameters.build {
+                            append("grant_type", "authorization_code")
+                            append("code", code)
+                            redirectUri?.let { append("redirect_uri", it) }
+                            append("client_id", getSecureString("clientId"))
+                            append("client_secret", getSecureString("clientSecret"))
+                        }
+                ).checkedBody()
         }
     }
 }

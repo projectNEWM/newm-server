@@ -6,7 +6,9 @@ import io.ktor.util.AttributeKey
 import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.CuratorFrameworkFactory
 
-class CuratorPlugin(val client: CuratorFramework) {
+class CuratorPlugin(
+    val client: CuratorFramework
+) {
     init {
         client.start()
     }

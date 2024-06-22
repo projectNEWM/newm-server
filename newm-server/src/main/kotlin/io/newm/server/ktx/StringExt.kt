@@ -72,12 +72,10 @@ fun String.toBucketAndKey(): Pair<String, String> {
     return bucket to key
 }
 
-fun String.getFileNameWithExtensionFromUrl(): String {
-    return substringBefore('?', missingDelimiterValue = this).substringAfterLast('/')
-}
+fun String.getFileNameWithExtensionFromUrl(): String = substringBefore('?', missingDelimiterValue = this).substringAfterLast('/')
 
-fun String.toAudioContentType(): String {
-    return when (lowercase().substringAfterLast('.', missingDelimiterValue = this)) {
+fun String.toAudioContentType(): String =
+    when (lowercase().substringAfterLast('.', missingDelimiterValue = this)) {
         "flac" -> "audio/x-flac"
         "mp3" -> "audio/mpeg"
         "wav" -> "audio/wav"
@@ -86,7 +84,6 @@ fun String.toAudioContentType(): String {
         "m4a" -> "audio/mp4"
         else -> "audio/*"
     }
-}
 
 fun String.toReferenceUtxo(): Utxo {
     require(this.contains('#')) { "Invalid utxo reference: $this" }
@@ -97,9 +94,7 @@ fun String.toReferenceUtxo(): Utxo {
     }
 }
 
-fun List<String>?.cborHexToUtxos(): List<Utxo> {
-    return this?.map { it.cborHexToUtxo() }.orEmpty()
-}
+fun List<String>?.cborHexToUtxos(): List<Utxo> = this?.map { it.cborHexToUtxo() }.orEmpty()
 
 /**
  * Converts a CBOR hex string from a CIP-30 wallet into a Utxo.
@@ -163,7 +158,8 @@ fun String.cborHexToUtxo(): Utxo {
                             }
                         if (valueAmount is CborArray) {
                             nativeAssets.addAll(
-                                (valueAmount.elementAt(1) as CborMap).mapValue()
+                                (valueAmount.elementAt(1) as CborMap)
+                                    .mapValue()
                                     .flatMap { (policyCborObject, valueCborObject) ->
                                         val policy =
                                             (policyCborObject as CborByteString).byteArrayValue()[0].toHexString()
@@ -171,7 +167,9 @@ fun String.cborHexToUtxo(): Utxo {
                                         namesCborMap.map { (nameCborObject, amountCborObject) ->
                                             val name =
                                                 (nameCborObject as CborByteString)
-                                                    .byteArrayValue().getOrElse(0) { ByteArray(0) }.toHexString()
+                                                    .byteArrayValue()
+                                                    .getOrElse(0) { ByteArray(0) }
+                                                    .toHexString()
                                             val amount = (amountCborObject as CborInteger).bigIntegerValue().toString()
                                             nativeAsset {
                                                 this.policy = policy
@@ -179,7 +177,9 @@ fun String.cborHexToUtxo(): Utxo {
                                                 this.amount = amount
                                             }
                                         }
-                                    }.toNativeAssetMap().values.flatten()
+                                    }.toNativeAssetMap()
+                                    .values
+                                    .flatten()
                             )
                         }
                     }

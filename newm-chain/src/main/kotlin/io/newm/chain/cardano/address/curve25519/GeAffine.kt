@@ -1,6 +1,9 @@
 package io.newm.chain.cardano.address.curve25519
 
-class GeAffine(internal val x: Fe, internal val y: Fe) {
+class GeAffine(
+    internal val x: Fe,
+    internal val y: Fe
+) {
     fun toBytes(): ByteArray {
         val bs = y.toBytes()
         bs[31] = (bs[31].toInt() xor (if (x.isNegative()) 1 else 0).shl(7)).toByte()

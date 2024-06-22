@@ -6,7 +6,9 @@ import org.jetbrains.exposed.dao.id.EntityID
 import java.time.LocalDateTime
 import java.util.UUID
 
-class MarketplacePurchaseEntity(id: EntityID<UUID>) : UUIDEntity(id) {
+class MarketplacePurchaseEntity(
+    id: EntityID<UUID>
+) : UUIDEntity(id) {
     var createdAt: LocalDateTime by MarketplacePurchaseTable.createdAt
     var saleId: EntityID<UUID> by MarketplacePurchaseTable.saleId
     var bundleQuantity: Long by MarketplacePurchaseTable.bundleQuantity

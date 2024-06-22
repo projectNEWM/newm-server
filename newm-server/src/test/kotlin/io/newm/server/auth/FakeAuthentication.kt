@@ -23,7 +23,9 @@ fun Application.installFakeAuthentication() {
     }
 }
 
-private class FakeAuthProvider(name: String) : AuthenticationProvider(object : Config(name) {}) {
+private class FakeAuthProvider(
+    name: String
+) : AuthenticationProvider(object : Config(name) {}) {
     override suspend fun onAuthenticate(context: AuthenticationContext) =
         context.run {
             val authHeader = call.request.parseAuthorizationHeader() as HttpAuthHeader.Single
@@ -31,7 +33,9 @@ private class FakeAuthProvider(name: String) : AuthenticationProvider(object : C
         }
 }
 
-private class FakePayload(private val userId: String) : Payload {
+private class FakePayload(
+    private val userId: String
+) : Payload {
     override fun getIssuer(): String = ""
 
     override fun getSubject() = userId

@@ -42,16 +42,17 @@ private class SpotifyTokenLoader {
         val clientSecret = environment.getSecureConfigString("oauth.spotify.clientSecret")
         val accessTokenUrl = environment.getConfigString("oauth.spotify.accessTokenUrl")
         val tokenInfo: TokenInfo =
-            httpClient.submitForm(
-                url = accessTokenUrl,
-                formParameters =
-                    parameters {
-                        append("grant_type", "client_credentials")
-                    }
-            ) {
-                basicAuth(clientId, clientSecret)
-                accept(ContentType.Application.Json)
-            }.checkedBody()
+            httpClient
+                .submitForm(
+                    url = accessTokenUrl,
+                    formParameters =
+                        parameters {
+                            append("grant_type", "client_credentials")
+                        }
+                ) {
+                    basicAuth(clientId, clientSecret)
+                    accept(ContentType.Application.Json)
+                }.checkedBody()
         return BearerTokens(tokenInfo.accessToken, tokenInfo.accessToken).also { tokens = it }
     }
 }

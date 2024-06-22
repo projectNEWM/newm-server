@@ -1,6 +1,10 @@
 package io.newm.chain.cardano.address.curve25519
 
-data class GePartial(internal val x: Fe, internal val y: Fe, internal val z: Fe) {
+data class GePartial(
+    internal val x: Fe,
+    internal val y: Fe,
+    internal val z: Fe
+) {
     private fun doubleP1P1(): GeP1P1 {
         val xx = x.square()
         val yy = y.square()
@@ -15,11 +19,7 @@ data class GePartial(internal val x: Fe, internal val y: Fe, internal val z: Fe)
         return GeP1P1(x3, y3, z3, t3)
     }
 
-    fun double(): GePartial {
-        return doubleP1P1().toPartial()
-    }
+    fun double(): GePartial = doubleP1P1().toPartial()
 
-    fun doubleFull(): Ge {
-        return doubleP1P1().toFull()
-    }
+    fun doubleFull(): Ge = doubleP1P1().toFull()
 }

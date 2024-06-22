@@ -53,8 +53,8 @@ fun PlutusData.toMetadataMap(
     }
 }
 
-fun PlutusData.toMetadataValue(): MetadataValue {
-    return when (plutusDataWrapperCase) {
+fun PlutusData.toMetadataValue(): MetadataValue =
+    when (plutusDataWrapperCase) {
         PlutusData.PlutusDataWrapperCase.MAP ->
             MetadataMap().apply {
                 map.mapItemList.forEach { plutusDataMapItem ->
@@ -81,7 +81,6 @@ fun PlutusData.toMetadataValue(): MetadataValue {
 
         else -> throw IllegalStateException("plutusDataWrapper must be set!")
     }
-}
 
 fun LedgerAssetMetadata.toLedgerAssetMetadataItem(): LedgerAssetMetadataItem {
     val ledgerAssetMetadata = this

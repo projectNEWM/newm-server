@@ -16,11 +16,22 @@ data class AudioMessage(
     }
 
     val durationInMs: Int? by lazy {
-        detail?.outputGroupDetails?.firstOrNull()?.outputDetails?.firstOrNull()?.durationInMs
+        detail
+            ?.outputGroupDetails
+            ?.firstOrNull()
+            ?.outputDetails
+            ?.firstOrNull()
+            ?.durationInMs
     }
 
     val outputFilePath: String? by lazy {
-        detail?.outputGroupDetails?.firstOrNull()?.outputDetails?.firstOrNull()?.outputFilePaths?.firstOrNull()
+        detail
+            ?.outputGroupDetails
+            ?.firstOrNull()
+            ?.outputDetails
+            ?.firstOrNull()
+            ?.outputFilePaths
+            ?.firstOrNull()
     }
 
     @Serializable

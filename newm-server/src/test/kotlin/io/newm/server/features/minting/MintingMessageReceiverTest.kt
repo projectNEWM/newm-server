@@ -21,17 +21,20 @@ import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.logging.json
 import io.newm.server.typealiases.SongId
+import io.newm.shared.serialization.UUIDSerializer
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.koin.test.KoinTest
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.modules.SerializersModule
 import org.junit.jupiter.api.extension.ExtendWith
 import org.quartz.JobDataMap
 import org.quartz.JobExecutionContext
 import org.quartz.Scheduler
 import org.quartz.impl.JobDetailImpl
+import java.util.*
 import kotlin.test.assertFailsWith
 
 @ExtendWith(MockKExtension::class)
@@ -68,6 +71,10 @@ class MintingMessageReceiverTest : KoinTest {
                                 ignoreUnknownKeys = true
                                 explicitNulls = false
                                 isLenient = true
+                                serializersModule =
+                                    SerializersModule {
+                                        contextual(UUID::class, UUIDSerializer)
+                                    }
                             }
                         }
                         single { mockk<CardanoRepository>(relaxed = true) }

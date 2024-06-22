@@ -58,7 +58,8 @@ import co.upvest.arweave4s.api.`tx$`.`MODULE$` as txApi
 class ArweaveRepositoryImpl(
     private val environment: ApplicationEnvironment,
     private val emailRepository: EmailRepository,
-) : ArweaveRepository, SupervisorScope {
+) : ArweaveRepository,
+    SupervisorScope {
     override val log: Logger by inject { parametersOf(javaClass.simpleName) }
     private val json: Json by inject()
     private val songRepository: SongRepository by inject()
@@ -117,22 +118,27 @@ class ArweaveRepositoryImpl(
                 arweaveConfig,
                 future.futureJsonHandlerEncodedStringHandler(executionContext)
             ) as Future<Winston>
-        return toJava(balanceFuture).await().amount().toString().toBigDecimal().movePointLeft(12)
+        return toJava(balanceFuture)
+            .await()
+            .amount()
+            .toString()
+            .toBigDecimal()
+            .movePointLeft(12)
     }
 
-    private fun buildTags(tagMap: Map<String, String>): Option<Seq<Tag.Custom>> {
-        return Option.apply(
-            JavaConverters.collectionAsScalaIterableConverter(
-                tagMap.map { (key, value) ->
-                    tagApi.apply(key.toByteArray(), value.toByteArray())
-                }
-            ).asScala().toSeq()
+    private fun buildTags(tagMap: Map<String, String>): Option<Seq<Tag.Custom>> =
+        Option.apply(
+            JavaConverters
+                .collectionAsScalaIterableConverter(
+                    tagMap.map { (key, value) ->
+                        tagApi.apply(key.toByteArray(), value.toByteArray())
+                    }
+                ).asScala()
+                .toSeq()
         )
-    }
 
-    private suspend fun signTransaction(transaction: Transaction): Signed<Transaction> {
-        return signableApi.SignableSyntax(transaction).sign(arweaveWallet().priv())
-    }
+    private suspend fun signTransaction(transaction: Transaction): Signed<Transaction> =
+        signableApi.SignableSyntax(transaction).sign(arweaveWallet().priv())
 
     private suspend fun submitTransaction(signedTransaction: Signed<Transaction>): Boolean {
         val submitFuture = txApi.submit(signedTransaction, arweaveConfig, handlerFunction)
@@ -214,9 +220,7 @@ class ArweaveRepositoryImpl(
         return transactionId
     }
 
-    override suspend fun getWalletAddress(): String {
-        return arweaveWallet().address().toString()
-    }
+    override suspend fun getWalletAddress(): String = arweaveWallet().address().toString()
 
     private suspend fun checkWalletBalance() {
         if (Instant.now().toEpochMilli() < nextWalletBalanceCheck) {
@@ -255,12 +259,13 @@ class ArweaveRepositoryImpl(
                                 val downloadUrl =
                                     if (inputUrl.startsWith("s3://")) {
                                         val (bucket, key) = inputUrl.toBucketAndKey()
-                                        amazonS3.generatePresignedUrl(
-                                            bucket,
-                                            key,
-                                            Date.from(Instant.now().plus(30, ChronoUnit.MINUTES)),
-                                            HttpMethod.GET
-                                        ).toExternalForm()
+                                        amazonS3
+                                            .generatePresignedUrl(
+                                                bucket,
+                                                key,
+                                                Date.from(Instant.now().plus(30, ChronoUnit.MINUTES)),
+                                                HttpMethod.GET
+                                            ).toExternalForm()
                                     } else {
                                         inputUrl
                                     }
@@ -282,9 +287,10 @@ class ArweaveRepositoryImpl(
         val invokeResult = invokeRequest.await()
         val weaveResponsItems: List<WeaveResponseItem> =
             json.decodeFromString(
-                json.decodeFromString<WeaveResponse>(
-                    invokeResult.payload.array().decodeToString()
-                ).body
+                json
+                    .decodeFromString<WeaveResponse>(
+                        invokeResult.payload.array().decodeToString()
+                    ).body
             )
 
         weaveResponsItems.forEach { weaveResponse ->
@@ -347,9 +353,7 @@ class ArweaveRepositoryImpl(
     companion object {
         private val handlerFunction: Function1<Future<Any>, Future<Any>> =
             object : Function1<Future<Any>, Future<Any>> {
-                override fun invoke(p1: Future<Any>): Future<Any> {
-                    return p1
-                }
+                override fun invoke(p1: Future<Any>): Future<Any> = p1
             }
 
         private val evidenceMonad =
@@ -357,9 +361,7 @@ class ArweaveRepositoryImpl(
                 override fun <A : Any, B : Any> flatMap(
                     fa: Future<Any>,
                     f: scala.Function1<A, Future<Any>>
-                ): Future<Any> {
-                    return fa
-                }
+                ): Future<Any> = fa
 
                 override fun <A : Any, B : Any> tailRecM(
                     a: A,
@@ -377,9 +379,7 @@ class ArweaveRepositoryImpl(
 
         private val getTxFunction: FunctionK<*, Future<Any>> =
             object : FunctionK<Future<Any>, Future<Any>> {
-                override fun <A : Any> apply(fa: Future<Any>): Future<Any> {
-                    return fa
-                }
+                override fun <A : Any> apply(fa: Future<Any>): Future<Any> = fa
             }
     }
 }

@@ -68,7 +68,8 @@ object GrpcConfig {
                         val keyManager: X509ExtendedKeyManager =
                             PemUtils.loadIdentityMaterial(certificateChainPath, privateKeyPath)
                         val sslFactory =
-                            SSLFactory.builder()
+                            SSLFactory
+                                .builder()
                                 .withIdentityMaterial(keyManager)
                                 .withSwappableIdentityMaterial()
                                 .build()
@@ -83,7 +84,8 @@ object GrpcConfig {
                                 }
                             var certChainLastModified =
                                 withContext(Dispatchers.IO) {
-                                    Files.readAttributes(certificateChainPath, BasicFileAttributes::class.java)
+                                    Files
+                                        .readAttributes(certificateChainPath, BasicFileAttributes::class.java)
                                         .lastModifiedTime()
                                 }
                             while (true) {
@@ -91,15 +93,19 @@ object GrpcConfig {
                                     delay(60000L)
                                     val checkPrivateKeyLastModified =
                                         withContext(Dispatchers.IO) {
-                                            Files.readAttributes(privateKeyPath, BasicFileAttributes::class.java)
+                                            Files
+                                                .readAttributes(privateKeyPath, BasicFileAttributes::class.java)
                                                 .lastModifiedTime()
                                         }
                                     val checkCertChainLastModified =
                                         withContext(Dispatchers.IO) {
-                                            Files.readAttributes(certificateChainPath, BasicFileAttributes::class.java)
+                                            Files
+                                                .readAttributes(certificateChainPath, BasicFileAttributes::class.java)
                                                 .lastModifiedTime()
                                         }
-                                    if (privateKeyLastModified != checkPrivateKeyLastModified || certChainLastModified != checkCertChainLastModified) {
+                                    if (privateKeyLastModified != checkPrivateKeyLastModified ||
+                                        certChainLastModified != checkCertChainLastModified
+                                    ) {
                                         // data has changed. reload it
                                         val newKeyManager: X509ExtendedKeyManager =
                                             PemUtils.loadIdentityMaterial(certificateChainPath, privateKeyPath)

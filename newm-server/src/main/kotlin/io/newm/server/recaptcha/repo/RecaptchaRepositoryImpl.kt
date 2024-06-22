@@ -48,19 +48,20 @@ internal class RecaptchaRepositoryImpl(
         }
 
         val response: RecaptchaAssessmentResponse =
-            httpClient.post(environment.getConfigString("recaptcha.assessmentUrl")) {
-                parameter("key", environment.getSecureConfigString("recaptcha.apiKey"))
-                contentType(ContentType.Application.Json)
-                accept(ContentType.Application.Json)
-                setBody(
-                    RecaptchaAssessmentRequest(
-                        RecaptchaAssessmentRequest.Event(
-                            siteKey = environment.getSecureConfigString("recaptcha.${platform}SiteKey"),
-                            token = request.requiredHeader(RecaptchaHeaders.Token)
+            httpClient
+                .post(environment.getConfigString("recaptcha.assessmentUrl")) {
+                    parameter("key", environment.getSecureConfigString("recaptcha.apiKey"))
+                    contentType(ContentType.Application.Json)
+                    accept(ContentType.Application.Json)
+                    setBody(
+                        RecaptchaAssessmentRequest(
+                            RecaptchaAssessmentRequest.Event(
+                                siteKey = environment.getSecureConfigString("recaptcha.${platform}SiteKey"),
+                                token = request.requiredHeader(RecaptchaHeaders.Token)
+                            )
                         )
                     )
-                )
-            }.checkedBody()
+                }.checkedBody()
 
         if (!response.tokenProperties.valid) {
             val message = "Recaptcha failed - reason: ${response.tokenProperties.invalidReason}"

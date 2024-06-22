@@ -1,6 +1,11 @@
 package io.newm.chain.cardano.address.curve25519
 
-data class GeP1P1(internal val x: Fe, internal val y: Fe, internal val z: Fe, internal val t: Fe) {
+data class GeP1P1(
+    internal val x: Fe,
+    internal val y: Fe,
+    internal val z: Fe,
+    internal val t: Fe
+) {
     fun toFull(): Ge {
         val x = this.x * this.t
         val y = this.y * this.z

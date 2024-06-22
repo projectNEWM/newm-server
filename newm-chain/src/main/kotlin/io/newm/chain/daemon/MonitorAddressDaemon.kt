@@ -303,56 +303,62 @@ class MonitorAddressDaemon(
 
         transactionIds.forEach { transactionId ->
             val spentAddressUtxos: List<Utxo> =
-                spentUtxoMap[transactionId]?.mapNotNull { spentUtxo ->
-                    ledgerRepository.queryUtxoHavingAddress(
-                        monitorAddress,
-                        spentUtxo.hash,
-                        spentUtxo.ix.toInt()
-                    )
-                }?.map { utxo ->
-                    Utxo.newBuilder().apply {
-                        hash = utxo.hash
-                        ix = utxo.ix
-                        lovelace = utxo.lovelace.toString()
-                        utxo.datumHash?.let { datumHash = it }
-                        utxo.datum?.let {
-                            datum = it.cborHexToPlutusData()
-                        }
-                        utxo.nativeAssets.forEach { nativeAsset ->
-                            addNativeAssets(
-                                NativeAsset.newBuilder().apply {
-                                    policy = nativeAsset.policy
-                                    name = nativeAsset.name
-                                    amount = nativeAsset.amount.toString()
+                spentUtxoMap[transactionId]
+                    ?.mapNotNull { spentUtxo ->
+                        ledgerRepository.queryUtxoHavingAddress(
+                            monitorAddress,
+                            spentUtxo.hash,
+                            spentUtxo.ix.toInt()
+                        )
+                    }?.map { utxo ->
+                        Utxo
+                            .newBuilder()
+                            .apply {
+                                hash = utxo.hash
+                                ix = utxo.ix
+                                lovelace = utxo.lovelace.toString()
+                                utxo.datumHash?.let { datumHash = it }
+                                utxo.datum?.let {
+                                    datum = it.cborHexToPlutusData()
                                 }
-                            )
-                        }
-                    }.build()
-                }.orEmpty()
+                                utxo.nativeAssets.forEach { nativeAsset ->
+                                    addNativeAssets(
+                                        NativeAsset.newBuilder().apply {
+                                            policy = nativeAsset.policy
+                                            name = nativeAsset.name
+                                            amount = nativeAsset.amount.toString()
+                                        }
+                                    )
+                                }
+                            }.build()
+                    }.orEmpty()
 
             val createdAddressUtxos =
-                createdUtxoMap[transactionId]?.filter { createdUtxo ->
-                    createdUtxo.address == monitorAddress
-                }?.map { utxo ->
-                    Utxo.newBuilder().apply {
-                        hash = utxo.hash
-                        ix = utxo.ix
-                        lovelace = utxo.lovelace.toString()
-                        utxo.datumHash?.let { datumHash = it }
-                        utxo.datum?.let {
-                            datum = it.cborHexToPlutusData()
-                        }
-                        utxo.nativeAssets.forEach { nativeAsset ->
-                            addNativeAssets(
-                                NativeAsset.newBuilder().apply {
-                                    policy = nativeAsset.policy
-                                    name = nativeAsset.name
-                                    amount = nativeAsset.amount.toString()
+                createdUtxoMap[transactionId]
+                    ?.filter { createdUtxo ->
+                        createdUtxo.address == monitorAddress
+                    }?.map { utxo ->
+                        Utxo
+                            .newBuilder()
+                            .apply {
+                                hash = utxo.hash
+                                ix = utxo.ix
+                                lovelace = utxo.lovelace.toString()
+                                utxo.datumHash?.let { datumHash = it }
+                                utxo.datum?.let {
+                                    datum = it.cborHexToPlutusData()
                                 }
-                            )
-                        }
-                    }.build()
-                }.orEmpty()
+                                utxo.nativeAssets.forEach { nativeAsset ->
+                                    addNativeAssets(
+                                        NativeAsset.newBuilder().apply {
+                                            policy = nativeAsset.policy
+                                            name = nativeAsset.name
+                                            amount = nativeAsset.amount.toString()
+                                        }
+                                    )
+                                }
+                            }.build()
+                    }.orEmpty()
 
             if (spentAddressUtxos.isNotEmpty() || createdAddressUtxos.isNotEmpty()) {
                 val monitorAddressResponses =
@@ -410,8 +416,7 @@ class MonitorAddressDaemon(
                                     }
                                 )
                             }
-                        }
-                        .build()
+                        }.build()
                 )
             }
         }
@@ -458,7 +463,11 @@ class MonitorAddressDaemon(
     private suspend fun findBlockchainIntersect(client: ChainSyncClient) {
         val intersectPoints: MutableList<PointDetailOrOrigin> =
             chainRepository.getFindIntersectPairsAddressChain(monitorAddress).toMutableList()
-        val startSlot = environment.config.property("ogmios.startSlot").getString().toLong()
+        val startSlot =
+            environment.config
+                .property("ogmios.startSlot")
+                .getString()
+                .toLong()
         if (startSlot > -1) {
             intersectPoints.add(
                 PointDetail(

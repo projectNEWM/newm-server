@@ -89,37 +89,43 @@ class EvearaDistributionRepositoryImpl(
 
     private val getTokenMutex = Mutex()
     private val apiTokenCache =
-        Caffeine.newBuilder()
+        Caffeine
+            .newBuilder()
             .expireAfterWrite(Duration.ofHours(1L))
             .build<Int, ApiToken>()
 
     private val rolesMutex = Mutex()
     private val rolesCache =
-        Caffeine.newBuilder()
+        Caffeine
+            .newBuilder()
             .expireAfterWrite(Duration.ofDays(1L))
             .build<Int, GetRolesResponse>()
 
     private val genresMutex = Mutex()
     private val genresCache =
-        Caffeine.newBuilder()
+        Caffeine
+            .newBuilder()
             .expireAfterWrite(Duration.ofDays(1L))
             .build<Int, GetGenresResponse>()
 
     private val languagesMutex = Mutex()
     private val languagesCache =
-        Caffeine.newBuilder()
+        Caffeine
+            .newBuilder()
             .expireAfterWrite(Duration.ofDays(1L))
             .build<Int, GetLanguagesResponse>()
 
     private val countriesMutex = Mutex()
     private val countriesCache =
-        Caffeine.newBuilder()
+        Caffeine
+            .newBuilder()
             .expireAfterWrite(Duration.ofDays(1L))
             .build<Int, GetCountriesResponse>()
 
     private val outletsMutex = Mutex()
     private val outletsCache =
-        Caffeine.newBuilder()
+        Caffeine
+            .newBuilder()
             .expireAfterWrite(Duration.ofDays(1L))
             .build<Int, GetOutletsResponse>()
 
@@ -918,7 +924,11 @@ class EvearaDistributionRepositoryImpl(
                         coverImage =
                             CoverImage(
                                 url = release.coverArtUrl.asValidUrl(),
-                                extension = release.coverArtUrl.asValidUrl().substringAfterLast(".").lowercase(),
+                                extension =
+                                    release.coverArtUrl
+                                        .asValidUrl()
+                                        .substringAfterLast(".")
+                                        .lowercase(),
                             ),
                         originalReleaseDate = release.releaseDate,
                         tracks = tracks,
@@ -1011,7 +1021,11 @@ class EvearaDistributionRepositoryImpl(
                         coverImage =
                             CoverImage(
                                 url = release.coverArtUrl.asValidUrl(),
-                                extension = release.coverArtUrl.asValidUrl().substringAfterLast(".").lowercase(),
+                                extension =
+                                    release.coverArtUrl
+                                        .asValidUrl()
+                                        .substringAfterLast(".")
+                                        .lowercase(),
                             ),
                         originalReleaseDate = release.releaseDate,
                         tracks = tracks,
@@ -1274,12 +1288,14 @@ class EvearaDistributionRepositoryImpl(
 
         val distributionReleaseStatusResponse = distributionOutletReleaseStatus(user, release.distributionReleaseId!!)
         val spotifyOutletStatusCode =
-            distributionReleaseStatusResponse.outletReleaseStatuses?.find {
-                it.storeName.equals(
-                    "Spotify",
-                    ignoreCase = true
-                )
-            }?.outletStatus?.statusCode
+            distributionReleaseStatusResponse.outletReleaseStatuses
+                ?.find {
+                    it.storeName.equals(
+                        "Spotify",
+                        ignoreCase = true
+                    )
+                }?.outletStatus
+                ?.statusCode
 
         require(spotifyOutletStatusCode == OutletStatusCode.DISAPPROVED) {
             "Song must be in a disapproved status to redistribute!"
@@ -1421,8 +1437,11 @@ class EvearaDistributionRepositoryImpl(
                     )
 
                     val currentOutletsMap =
-                        collabDistributionArtistsMap[distributionArtistId]?.outlets?.filter { it.profileUrl.isNotBlank() }
-                            ?.associateBy { it.name }.orEmpty()
+                        collabDistributionArtistsMap[distributionArtistId]
+                            ?.outlets
+                            ?.filter { it.profileUrl.isNotBlank() }
+                            ?.associateBy { it.name }
+                            .orEmpty()
                     if (currentOutletsMap["Spotify"]?.profileUrl != collabUser.spotifyProfile?.orNull() ||
                         currentOutletsMap["SoundCloud"]?.profileUrl != collabUser.soundCloudProfile?.orNull() ||
                         currentOutletsMap["Apple"]?.profileUrl != collabUser.appleMusicProfile?.orNull()
@@ -1450,7 +1469,9 @@ class EvearaDistributionRepositoryImpl(
                                         ).filter { it.profileUrl.isNotBlank() }.takeIf { it.isNotEmpty() },
                                 )
                             ).logRequestJson(log)
-                        log.info { "Updated collab distribution artist ${collabUser.email} with id ${response.artistData?.artistId}: ${response.message}" }
+                        log.info {
+                            "Updated collab distribution artist ${collabUser.email} with id ${response.artistData?.artistId}: ${response.message}"
+                        }
                     }
                 } ?: run {
                     val countryCode = getUserCountryCode(user)
@@ -1498,8 +1519,11 @@ class EvearaDistributionRepositoryImpl(
                 userRepository.updateUserData(user.id!!, user)
 
                 val currentOutletsMap =
-                    collabDistributionArtistsMap[user.distributionArtistId]?.outlets?.filter { it.profileUrl.isNotBlank() }
-                        ?.associateBy { it.name }.orEmpty()
+                    collabDistributionArtistsMap[user.distributionArtistId]
+                        ?.outlets
+                        ?.filter { it.profileUrl.isNotBlank() }
+                        ?.associateBy { it.name }
+                        .orEmpty()
                 if (currentOutletsMap["Spotify"]?.profileUrl != user.spotifyProfile?.orNull() ||
                     currentOutletsMap["SoundCloud"]?.profileUrl != user.soundCloudProfile?.orNull() ||
                     currentOutletsMap["Apple"]?.profileUrl != user.appleMusicProfile?.orNull()
@@ -1565,8 +1589,11 @@ class EvearaDistributionRepositoryImpl(
                     userRepository.updateUserData(user.id!!, user)
 
                     val currentOutletsMap =
-                        collabDistributionArtistsMap[user.distributionArtistId]?.outlets?.filter { it.profileUrl.isNotBlank() }
-                            ?.associateBy { it.name }.orEmpty()
+                        collabDistributionArtistsMap[user.distributionArtistId]
+                            ?.outlets
+                            ?.filter { it.profileUrl.isNotBlank() }
+                            ?.associateBy { it.name }
+                            .orEmpty()
                     if (currentOutletsMap["Spotify"]?.profileUrl != user.spotifyProfile?.orNull() ||
                         currentOutletsMap["SoundCloud"]?.profileUrl != user.soundCloudProfile?.orNull() ||
                         currentOutletsMap["Apple"]?.profileUrl != user.appleMusicProfile?.orNull()
@@ -1594,7 +1621,9 @@ class EvearaDistributionRepositoryImpl(
                                         ).filter { it.profileUrl.isNotBlank() }.takeIf { it.isNotEmpty() },
                                 )
                             ).logRequestJson(log)
-                        log.info { "Updated distribution artist ${user.email} with id ${response.artistData?.artistId}: ${response.message}" }
+                        log.info {
+                            "Updated distribution artist ${user.email} with id ${response.artistData?.artistId}: ${response.message}"
+                        }
                     }
                 }
             }
@@ -1603,8 +1632,11 @@ class EvearaDistributionRepositoryImpl(
             log.info { "Found existing distribution artist ${user.email} with id ${artist.artistId}" }
 
             val currentOutletsMap =
-                collabDistributionArtistsMap[user.distributionArtistId]?.outlets?.filter { it.profileUrl.isNotBlank() }
-                    ?.associateBy { it.name }.orEmpty()
+                collabDistributionArtistsMap[user.distributionArtistId]
+                    ?.outlets
+                    ?.filter { it.profileUrl.isNotBlank() }
+                    ?.associateBy { it.name }
+                    .orEmpty()
             if (currentOutletsMap["Spotify"]?.profileUrl != user.spotifyProfile?.orNull() ||
                 currentOutletsMap["SoundCloud"]?.profileUrl != user.soundCloudProfile?.orNull() ||
                 currentOutletsMap["Apple"]?.profileUrl != user.appleMusicProfile?.orNull()
@@ -1655,7 +1687,9 @@ class EvearaDistributionRepositoryImpl(
                 "User.distributionSubscriptionId: ${user.distributionSubscriptionId} not found in Eveara!"
             }
             val response = addUserSubscription(user)
-            log.info { "Created distribution subscription ${user.email} with id ${response.subscriptions[0].userSubscriptionId}: ${response.message}" }
+            log.info {
+                "Created distribution subscription ${user.email} with id ${response.subscriptions[0].userSubscriptionId}: ${response.message}"
+            }
             user.distributionSubscriptionId = response.subscriptions[0].userSubscriptionId
             userRepository.updateUserData(user.id!!, user)
         }
@@ -1712,7 +1746,9 @@ class EvearaDistributionRepositoryImpl(
                 if (existingParticipantNameMatch != null) {
                     user.distributionParticipantId = existingParticipantNameMatch.participantId
                     userRepository.updateUserData(user.id, user)
-                    log.info { "Found existing distribution participant ${user.email} with id ${existingParticipantNameMatch.participantId} by name match" }
+                    log.info {
+                        "Found existing distribution participant ${user.email} with id ${existingParticipantNameMatch.participantId} by name match"
+                    }
                 } else {
                     log.info { "No existing distribution participant ${user.email} found by name match" }
                     val response = addParticipant(user)
@@ -1746,7 +1782,9 @@ class EvearaDistributionRepositoryImpl(
                         "Updating distribution collab participant ${collabUser.email} with id ${collabParticipant.participantId}, name ${collabParticipant.name} -> ${collabUser.stageOrFullName}"
                     }
                     val response = updateParticipant(user, collabUser, collab)
-                    log.info { "Updated distribution collab participant ${collabUser.email} with id ${collabParticipant.participantId}: ${response.message}" }
+                    log.info {
+                        "Updated distribution collab participant ${collabUser.email} with id ${collabParticipant.participantId}: ${response.message}"
+                    }
                     collabsToUpdate.add(collab.copy(distributionParticipantId = collabParticipant.participantId))
                     getParticipantsResponse = getParticipants(user)
                 }
@@ -1762,7 +1800,9 @@ class EvearaDistributionRepositoryImpl(
                 } else {
                     log.info { "No existing distribution participant ${collabUser.email} found by name match" }
                     val response = addParticipant(user, collabUser, collab)
-                    log.info { "Created distribution collab participant ${collabUser.email} with id ${response.participantId}: ${response.message}" }
+                    log.info {
+                        "Created distribution collab participant ${collabUser.email} with id ${response.participantId}: ${response.message}"
+                    }
                     collabsToUpdate.add(collab.copy(distributionParticipantId = response.participantId))
                     getParticipantsResponse = getParticipants(user)
                 }
@@ -1799,7 +1839,9 @@ class EvearaDistributionRepositoryImpl(
                 }
             }
             if (existingLabel.name != desiredLabelName) {
-                log.info { "Updating distribution label ${user.email} with id ${existingLabel.labelId}, name ${existingLabel.name} -> $desiredLabelName" }
+                log.info {
+                    "Updating distribution label ${user.email} with id ${existingLabel.labelId}, name ${existingLabel.name} -> $desiredLabelName"
+                }
                 requireNotNull(user.distributionLabelId) { "User.distributionLabelId must not be null!" }
                 requireNotNull(user.distributionUserId) { "User.distributionUserId must not be null!" }
                 val response =
@@ -1836,12 +1878,13 @@ class EvearaDistributionRepositoryImpl(
             val s3Url = mutableSong.originalAudioUrl!!
             val (bucket, key) = s3Url.toBucketAndKey()
             val url =
-                amazonS3.generatePresignedUrl(
-                    bucket,
-                    key,
-                    Date.from(Instant.now().plus(30, ChronoUnit.MINUTES)),
-                    HttpMethod.GET
-                ).toExternalForm()
+                amazonS3
+                    .generatePresignedUrl(
+                        bucket,
+                        key,
+                        Date.from(Instant.now().plus(30, ChronoUnit.MINUTES)),
+                        HttpMethod.GET
+                    ).toExternalForm()
             log.info { "Generated pre-signed url for $s3Url: $url" }
 
             val audioFileResponse =
@@ -1875,7 +1918,9 @@ class EvearaDistributionRepositoryImpl(
 
         // update track with collaborators and other metadata
         val updateTrackResponse = updateTrack(user, mutableSong.distributionTrackId!!, mutableSong)
-        log.info { "Updated distribution track ${song.title} with track_id ${mutableSong.distributionTrackId}: ${updateTrackResponse.message}" }
+        log.info {
+            "Updated distribution track ${song.title} with track_id ${mutableSong.distributionTrackId}: ${updateTrackResponse.message}"
+        }
 
         // update the isrc from eveara
         val getTrackResponse = getTracks(user, mutableSong.distributionTrackId!!)
@@ -1914,7 +1959,10 @@ class EvearaDistributionRepositoryImpl(
         val getAlbumResponse = getAlbums(user)
         val existingAlbum =
             if (getAlbumResponse.totalRecords > 0) {
-                getAlbumResponse.albumData.firstOrNull { it.releaseId == mutableRelease.distributionReleaseId || it.name == mutableRelease.title }
+                getAlbumResponse.albumData.firstOrNull {
+                    it.releaseId == mutableRelease.distributionReleaseId ||
+                        it.name == mutableRelease.title
+                }
             } else {
                 null
             }
@@ -1937,11 +1985,17 @@ class EvearaDistributionRepositoryImpl(
                     distributionReleaseId = response.releaseId,
                     barcodeNumber = barcode,
                     barcodeType = barcodeType,
-                    preSavePage = response.releaseId.toString().toByteArray().toB64String()
+                    preSavePage =
+                        response.releaseId
+                            .toString()
+                            .toByteArray()
+                            .toB64String()
                 )
             )
         } else {
-            log.info { "Found existing distribution album ${mutableRelease.title} with id ${existingAlbum.releaseId}, title ${existingAlbum.name}" }
+            log.info {
+                "Found existing distribution album ${mutableRelease.title} with id ${existingAlbum.releaseId}, title ${existingAlbum.name}"
+            }
             if (mutableRelease.distributionReleaseId == null) {
                 mutableRelease = mutableRelease.copy(distributionReleaseId = existingAlbum.releaseId)
                 songRepository.update(mutableRelease.id!!, Release(distributionReleaseId = existingAlbum.releaseId))
@@ -1996,20 +2050,26 @@ class EvearaDistributionRepositoryImpl(
         collabs: List<Collaboration>
     ): List<Long> =
         listOf(user.distributionArtistId!!) +
-            collabs.filter {
-                it.role.equals(
-                    "Artist",
-                    ignoreCase = true
-                ) && it.featured == false && it.email != user.email
-            }
-                .map { it.distributionArtistId!! }.distinct()
+            collabs
+                .filter {
+                    it.role.equals(
+                        "Artist",
+                        ignoreCase = true
+                    ) &&
+                        it.featured == false &&
+                        it.email != user.email
+                }.map { it.distributionArtistId!! }
+                .distinct()
 
     private fun collectFeaturedArtistIdsList(
         user: User,
         collabs: List<Collaboration>,
     ): List<Long>? =
-        collabs.filter { it.featured == true && it.email != user.email }
-            .map { it.distributionArtistId!! }.distinct().takeIf { it.isNotEmpty() }
+        collabs
+            .filter { it.featured == true && it.email != user.email }
+            .map { it.distributionArtistId!! }
+            .distinct()
+            .takeIf { it.isNotEmpty() }
 
     private suspend fun collectSongParticipantsList(
         user: User,
@@ -2021,12 +2081,14 @@ class EvearaDistributionRepositoryImpl(
                     id = user.distributionNewmParticipantId!!,
                     roleId =
                         listOf(
-                            getRoles().roles.first {
-                                it.name.equals(
-                                    "Publisher",
-                                    ignoreCase = true
-                                )
-                            }.roleId
+                            getRoles()
+                                .roles
+                                .first {
+                                    it.name.equals(
+                                        "Publisher",
+                                        ignoreCase = true
+                                    )
+                                }.roleId
                         ),
                     // NEWM takes 100% so we can then pay out based on stream token holdings
                     payoutSharePercentage = 100,
@@ -2037,12 +2099,14 @@ class EvearaDistributionRepositoryImpl(
                         id = collab.distributionParticipantId!!,
                         roleId =
                             listOf(
-                                getRoles().roles.first {
-                                    it.name.equals(
-                                        collab.role,
-                                        ignoreCase = true
-                                    )
-                                }.roleId
+                                getRoles()
+                                    .roles
+                                    .first {
+                                        it.name.equals(
+                                            collab.role,
+                                            ignoreCase = true
+                                        )
+                                    }.roleId
                             ),
                         payoutSharePercentage = 0,
                     )
@@ -2053,10 +2117,12 @@ class EvearaDistributionRepositoryImpl(
 
     private suspend fun getUserCountryCode(user: User): String {
         val countryCode =
-            getCountries().countries.firstOrNull {
-                it.countryCode.equals(user.location, ignoreCase = true) ||
-                    it.countryName.equals(user.location, ignoreCase = true)
-            }?.countryCode
+            getCountries()
+                .countries
+                .firstOrNull {
+                    it.countryCode.equals(user.location, ignoreCase = true) ||
+                        it.countryName.equals(user.location, ignoreCase = true)
+                }?.countryCode
 
         requireNotNull(countryCode) { "Country code for profile location ${user.location} not found!" }
         return countryCode

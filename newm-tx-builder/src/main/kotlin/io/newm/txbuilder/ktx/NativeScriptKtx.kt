@@ -9,8 +9,8 @@ import io.newm.chain.grpc.NativeScript
 /**
  * Convert NativeScript into cbor so it can be included in a transaction.
  */
-fun NativeScript.toCborObject(): CborObject {
-    return when (this.nativeScriptWrapperCase) {
+fun NativeScript.toCborObject(): CborObject =
+    when (this.nativeScriptWrapperCase) {
         NativeScript.NativeScriptWrapperCase.NATIVE_SCRIPT_PUB_KEY -> {
             CborArray.create(
                 listOf(
@@ -74,7 +74,6 @@ fun NativeScript.toCborObject(): CborObject {
 
         else -> throw IllegalArgumentException("NativeScript must have a body!")
     }
-}
 
 private val NATIVE_SCRIPT_KEY_PUB_KEY_INDEX by lazy { CborInteger.create(0) }
 private val NATIVE_SCRIPT_ALL_INDEX by lazy { CborInteger.create(1) }

@@ -23,7 +23,9 @@ import org.jetbrains.exposed.sql.insert
 import java.time.LocalDateTime
 import java.util.UUID
 
-class PlaylistEntity(id: EntityID<UUID>) : UUIDEntity(id) {
+class PlaylistEntity(
+    id: EntityID<UUID>
+) : UUIDEntity(id) {
     val createdAt: LocalDateTime by PlaylistTable.createdAt
     var ownerId: EntityID<UserId> by PlaylistTable.ownerId
     var name: String by PlaylistTable.name

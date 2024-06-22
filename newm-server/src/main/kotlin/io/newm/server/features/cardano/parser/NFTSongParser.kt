@@ -94,7 +94,9 @@ fun List<LedgerAssetMetadataItem>.toNFTSongs(
     return files.mapNotNull { file ->
         val title = file.songTitle ?: songTitle ?: file.name
         if (title == null || file.src == null || image == null) {
-            logger.warn { "Skipped invalid PolicyID: ${asset.policy}, assetName: $assetName, title: $title, src: ${file.src}, image: $image" }
+            logger.warn {
+                "Skipped invalid PolicyID: ${asset.policy}, assetName: $assetName, title: $title, src: ${file.src}, image: $image"
+            }
             null
         } else {
             NFTSong(
@@ -129,9 +131,12 @@ private fun List<LedgerAssetMetadataItem>.value(key: String): String? = this[key
 private fun LedgerAssetMetadataItem.values(): List<String> = childrenList?.map { it.value }.orEmpty()
 
 private fun LedgerAssetMetadataItem.artists(): List<String> =
-    childrenList?.mapNotNull { it.childrenList.value("name") }.orEmpty()
+    childrenList
+        ?.mapNotNull { it.childrenList.value("name") }
+        .orEmpty()
         .ifEmpty { values() }
-        .ifEmpty { value?.let(::listOf) }.orEmpty()
+        .ifEmpty { value?.let(::listOf) }
+        .orEmpty()
 
 private fun LedgerAssetMetadataItem.audioFiles(): List<File> {
     val files = mutableListOf<File>()

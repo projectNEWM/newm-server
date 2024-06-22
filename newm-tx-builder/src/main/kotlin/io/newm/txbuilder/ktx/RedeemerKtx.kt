@@ -58,8 +58,8 @@ fun Redeemer.toConwayCborObject(
 fun Redeemer.toCborObject(
     dummyExUnitsMemory: Long,
     dummyExUnitsSteps: Long
-): CborObject {
-    return CborArray.create(
+): CborObject =
+    CborArray.create(
         listOf(
             // redeemer tag
             CborInteger.create(tag.number),
@@ -88,13 +88,12 @@ fun Redeemer.toCborObject(
             }
         )
     )
-}
 
 /**
  * Convert the redeemer keys coming from Kogmios such as "spend:1" into a Tag and index value.
  */
-fun Validator.toRedeemerTagAndIndex(): Pair<RedeemerTag, Long> {
-    return Pair(
+fun Validator.toRedeemerTagAndIndex(): Pair<RedeemerTag, Long> =
+    Pair(
         when (this.purpose) {
             "spend" -> RedeemerTag.SPEND
             "mint" -> RedeemerTag.MINT
@@ -106,4 +105,3 @@ fun Validator.toRedeemerTagAndIndex(): Pair<RedeemerTag, Long> {
         },
         this.index.toLong()
     )
-}

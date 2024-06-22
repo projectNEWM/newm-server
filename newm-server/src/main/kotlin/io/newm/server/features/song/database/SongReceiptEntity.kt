@@ -7,7 +7,9 @@ import org.jetbrains.exposed.dao.id.EntityID
 import java.time.LocalDateTime
 import java.util.UUID
 
-class SongReceiptEntity(id: EntityID<UUID>) : UUIDEntity(id) {
+class SongReceiptEntity(
+    id: EntityID<UUID>
+) : UUIDEntity(id) {
     var createdAt: LocalDateTime by SongReceiptTable.createdAt
     var songId: EntityID<UUID> by SongReceiptTable.songId
     var adaPrice: Long by SongReceiptTable.adaPrice

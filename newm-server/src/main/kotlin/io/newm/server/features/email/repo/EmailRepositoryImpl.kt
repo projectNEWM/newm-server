@@ -41,21 +41,22 @@ internal class EmailRepositoryImpl(
                                     .readText()
                                     .format(messageArgs + getChild("arguments").toMap())
 
-                            HtmlEmail().apply {
-                                hostName = getSecureString("smtpHost")
-                                setSmtpPort(getInt("smtpPort"))
-                                isSSLOnConnect = getBoolean("sslOnConnect")
-                                authenticator =
-                                    DefaultAuthenticator(
-                                        getSecureString("userName"),
-                                        getSecureString("password")
-                                    )
-                                setFrom(getSecureString("from"))
-                                to.forEach { addTo(it) }
-                                bcc.forEach { addBcc(it) }
-                                this.subject = subject
-                                setHtmlMsg(message)
-                            }.send()
+                            HtmlEmail()
+                                .apply {
+                                    hostName = getSecureString("smtpHost")
+                                    setSmtpPort(getInt("smtpPort"))
+                                    isSSLOnConnect = getBoolean("sslOnConnect")
+                                    authenticator =
+                                        DefaultAuthenticator(
+                                            getSecureString("userName"),
+                                            getSecureString("password")
+                                        )
+                                    setFrom(getSecureString("from"))
+                                    to.forEach { addTo(it) }
+                                    bcc.forEach { addBcc(it) }
+                                    this.subject = subject
+                                    setHtmlMsg(message)
+                                }.send()
 
                             logger.info { "Email sent to: $to, bcc: $bcc, subject: $subject" }
                         } else {

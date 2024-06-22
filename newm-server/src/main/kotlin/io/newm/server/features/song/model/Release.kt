@@ -3,7 +3,7 @@ package io.newm.server.features.song.model
 import io.newm.server.typealiases.UserId
 import io.newm.shared.serialization.LocalDateSerializer
 import io.newm.shared.serialization.LocalDateTimeSerializer
-import io.newm.shared.serialization.UUIDSerializer
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import java.time.LocalDate
@@ -12,10 +12,10 @@ import java.util.*
 
 @Serializable
 data class Release(
-    @Serializable(with = UUIDSerializer::class)
+    @Contextual
     val id: UUID? = null,
     val archived: Boolean? = null,
-    @Serializable(with = UUIDSerializer::class)
+    @Contextual
     val ownerId: UserId? = null,
     @Serializable(with = LocalDateTimeSerializer::class)
     val createdAt: LocalDateTime? = null,

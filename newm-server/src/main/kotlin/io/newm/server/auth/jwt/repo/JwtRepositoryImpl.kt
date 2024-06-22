@@ -38,13 +38,15 @@ class JwtRepositoryImpl(
         val jwtId =
             transaction {
                 JwtEntity.deleteAllExpired()
-                JwtEntity.new {
-                    this.userId = EntityID(userId, UserTable)
-                    this.expiresAt = expiresAt
-                }.id.value
+                JwtEntity
+                    .new {
+                        this.userId = EntityID(userId, UserTable)
+                        this.expiresAt = expiresAt
+                    }.id.value
             }
 
-        return JWT.create()
+        return JWT
+            .create()
             .withJWTId(jwtId.toString())
             .withIssuer(environment.getConfigString("jwt.issuer"))
             .withAudience(environment.getConfigString("jwt.audience"))

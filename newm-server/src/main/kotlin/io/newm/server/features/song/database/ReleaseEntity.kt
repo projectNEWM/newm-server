@@ -21,7 +21,9 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.notInList
 import java.time.LocalDate
 import java.time.LocalDateTime
 
-class ReleaseEntity(id: EntityID<ReleaseId>) : UUIDEntity(id) {
+class ReleaseEntity(
+    id: EntityID<ReleaseId>
+) : UUIDEntity(id) {
     var archived: Boolean by ReleaseTable.archived
     val createdAt: LocalDateTime by ReleaseTable.createdAt
     var ownerId: EntityID<UserId> by ReleaseTable.ownerId
@@ -68,11 +70,13 @@ class ReleaseEntity(id: EntityID<ReleaseId>) : UUIDEntity(id) {
                 filters.phrase == null -> find(AndOp(ops))
                 else ->
                     ReleaseEntity.wrapRows(
-                        ReleaseTable.innerJoin(
-                            otherTable = UserTable,
-                            onColumn = { ownerId },
-                            otherColumn = { id }
-                        ).selectAll().where(AndOp(ops))
+                        ReleaseTable
+                            .innerJoin(
+                                otherTable = UserTable,
+                                onColumn = { ownerId },
+                                otherColumn = { id }
+                            ).selectAll()
+                            .where(AndOp(ops))
                     )
             }.orderBy(ReleaseTable.createdAt to (filters.sortOrder ?: SortOrder.ASC))
         }

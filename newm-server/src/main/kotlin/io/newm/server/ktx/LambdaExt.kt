@@ -11,8 +11,8 @@ import kotlin.coroutines.suspendCoroutine
 
 private val awsLambda: AWSLambdaAsync by inject()
 
-suspend fun InvokeRequest.await(): InvokeResult {
-    return suspendCoroutine { continuation ->
+suspend fun InvokeRequest.await(): InvokeResult =
+    suspendCoroutine { continuation ->
         awsLambda.invokeAsync(
             this,
             object : AsyncHandler<InvokeRequest, InvokeResult> {
@@ -29,4 +29,3 @@ suspend fun InvokeRequest.await(): InvokeResult {
             }
         )
     }
-}

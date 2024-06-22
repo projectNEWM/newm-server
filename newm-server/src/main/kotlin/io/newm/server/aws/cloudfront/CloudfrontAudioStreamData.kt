@@ -35,7 +35,8 @@ class CloudfrontAudioStreamData(
         val resourceUrl = "${streamUrl.removeRange(streamUrl.lastIndexOf("/"), streamUrl.length)}/*"
 
         val customRequest =
-            CustomSignerRequest.builder()
+            CustomSignerRequest
+                .builder()
                 .resourceUrl(resourceUrl)
                 .privateKey(PrivateKeyReader.readFromString(args.privateKey))
                 .keyPairId(args.keyPairId)
@@ -63,7 +64,8 @@ class CloudfrontAudioStreamData(
         // effectively granting access to the entire "directory"
         val resourceUrl = "${streamUrl.removeRange(streamUrl.lastIndexOf("/"), streamUrl.length)}/*"
         val request =
-            CustomSignerRequest.builder()
+            CustomSignerRequest
+                .builder()
                 .resourceUrl(resourceUrl)
                 .privateKey(PrivateKeyReader.readFromString(args.privateKey))
                 .keyPairId(args.keyPairId)
@@ -98,8 +100,13 @@ class CloudfrontAudioStreamData(
                 "&oKey-Pair-Id=" + request.keyPairId()
         )
         val signedUrl =
-            DefaultSignedUrl.builder().protocol(protocol).domain(domain).encodedPath(encodedPath)
-                .url("$protocol://$domain$encodedPath").build()
+            DefaultSignedUrl
+                .builder()
+                .protocol(protocol)
+                .domain(domain)
+                .encodedPath(encodedPath)
+                .url("$protocol://$domain$encodedPath")
+                .build()
         return signedUrl.url()
     }
 

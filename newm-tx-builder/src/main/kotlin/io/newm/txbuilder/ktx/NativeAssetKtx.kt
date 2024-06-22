@@ -22,9 +22,10 @@ fun NativeAsset.fingerprint(): String = assetFingerprintOf(policy, name)
 fun List<NativeAsset>.toNativeAssetMap(): MutableMap<String, List<NativeAsset>> {
     val nativeAssetMap = toSortedNativeAssetMap()
 
-    return nativeAssetMap.entries.associate { (key, value) ->
-        key to value.sortedWithCanonicalCbor()
-    }.toMutableMap()
+    return nativeAssetMap.entries
+        .associate { (key, value) ->
+            key to value.sortedWithCanonicalCbor()
+        }.toMutableMap()
 }
 
 /**
@@ -85,7 +86,8 @@ private fun List<NativeAsset>.toSortedNativeAssetMap(): SortedMap<String, List<N
                     val mutableList = nativeAssets.toMutableList()
                     mutableList.remove(na)
                     mutableList.add(
-                        na.toBuilder()
+                        na
+                            .toBuilder()
                             .setAmount((na.amount.toBigInteger() + nativeAsset.amount.toBigInteger()).toString())
                             .build()
                     )

@@ -26,8 +26,8 @@ class TxSubmitClientPool(
         ogmiosConfig.property("secure").getString().toBoolean()
     }
 
-    override suspend fun produceInstance(): TxSubmitClient {
-        return try {
+    override suspend fun produceInstance(): TxSubmitClient =
+        try {
             val client = createTxSubmitClient(websocketHost, websocketPort, secure)
             val connectResult = client.connect()
             require(connectResult) { "Could not connect to ogmios!" }
@@ -37,7 +37,6 @@ class TxSubmitClientPool(
             log.error("Could not produceInstance()!", e)
             throw e
         }
-    }
 
     override suspend fun validateInstance(instance: TxSubmitClient) {
         try {

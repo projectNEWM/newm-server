@@ -41,17 +41,18 @@ private class SoundCloudTokenLoader {
         val clientSecret = environment.getSecureConfigString("oauth.soundcloud.clientSecret")
         val accessTokenUrl = environment.getConfigString("oauth.soundcloud.accessTokenUrl")
         val tokenInfo: TokenInfo =
-            httpClient.submitForm(
-                url = accessTokenUrl,
-                formParameters =
-                    parameters {
-                        append("grant_type", "client_credentials")
-                        append("client_id", clientId)
-                        append("client_secret", clientSecret)
-                    }
-            ) {
-                accept(ContentType.Application.Json)
-            }.checkedBody()
+            httpClient
+                .submitForm(
+                    url = accessTokenUrl,
+                    formParameters =
+                        parameters {
+                            append("grant_type", "client_credentials")
+                            append("client_id", clientId)
+                            append("client_secret", clientSecret)
+                        }
+                ) {
+                    accept(ContentType.Application.Json)
+                }.checkedBody()
         return BearerTokens(tokenInfo.accessToken, tokenInfo.accessToken).also { tokens = it }
     }
 }

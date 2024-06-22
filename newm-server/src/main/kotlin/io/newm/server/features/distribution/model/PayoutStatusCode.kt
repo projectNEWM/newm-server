@@ -4,7 +4,9 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-enum class PayoutStatusCode(val code: Int) {
+enum class PayoutStatusCode(
+    val code: Int
+) {
     @SerialName("1111")
     SUCCESS(1111),
 
@@ -42,8 +44,8 @@ enum class PayoutStatusCode(val code: Int) {
     CANCELED(1122);
 
     companion object {
-        fun getDescription(code: Int): String {
-            return when (code) {
+        fun getDescription(code: Int): String =
+            when (code) {
                 1111 -> "Funds have been credited to the recipient’s account"
                 1112 -> "This payout request has failed, so funds were not deducted from the sender’s account"
                 1113 -> "Your payout request was received and will be processed"
@@ -58,6 +60,5 @@ enum class PayoutStatusCode(val code: Int) {
                 1122 -> "The payouts file that was uploaded through the PayPal portal was cancelled by the sender"
                 else -> "Unknown status code"
             }
-        }
     }
 }

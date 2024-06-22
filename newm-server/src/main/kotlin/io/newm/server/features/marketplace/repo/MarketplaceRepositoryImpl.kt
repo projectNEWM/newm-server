@@ -117,7 +117,8 @@ internal class MarketplaceRepositoryImpl(
     ): List<Artist> {
         log.debug { "getArtists: filters = $filters, offset = $offset, limit = $limit" }
         return transaction {
-            MarketplaceArtistEntity.all(filters)
+            MarketplaceArtistEntity
+                .all(filters)
                 .limit(n = limit, offset = offset.toLong())
                 .map(MarketplaceArtistEntity::toModel)
         }
@@ -520,9 +521,13 @@ internal class MarketplaceRepositoryImpl(
     ) = (multiplier.toBigInteger() * multiplicand.toBigInteger()).toString()
 
     private fun Token.getMatchingSongId(): EntityID<UUID>? =
-        SongTable.select(SongTable.id).where {
-            (SongTable.nftPolicyId eq policyId) and (SongTable.nftName eq assetName)
-        }.limit(1).firstOrNull()?.get(SongTable.id)
+        SongTable
+            .select(SongTable.id)
+            .where {
+                (SongTable.nftPolicyId eq policyId) and (SongTable.nftName eq assetName)
+            }.limit(1)
+            .firstOrNull()
+            ?.get(SongTable.id)
 
     private suspend fun MarketplaceSaleEntity.getCostAmountUsd(): String {
         val unitPrice = cardanoRepository.queryNativeTokenUSDPrice(costPolicyId, costAssetName)

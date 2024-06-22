@@ -8,7 +8,9 @@ import org.jetbrains.exposed.sql.deleteWhere
 import java.time.LocalDateTime
 import java.util.UUID
 
-class MarketplacePendingSaleEntity(id: EntityID<UUID>) : UUIDEntity(id) {
+class MarketplacePendingSaleEntity(
+    id: EntityID<UUID>
+) : UUIDEntity(id) {
     val createdAt: LocalDateTime by MarketplacePendingSaleTable.createdAt
     var ownerAddress: String by MarketplacePendingSaleTable.ownerAddress
     var bundlePolicyId: String by MarketplacePendingSaleTable.bundlePolicyId

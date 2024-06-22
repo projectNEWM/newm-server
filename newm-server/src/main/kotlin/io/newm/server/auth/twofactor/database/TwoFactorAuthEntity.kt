@@ -9,7 +9,9 @@ import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.lowerCase
 import java.time.LocalDateTime
 
-class TwoFactorAuthEntity(id: EntityID<Long>) : Entity<Long>(id) {
+class TwoFactorAuthEntity(
+    id: EntityID<Long>
+) : Entity<Long>(id) {
     var email: String by TwoFactorAuthTable.email
     var codeHash: String by TwoFactorAuthTable.codeHash
     var expiresAt: LocalDateTime by TwoFactorAuthTable.expiresAt

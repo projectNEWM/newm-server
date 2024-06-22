@@ -2,13 +2,13 @@ package io.newm.server.features.marketplace.model
 
 import io.newm.server.typealiases.UserId
 import io.newm.shared.serialization.LocalDateTimeSerializer
-import io.newm.shared.serialization.UUIDSerializer
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 import java.time.LocalDateTime
 
 @Serializable
 data class Artist(
-    @Serializable(with = UUIDSerializer::class)
+    @Contextual
     val id: UserId,
     @Serializable(with = LocalDateTimeSerializer::class)
     val createdAt: LocalDateTime,

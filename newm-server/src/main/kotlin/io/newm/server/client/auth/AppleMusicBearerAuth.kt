@@ -53,7 +53,8 @@ private class AppleMusicTokenLoader {
         val privateKey: ECKey = KeyFactory.getInstance("EC").generatePrivate(keySpec) as ECKey
         val algorithm = Algorithm.ECDSA256(privateKey)
         val token =
-            JWT.create()
+            JWT
+                .create()
                 .withKeyId(keyId)
                 .withIssuer(teamId)
                 .withExpiresAt(Date.from(Instant.now().plus(1L, ChronoUnit.HOURS)))

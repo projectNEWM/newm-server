@@ -33,7 +33,11 @@ class CloudfrontAudioStreamDataTest : BaseApplicationTests() {
             assertThat(streamData.cookies.filter { it.name == "CloudFront-Key-Pair-Id" }).isNotEmpty()
             assertThat(streamData.cookies.filter { it.name == "CloudFront-Signature" }).isNotEmpty()
             assertThat(streamData.cookies.filter { it.name == "CloudFront-Policy" }).isNotEmpty()
-            val policy = streamData.cookies.filter { it.name == "CloudFront-Policy" }.first().value
+            val policy =
+                streamData.cookies
+                    .filter { it.name == "CloudFront-Policy" }
+                    .first()
+                    .value
             // policy is a slightly customized base64 encoded string, so just checking that it exists for now
             assertThat(policy).isNotNull()
         }

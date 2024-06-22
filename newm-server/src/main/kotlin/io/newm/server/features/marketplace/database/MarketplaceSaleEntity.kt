@@ -42,7 +42,9 @@ import java.util.UUID
 private val nftCdnRepository: NftCdnRepository by inject()
 private val mintingRepository: MintingRepository by inject()
 
-class MarketplaceSaleEntity(id: EntityID<UUID>) : UUIDEntity(id) {
+class MarketplaceSaleEntity(
+    id: EntityID<UUID>
+) : UUIDEntity(id) {
     var createdAt: LocalDateTime by MarketplaceSaleTable.createdAt
     var status: SaleStatus by MarketplaceSaleTable.status
     var songId: EntityID<UUID> by MarketplaceSaleTable.songId
@@ -139,9 +141,10 @@ class MarketplaceSaleEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             policyId: String,
             assetName: String
         ): MarketplaceSaleEntity? =
-            MarketplaceSaleEntity.find {
-                (MarketplaceSaleTable.pointerPolicyId eq policyId) and (MarketplaceSaleTable.pointerAssetName eq assetName)
-            }.firstOrNull()
+            MarketplaceSaleEntity
+                .find {
+                    (MarketplaceSaleTable.pointerPolicyId eq policyId) and (MarketplaceSaleTable.pointerAssetName eq assetName)
+                }.firstOrNull()
 
         fun all(filters: SaleFilters): SizedIterable<MarketplaceSaleEntity> {
             val ops = filters.toOps()
@@ -149,15 +152,16 @@ class MarketplaceSaleEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                 ops.isEmpty() -> all()
                 filters.isIndependent -> find(AndOp(ops))
                 else -> {
-                    MarketplaceSaleTable.innerJoin(
-                        otherTable = SongTable,
-                        onColumn = { songId },
-                        otherColumn = { id }
-                    ).innerJoin(
-                        otherTable = UserTable,
-                        onColumn = { SongTable.ownerId },
-                        otherColumn = { id }
-                    ).select(MarketplaceSaleTable.columns)
+                    MarketplaceSaleTable
+                        .innerJoin(
+                            otherTable = SongTable,
+                            onColumn = { songId },
+                            otherColumn = { id }
+                        ).innerJoin(
+                            otherTable = UserTable,
+                            onColumn = { SongTable.ownerId },
+                            otherColumn = { id }
+                        ).select(MarketplaceSaleTable.columns)
                         .where(AndOp(ops))
                         .mapLazy(MarketplaceSaleEntity::wrapRow)
                 }

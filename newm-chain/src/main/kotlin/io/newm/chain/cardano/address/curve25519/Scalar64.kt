@@ -1,7 +1,9 @@
 package io.newm.chain.cardano.address.curve25519
 
 @OptIn(ExperimentalUnsignedTypes::class)
-data class Scalar64(private val values: ULongArray) {
+data class Scalar64(
+    private val values: ULongArray
+) {
     /**
      * Get the scalar in a form of 64 nibbles
      * nibble is a group of 4-bits

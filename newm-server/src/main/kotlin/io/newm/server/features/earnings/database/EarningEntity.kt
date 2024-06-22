@@ -8,7 +8,9 @@ import org.jetbrains.exposed.dao.id.EntityID
 import java.time.LocalDateTime
 import java.util.UUID
 
-class EarningEntity(id: EntityID<UUID>) : UUIDEntity(id) {
+class EarningEntity(
+    id: EntityID<UUID>
+) : UUIDEntity(id) {
     var songId: EntityID<SongId>? by EarningsTable.songId
     var stakeAddress: String by EarningsTable.stakeAddress
     var amount: Long by EarningsTable.amount

@@ -16,7 +16,9 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import java.time.LocalDateTime
 import java.util.*
 
-class KeyEntity(id: EntityID<UUID>) : UUIDEntity(id) {
+class KeyEntity(
+    id: EntityID<UUID>
+) : UUIDEntity(id) {
     val createdAt: LocalDateTime by KeyTable.createdAt
     var skey: String by KeyTable.skey
     var vkey: String by KeyTable.vkey
