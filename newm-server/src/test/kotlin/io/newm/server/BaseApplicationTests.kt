@@ -46,6 +46,7 @@ import io.newm.server.recaptcha.repo.RecaptchaRepository
 import io.newm.shared.auth.Password
 import io.newm.shared.serialization.BigDecimalSerializer
 import io.newm.shared.serialization.BigIntegerSerializer
+import io.newm.shared.serialization.UUIDSerializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import org.jetbrains.exposed.dao.id.EntityID
@@ -90,6 +91,7 @@ open class BaseApplicationTests {
                                 SerializersModule {
                                     contextual(BigDecimal::class, BigDecimalSerializer)
                                     contextual(BigInteger::class, BigIntegerSerializer)
+                                    contextual(UUID::class, UUIDSerializer)
                                 }
                         }
                 )

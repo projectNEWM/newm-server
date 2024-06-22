@@ -1,12 +1,12 @@
 package io.newm.server.features.cardano.model
 
-import io.newm.shared.serialization.UUIDSerializer
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 import java.util.UUID
 
 @Serializable
 data class NFTSong(
-    @Serializable(with = UUIDSerializer::class)
+    @Contextual
     val id: UUID,
     val fingerprint: String,
     val policyId: String,

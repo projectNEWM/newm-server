@@ -1,11 +1,11 @@
 package io.newm.server.features.collaboration.model
 
-import io.newm.shared.serialization.UUIDSerializer
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 import java.util.UUID
 
 @Serializable
 data class CollaborationIdBody(
-    @Serializable(with = UUIDSerializer::class)
+    @Contextual
     val collaborationId: UUID
 )
