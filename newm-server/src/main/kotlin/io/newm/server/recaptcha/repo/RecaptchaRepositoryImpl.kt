@@ -5,10 +5,13 @@ import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.server.application.*
+import io.ktor.server.auth.jwt.JWTPrincipal
+import io.ktor.server.auth.principal
 import io.ktor.server.request.*
 import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_RECAPTCHA_ENABLED
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_RECAPTCHA_MIN_SCORE
+import io.newm.server.features.user.repo.UserRepository
 import io.newm.server.ktx.checkedBody
 import io.newm.server.ktx.getSecureConfigString
 import io.newm.server.ktx.requiredHeader
@@ -18,12 +21,14 @@ import io.newm.server.recaptcha.model.RecaptchaAssessmentResponse
 import io.newm.shared.exception.HttpForbiddenException
 import io.newm.shared.exception.HttpStatusException
 import io.newm.shared.ktx.getConfigString
+import io.newm.shared.ktx.toUUID
 
 private val supportedPlatforms = arrayOf("web", "android", "ios")
 
 internal class RecaptchaRepositoryImpl(
     private val environment: ApplicationEnvironment,
     private val configRepository: ConfigRepository,
+    private val userRepository: UserRepository,
     private val httpClient: HttpClient
 ) : RecaptchaRepository {
     private val logger = KotlinLogging.logger {}
@@ -38,6 +43,13 @@ internal class RecaptchaRepositoryImpl(
         if (!configRepository.getBoolean(CONFIG_KEY_RECAPTCHA_ENABLED)) {
             logger.debug { "verify: recaptcha is disabled" }
             return
+        }
+
+        request.call.principal<JWTPrincipal>()?.subject?.toUUID()?.let { requestUserId ->
+            if (userRepository.isAdmin(requestUserId)) {
+                logger.debug { "verify: user is admin" }
+                return
+            }
         }
 
         val platform = request.requiredHeader(RecaptchaHeaders.Platform).lowercase()

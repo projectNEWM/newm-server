@@ -6,5 +6,5 @@ import org.koin.dsl.module
 
 val recaptchaKoinModule =
     module {
-        single<RecaptchaRepository> { RecaptchaRepositoryImpl(get(), get(), get()) }
+        single<RecaptchaRepository> { RecaptchaRepositoryImpl(get(), get(), get(), get()) }
     }
