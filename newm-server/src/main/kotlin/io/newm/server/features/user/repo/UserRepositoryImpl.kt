@@ -18,10 +18,19 @@ import io.newm.server.features.user.oauth.providers.GoogleUserProvider
 import io.newm.server.features.user.oauth.providers.LinkedInUserProvider
 import io.newm.server.features.user.verify.OutletProfileUrlVerificationException
 import io.newm.server.features.user.verify.OutletProfileUrlVerifier
-import io.newm.server.ktx.*
+import io.newm.server.ktx.asUrlWithHost
+import io.newm.server.ktx.asValidEmail
+import io.newm.server.ktx.asValidName
+import io.newm.server.ktx.asValidUrl
+import io.newm.server.ktx.checkLength
 import io.newm.server.typealiases.UserId
 import io.newm.shared.auth.Password
-import io.newm.shared.exception.*
+import io.newm.shared.exception.HttpBadRequestException
+import io.newm.shared.exception.HttpConflictException
+import io.newm.shared.exception.HttpForbiddenException
+import io.newm.shared.exception.HttpNotFoundException
+import io.newm.shared.exception.HttpUnauthorizedException
+import io.newm.shared.exception.HttpUnprocessableEntityException
 import io.newm.shared.ktx.existsHavingId
 import io.newm.shared.ktx.isValidPassword
 import io.newm.shared.ktx.orNull
@@ -188,6 +197,11 @@ internal class UserRepositoryImpl(
             UserEntity.all(filters).count()
         }
     }
+
+    override suspend fun isAdmin(userId: UserId): Boolean =
+        transaction {
+            UserEntity[userId].admin
+        }
 
     override suspend fun update(
         userId: UserId,
