@@ -86,10 +86,9 @@ internal class MarketplaceRepositoryImpl(
         log.debug { "getSales: filters = $filters, offset = $offset, limit = $limit" }
         val isMainnet = cardanoRepository.isMainnet()
         val isNftCdnEnabled = configRepository.getBoolean(CONFIG_KEY_NFTCDN_ENABLED)
-        val sales =
-            transaction {
-                MarketplaceSaleEntity.all(filters).limit(n = limit, offset = offset.toLong()).toList()
-            }
+        val sales = transaction {
+            MarketplaceSaleEntity.all(filters).limit(n = limit, offset = offset.toLong()).toList()
+        }
         val costAmountsUsd: Map<UUID, String> = sales.associate { it.id.value to it.getCostAmountUsd() }
         return transaction {
             sales.map { it.toModel(isMainnet, isNftCdnEnabled, costAmountsUsd[it.id.value]!!) }
@@ -134,42 +133,39 @@ internal class MarketplaceRepositoryImpl(
     override suspend fun generateSaleAmount(request: SaleAmountRequest): SaleAmountResponse {
         log.debug { "generateSaleAmount: $request" }
 
-        val nativeAssets =
-            listOf(
-                nativeAsset {
-                    policy = request.bundlePolicyId
-                    name = request.bundleAssetName
-                    amount = computeAmount(request.bundleAmount, request.totalBundleQuantity)
-                }
-            )
+        val nativeAssets = listOf(
+            nativeAsset {
+                policy = request.bundlePolicyId
+                name = request.bundleAssetName
+                amount = computeAmount(request.bundleAmount, request.totalBundleQuantity)
+            }
+        )
 
         val lovelace = configRepository.getLong(CONFIG_KEY_MARKETPLACE_SALE_LOVELACE)
-        val amount =
-            CborArray.create(
-                listOf(
-                    CborInteger.create(lovelace.toBigInteger()),
-                    nativeAssets.toNativeAssetCborMap()
-                )
+        val amount = CborArray.create(
+            listOf(
+                CborInteger.create(lovelace.toBigInteger()),
+                nativeAssets.toNativeAssetCborMap()
             )
+        )
 
         val pendingSaleTimeToLive = configRepository.getLong(CONFIG_KEY_MARKETPLACE_PENDING_SALE_TTL)
         val costPolicyId = request.costPolicyId ?: configRepository.getString(CONFIG_KEY_MARKETPLACE_CURRENCY_POLICY_ID)
         val costAssetName =
             request.costAssetName ?: configRepository.getString(CONFIG_KEY_MARKETPLACE_CURRENCY_ASSET_NAME)
-        val sale =
-            transaction {
-                MarketplacePendingSaleEntity.deleteAllExpired(pendingSaleTimeToLive)
-                MarketplacePendingSaleEntity.new {
-                    this.ownerAddress = request.ownerAddress
-                    this.bundlePolicyId = request.bundlePolicyId
-                    this.bundleAssetName = request.bundleAssetName
-                    this.bundleAmount = request.bundleAmount
-                    this.costPolicyId = costPolicyId
-                    this.costAssetName = costAssetName
-                    this.costAmount = request.costAmount
-                    this.totalBundleQuantity = request.totalBundleQuantity
-                }
+        val sale = transaction {
+            MarketplacePendingSaleEntity.deleteAllExpired(pendingSaleTimeToLive)
+            MarketplacePendingSaleEntity.new {
+                this.ownerAddress = request.ownerAddress
+                this.bundlePolicyId = request.bundlePolicyId
+                this.bundleAssetName = request.bundleAssetName
+                this.bundleAmount = request.bundleAmount
+                this.costPolicyId = costPolicyId
+                this.costAssetName = costAssetName
+                this.costAmount = request.costAmount
+                this.totalBundleQuantity = request.totalBundleQuantity
             }
+        }
 
         return SaleAmountResponse(
             saleId = sale.id.value,
@@ -185,51 +181,46 @@ internal class MarketplaceRepositoryImpl(
         }
 
         val pendingSaleTimeToLive = configRepository.getLong(CONFIG_KEY_MARKETPLACE_PENDING_SALE_TTL)
-        val sale =
-            transaction {
-                MarketplacePendingSaleEntity.deleteAllExpired(pendingSaleTimeToLive)
-                MarketplacePendingSaleEntity[request.saleId]
-            }
+        val sale = transaction {
+            MarketplacePendingSaleEntity.deleteAllExpired(pendingSaleTimeToLive)
+            MarketplacePendingSaleEntity[request.saleId]
+        }
 
         val contractAddress = configRepository.getString(CONFIG_KEY_MARKETPLACE_SALE_CONTRACT_ADDRESS)
         val lovelace = configRepository.getLong(CONFIG_KEY_MARKETPLACE_SALE_LOVELACE)
-        val transaction =
-            cardanoRepository.buildTransaction {
-                sourceUtxos.addAll(request.utxos)
-                outputUtxos.add(
-                    outputUtxo {
-                        address = contractAddress
-                        this.lovelace = lovelace.toString()
-                        nativeAssets.addAll(
-                            listOf(
-                                nativeAsset {
-                                    policy = sale.bundlePolicyId
-                                    name = sale.bundleAssetName
-                                    amount = computeAmount(sale.bundleAmount, sale.totalBundleQuantity)
-                                }
-                            )
+        val transaction = cardanoRepository.buildTransaction {
+            sourceUtxos.addAll(request.utxos)
+            outputUtxos.add(
+                outputUtxo {
+                    address = contractAddress
+                    this.lovelace = lovelace.toString()
+                    nativeAssets.addAll(
+                        listOf(
+                            nativeAsset {
+                                policy = sale.bundlePolicyId
+                                name = sale.bundleAssetName
+                                amount = computeAmount(sale.bundleAmount, sale.totalBundleQuantity)
+                            }
                         )
-                        datum =
-                            buildSaleDatum(
-                                ownerAddress = sale.ownerAddress,
-                                bundleToken =
-                                    Token(
-                                        policyId = sale.bundlePolicyId,
-                                        assetName = sale.bundleAssetName,
-                                        amount = sale.bundleAmount
-                                    ),
-                                costToken =
-                                    Token(
-                                        policyId = sale.costPolicyId,
-                                        assetName = sale.costAssetName,
-                                        amount = sale.costAmount
-                                    ),
-                                maxBundleSize = sale.totalBundleQuantity // TODO: revisit this value
-                            ).toCborObject().toCborByteArray().toHexString()
-                    }
-                )
-                changeAddress = request.changeAddress
-            }
+                    )
+                    datum = buildSaleDatum(
+                        ownerAddress = sale.ownerAddress,
+                        bundleToken = Token(
+                            policyId = sale.bundlePolicyId,
+                            assetName = sale.bundleAssetName,
+                            amount = sale.bundleAmount
+                        ),
+                        costToken = Token(
+                            policyId = sale.costPolicyId,
+                            assetName = sale.costAssetName,
+                            amount = sale.costAmount
+                        ),
+                        maxBundleSize = sale.totalBundleQuantity // TODO: revisit this value
+                    ).toCborObject().toCborByteArray().toHexString()
+                }
+            )
+            changeAddress = request.changeAddress
+        }
         if (transaction.hasErrorMessage()) {
             throw HttpUnprocessableEntityException("Failed to build sale transaction: ${transaction.errorMessage}")
         }
@@ -248,48 +239,44 @@ internal class MarketplaceRepositoryImpl(
         }
 
         val incentiveMinAmount = configRepository.getLong(CONFIG_KEY_MARKETPLACE_INCENTIVE_MIN_AMOUNT)
-        val incentiveAmount =
-            request.incentiveAmount?.also {
-                require(it >= incentiveMinAmount) {
-                    "Incentive amount ($it) is less than minimum required ($incentiveMinAmount)"
-                }
-            } ?: incentiveMinAmount
+        val incentiveAmount = request.incentiveAmount?.also {
+            require(it >= incentiveMinAmount) {
+                "Incentive amount ($it) is less than minimum required ($incentiveMinAmount)"
+            }
+        } ?: incentiveMinAmount
 
         val incentivePolicyId = configRepository.getString(CONFIG_KEY_MARKETPLACE_CURRENCY_POLICY_ID)
         val incentiveAssetName = configRepository.getString(CONFIG_KEY_MARKETPLACE_CURRENCY_ASSET_NAME)
-        val nativeAssets =
-            listOf(
-                nativeAsset {
-                    policy = sale.costPolicyId
-                    name = sale.costAssetName
-                    amount = computeAmount(sale.costAmount, request.bundleQuantity)
-                },
-                nativeAsset {
-                    policy = incentivePolicyId
-                    name = incentiveAssetName
-                    amount = computeAmount(incentiveAmount, 2)
-                }
-            )
+        val nativeAssets = listOf(
+            nativeAsset {
+                policy = sale.costPolicyId
+                name = sale.costAssetName
+                amount = computeAmount(sale.costAmount, request.bundleQuantity)
+            },
+            nativeAsset {
+                policy = incentivePolicyId
+                name = incentiveAssetName
+                amount = computeAmount(incentiveAmount, 2)
+            }
+        )
 
         val lovelace = configRepository.getLong(CONFIG_KEY_MARKETPLACE_ORDER_LOVELACE)
-        val amount =
-            CborArray.create(
-                listOf(
-                    CborInteger.create(lovelace.toBigInteger()),
-                    nativeAssets.toNativeAssetCborMap()
-                )
+        val amount = CborArray.create(
+            listOf(
+                CborInteger.create(lovelace.toBigInteger()),
+                nativeAssets.toNativeAssetCborMap()
             )
+        )
 
         val pendingOrderTimeToLive = configRepository.getLong(CONFIG_KEY_MARKETPLACE_PENDING_ORDER_TTL)
-        val order =
-            transaction {
-                MarketplacePendingOrderEntity.deleteAllExpired(pendingOrderTimeToLive)
-                MarketplacePendingOrderEntity.new {
-                    this.saleId = sale.id
-                    this.bundleQuantity = request.bundleQuantity
-                    this.incentiveAmount = incentiveAmount
-                }
+        val order = transaction {
+            MarketplacePendingOrderEntity.deleteAllExpired(pendingOrderTimeToLive)
+            MarketplacePendingOrderEntity.new {
+                this.saleId = sale.id
+                this.bundleQuantity = request.bundleQuantity
+                this.incentiveAmount = incentiveAmount
             }
+        }
 
         return OrderAmountResponse(
             orderId = order.id.value,
@@ -305,54 +292,50 @@ internal class MarketplaceRepositoryImpl(
         }
 
         val pendingOrderTimeToLive = configRepository.getLong(CONFIG_KEY_MARKETPLACE_PENDING_ORDER_TTL)
-        val (order, sale) =
-            transaction {
-                MarketplacePendingOrderEntity.deleteAllExpired(pendingOrderTimeToLive)
-                MarketplacePendingOrderEntity[request.orderId].let { it to MarketplaceSaleEntity[it.saleId] }
-            }
+        val (order, sale) = transaction {
+            MarketplacePendingOrderEntity.deleteAllExpired(pendingOrderTimeToLive)
+            MarketplacePendingOrderEntity[request.orderId].let { it to MarketplaceSaleEntity[it.saleId] }
+        }
 
         val lovelace = configRepository.getLong(CONFIG_KEY_MARKETPLACE_ORDER_LOVELACE)
 
         val contractAddress = configRepository.getString(CONFIG_KEY_MARKETPLACE_QUEUE_CONTRACT_ADDRESS)
         val incentivePolicyId = configRepository.getString(CONFIG_KEY_MARKETPLACE_CURRENCY_POLICY_ID)
         val incentiveAssetName = configRepository.getString(CONFIG_KEY_MARKETPLACE_CURRENCY_ASSET_NAME)
-        val transaction =
-            cardanoRepository.buildTransaction {
-                sourceUtxos.addAll(request.utxos)
-                outputUtxos.add(
-                    outputUtxo {
-                        address = contractAddress
-                        this.lovelace = lovelace.toString()
-                        nativeAssets.addAll(
-                            listOf(
-                                nativeAsset {
-                                    policy = sale.costPolicyId
-                                    name = sale.costAssetName
-                                    amount = computeAmount(sale.costAmount, order.bundleQuantity)
-                                },
-                                nativeAsset {
-                                    policy = incentivePolicyId
-                                    name = incentiveAssetName
-                                    amount = computeAmount(order.incentiveAmount, 2)
-                                }
-                            ).mergeAmounts()
-                        )
-                        datum =
-                            buildQueueDatum(
-                                ownerAddress = sale.ownerAddress,
-                                numberOfBundles = order.bundleQuantity,
-                                incentiveToken =
-                                    Token(
-                                        policyId = incentivePolicyId,
-                                        assetName = incentiveAssetName,
-                                        amount = order.incentiveAmount
-                                    ),
-                                pointerAssetName = sale.pointerAssetName
-                            ).toCborObject().toCborByteArray().toHexString()
-                    }
-                )
-                changeAddress = request.changeAddress
-            }
+        val transaction = cardanoRepository.buildTransaction {
+            sourceUtxos.addAll(request.utxos)
+            outputUtxos.add(
+                outputUtxo {
+                    address = contractAddress
+                    this.lovelace = lovelace.toString()
+                    nativeAssets.addAll(
+                        listOf(
+                            nativeAsset {
+                                policy = sale.costPolicyId
+                                name = sale.costAssetName
+                                amount = computeAmount(sale.costAmount, order.bundleQuantity)
+                            },
+                            nativeAsset {
+                                policy = incentivePolicyId
+                                name = incentiveAssetName
+                                amount = computeAmount(order.incentiveAmount, 2)
+                            }
+                        ).mergeAmounts()
+                    )
+                    datum = buildQueueDatum(
+                        ownerAddress = sale.ownerAddress,
+                        numberOfBundles = order.bundleQuantity,
+                        incentiveToken = Token(
+                            policyId = incentivePolicyId,
+                            assetName = incentiveAssetName,
+                            amount = order.incentiveAmount
+                        ),
+                        pointerAssetName = sale.pointerAssetName
+                    ).toCborObject().toCborByteArray().toHexString()
+                }
+            )
+            changeAddress = request.changeAddress
+        }
         if (transaction.hasErrorMessage()) {
             throw HttpUnprocessableEntityException("Failed to build order transaction: ${transaction.errorMessage}")
         }
@@ -393,28 +376,27 @@ internal class MarketplaceRepositoryImpl(
 
             inputPointer == null && outputPointer != null -> {
                 log.info { "Detected SALE START: $input" }
-                val found =
-                    transaction {
-                        val songId = output.bundle.getMatchingSongId() ?: return@transaction false
-                        MarketplaceSaleEntity.new {
-                            this.createdAt = response.timestamp.epochSecondsToLocalDateTime()
-                            this.status = SaleStatus.Started
-                            this.songId = songId
-                            this.ownerAddress = output.ownerAddress
-                            this.pointerPolicyId = outputPointer.policyId
-                            this.pointerAssetName = outputPointer.assetName
-                            this.bundlePolicyId = output.bundle.policyId
-                            this.bundleAssetName = output.bundle.assetName
-                            this.bundleAmount = output.bundle.amount
-                            this.costPolicyId = output.cost.policyId
-                            this.costAssetName = output.cost.assetName
-                            this.costAmount = output.cost.amount
-                            this.maxBundleSize = output.maxBundleSize
-                            this.totalBundleQuantity = output.bundleQuantity
-                            this.availableBundleQuantity = output.bundleQuantity
-                        }
-                        true
+                val found = transaction {
+                    val songId = output.bundle.getMatchingSongId() ?: return@transaction false
+                    MarketplaceSaleEntity.new {
+                        this.createdAt = response.timestamp.epochSecondsToLocalDateTime()
+                        this.status = SaleStatus.Started
+                        this.songId = songId
+                        this.ownerAddress = output.ownerAddress
+                        this.pointerPolicyId = outputPointer.policyId
+                        this.pointerAssetName = outputPointer.assetName
+                        this.bundlePolicyId = output.bundle.policyId
+                        this.bundleAssetName = output.bundle.assetName
+                        this.bundleAmount = output.bundle.amount
+                        this.costPolicyId = output.cost.policyId
+                        this.costAssetName = output.cost.assetName
+                        this.costAmount = output.cost.amount
+                        this.maxBundleSize = output.maxBundleSize
+                        this.totalBundleQuantity = output.bundleQuantity
+                        this.availableBundleQuantity = output.bundleQuantity
                     }
+                    true
+                }
                 if (!found) {
                     log.warn { "Detected SALE START, but no matching song in database for bundle: ${output.bundle}" }
                 }
@@ -422,12 +404,11 @@ internal class MarketplaceRepositoryImpl(
 
             inputPointer != null && outputPointer == null -> {
                 log.info { "Detected SALE END: $input" }
-                val found =
-                    transaction {
-                        MarketplaceSaleEntity.getByPointer(inputPointer)?.run {
-                            status = SaleStatus.Ended
-                        } != null
-                    }
+                val found = transaction {
+                    MarketplaceSaleEntity.getByPointer(inputPointer)?.run {
+                        status = SaleStatus.Ended
+                    } != null
+                }
                 if (!found) {
                     log.warn { "Detected SALE END, but no sale in database for pointer: $inputPointer" }
                 }
@@ -438,18 +419,17 @@ internal class MarketplaceRepositoryImpl(
                 val isSoldOut = outputBundleQuantity == 0L
                 val purchaseBundleQuantity = input.bundleQuantity - outputBundleQuantity
                 log.info { "Detected PURCHASE of $purchaseBundleQuantity bundles${if (isSoldOut) " (SOLD-OUT)" else ""}: $input" }
-                val found =
-                    transaction {
-                        MarketplaceSaleEntity.getByPointer(inputPointer)?.run {
-                            if (isSoldOut) status = SaleStatus.SoldOut
-                            availableBundleQuantity = outputBundleQuantity
-                            MarketplacePurchaseEntity.new {
-                                this.createdAt = response.timestamp.epochSecondsToLocalDateTime()
-                                this.saleId = this@run.id
-                                this.bundleQuantity = purchaseBundleQuantity
-                            }
-                        } != null
-                    }
+                val found = transaction {
+                    MarketplaceSaleEntity.getByPointer(inputPointer)?.run {
+                        if (isSoldOut) status = SaleStatus.SoldOut
+                        availableBundleQuantity = outputBundleQuantity
+                        MarketplacePurchaseEntity.new {
+                            this.createdAt = response.timestamp.epochSecondsToLocalDateTime()
+                            this.saleId = this@run.id
+                            this.bundleQuantity = purchaseBundleQuantity
+                        }
+                    } != null
+                }
                 if (!found) {
                     log.warn { "Detected PURCHASE, but no sale in database for pointer: $inputPointer" }
                 }
@@ -474,12 +454,11 @@ internal class MarketplaceRepositoryImpl(
         }
 
         val pointerPolicyId = configRepository.getString(CONFIG_KEY_MARKETPLACE_POINTER_POLICY_ID)
-        val sale =
-            output?.let {
-                transaction {
-                    MarketplaceSaleEntity.getByPointer(pointerPolicyId, it.pointerAssetName)
-                }
+        val sale = output?.let {
+            transaction {
+                MarketplaceSaleEntity.getByPointer(pointerPolicyId, it.pointerAssetName)
             }
+        }
         val payment = sale?.let { output.getToken(it.costPolicyId, it.costAssetName) }
 
         // TODO: More work needed here, for now we only print logs.
