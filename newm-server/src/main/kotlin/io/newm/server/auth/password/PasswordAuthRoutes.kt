@@ -16,9 +16,11 @@ fun Routing.createPasswordAuthRoutes() {
     val jwtRepository: JwtRepository by inject()
 
     post("$AUTH_PATH/login") {
-        recaptchaRepository.verify("login", request)
         val (email, password) = receive<LoginRequest>()
         val (uuid, admin) = userRepository.find(email, password)
+        if (!admin) {
+            recaptchaRepository.verify("login", request)
+        }
         respond(jwtRepository.createLoginResponse(uuid, admin))
     }
 }
