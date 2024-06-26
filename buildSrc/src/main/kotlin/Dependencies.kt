@@ -200,6 +200,12 @@ object Dependencies {
         const val BCPROV = "org.bouncycastle:bcprov-jdk15on:$VERSION"
     }
 
+    object I2PCrypto {
+        private const val VERSION = "0.3.0"
+
+        const val EDDSA = "net.i2p.crypto:eddsa:$VERSION"
+    }
+
     object SpringSecurity {
         private const val VERSION = "6.3.1"
 

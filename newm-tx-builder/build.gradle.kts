@@ -45,6 +45,7 @@ dependencies {
 
     implementation(Dependencies.Cbor.CBOR)
     implementation(Dependencies.BouncyCastle.BCPROV)
+    implementation(Dependencies.I2PCrypto.EDDSA)
 
     implementation(Dependencies.ApacheCommonsNumbers.FRACTION)
 

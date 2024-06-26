@@ -121,3 +121,8 @@ fun OutputUtxo.toCborObject(): CborObject =
                 }
         ).filterValues { it != null }
     )
+
+fun List<Utxo>.sortByHashAndIx() =
+    sortedWith { o1, o2 ->
+        o1.hash.compareTo(o2.hash).let { if (it == 0) o1.ix.compareTo(o2.ix) else it }
+    }

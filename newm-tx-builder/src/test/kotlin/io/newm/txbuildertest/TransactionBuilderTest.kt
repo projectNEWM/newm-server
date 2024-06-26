@@ -33,13 +33,13 @@ import io.newm.kogmios.protocols.model.result.UtxoResultItem
 import io.newm.txbuilder.TransactionBuilder
 import io.newm.txbuilder.TransactionBuilder.Companion.transactionBuilder
 import io.newm.txbuilder.ktx.toCborObject
-import java.util.UUID
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
+import java.util.UUID
 
 @Disabled("Disabled until we get demeter working again.")
 class TransactionBuilderTest {
@@ -866,6 +866,227 @@ class TransactionBuilderTest {
                                         ByteString.fromHex("a7a0f3643adae688df9d9a4d29d282df4cf8ddda9de324d58155d4f0c363f1de")
                                     vkey =
                                         ByteString.fromHex("de537d884b9b84c267309e9a07a4fd857da4c81565a5d261ef4041bd08c93ca2")
+                                }
+                            )
+                        }
+                    }
+                println("transaction: ${cborByteArray.toHexString()}")
+                assertThat(cborByteArray.toHexString()).isEqualTo(targetCborHex)
+            }
+        }
+
+    @Test
+    fun `test Marketplace Sale Transaction`() =
+        runBlocking {
+            val targetCborHex = "???" // TODO: figure out correct value for this test after fix
+
+            createTxSubmitClient(
+                websocketHost = TEST_HOST,
+                websocketPort = TEST_PORT,
+                secure = TEST_SECURE,
+            ).use { client ->
+                val connectResult = client.connect()
+                assertThat(connectResult).isTrue()
+                assertThat(client.isConnected).isTrue()
+
+                val response = (client as StateQueryClient).protocolParameters()
+                val protocolParams = response.result
+
+                val calculateTxExecutionUnits: suspend (ByteArray) -> EvaluateTxResult = { cborBytes ->
+                    val evaluateResponse = client.evaluate(cborBytes.toHexString())
+                    println("evaluateResponse: ${evaluateResponse.result}")
+                    evaluateResponse.result
+                }
+
+                val (_, cborByteArray) =
+                    transactionBuilder(protocolParams, calculateTxExecutionUnits = calculateTxExecutionUnits) {
+                        sourceUtxos {
+                            add(
+                                utxo {
+                                    address =
+                                        "addr_test1qqfam8majz3desfm82qvd28yzfrg4etfas4acf4kkggaq6slhc0vy4v22ml5mrq8q40wvj648xvyllld92w6lpk2y97q04cqhl"
+                                    hash = "1d9a23d6e2920c2c6686e0fd54cfad66164ec89bb584b367960e48d170958b42"
+                                    ix = 1
+                                    lovelace = "10140223407"
+                                    nativeAssets.add(
+                                        // "To The Moon" RFT
+                                        nativeAsset {
+                                            policy = "0379bbabfe3d39376fcc3b99fb93115e6f32d91f7bf23322cb1128f8"
+                                            name = "001bc280004accf7a4dbd382e803b6397abc12478ab2480e2432f8b666ac1c49"
+                                            amount = "99000000"
+                                        }
+                                    )
+                                    nativeAssets.add(
+                                        // "The World" RFT
+                                        nativeAsset {
+                                            policy = "0379bbabfe3d39376fcc3b99fb93115e6f32d91f7bf23322cb1128f8"
+                                            name = "001bc2800084042ee2f76c8e16d160eccd3d1c56a6f6d9e6f19c63e2ff0e917f"
+                                            amount = "49999650"
+                                        }
+                                    )
+                                    nativeAssets.add(
+                                        // "Chained" RFT
+                                        nativeAsset {
+                                            policy = "0379bbabfe3d39376fcc3b99fb93115e6f32d91f7bf23322cb1128f8"
+                                            name = "001bc280022c6aa9b521e86f0df5f762c9b908de4d0606a7ce1f0220ae3b22d0"
+                                            amount = "100000000"
+                                        }
+                                    )
+                                    nativeAssets.add(
+                                        // "The Canyon" RFT
+                                        nativeAsset {
+                                            policy = "0379bbabfe3d39376fcc3b99fb93115e6f32d91f7bf23322cb1128f8"
+                                            name = "001bc28002d6e1cec3fb424e74c18a33831f0b0779d956804d2e58789956677e"
+                                            amount = "100000000"
+                                        }
+                                    )
+                                    nativeAssets.add(
+                                        // "An Old Man" RFT
+                                        nativeAsset {
+                                            policy = "0379bbabfe3d39376fcc3b99fb93115e6f32d91f7bf23322cb1128f8"
+                                            name = "001bc280035554597f74024e28d4ba340fe5ddac9e7ea1f420120130d77ff675"
+                                            amount = "100000000"
+                                        }
+                                    )
+                                    nativeAssets.add(
+                                        // tDRIP
+                                        nativeAsset {
+                                            policy = "698a6ea0ca99f315034072af31eaac6ec11fe8558d3f48e9775aab9d"
+                                            name = "7444524950"
+                                            amount = "3000000000"
+                                        }
+                                    )
+                                    nativeAssets.add(
+                                        // tNEWM
+                                        nativeAsset {
+                                            policy = "769c4c6e9bc3ba5406b9b89fb7beb6819e638ff2e2de63f008d5bcff"
+                                            name = "744e45574d"
+                                            amount = "799857553108"
+                                        }
+                                    )
+                                }
+                            )
+                        }
+
+                        outputUtxos {
+                            add(
+                                outputUtxo {
+                                    address =
+                                        "addr_test1xz0l8seu9tv265wu6gkajuarl62zz8uhq75u7gl9n6t8yuetr7epf7y6wzykrhezrfuptq7s4lgefz5m4a3cugsr8eyqej32nc"
+                                    lovelace = "4504110"
+                                    nativeAssets.add(
+                                        // "To The Moon" RFT
+                                        nativeAsset {
+                                            policy = "0379bbabfe3d39376fcc3b99fb93115e6f32d91f7bf23322cb1128f8"
+                                            name = "001bc280004accf7a4dbd382e803b6397abc12478ab2480e2432f8b666ac1c49"
+                                            amount = "1000000"
+                                        }
+                                    )
+                                    nativeAssets.add(
+                                        // Pointer Token
+                                        nativeAsset {
+                                            policy = "4e00b9275d13e901116778c495a4d621deb65062a24d3c1a4b91852f"
+                                            name = "ca11ab1e01eeb2a5a03e85400368be81301887f66fde1164953f85cc8a877f4a"
+                                            amount = "1"
+                                        }
+                                    )
+                                    datum =
+                                        "d8799fd8799f581c1fbe1ec2558a56ff4d8c07055ee64b5539984fffed2a9daf86ca217c40ffd8799f581c0379bbabfe3d39376fcc3b99fb93115e6f32d91f7bf23322cb1128f85820001bc280004accf7a4dbd382e803b6397abc12478ab2480e2432f8b666ac1c4901ffd8799f581c769c4c6e9bc3ba5406b9b89fb7beb6819e638ff2e2de63f008d5bcff45744e45574d02ff1a000f4240ff"
+                                }
+                            )
+                        }
+
+                        changeAddress =
+                            "addr_test1qqfam8majz3desfm82qvd28yzfrg4etfas4acf4kkggaq6slhc0vy4v22ml5mrq8q40wvj648xvyllld92w6lpk2y97q04cqhl"
+
+                        mintTokens {
+                            add(
+                                // Pointer Token
+                                nativeAsset {
+                                    policy = "4e00b9275d13e901116778c495a4d621deb65062a24d3c1a4b91852f"
+                                    name = "ca11ab1e01eeb2a5a03e85400368be81301887f66fde1164953f85cc8a877f4a"
+                                    amount = "1"
+                                }
+                            )
+                        }
+
+                        referenceInputs {
+                            add(
+                                // script
+                                utxo {
+                                    hash = "f44798098faa85f69c57211b749358908c7ad47820bdb50230aae82c0eff3cd0"
+                                    ix = 0
+                                }
+                            )
+                            add(
+                                utxo {
+                                    hash = "d156580705c936bbe9c379eab79774e2da905258ad53700e63d7635cabdca475"
+                                    ix = 1
+                                }
+                            )
+                            add(
+                                utxo {
+                                    hash = "2b09daf2137c654fbfa7117d843c97126f47b9f0f7468bce06453d7ef5e1d92f"
+                                    ix = 1
+                                }
+                            )
+                            add(
+                                utxo {
+                                    hash = "6cfc6a0b76567d5646a1408e3eae6dadbcf178ce62f71f22b399e08966e6973d"
+                                    ix = 1
+                                }
+                            )
+                        }
+
+                        collateralUtxos {
+                            add(
+                                utxo {
+                                    address =
+                                        "addr_test1qqfam8majz3desfm82qvd28yzfrg4etfas4acf4kkggaq6slhc0vy4v22ml5mrq8q40wvj648xvyllld92w6lpk2y97q04cqhl"
+                                    hash = "ef502e880def38ef770ae051ba190774df81dded12df8cbbfd4a393523c580d2"
+                                    ix = 5
+                                    lovelace = "5000000"
+                                }
+                            )
+                        }
+
+                        collateralReturnAddress =
+                            "addr_test1qqfam8majz3desfm82qvd28yzfrg4etfas4acf4kkggaq6slhc0vy4v22ml5mrq8q40wvj648xvyllld92w6lpk2y97q04cqhl"
+
+                        redeemers {
+                            add(
+                                redeemer {
+                                    tag = RedeemerTag.MINT
+                                    index = 0L
+                                    data = plutusData {
+                                        constr = 0
+                                        list = plutusDataList { }
+                                    }
+                                }
+                            )
+                        }
+
+                        requiredSigners {
+                            add("2eb8686d882a0eddc9c7f68ece8f198f973ce90477b51ca017f2a25d".hexToByteArray())
+                            add("4c1017ed05f703f6cf31c6a743f2c69534dbe4846e0d51ed4cb24b85".hexToByteArray())
+                        }
+
+                        signingKeys {
+                            // 2 random signing keys for testing
+                            add(
+                                signingKey {
+                                    skey =
+                                        ByteString.fromHex("e30565043f3863fa3e9fd22790807e13f04be018d3ec7b2eec7d69a3671cf51c")
+                                    vkey =
+                                        ByteString.fromHex("d482feaa7d38f393d3a39b0b61d1bcab4213a09e8816ffa48931f26561b40260")
+                                }
+                            )
+                            add(
+                                signingKey {
+                                    skey =
+                                        ByteString.fromHex("6bfaab76198b8da79b1e46f77383534b1a6ddfb36b0ee33d4dd6ff019a3bff75")
+                                    vkey =
+                                        ByteString.fromHex("3cc51d63f04e5c509c34f6d6c2d6b51aaed557a66c8069fc06f15b17cc57d7e5")
                                 }
                             )
                         }

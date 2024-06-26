@@ -46,14 +46,15 @@ import io.newm.shared.ktx.coLazy
 import io.newm.shared.ktx.info
 import io.newm.shared.ktx.orZero
 import io.newm.shared.ktx.toHexString
+import io.newm.txbuilder.ktx.sortByHashAndIx
 import io.newm.txbuilder.ktx.toCborObject
 import io.newm.txbuilder.ktx.toPlutusData
-import java.math.BigDecimal
-import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf
 import org.slf4j.Logger
+import java.math.BigDecimal
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 class MintingRepositoryImpl(
     private val userRepository: UserRepository,
@@ -132,12 +133,9 @@ class MintingRepositoryImpl(
                 }
 
             // sort utxos lexicographically smallest to largest to find the one we'll use as the reference utxo
-            val refUtxo =
-                (
-                    cashRegisterUtxos + listOf(paymentUtxo) + (moneyBoxUtxos ?: emptyList())
-                ).sortedWith { o1, o2 ->
-                    o1.hash.compareTo(o2.hash).let { if (it == 0) o1.ix.compareTo(o2.ix) else it }
-                }.first()
+            val refUtxo = (cashRegisterUtxos + listOf(paymentUtxo) + (moneyBoxUtxos ?: emptyList()))
+                .sortByHashAndIx()
+                .first()
             val (refTokenName, fracTokenName) = calculateTokenNames(refUtxo)
             val collateralKey =
                 requireNotNull(cardanoRepository.getKeyByName("collateral")) { "collateral key not defined!" }

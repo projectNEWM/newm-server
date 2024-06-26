@@ -66,9 +66,11 @@ interface ConfigRepository {
         const val CONFIG_KEY_MARKETPLACE_ORDER_LOVELACE = "marketplace.orderLovelace"
         const val CONFIG_KEY_MARKETPLACE_SALE_LOVELACE = "marketplace.saleLovelace"
         const val CONFIG_KEY_MARKETPLACE_POINTER_POLICY_ID = "marketplace.pointerPolicyId"
+        const val CONFIG_KEY_MARKETPLACE_POINTER_ASSET_NAME_PREFIX = "marketplace.pointerAssetNamePrefix"
         const val CONFIG_KEY_MARKETPLACE_CURRENCY_POLICY_ID = "marketplace.currencyPolicyId"
         const val CONFIG_KEY_MARKETPLACE_CURRENCY_ASSET_NAME = "marketplace.currencyAssetName"
         const val CONFIG_KEY_MARKETPLACE_INCENTIVE_MIN_AMOUNT = "marketplace.incentiveMinAmount"
+        const val CONFIG_KEY_MARKETPLACE_SALE_REFERENCE_INPUT_UTXOS = "marketplace.saleReferenceInputUtxos"
         const val CONFIG_KEY_EARNINGS_MONITOR_PAYMENT_ADDRESS_TIMEOUT_MIN = "earnings.monitorPaymentAddressTimeoutMin"
         const val CONFIG_KEY_EARNINGS_CLAIM_ORDER_FEE = "earnings.claimOrderFee"
     }

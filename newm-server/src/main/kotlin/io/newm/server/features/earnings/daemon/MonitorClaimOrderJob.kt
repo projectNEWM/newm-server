@@ -3,7 +3,6 @@ package io.newm.server.features.earnings.daemon
 import com.google.iot.cbor.CborArray
 import com.google.iot.cbor.CborInteger
 import com.google.iot.cbor.CborMap
-import com.google.iot.cbor.CborObject
 import com.google.iot.cbor.CborTextString
 import com.google.protobuf.ByteString
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -21,21 +20,21 @@ import io.newm.server.features.cardano.repo.CardanoRepository.Companion.NEWM_TOK
 import io.newm.server.features.cardano.repo.CardanoRepository.Companion.NEWM_TOKEN_NAME_TEST
 import io.newm.server.features.cardano.repo.CardanoRepository.Companion.NEWM_TOKEN_POLICY
 import io.newm.server.features.cardano.repo.CardanoRepository.Companion.NEWM_TOKEN_POLICY_TEST
-import io.newm.server.features.cardano.repo.CardanoRepository.Companion.TX_KEY_FEE
 import io.newm.server.features.earnings.model.ClaimOrder
 import io.newm.server.features.earnings.model.ClaimOrderStatus
 import io.newm.server.features.earnings.repo.EarningsRepository
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.toUUID
-import java.math.BigInteger
-import java.time.LocalDateTime
-import java.time.ZoneOffset
-import kotlin.time.Duration.Companion.minutes
+import io.newm.txbuilder.ktx.extractFields
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.quartz.Job
 import org.quartz.JobExecutionContext
 import org.quartz.JobExecutionException
+import java.math.BigInteger
+import java.time.LocalDateTime
+import java.time.ZoneOffset
+import kotlin.time.Duration.Companion.minutes
 
 class MonitorClaimOrderJob : Job {
     private val log = KotlinLogging.logger {}
@@ -149,14 +148,7 @@ class MonitorClaimOrderJob : Job {
                             }
 
                             // Update the calculated txFee
-                            txFee =
-                                (
-                                    (
-                                        CborObject.createFromCborByteArray(
-                                            transactionBuilderResponse.transactionCbor.toByteArray()
-                                        ) as CborMap
-                                    )[TX_KEY_FEE] as CborInteger
-                                ).longValue()
+                            txFee = transactionBuilderResponse.extractFields().fee
 
                             // Rebuild the transaction with the actual txFee
                             transactionBuilderResponse =
