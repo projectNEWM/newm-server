@@ -12,8 +12,6 @@ import io.newm.server.features.marketplace.repo.MarketplaceRepository
 import io.newm.shared.daemon.Daemon
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.coLazy
-import io.newm.shared.ktx.error
-import io.newm.shared.ktx.info
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.delay
@@ -57,7 +55,7 @@ class MarketplaceMonitorDaemon(
 
     override fun isLeader() {
         // only the leader runs
-        log.info { "This is instance is now the leader" }
+        log.info { "This instance is now the leader" }
         launch {
             monitorContractAddress(
                 addressKey = CONFIG_KEY_MARKETPLACE_SALE_CONTRACT_ADDRESS,
@@ -76,7 +74,7 @@ class MarketplaceMonitorDaemon(
 
     override fun notLeader() {
         // we may become the leader later, but only if the current leader shutdowns or crashes
-        log.info { "This is instance is not currently the leader" }
+        log.info { "This instance is not currently the leader" }
     }
 
     private suspend fun monitorContractAddress(

@@ -1,6 +1,5 @@
 package io.newm.server.features.cardano.repo
 
-import com.google.iot.cbor.CborInteger
 import com.google.protobuf.ByteString
 import io.newm.chain.grpc.CardanoEra
 import io.newm.chain.grpc.MonitorAddressResponse
@@ -19,8 +18,8 @@ import io.newm.server.features.cardano.model.Key
 import io.newm.server.features.cardano.model.NFTSong
 import io.newm.server.features.song.model.SongFilters
 import io.newm.server.typealiases.UserId
-import java.util.UUID
 import kotlinx.coroutines.flow.Flow
+import java.util.UUID
 
 interface CardanoRepository {
     suspend fun saveKey(
@@ -131,7 +130,5 @@ interface CardanoRepository {
         // Charli3 NEWM/USD OracleFeed token
         const val CHARLI3_NEWM_USD_POLICY = "f155a26044efe91b3c44f87a7536d2d631c847717930ff547ae9d05c"
         const val CHARLI3_NEWM_USD_NAME = "4f7261636c6546656564"
-
-        internal val TX_KEY_FEE by lazy { CborInteger.create(2) }
     }
 }
