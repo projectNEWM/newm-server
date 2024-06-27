@@ -48,4 +48,5 @@ object UserTable : UUIDTable(name = "users") {
     val distributionIsni: Column<String?> = text("distribution_isni").nullable()
     val distributionIpn: Column<String?> = text("distribution_ipn").nullable()
     val distributionNewmParticipantId: Column<Long?> = long("distribution_newm_participant_id").nullable()
+    val archived: Column<Boolean> = bool("archived").default(false)
 }

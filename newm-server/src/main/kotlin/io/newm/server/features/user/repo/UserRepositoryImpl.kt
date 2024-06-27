@@ -342,6 +342,8 @@ internal class UserRepositoryImpl(
             JwtTable.deleteWhere { JwtTable.userId eq userId }
             UserEntity[userId].delete()
         }
+        //TODO: can we catch exception in here in case of users having released songs
+        // and mark them as archived ????
     }
 
     private fun getUserEntityByEmail(email: String): UserEntity =
