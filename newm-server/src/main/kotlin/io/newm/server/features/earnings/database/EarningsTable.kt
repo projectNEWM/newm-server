@@ -23,7 +23,7 @@ object EarningsTable : UUIDTable(name = "earnings") {
     val claimedAt: Column<LocalDateTime?> = datetime("claimed_at").nullable()
     val claimedOrderId: Column<EntityID<UUID>?> =
         reference(
-            "claimed_order_id",
+            "claim_order_id",
             ClaimOrdersTable,
             onUpdate = ReferenceOption.RESTRICT,
             onDelete = ReferenceOption.RESTRICT
