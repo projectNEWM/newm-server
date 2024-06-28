@@ -13,13 +13,14 @@ import io.newm.server.features.earnings.model.AddSongRoyaltyRequest
 import io.newm.server.features.earnings.model.Earning
 import io.newm.server.features.earnings.repo.EarningsRepository
 import io.newm.server.features.user.database.UserTable.walletAddress
+import io.newm.server.ktx.songId
 import io.newm.server.recaptcha.repo.RecaptchaRepository
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.get
 import io.newm.shared.ktx.post
-import io.newm.shared.ktx.toUUID
 
 private const val EARNINGS_PATH = "v1/earnings"
+private const val EARNINGS_PATH_ADMIN = "v1/earnings/admin"
 
 fun Routing.createEarningsRoutes() {
     val cardanoRepository: CardanoRepository by inject()
@@ -27,7 +28,7 @@ fun Routing.createEarningsRoutes() {
     val recaptchaRepository: RecaptchaRepository by inject()
 
     authenticate(AUTH_JWT_ADMIN) {
-        route(EARNINGS_PATH) {
+        route(EARNINGS_PATH_ADMIN) {
             get {
                 val earnings = earningsRepository.getAll()
                 respond(earnings)
@@ -38,19 +39,17 @@ fun Routing.createEarningsRoutes() {
                 earningsRepository.addAll(earnings)
                 respond(HttpStatusCode.Created)
             }
-        }
-        get("$EARNINGS_PATH/{songId}") {
-            // get earnings by song id
-            val songId = parameters["songId"]!!.toUUID()
-            val earnings = earningsRepository.getAllBySongId(songId)
-            respond(earnings)
-        }
-        post("$EARNINGS_PATH/{songId}") {
-            // create earning records for a song based on receiving a total amount of royalties.
-            val songId = parameters["songId"]!!.toUUID()
-            val royaltyRequest: AddSongRoyaltyRequest = receive()
-            earningsRepository.addRoyaltySplits(songId, royaltyRequest)
-            respond(HttpStatusCode.Created)
+            get("{songId}") {
+                // get earnings by song id
+                val earnings = earningsRepository.getAllBySongId(songId)
+                respond(earnings)
+            }
+            post("{songId}") {
+                // create earning records for a song based on receiving a total amount of royalties.
+                val royaltyRequest: AddSongRoyaltyRequest = receive()
+                earningsRepository.addRoyaltySplits(songId, royaltyRequest)
+                respond(HttpStatusCode.Created)
+            }
         }
     }
 
