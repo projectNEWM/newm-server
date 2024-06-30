@@ -6,7 +6,6 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.newm.chain.grpc.MonitorAddressResponse
 import io.newm.chain.grpc.nativeAsset
 import io.newm.chain.grpc.outputUtxo
-import io.newm.chain.util.toAdaString
 import io.newm.chain.util.toHexString
 import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_CURRENCY_ASSET_NAME
@@ -510,6 +509,6 @@ internal class MarketplaceRepositoryImpl(
 
     private suspend fun MarketplaceSaleEntity.getCostAmountUsd(): String {
         val unitPrice = cardanoRepository.queryNativeTokenUSDPrice(costPolicyId, costAssetName)
-        return (costAmount.toBigInteger() * unitPrice.toBigInteger()).toAdaString()
+        return (costAmount.toBigInteger() * unitPrice.toBigInteger()).toBigDecimal(12).toPlainString()
     }
 }
