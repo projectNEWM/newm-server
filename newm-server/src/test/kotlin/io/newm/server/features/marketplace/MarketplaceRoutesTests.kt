@@ -9,7 +9,6 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.mockk.coEvery
 import io.mockk.mockk
-import io.newm.chain.util.toAdaString
 import io.newm.server.BaseApplicationTests
 import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_NFTCDN_ENABLED
@@ -1031,7 +1030,9 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
                 }.toModel(
                     isMainnet = false,
                     isNftCdnEnabled = false,
-                    costAmountUsd = (offset.toBigInteger() * COST_TOKEN_USD_PRICE.toBigInteger()).toAdaString()
+                    costAmountUsd = (offset.toBigInteger() * COST_TOKEN_USD_PRICE.toBigInteger())
+                        .toBigDecimal(12)
+                        .toPlainString()
                 )
         }
     }
