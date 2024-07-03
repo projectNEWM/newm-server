@@ -3,7 +3,7 @@ package io.newm.server.features.marketplace.model
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class SaleAmountRequest(
+data class SaleStartAmountRequest(
     val ownerAddress: String,
     val bundlePolicyId: String,
     val bundleAssetName: String,

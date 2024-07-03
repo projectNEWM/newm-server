@@ -17,6 +17,7 @@ import io.newm.chain.util.Constants.PAYMENT_ADDRESS_SCRIPT_PREFIX_MAINNET
 import io.newm.chain.util.Constants.PAYMENT_ADDRESS_SCRIPT_PREFIX_TESTNET
 import io.newm.chain.util.hexToByteArray
 import io.newm.chain.util.toHexString
+import io.newm.chain.util.toRequiredSigner
 import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.shared.koin.inject
 import io.newm.shared.serialization.LocalDateTimeSerializer
@@ -69,7 +70,7 @@ data class Key(
         return result
     }
 
-    fun requiredSigner(): ByteArray = Bech32.decode(address).bytes.copyOfRange(1, 29)
+    fun requiredSigner(): ByteArray = address.toRequiredSigner()
 
     fun toCliKeyPair(name: String): CliKeyPair =
         CliKeyPair(

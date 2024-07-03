@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 import java.util.UUID
 
 @Serializable
-data class SaleTransactionRequest(
+data class SaleStartTransactionRequest(
     @Contextual
     val saleId: UUID,
     val changeAddress: String,
