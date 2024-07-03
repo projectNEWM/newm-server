@@ -11,6 +11,7 @@ import io.newm.chain.grpc.outputUtxo
 import io.newm.chain.util.Sha3
 import io.newm.chain.util.hexToByteArray
 import io.newm.chain.util.toHexString
+import io.newm.chain.util.toRequiredSigner
 import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_CURRENCY_ASSET_NAME
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_CURRENCY_POLICY_ID
@@ -29,7 +30,8 @@ import io.newm.server.features.cardano.model.Key
 import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.marketplace.builders.buildQueueDatum
 import io.newm.server.features.marketplace.builders.buildSaleDatum
-import io.newm.server.features.marketplace.builders.buildSaleTransaction
+import io.newm.server.features.marketplace.builders.buildSaleEndTransaction
+import io.newm.server.features.marketplace.builders.buildSaleStartTransaction
 import io.newm.server.features.marketplace.database.MarketplaceArtistEntity
 import io.newm.server.features.marketplace.database.MarketplaceBookmarkEntity
 import io.newm.server.features.marketplace.database.MarketplacePendingOrderEntity
@@ -44,22 +46,28 @@ import io.newm.server.features.marketplace.model.OrderTransactionRequest
 import io.newm.server.features.marketplace.model.OrderTransactionResponse
 import io.newm.server.features.marketplace.model.QueueTransaction
 import io.newm.server.features.marketplace.model.Sale
-import io.newm.server.features.marketplace.model.SaleAmountRequest
-import io.newm.server.features.marketplace.model.SaleAmountResponse
+import io.newm.server.features.marketplace.model.SaleEndAmountRequest
+import io.newm.server.features.marketplace.model.SaleEndAmountResponse
+import io.newm.server.features.marketplace.model.SaleEndTransactionRequest
+import io.newm.server.features.marketplace.model.SaleEndTransactionResponse
 import io.newm.server.features.marketplace.model.SaleFilters
+import io.newm.server.features.marketplace.model.SaleStartAmountRequest
+import io.newm.server.features.marketplace.model.SaleStartAmountResponse
+import io.newm.server.features.marketplace.model.SaleStartTransactionRequest
+import io.newm.server.features.marketplace.model.SaleStartTransactionResponse
 import io.newm.server.features.marketplace.model.SaleStatus
 import io.newm.server.features.marketplace.model.SaleTransaction
-import io.newm.server.features.marketplace.model.SaleTransactionRequest
-import io.newm.server.features.marketplace.model.SaleTransactionResponse
 import io.newm.server.features.marketplace.model.Token
 import io.newm.server.features.marketplace.parser.parseQueue
 import io.newm.server.features.marketplace.parser.parseSale
 import io.newm.server.features.song.database.SongTable
 import io.newm.server.ktx.toReferenceUtxo
 import io.newm.server.typealiases.UserId
+import io.newm.shared.exception.HttpNotFoundException
 import io.newm.shared.exception.HttpPaymentRequiredException
 import io.newm.shared.exception.HttpUnprocessableEntityException
 import io.newm.shared.ktx.epochSecondsToLocalDateTime
+import io.newm.shared.ktx.existsHavingId
 import io.newm.shared.ktx.orZero
 import io.newm.txbuilder.ktx.extractFields
 import io.newm.txbuilder.ktx.mergeAmounts
@@ -141,8 +149,8 @@ internal class MarketplaceRepositoryImpl(
         }
     }
 
-    override suspend fun generateSaleAmount(request: SaleAmountRequest): SaleAmountResponse {
-        log.debug { "generateSaleAmount: $request" }
+    override suspend fun generateSaleStartAmount(request: SaleStartAmountRequest): SaleStartAmountResponse {
+        log.debug { "generateSaleStartAmount: $request" }
 
         val nativeAssets = listOf(
             nativeAsset {
@@ -179,14 +187,14 @@ internal class MarketplaceRepositoryImpl(
             }
         }
 
-        return SaleAmountResponse(
+        return SaleStartAmountResponse(
             saleId = sale.id.value,
             amountCborHex = amount.toCborByteArray().toHexString()
         )
     }
 
-    override suspend fun generateSaleTransaction(request: SaleTransactionRequest): SaleTransactionResponse {
-        log.debug { "generateSaleTransaction: $request" }
+    override suspend fun generateSaleStartTransaction(request: SaleStartTransactionRequest): SaleStartTransactionResponse {
+        log.debug { "generateSaleStartTransaction: $request" }
 
         if (request.utxos.isEmpty()) {
             throw HttpPaymentRequiredException("Missing UTXO's")
@@ -232,10 +240,8 @@ internal class MarketplaceRepositoryImpl(
         val contractAddress = configRepository.getString(CONFIG_KEY_MARKETPLACE_SALE_CONTRACT_ADDRESS)
         val lovelace = configRepository.getLong(CONFIG_KEY_MARKETPLACE_SALE_LOVELACE)
 
-        val cashRegisterKey =
-            requireNotNull(cardanoRepository.getKeyByName("cashRegister")) { "cashRegister key not defined!" }
-        val collateralKey =
-            requireNotNull(cardanoRepository.getKeyByName("collateral")) { "collateral key not defined!" }
+        val cashRegisterKey = getKey("cashRegister")
+        val collateralKey = getKey("collateral")
         val signingKeys = listOf(cashRegisterKey, collateralKey)
         val dummyKeys = request.utxos
             .map { it.address }
@@ -243,18 +249,11 @@ internal class MarketplaceRepositoryImpl(
             .map { Key.generateNew() }
         val allKeys = signingKeys + dummyKeys
         val requiredSigners = signingKeys.map { it.requiredSigner().toByteString() }
-        val collateralUtxos = listOf(
-            requireNotNull(
-                cardanoRepository
-                    .queryLiveUtxos(collateralKey.address)
-                    .filter { it.nativeAssetsCount == 0 }
-                    .maxByOrNull { it.lovelace.toLong() }
-            ) { "collateral utxo not found!" }
-        )
+        val collateralUtxos = getCollateralUtxos(collateralKey.address)
 
         // calculate required fee, totalCollateral and redeemer
         val calculatedFields = cardanoRepository
-            .buildSaleTransaction(
+            .buildSaleStartTransaction(
                 sourceUtxos = request.utxos,
                 collateralUtxos = collateralUtxos,
                 referenceInputUtxos = referenceInputUtxos,
@@ -270,7 +269,7 @@ internal class MarketplaceRepositoryImpl(
 
         // generate transaction id
         val transactionId = cardanoRepository
-            .buildSaleTransaction(
+            .buildSaleStartTransaction(
                 sourceUtxos = request.utxos,
                 collateralUtxos = collateralUtxos,
                 referenceInputUtxos = referenceInputUtxos,
@@ -288,7 +287,7 @@ internal class MarketplaceRepositoryImpl(
             ).transactionId
 
         // generate signed transaction
-        val transaction = cardanoRepository.buildSaleTransaction(
+        val transaction = cardanoRepository.buildSaleStartTransaction(
             sourceUtxos = request.utxos,
             collateralUtxos = collateralUtxos,
             referenceInputUtxos = referenceInputUtxos,
@@ -307,7 +306,109 @@ internal class MarketplaceRepositoryImpl(
         transaction {
             sale.delete()
         }
-        return SaleTransactionResponse(transaction.transactionCbor.toByteArray().toHexString())
+        return SaleStartTransactionResponse(transaction.transactionCbor.toByteArray().toHexString())
+    }
+
+    override suspend fun generateSaleEndAmount(request: SaleEndAmountRequest): SaleEndAmountResponse {
+        log.debug { "generateSaleEndAmount: $request" }
+
+        val exists = transaction { MarketplaceSaleEntity.existsHavingId(request.saleId) }
+        if (!exists) {
+            throw HttpNotFoundException("Sale not found: ${request.saleId}")
+        }
+
+        // add 1 extra ADA lovelace to ensure we always return change back and avoid a potential minUtxoNotMet error
+        val lovelace = configRepository.getLong(CONFIG_KEY_MARKETPLACE_SALE_LOVELACE) + 1000000L
+        val amount = CborInteger.create(lovelace.toBigInteger())
+        return SaleEndAmountResponse(amount.toCborByteArray().toHexString())
+    }
+
+    override suspend fun generateSaleEndTransaction(request: SaleEndTransactionRequest): SaleEndTransactionResponse {
+        log.debug { "generateSaleEndTransaction: $request" }
+
+        if (request.utxos.isEmpty()) {
+            throw HttpPaymentRequiredException("Missing UTXO's")
+        }
+
+        val sale = transaction {
+            MarketplaceSaleEntity[request.saleId]
+        }
+
+        // find the UTXO in the contract that holds the pointer asset, bundle tokens left and any profit
+        val contractAddress = configRepository.getString(CONFIG_KEY_MARKETPLACE_SALE_CONTRACT_ADDRESS)
+        val saleUtxo = cardanoRepository.queryLiveUtxos(contractAddress).firstOrNull { utxo ->
+            utxo.nativeAssetsList.any { it.policy == sale.pointerPolicyId && it.name == sale.pointerAssetName }
+        } ?: throw HttpUnprocessableEntityException("Pointer asset not found in contract address utxos")
+
+        val sourceUtxos = request.utxos + saleUtxo
+
+        val pointerAsset = nativeAsset {
+            policy = sale.pointerPolicyId
+            name = sale.pointerAssetName
+            amount = "-1"
+        }
+
+        val referenceInputUtxos = configRepository
+            .getStrings(CONFIG_KEY_MARKETPLACE_SALE_REFERENCE_INPUT_UTXOS)
+            .map(String::toReferenceUtxo)
+
+        val cashRegisterKey = getKey("cashRegister")
+        val collateralKey = getKey("collateral")
+        val signingKeys = listOf(cashRegisterKey, collateralKey)
+        val dummyKeys = request.utxos
+            .map { it.address }
+            .plus(sale.ownerAddress)
+            .distinct()
+            .map { Key.generateNew() }
+        val allKeys = signingKeys + dummyKeys
+        val requiredSigners = signingKeys.map { it.requiredSigner().toByteString() } +
+            listOf(sale.ownerAddress.toRequiredSigner().toByteString())
+        val collateralUtxos = getCollateralUtxos(collateralKey.address)
+
+        // calculate required fee, totalCollateral and redeemer
+        val calculatedFields = cardanoRepository
+            .buildSaleEndTransaction(
+                sourceUtxos = sourceUtxos,
+                collateralUtxos = collateralUtxos,
+                referenceInputUtxos = referenceInputUtxos,
+                ownerAddress = sale.ownerAddress,
+                changeAddress = request.changeAddress,
+                pointerAsset = pointerAsset,
+                requiredSigners = requiredSigners,
+                signatures = cardanoRepository.signTransactionDummy(allKeys)
+            ).extractFields()
+
+        // generate transaction id
+        val transactionId = cardanoRepository
+            .buildSaleEndTransaction(
+                sourceUtxos = sourceUtxos,
+                collateralUtxos = collateralUtxos,
+                referenceInputUtxos = referenceInputUtxos,
+                ownerAddress = sale.ownerAddress,
+                changeAddress = request.changeAddress,
+                pointerAsset = pointerAsset,
+                requiredSigners = requiredSigners,
+                signatures = cardanoRepository.signTransactionDummy(allKeys),
+                fee = calculatedFields.fee,
+                totalCollateral = calculatedFields.totalCollateral,
+                redeemers = calculatedFields.redeemers
+            ).transactionId
+
+        // generate signed transaction
+        val transaction = cardanoRepository.buildSaleEndTransaction(
+            sourceUtxos = sourceUtxos,
+            collateralUtxos = collateralUtxos,
+            referenceInputUtxos = referenceInputUtxos,
+            ownerAddress = sale.ownerAddress,
+            changeAddress = request.changeAddress,
+            pointerAsset = pointerAsset,
+            requiredSigners = requiredSigners,
+            signatures = cardanoRepository.signTransaction(transactionId.hexToByteArray(), signingKeys),
+            fee = calculatedFields.fee,
+            totalCollateral = calculatedFields.totalCollateral,
+            redeemers = calculatedFields.redeemers
+        )
+        return SaleEndTransactionResponse(transaction.transactionCbor.toByteArray().toHexString())
     }
 
     override suspend fun generateOrderAmount(request: OrderAmountRequest): OrderAmountResponse {
@@ -583,6 +684,21 @@ internal class MarketplaceRepositoryImpl(
             MarketplaceBookmarkEntity.update(QUEUE_TIP_KEY, response)
         }
     }
+
+    private suspend fun getKey(name: String): Key =
+        requireNotNull(
+            cardanoRepository.getKeyByName(name)
+        ) { "$name key not defined!" }
+
+    private suspend fun getCollateralUtxos(address: String): List<Utxo> =
+        listOf(
+            requireNotNull(
+                cardanoRepository
+                    .queryLiveUtxos(address)
+                    .filter { it.nativeAssetsCount == 0 }
+                    .maxByOrNull { it.lovelace.toLong() }
+            ) { "collateral utxo not found!" }
+        )
 
     private fun computeAmount(
         multiplier: Long,

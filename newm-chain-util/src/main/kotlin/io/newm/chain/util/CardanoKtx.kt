@@ -234,3 +234,5 @@ fun assetUrlOf(
     } else {
         "https://preprod.cardanoscan.io/token/$policyId$assetName"
     }
+
+fun String.toRequiredSigner(): ByteArray = Bech32.decode(this).bytes.copyOfRange(1, 29)

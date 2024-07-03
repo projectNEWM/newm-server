@@ -8,11 +8,15 @@ import io.newm.server.features.marketplace.model.OrderAmountResponse
 import io.newm.server.features.marketplace.model.OrderTransactionRequest
 import io.newm.server.features.marketplace.model.OrderTransactionResponse
 import io.newm.server.features.marketplace.model.Sale
-import io.newm.server.features.marketplace.model.SaleAmountRequest
-import io.newm.server.features.marketplace.model.SaleAmountResponse
+import io.newm.server.features.marketplace.model.SaleEndAmountRequest
+import io.newm.server.features.marketplace.model.SaleEndAmountResponse
+import io.newm.server.features.marketplace.model.SaleEndTransactionRequest
+import io.newm.server.features.marketplace.model.SaleEndTransactionResponse
 import io.newm.server.features.marketplace.model.SaleFilters
-import io.newm.server.features.marketplace.model.SaleTransactionRequest
-import io.newm.server.features.marketplace.model.SaleTransactionResponse
+import io.newm.server.features.marketplace.model.SaleStartAmountRequest
+import io.newm.server.features.marketplace.model.SaleStartAmountResponse
+import io.newm.server.features.marketplace.model.SaleStartTransactionRequest
+import io.newm.server.features.marketplace.model.SaleStartTransactionResponse
 import io.newm.server.typealiases.UserId
 import java.util.UUID
 
@@ -37,9 +41,13 @@ interface MarketplaceRepository {
 
     suspend fun getArtistCount(filters: ArtistFilters): Long
 
-    suspend fun generateSaleAmount(request: SaleAmountRequest): SaleAmountResponse
+    suspend fun generateSaleStartAmount(request: SaleStartAmountRequest): SaleStartAmountResponse
 
-    suspend fun generateSaleTransaction(request: SaleTransactionRequest): SaleTransactionResponse
+    suspend fun generateSaleStartTransaction(request: SaleStartTransactionRequest): SaleStartTransactionResponse
+
+    suspend fun generateSaleEndAmount(request: SaleEndAmountRequest): SaleEndAmountResponse
+
+    suspend fun generateSaleEndTransaction(request: SaleEndTransactionRequest): SaleEndTransactionResponse
 
     suspend fun generateOrderAmount(request: OrderAmountRequest): OrderAmountResponse
 

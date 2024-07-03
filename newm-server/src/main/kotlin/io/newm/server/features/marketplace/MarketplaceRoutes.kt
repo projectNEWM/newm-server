@@ -38,13 +38,25 @@ fun Routing.createMarketplaceRoutes() {
                 recaptchaRepository.verify("get_sale", request)
                 respond(marketplaceRepository.getSale(saleId))
             }
-            post("amount") {
-                recaptchaRepository.verify("generate_sale_amount", request)
-                respond(marketplaceRepository.generateSaleAmount(receive()))
+            route("start") {
+                post("amount") {
+                    recaptchaRepository.verify("generate_sale_start_amount", request)
+                    respond(marketplaceRepository.generateSaleStartAmount(receive()))
+                }
+                post("transaction") {
+                    recaptchaRepository.verify("generate_sale_start_transaction", request)
+                    respond(marketplaceRepository.generateSaleStartTransaction(receive()))
+                }
             }
-            post("transaction") {
-                recaptchaRepository.verify("generate_sale_transaction", request)
-                respond(marketplaceRepository.generateSaleTransaction(receive()))
+            route("end") {
+                post("amount") {
+                    recaptchaRepository.verify("generate_sale_end_amount", request)
+                    respond(marketplaceRepository.generateSaleEndAmount(receive()))
+                }
+                post("transaction") {
+                    recaptchaRepository.verify("generate_sale_end_transaction", request)
+                    respond(marketplaceRepository.generateSaleEndTransaction(receive()))
+                }
             }
         }
         route("artists") {
