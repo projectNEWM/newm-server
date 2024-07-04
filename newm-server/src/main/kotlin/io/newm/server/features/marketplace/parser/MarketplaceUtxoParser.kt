@@ -4,7 +4,7 @@ import com.google.protobuf.ByteString
 import io.newm.chain.grpc.NativeAsset
 import io.newm.chain.grpc.PlutusDataList
 import io.newm.chain.grpc.Utxo
-import io.newm.chain.util.paymentAddressFromHash
+import io.newm.chain.util.hashToPaymentAddress
 import io.newm.server.features.marketplace.model.QueueTransaction
 import io.newm.server.features.marketplace.model.SaleTransaction
 import io.newm.server.features.marketplace.model.Token
@@ -47,6 +47,6 @@ private fun PlutusDataList.toToken(): Token =
     )
 
 private fun PlutusDataList.toPaymentAddress(isMainnet: Boolean): String =
-    paymentAddressFromHash(isMainnet, listItemList[0].bytes.toByteArray() + listItemList[1].bytes.toByteArray())
+    (listItemList[0].bytes.toByteArray() + listItemList[1].bytes.toByteArray()).hashToPaymentAddress(isMainnet)
 
 private fun ByteString.toHexString() = toByteArray().toHexString()
