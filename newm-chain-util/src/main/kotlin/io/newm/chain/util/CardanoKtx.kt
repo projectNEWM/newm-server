@@ -2,6 +2,10 @@ package io.newm.chain.util
 
 import com.google.iot.cbor.CborArray
 import com.google.iot.cbor.CborByteString
+import io.newm.chain.util.Constants.PAYMENT_ADDRESS_PREFIX_MAINNET
+import io.newm.chain.util.Constants.PAYMENT_ADDRESS_PREFIX_TESTNET
+import io.newm.chain.util.Constants.PAYMENT_STAKE_ADDRESS_KEY_KEY_PREFIX_MAINNET
+import io.newm.chain.util.Constants.PAYMENT_STAKE_ADDRESS_KEY_KEY_PREFIX_TESTNET
 import io.newm.chain.util.Constants.STAKE_ADDRESS_KEY_PREFIX_MAINNET
 import io.newm.chain.util.Constants.STAKE_ADDRESS_KEY_PREFIX_TESTNET
 import org.slf4j.LoggerFactory
@@ -184,29 +188,24 @@ fun <K, V> List<Map<K, V>>.flatten(): Map<K, V> {
     }
 }
 
-fun paymentAddressFromHash(
-    isMainnet: Boolean,
-    hash: ByteArray
-): String {
-    require(hash.size == 28 || hash.size == 56) { "Invalid hash size: ${hash.size}" }
+fun ByteArray.hashToPaymentAddress(isMainnet: Boolean): String {
+    require(size == 28 || size == 56) { "Invalid hash size: $size" }
     val prefix: String
     val firstByte: Byte
     if (isMainnet) {
         prefix = "addr"
-        firstByte = Constants.PAYMENT_ADDRESS_PREFIX_MAINNET
+        firstByte = if (size == 56) PAYMENT_STAKE_ADDRESS_KEY_KEY_PREFIX_MAINNET else PAYMENT_ADDRESS_PREFIX_MAINNET
     } else {
         prefix = "addr_test"
-        firstByte = Constants.PAYMENT_ADDRESS_PREFIX_TESTNET
+        firstByte = if (size == 56) PAYMENT_STAKE_ADDRESS_KEY_KEY_PREFIX_TESTNET else PAYMENT_ADDRESS_PREFIX_TESTNET
     }
-    return Bech32.encode(prefix, byteArrayOf(firstByte) + hash)
+    return Bech32.encode(prefix, byteArrayOf(firstByte) + this)
 }
 
-fun hashFromPaymentAddress(address: String): ByteArray =
-    Bech32
-        .decode(address)
-        .bytes
-        .drop(1)
-        .toByteArray()
+fun String.paymentAddressToHash(): ByteArray {
+    require(startsWith("addr")) { "Invalid payment address: $this" }
+    return Bech32.decode(this).bytes.run { copyOfRange(1, size) }
+}
 
 /**
  * Computes the Asset fingerprint
