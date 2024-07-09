@@ -41,7 +41,7 @@ object Dependencies {
     }
 
     object KotlinXSerialization {
-        private const val VERSION = "1.7.0"
+        private const val VERSION = "1.7.1"
 
         const val JSON = "org.jetbrains.kotlinx:kotlinx-serialization-json:$VERSION"
     }
@@ -65,7 +65,7 @@ object Dependencies {
     }
 
     object Ktor {
-        private const val VERSION = "2.3.11"
+        private const val VERSION = "2.3.12"
 
         const val SERVER_CORE = "io.ktor:ktor-server-core:$VERSION"
         const val SERVER_CIO = "io.ktor:ktor-server-cio:$VERSION"
@@ -132,7 +132,7 @@ object Dependencies {
     }
 
     object FlywayDB {
-        private const val VERSION = "10.15.0"
+        private const val VERSION = "10.15.2"
 
         const val CORE = "org.flywaydb:flyway-core:$VERSION"
         const val POSTGRES = "org.flywaydb:flyway-database-postgresql:$VERSION"
@@ -220,8 +220,8 @@ object Dependencies {
     }
 
     object Aws {
-        private const val VERSION = "1.12.746"
-        private const val VERSION2 = "2.26.5"
+        private const val VERSION = "1.12.758"
+        private const val VERSION2 = "2.26.17"
         private const val JAXB_VERSION = "2.3.1"
 
         const val BOM = "com.amazonaws:aws-java-sdk-bom:$VERSION"
@@ -249,7 +249,7 @@ object Dependencies {
     }
 
     object JUnit {
-        private const val VERSION = "5.10.2"
+        private const val VERSION = "5.10.3"
 
         const val JUPITER = "org.junit.jupiter:junit-jupiter:$VERSION"
     }
@@ -267,7 +267,7 @@ object Dependencies {
     }
 
     object GoogleTruth {
-        private const val VERSION = "1.4.2"
+        private const val VERSION = "1.4.3"
 
         const val TRUTH = "com.google.truth:truth:$VERSION"
     }
@@ -286,7 +286,7 @@ object Dependencies {
     }
 
     object Grpc {
-        private const val VERSION = "1.64.0"
+        private const val VERSION = "1.65.0"
 
         const val STUB = "io.grpc:grpc-stub:$VERSION"
         const val API = "io.grpc:grpc-api:$VERSION"
@@ -303,7 +303,7 @@ object Dependencies {
     }
 
     object Protobuf {
-        private const val VERSION = "4.27.1"
+        private const val VERSION = "4.27.2"
 
         const val JAVA_UTIL = "com.google.protobuf:protobuf-java-util:$VERSION"
         const val KOTLIN = "com.google.protobuf:protobuf-kotlin:$VERSION"
