@@ -114,6 +114,7 @@ class EarningsRepositoryImpl(
                 val newmUsdPrice = cardanoRepository.queryNEWMUSDPrice()
                 val newmAmount = (newmUsdPrice.toBigInteger() * usdAmount).toBigDecimal()
                 exchangeRate = " @ 1 NEWM = ${newmUsdPrice.toBigDecimal().movePointLeft(6).toPlainString()} USD"
+                log.info { "usdAmount: $usdAmount, newmUsdPrice: $newmUsdPrice, newmAmount: $newmAmount, exchangeRate: $exchangeRate" }
                 newmAmount
             }
 
@@ -131,7 +132,9 @@ class EarningsRepositoryImpl(
                     memo = "Royalty for: ${song.title} - ${user.stageOrFullName}$exchangeRate",
                     createdAt = now,
                     startDate = now.plusHours(24),
-                )
+                ).also {
+                    log.info { "streamTokenAmount: $streamTokenAmount, Earning: $it" }
+                }
             }
         addAll(earnings)
     }
