@@ -29,6 +29,8 @@ fun Routing.createOAuthRoutes(type: OAuthType) {
             req.oauthTokens ?: req.code?.let { code ->
                 oAuthRepository.getTokens(type, code, req.redirectUri)
             } ?: throw HttpBadRequestException("missing code")
-        respond(jwtRepository.createLoginResponse(userRepository.findOrAdd(type, oauthTokens)))
+        val userId = userRepository.findOrAdd(type, oauthTokens)
+        val isAdmin = userRepository.isAdmin(userId)
+        respond(jwtRepository.createLoginResponse(userId, isAdmin))
     }
 }

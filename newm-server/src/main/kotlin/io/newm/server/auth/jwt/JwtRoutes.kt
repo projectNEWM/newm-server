@@ -6,6 +6,7 @@ import io.ktor.server.routing.Routing
 import io.newm.server.auth.AUTH_PATH
 import io.newm.server.auth.jwt.repo.JwtRepository
 import io.newm.server.auth.password.createLoginResponse
+import io.newm.server.features.user.repo.UserRepository
 import io.newm.server.ktx.jwtId
 import io.newm.server.ktx.jwtPrincipal
 import io.newm.server.ktx.myUserId
@@ -14,6 +15,7 @@ import io.newm.shared.koin.inject
 
 fun Routing.createJwtRoutes() {
     val jwtRepository: JwtRepository by inject()
+    val userRepository: UserRepository by inject()
 
     authenticate(AUTH_JWT) {
         get("$AUTH_PATH/jwt") {
@@ -33,7 +35,8 @@ fun Routing.createJwtRoutes() {
     authenticate(AUTH_JWT_REFRESH) {
         get("$AUTH_PATH/refresh") {
             jwtRepository.delete(jwtId)
-            respond(jwtRepository.createLoginResponse(myUserId))
+            val admin = userRepository.isAdmin(myUserId)
+            respond(jwtRepository.createLoginResponse(myUserId, admin))
         }
     }
 }
