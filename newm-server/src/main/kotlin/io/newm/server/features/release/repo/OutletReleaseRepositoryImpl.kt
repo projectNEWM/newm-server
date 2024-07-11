@@ -2,18 +2,25 @@ package io.newm.server.features.release.repo
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.*
+import io.ktor.client.plugins.*
 import io.ktor.client.request.*
+import io.ktor.client.statement.*
 import io.ktor.http.*
-import io.newm.server.features.release.model.SpotifySearchResponse
+import io.newm.server.config.repo.ConfigRepository
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_NEWM_PLAYLIST_ID
+import io.newm.server.features.release.model.SpotifyRequest
+import io.newm.server.features.release.model.SpotifyResponse
 import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.ktx.checkedBody
 import io.newm.server.typealiases.SongId
 
 private const val SPOTIFY_SEARCH_API_URL = "https://api.spotify.com/v1/search"
+private const val SPOTIFY_PLAYLIST_API_URL = "https://api.spotify.com/v1/playlists/"
 
 internal class OutletReleaseRepositoryImpl(
     private val httpClient: HttpClient,
-    private val songRepository: SongRepository
+    private val songRepository: SongRepository,
+    private val configRepository: ConfigRepository
 ) : OutletReleaseRepository {
     private val logger = KotlinLogging.logger {}
 
@@ -38,7 +45,40 @@ internal class OutletReleaseRepositoryImpl(
                         }
                     }
                     accept(ContentType.Application.Json)
-                }.checkedBody<SpotifySearchResponse>()
+                }.checkedBody<SpotifyResponse>()
+        // Call addSongToPlaylist in case the song was released
+        if (response.tracks.total > 0) {
+            val httpResponse = addSongToPlaylist(response.tracks.items[0].uri)
+            if (httpResponse.status.isSuccess()) {
+                logger.debug { "Song was successfully added to spotify playlist" }
+            } else {
+                logger.error { "Song was not added to spotify playlist, $httpResponse" }
+            }
+        }
         return response.tracks.total > 0
+    }
+
+    override suspend fun addSongToPlaylist(trackUri: String): HttpResponse {
+        logger.debug { "Adding song with track uri=$trackUri to spotify playlist" }
+        val playlistId = configRepository.getString(
+            CONFIG_KEY_NEWM_PLAYLIST_ID
+        )
+        val response =
+            httpClient
+                .post("$SPOTIFY_PLAYLIST_API_URL$playlistId/tracks") {
+                    retry {
+                        maxRetries = 2
+                        delayMillis { 500L }
+                    }
+                    contentType(ContentType.Application.Json)
+                    accept(ContentType.Application.Json)
+                    setBody {
+                        SpotifyRequest(
+                            arrayOf(trackUri),
+                            0
+                        )
+                    }
+                }
+        return response
     }
 }

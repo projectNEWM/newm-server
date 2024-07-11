@@ -12,6 +12,8 @@ import io.mockk.every
 import io.mockk.mockk
 import io.newm.server.BaseApplicationTests
 import io.newm.server.client.auth.spotifyBearer
+import io.newm.server.config.repo.ConfigRepository
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_NEWM_PLAYLIST_ID
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.repo.SongRepository
 import io.newm.shared.serialization.BigDecimalSerializer
@@ -28,6 +30,7 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 class OutletReleaseRepositoryTest : BaseApplicationTests() {
+    val playlistId = "4I1cdKzkEzNotxwMPqtM6U"
     private val httpClient: HttpClient by lazy {
         HttpClient(CIO) {
             install(ContentNegotiation) {
@@ -69,7 +72,11 @@ class OutletReleaseRepositoryTest : BaseApplicationTests() {
                 mockk<SongRepository>(relaxed = true) {
                     coEvery { get(songId) } returns song
                 }
-            val releaseRepository = OutletReleaseRepositoryImpl(httpClient, songRepository)
+            val confRepository =
+                mockk<ConfigRepository>(relaxed = true) {
+                    coEvery { getString(CONFIG_KEY_NEWM_PLAYLIST_ID) } returns playlistId
+                }
+            val releaseRepository = OutletReleaseRepositoryImpl(httpClient, songRepository, confRepository)
             assertThat(releaseRepository.isSongReleased(songId)).isTrue()
         }
 
@@ -86,7 +93,11 @@ class OutletReleaseRepositoryTest : BaseApplicationTests() {
                 mockk<SongRepository>(relaxed = true) {
                     coEvery { get(songId) } returns song
                 }
-            val releaseRepository = OutletReleaseRepositoryImpl(httpClient, songRepository)
+            val confRepository =
+                mockk<ConfigRepository>(relaxed = true) {
+                    coEvery { getString(CONFIG_KEY_NEWM_PLAYLIST_ID) } returns playlistId
+                }
+            val releaseRepository = OutletReleaseRepositoryImpl(httpClient, songRepository, confRepository)
             assertThat(releaseRepository.isSongReleased(songId)).isFalse()
         }
 }
