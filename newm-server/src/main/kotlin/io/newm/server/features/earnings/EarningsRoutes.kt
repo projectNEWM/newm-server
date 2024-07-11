@@ -7,6 +7,7 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.Routing
 import io.ktor.server.routing.route
 import io.newm.chain.util.extractStakeAddress
+import io.newm.server.auth.jwt.AUTH_JWT
 import io.newm.server.auth.jwt.AUTH_JWT_ADMIN
 import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.earnings.model.AddSongRoyaltyRequest
@@ -54,24 +55,26 @@ fun Routing.createEarningsRoutes() {
     }
 
     // Claiming is un-authenticated, but we still check recaptcha to prevent bots
-    route("$EARNINGS_PATH/{walletAddress}") {
-        // get earnings
-        get {
-            recaptchaRepository.verify("getearnings_$walletAddress", request)
-            val stakeAddress = parameters["walletAddress"]!!.extractStakeAddress(cardanoRepository.isMainnet())
-            val earnings = earningsRepository.getAllByStakeAddress(stakeAddress)
-            respond(earnings)
-        }
-        // create a claim for all earnings on this wallet stake address
-        post {
-            recaptchaRepository.verify("postearnings_$walletAddress", request)
-            val stakeAddress = parameters["walletAddress"]!!.extractStakeAddress(cardanoRepository.isMainnet())
-            val claimOrder = earningsRepository.createClaimOrder(stakeAddress)
+    authenticate(AUTH_JWT, optional = true) {
+        route("$EARNINGS_PATH/{walletAddress}") {
+            // get earnings
+            get {
+                recaptchaRepository.verify("getearnings_$walletAddress", request)
+                val stakeAddress = parameters["walletAddress"]!!.extractStakeAddress(cardanoRepository.isMainnet())
+                val earnings = earningsRepository.getAllByStakeAddress(stakeAddress)
+                respond(earnings)
+            }
+            // create a claim for all earnings on this wallet stake address
+            post {
+                recaptchaRepository.verify("postearnings_$walletAddress", request)
+                val stakeAddress = parameters["walletAddress"]!!.extractStakeAddress(cardanoRepository.isMainnet())
+                val claimOrder = earningsRepository.createClaimOrder(stakeAddress)
 
-            if (claimOrder != null) {
-                respond(claimOrder)
-            } else {
-                respond(HttpStatusCode.NotFound, "No unclaimed earnings found for this wallet address.")
+                if (claimOrder != null) {
+                    respond(claimOrder)
+                } else {
+                    respond(HttpStatusCode.NotFound, "No unclaimed earnings found for this wallet address.")
+                }
             }
         }
     }
