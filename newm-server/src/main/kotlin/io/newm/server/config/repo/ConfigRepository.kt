@@ -73,5 +73,6 @@ interface ConfigRepository {
         const val CONFIG_KEY_MARKETPLACE_SALE_REFERENCE_INPUT_UTXOS = "marketplace.saleReferenceInputUtxos"
         const val CONFIG_KEY_EARNINGS_MONITOR_PAYMENT_ADDRESS_TIMEOUT_MIN = "earnings.monitorPaymentAddressTimeoutMin"
         const val CONFIG_KEY_EARNINGS_CLAIM_ORDER_FEE = "earnings.claimOrderFee"
+        const val CONFIG_KEY_NEWM_PLAYLIST_ID = "newm.playlist.id"
     }
 }
