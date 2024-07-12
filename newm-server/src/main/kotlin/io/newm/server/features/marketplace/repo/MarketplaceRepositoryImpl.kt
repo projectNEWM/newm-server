@@ -7,7 +7,6 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.newm.chain.grpc.MonitorAddressResponse
 import io.newm.chain.grpc.Utxo
 import io.newm.chain.grpc.nativeAsset
-import io.newm.chain.grpc.outputUtxo
 import io.newm.chain.util.Sha3
 import io.newm.chain.util.hexToByteArray
 import io.newm.chain.util.toHexString
@@ -28,6 +27,7 @@ import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPL
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_NFTCDN_ENABLED
 import io.newm.server.features.cardano.model.Key
 import io.newm.server.features.cardano.repo.CardanoRepository
+import io.newm.server.features.marketplace.builders.buildOrderTransaction
 import io.newm.server.features.marketplace.builders.buildQueueDatum
 import io.newm.server.features.marketplace.builders.buildSaleDatum
 import io.newm.server.features.marketplace.builders.buildSaleEndTransaction
@@ -72,7 +72,6 @@ import io.newm.shared.ktx.orZero
 import io.newm.txbuilder.ktx.extractFields
 import io.newm.txbuilder.ktx.mergeAmounts
 import io.newm.txbuilder.ktx.sortByHashAndIx
-import io.newm.txbuilder.ktx.toCborObject
 import io.newm.txbuilder.ktx.toNativeAssetCborMap
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.and
@@ -437,7 +436,7 @@ internal class MarketplaceRepositoryImpl(
             nativeAsset {
                 policy = incentivePolicyId
                 name = incentiveAssetName
-                amount = computeAmount(incentiveAmount, 2)
+                amount = computeAmount(incentiveAmount, 2) // 2 incentive units: 1 for purchase, 1 for retrieval
             }
         )
 
@@ -484,43 +483,61 @@ internal class MarketplaceRepositoryImpl(
         val contractAddress = configRepository.getString(CONFIG_KEY_MARKETPLACE_QUEUE_CONTRACT_ADDRESS)
         val incentivePolicyId = configRepository.getString(CONFIG_KEY_MARKETPLACE_CURRENCY_POLICY_ID)
         val incentiveAssetName = configRepository.getString(CONFIG_KEY_MARKETPLACE_CURRENCY_ASSET_NAME)
-        val transaction = cardanoRepository.buildTransaction {
-            sourceUtxos.addAll(request.utxos)
-            outputUtxos.add(
-                outputUtxo {
-                    address = contractAddress
-                    this.lovelace = lovelace.toString()
-                    nativeAssets.addAll(
-                        listOf(
-                            nativeAsset {
-                                policy = sale.costPolicyId
-                                name = sale.costAssetName
-                                amount = computeAmount(sale.costAmount, order.bundleQuantity)
-                            },
-                            nativeAsset {
-                                policy = incentivePolicyId
-                                name = incentiveAssetName
-                                amount = computeAmount(order.incentiveAmount, 2)
-                            }
-                        ).mergeAmounts()
-                    )
-                    datum = buildQueueDatum(
-                        ownerAddress = sale.ownerAddress,
-                        numberOfBundles = order.bundleQuantity,
-                        incentiveToken = Token(
-                            policyId = incentivePolicyId,
-                            assetName = incentiveAssetName,
-                            amount = order.incentiveAmount
-                        ),
-                        pointerAssetName = sale.pointerAssetName
-                    ).toCborObject().toCborByteArray().toHexString()
-                }
+
+        val nativeAssets = listOf(
+            nativeAsset {
+                policy = sale.costPolicyId
+                name = sale.costAssetName
+                amount = computeAmount(sale.costAmount, order.bundleQuantity)
+            },
+            nativeAsset {
+                policy = incentivePolicyId
+                name = incentiveAssetName
+                amount = computeAmount(order.incentiveAmount, 2) // 2 incentive units: 1 for purchase, 1 for retrieval
+            }
+        ).mergeAmounts()
+
+        val queueDatum = buildQueueDatum(
+            ownerAddress = sale.ownerAddress,
+            numberOfBundles = order.bundleQuantity,
+            incentiveToken = Token(
+                policyId = incentivePolicyId,
+                assetName = incentiveAssetName,
+                amount = order.incentiveAmount
+            ),
+            pointerAssetName = sale.pointerAssetName
+        )
+
+        val dummyKeys = request.utxos
+            .map { it.address }
+            .distinct()
+            .map { Key.generateNew() }
+
+        // compute required fee
+        val fee = cardanoRepository
+            .buildOrderTransaction(
+                sourceUtxos = request.utxos,
+                contractAddress = contractAddress,
+                changeAddress = request.changeAddress,
+                lovelace = lovelace,
+                nativeAssets = nativeAssets,
+                queueDatum = queueDatum,
+                signatures = cardanoRepository.signTransactionDummy(dummyKeys)
+            ).extractFields()
+            .fee
+
+        // generate transaction with computed fee
+        val transaction = cardanoRepository
+            .buildOrderTransaction(
+                sourceUtxos = request.utxos,
+                contractAddress = contractAddress,
+                changeAddress = request.changeAddress,
+                lovelace = lovelace,
+                nativeAssets = nativeAssets,
+                queueDatum = queueDatum,
+                fee = fee
             )
-            changeAddress = request.changeAddress
-        }
-        if (transaction.hasErrorMessage()) {
-            throw HttpUnprocessableEntityException("Failed to build order transaction: ${transaction.errorMessage}")
-        }
+
         transaction {
             order.delete()
         }

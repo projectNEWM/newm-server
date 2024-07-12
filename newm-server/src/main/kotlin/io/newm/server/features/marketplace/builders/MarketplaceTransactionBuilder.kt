@@ -54,7 +54,7 @@ suspend fun CardanoRepository.buildSaleStartTransaction(
         this.requiredSigners.addAll(requiredSigners)
         this.signatures.addAll(signatures)
         fee?.let {
-            this.fee = fee
+            this.fee = it
         }
         totalCollateral?.let {
             this.totalCollateral = it
@@ -114,7 +114,7 @@ suspend fun CardanoRepository.buildSaleEndTransaction(
         this.requiredSigners.addAll(requiredSigners)
         this.signatures.addAll(signatures)
         fee?.let {
-            this.fee = fee
+            this.fee = it
         }
         totalCollateral?.let {
             this.totalCollateral = it
@@ -146,5 +146,38 @@ suspend fun CardanoRepository.buildSaleEndTransaction(
     }.also {
         if (it.hasErrorMessage()) {
             throw HttpUnprocessableEntityException("Failed to build sale-end transaction: ${it.errorMessage}")
+        }
+    }
+
+suspend fun CardanoRepository.buildOrderTransaction(
+    sourceUtxos: List<Utxo>,
+    contractAddress: String,
+    changeAddress: String,
+    lovelace: Long,
+    nativeAssets: List<NativeAsset>,
+    queueDatum: PlutusData,
+    signatures: List<Signature>? = null,
+    fee: Long? = null
+): TransactionBuilderResponse =
+    buildTransaction {
+        this.sourceUtxos.addAll(sourceUtxos)
+        this.outputUtxos.add(
+            outputUtxo {
+                this.address = contractAddress
+                this.lovelace = lovelace.toString()
+                this.nativeAssets.addAll(nativeAssets)
+                this.datum = queueDatum.toCborObject().toCborByteArray().toHexString()
+            }
+        )
+        this.changeAddress = changeAddress
+        signatures?.let {
+            this.signatures.addAll(it)
+        }
+        fee?.let {
+            this.fee = it
+        }
+    }.also {
+        if (it.hasErrorMessage()) {
+            throw HttpUnprocessableEntityException("Failed to build order transaction: ${it.errorMessage}")
         }
     }
