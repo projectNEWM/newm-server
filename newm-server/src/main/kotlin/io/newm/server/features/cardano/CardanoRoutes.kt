@@ -7,11 +7,13 @@ import io.ktor.server.auth.authenticate
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Routing
+import io.ktor.server.routing.route
 import io.newm.chain.util.extractStakeAddress
 import io.newm.chain.util.hexToByteArray
 import io.newm.server.auth.jwt.AUTH_JWT
 import io.newm.server.auth.jwt.AUTH_JWT_ADMIN
 import io.newm.server.features.cardano.model.Key
+import io.newm.server.features.cardano.model.QueryPriceResponse
 import io.newm.server.features.cardano.model.ScriptAddressWhitelistRequest
 import io.newm.server.features.cardano.model.SubmitTransactionRequest
 import io.newm.server.features.cardano.model.SubmitTransactionResponse
@@ -34,22 +36,22 @@ fun Routing.createCardanoRoutes() {
     val log: Logger by inject { parametersOf("CardanoRoutes") }
     val songRepository: SongRepository by inject()
     val cardanoRepository: CardanoRepository by inject()
-
-    authenticate(AUTH_JWT_ADMIN) {
-        post("/v1/cardano/key") {
-            try {
-                val cliKeyPair: CliKeyPair = receive()
-                val key = Key.createFromCliKeys(cliKeyPair)
-                if (cardanoRepository.getKeyByName(cliKeyPair.name) != null) {
-                    throw IllegalArgumentException("Key with name '${cliKeyPair.name}' already exists!")
+    route("/v1/cardano") {
+        authenticate(AUTH_JWT_ADMIN) {
+            post("key") {
+                try {
+                    val cliKeyPair: CliKeyPair = receive()
+                    val key = Key.createFromCliKeys(cliKeyPair)
+                    if (cardanoRepository.getKeyByName(cliKeyPair.name) != null) {
+                        throw IllegalArgumentException("Key with name '${cliKeyPair.name}' already exists!")
+                    }
+                    cardanoRepository.saveKey(key, cliKeyPair.name)
+                    respond(HttpStatusCode.Created)
+                } catch (e: Exception) {
+                    log.error("Failed to save key!", e)
+                    throw e
                 }
-                cardanoRepository.saveKey(key, cliKeyPair.name)
-                respond(HttpStatusCode.Created)
-            } catch (e: Exception) {
-                log.error("Failed to save key!", e)
-                throw e
             }
-        }
 
 //        /**
 //         * Only temporarily uncomment if there's some legal emergency where we need a key to perform a manual transaction.
@@ -65,96 +67,106 @@ fun Routing.createCardanoRoutes() {
 //            }
 //        }
 
-        get("/v1/cardano/key/{keyId}") {
-            try {
-                val keyId = request.call.parameters["keyId"]?.toUUID() ?: throw IllegalArgumentException("Invalid key id!")
-                val key = requireNotNull(cardanoRepository.getKey(keyId)) { "Key with id '$keyId' not found!" }
-                respond(key.toCliKeyPair(keyId.toString()))
-            } catch (e: Exception) {
-                log.error("Failed to get key!", e)
-                throw e
-            }
-        }
-
-        post("/v1/cardano/encryption") {
-            try {
-                cardanoRepository.saveEncryptionParams(receive())
-                respond(HttpStatusCode.Created)
-            } catch (e: Exception) {
-                log.error("Failed to save encryption params!", e)
-                throw e
-            }
-        }
-
-        post("v1/cardano/scriptAddressWhitelist") {
-            try {
-                val scriptAddressWhitelistRequest = receive<ScriptAddressWhitelistRequest>()
-                val scriptAddress = scriptAddressWhitelistRequest.scriptAddress
-                val stakeAddress =
-                    if (scriptAddress.startsWith("stake") ||
-                        scriptAddress.startsWith("stake_test")
-                    ) {
-                        scriptAddress
-                    } else {
-                        scriptAddress.extractStakeAddress(cardanoRepository.isMainnet())
-                    }
-
-                if (scriptAddress != stakeAddress) {
-                    cardanoRepository.saveScriptAddressToWhitelist(scriptAddress)
+            get("key/{keyId}") {
+                try {
+                    val keyId =
+                        request.call.parameters["keyId"]?.toUUID() ?: throw IllegalArgumentException("Invalid key id!")
+                    val key = requireNotNull(cardanoRepository.getKey(keyId)) { "Key with id '$keyId' not found!" }
+                    respond(key.toCliKeyPair(keyId.toString()))
+                } catch (e: Exception) {
+                    log.error("Failed to get key!", e)
+                    throw e
                 }
-                cardanoRepository.saveScriptAddressToWhitelist(stakeAddress)
-                respond(HttpStatusCode.Created)
-            } catch (e: Exception) {
-                log.error("Failed to add script address to whitelist!", e)
-                throw e
+            }
+
+            post("encryption") {
+                try {
+                    cardanoRepository.saveEncryptionParams(receive())
+                    respond(HttpStatusCode.Created)
+                } catch (e: Exception) {
+                    log.error("Failed to save encryption params!", e)
+                    throw e
+                }
+            }
+
+            post("scriptAddressWhitelist") {
+                try {
+                    val scriptAddressWhitelistRequest = receive<ScriptAddressWhitelistRequest>()
+                    val scriptAddress = scriptAddressWhitelistRequest.scriptAddress
+                    val stakeAddress =
+                        if (scriptAddress.startsWith("stake") ||
+                            scriptAddress.startsWith("stake_test")
+                        ) {
+                            scriptAddress
+                        } else {
+                            scriptAddress.extractStakeAddress(cardanoRepository.isMainnet())
+                        }
+
+                    if (scriptAddress != stakeAddress) {
+                        cardanoRepository.saveScriptAddressToWhitelist(scriptAddress)
+                    }
+                    cardanoRepository.saveScriptAddressToWhitelist(stakeAddress)
+                    respond(HttpStatusCode.Created)
+                } catch (e: Exception) {
+                    log.error("Failed to add script address to whitelist!", e)
+                    throw e
+                }
             }
         }
-    }
 
-    authenticate(AUTH_JWT) {
-        post("/v1/cardano/submitTransaction") {
-            try {
-                val request = receive<SubmitTransactionRequest>()
-                val response = cardanoRepository.submitTransaction(request.cborHex.hexToByteArray().toByteString())
-                songRepository.updateSongMintingStatus(request.songId, MintingStatus.MintingPaymentSubmitted)
-                respond(HttpStatusCode.Accepted, SubmitTransactionResponse(response.txId, response.result))
-            } catch (e: Exception) {
-                log.error("Failed to submit transaction: ${e.message}")
-                throw e
+        authenticate(AUTH_JWT) {
+            post("submitTransaction") {
+                try {
+                    val request = receive<SubmitTransactionRequest>()
+                    val response = cardanoRepository.submitTransaction(request.cborHex.hexToByteArray().toByteString())
+                    songRepository.updateSongMintingStatus(request.songId, MintingStatus.MintingPaymentSubmitted)
+                    respond(HttpStatusCode.Accepted, SubmitTransactionResponse(response.txId, response.result))
+                } catch (e: Exception) {
+                    log.error("Failed to submit transaction: ${e.message}")
+                    throw e
+                }
             }
-        }
 
-        post("/v1/cardano/songs") {
-            try {
-                val request = receive<List<String>>()
-                val response = cardanoRepository.getWalletSongs(request, songFilters, offset, limit)
-                respond(response)
-            } catch (e: Exception) {
-                log.error("Failed to get wallet songs: ${e.message}")
-                throw e
+            post("songs") {
+                try {
+                    val request = receive<List<String>>()
+                    val response = cardanoRepository.getWalletSongs(request, songFilters, offset, limit)
+                    respond(response)
+                } catch (e: Exception) {
+                    log.error("Failed to get wallet songs: ${e.message}")
+                    throw e
+                }
             }
-        }
 
-        get("/v1/cardano/nft/songs") {
-            try {
-                respond(
-                    cardanoRepository.getWalletNFTSongs(
-                        userId = myUserId,
-                        includeLegacy = parameters["legacy"]?.toBoolean() ?: false
+            get("nft/songs") {
+                try {
+                    respond(
+                        cardanoRepository.getWalletNFTSongs(
+                            userId = myUserId,
+                            includeLegacy = parameters["legacy"]?.toBoolean() ?: false
+                        )
                     )
-                )
-            } catch (e: Exception) {
-                log.error(e) { "Failed to get NFT Songs" }
-                throw e
+                } catch (e: Exception) {
+                    log.error(e) { "Failed to get NFT Songs" }
+                    throw e
+                }
             }
-        }
 
-        get("/v1/cardano/images") {
-            try {
-                respond(cardanoRepository.getWalletImages(myUserId))
-            } catch (e: Exception) {
-                log.error(e) { "Failed to get images" }
-                throw e
+            get("images") {
+                try {
+                    respond(cardanoRepository.getWalletImages(myUserId))
+                } catch (e: Exception) {
+                    log.error(e) { "Failed to get images" }
+                    throw e
+                }
+            }
+
+            get("prices/ada") {
+                respond(QueryPriceResponse(cardanoRepository.queryAdaUSDPrice()))
+            }
+
+            get("prices/newm") {
+                respond(QueryPriceResponse(cardanoRepository.queryNEWMUSDPrice()))
             }
         }
     }
