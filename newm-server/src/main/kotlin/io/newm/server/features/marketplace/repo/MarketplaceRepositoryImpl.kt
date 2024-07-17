@@ -437,6 +437,7 @@ internal class MarketplaceRepositoryImpl(
             nativeAsset {
                 policy = incentivePolicyId
                 name = incentiveAssetName
+                // 2 incentive units: 1 for purchase and 1 for removal
                 amount = computeAmount(incentiveAmount, 2)
             }
         )
@@ -500,12 +501,13 @@ internal class MarketplaceRepositoryImpl(
                             nativeAsset {
                                 policy = incentivePolicyId
                                 name = incentiveAssetName
+                                // 2 incentive units: 1 for purchase and 1 for removal
                                 amount = computeAmount(order.incentiveAmount, 2)
                             }
                         ).mergeAmounts()
                     )
                     datum = buildQueueDatum(
-                        ownerAddress = sale.ownerAddress,
+                        ownerAddress = request.changeAddress,
                         numberOfBundles = order.bundleQuantity,
                         incentiveToken = Token(
                             policyId = incentivePolicyId,
