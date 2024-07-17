@@ -20,6 +20,7 @@ private val legacyPrefixRegex = "^\\d+\\.\\s*".toRegex()
 
 fun List<LedgerAssetMetadataItem>.toNFTSongs(
     asset: NativeAsset,
+    isStreamToken: Boolean,
     isNftCdnEnabled: Boolean
 ): List<NFTSong> {
     val assetName = asset.name.hexStringToAssetName()
@@ -104,6 +105,7 @@ fun List<LedgerAssetMetadataItem>.toNFTSongs(
                 fingerprint = fingerprint,
                 policyId = asset.policy,
                 assetName = assetName,
+                isStreamToken = isStreamToken,
                 amount = asset.amount.toLong(),
                 title = title,
                 audioUrl =
