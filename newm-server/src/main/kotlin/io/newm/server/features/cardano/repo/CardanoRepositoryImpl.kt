@@ -53,6 +53,7 @@ import io.newm.chain.util.toHexString
 import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_ENCRYPTION_PASSWORD
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_ENCRYPTION_SALT
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_ALL_POLICY_IDS
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_NFTCDN_ENABLED
 import io.newm.server.features.cardano.database.KeyEntity
 import io.newm.server.features.cardano.database.KeyTable
@@ -527,11 +528,13 @@ internal class CardanoRepositoryImpl(
     ): List<NFTSong> {
         val assets = getWalletAssets(userId)
         val nftSongs = mutableListOf<NFTSong>()
+        val streamTokenPolicyIds = configRepository.getStrings(CONFIG_KEY_MINT_ALL_POLICY_IDS)
         val isNftCdnEnabled = configRepository.getBoolean(CONFIG_KEY_NFTCDN_ENABLED)
         for (asset in assets) {
             val metadata = getAssetMetadata(asset)
             if (includeLegacy || metadata.any { it.key.equals("music_metadata_version", true) }) {
-                nftSongs += metadata.toNFTSongs(asset, isNftCdnEnabled)
+                val isStreamToken = asset.policy in streamTokenPolicyIds
+                nftSongs += metadata.toNFTSongs(asset, isStreamToken, isNftCdnEnabled)
             }
         }
         return nftSongs

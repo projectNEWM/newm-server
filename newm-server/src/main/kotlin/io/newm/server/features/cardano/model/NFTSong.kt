@@ -11,6 +11,7 @@ data class NFTSong(
     val fingerprint: String,
     val policyId: String,
     val assetName: String,
+    val isStreamToken: Boolean,
     val amount: Long,
     val title: String,
     val imageUrl: String,
