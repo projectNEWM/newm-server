@@ -189,7 +189,7 @@ object Dependencies {
     }
 
     object JSoup {
-        private const val VERSION = "1.17.2"
+        private const val VERSION = "1.18.1"
 
         const val ALL = "org.jsoup:jsoup:$VERSION"
     }
@@ -214,14 +214,14 @@ object Dependencies {
 
     // https://github.com/cloudinary/cloudinary_java
     object Cloudinary {
-        private const val VERSION = "1.38.0"
+        private const val VERSION = "1.39.0"
 
         const val ALL = "com.cloudinary:cloudinary-http44:$VERSION"
     }
 
     object Aws {
-        private const val VERSION = "1.12.758"
-        private const val VERSION2 = "2.26.17"
+        private const val VERSION = "1.12.761"
+        private const val VERSION2 = "2.26.20"
         private const val JAXB_VERSION = "2.3.1"
 
         const val BOM = "com.amazonaws:aws-java-sdk-bom:$VERSION"
@@ -261,13 +261,13 @@ object Dependencies {
     }
 
     object Mockk {
-        private const val VERSION = "1.13.11"
+        private const val VERSION = "1.13.12"
 
         const val MOCKK = "io.mockk:mockk:$VERSION"
     }
 
     object GoogleTruth {
-        private const val VERSION = "1.4.3"
+        private const val VERSION = "1.4.4"
 
         const val TRUTH = "com.google.truth:truth:$VERSION"
     }
@@ -286,7 +286,7 @@ object Dependencies {
     }
 
     object Grpc {
-        private const val VERSION = "1.65.0"
+        private const val VERSION = "1.65.1"
 
         const val STUB = "io.grpc:grpc-stub:$VERSION"
         const val API = "io.grpc:grpc-api:$VERSION"
@@ -324,7 +324,7 @@ object Dependencies {
     }
 
     object TestContainers {
-        private const val VERSION = "1.19.8"
+        private const val VERSION = "1.20.0"
 
         const val CORE = "org.testcontainers:testcontainers:$VERSION"
         const val JUINT = "org.testcontainers:junit-jupiter:$VERSION"
