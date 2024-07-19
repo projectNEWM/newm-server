@@ -26,15 +26,15 @@ import io.newm.server.features.earnings.repo.EarningsRepository
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.toUUID
 import io.newm.txbuilder.ktx.extractFields
+import java.math.BigInteger
+import java.time.LocalDateTime
+import java.time.ZoneOffset
+import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.quartz.Job
 import org.quartz.JobExecutionContext
 import org.quartz.JobExecutionException
-import java.math.BigInteger
-import java.time.LocalDateTime
-import java.time.ZoneOffset
-import kotlin.time.Duration.Companion.minutes
 
 class MonitorClaimOrderJob : Job {
     private val log = KotlinLogging.logger {}
@@ -117,6 +117,9 @@ class MonitorClaimOrderJob : Job {
                                 earningsUtxos.sumOf { utxo ->
                                     utxo.nativeAssetsList.sumOf { asset -> asset.amount.toBigInteger() }
                                 }
+                            require(sourceNewmTokenAmount >= newmAmountToClaim) {
+                                "Not enough NEWM tokens in the earningsWallet to claim!"
+                            }
 
                             val signingKeys = listOf(paymentKey, earningsWalletKey, cashRegisterKey)
                             var signatures = cardanoRepository.signTransactionDummy(signingKeys)
@@ -209,7 +212,17 @@ class MonitorClaimOrderJob : Job {
                             val submitTransactionResponse =
                                 cardanoRepository.submitTransaction(transactionBuilderResponse.transactionCbor)
                             if (submitTransactionResponse.result == "MsgAcceptTx") {
-                                earningsRepository.update(claimOrder.copy(status = ClaimOrderStatus.Completed))
+                                earningsRepository.update(
+                                    claimOrder.copy(
+                                        status = ClaimOrderStatus.Completed,
+                                        transactionId = transactionBuilderResponse.transactionId
+                                    )
+                                )
+                                log.info {
+                                    "Claim order ${claimOrder.id} completed successfully -> ${newmAmountToClaim.toBigDecimal(
+                                        scale = 6
+                                    )} NEWM, txid: ${transactionBuilderResponse.transactionId}"
+                                }
                             } else {
                                 val errorMessage = "Transaction submit failed with error: ${submitTransactionResponse.result}"
                                 log.error { errorMessage }
@@ -225,7 +238,7 @@ class MonitorClaimOrderJob : Job {
                 log.error(e) { "Error in MonitorClaimOrderJob" }
                 // re-schedule this job by throwing since requestRecovery is true
                 delay(60_000L)
-                throw JobExecutionException(e)
+                throw JobExecutionException(e, true)
             }
         }
     }
