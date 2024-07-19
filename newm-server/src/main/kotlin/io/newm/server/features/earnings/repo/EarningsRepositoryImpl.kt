@@ -169,12 +169,12 @@ class EarningsRepositoryImpl(
     }
 
     override suspend fun claimed(
-        earningIds: List<UUID>,
+        earningsIds: List<UUID>,
         claimOrderId: UUID
     ) {
         transaction {
             val claimedAt = LocalDateTime.now()
-            EarningEntity.forIds(earningIds).forUpdate().forEach {
+            EarningEntity.forIds(earningsIds).forUpdate().forEach {
                 it.claimed = true
                 it.claimOrderId = EntityID(claimOrderId, ClaimOrdersTable)
                 it.claimedAt = claimedAt
