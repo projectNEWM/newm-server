@@ -27,11 +27,13 @@ import io.newm.shared.koin.inject
 import io.newm.shared.ktx.toUUID
 import io.newm.txbuilder.ktx.extractFields
 import java.math.BigInteger
+import java.sql.Connection.TRANSACTION_SERIALIZABLE
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.quartz.Job
 import org.quartz.JobExecutionContext
 import org.quartz.JobExecutionException
@@ -212,12 +214,18 @@ class MonitorClaimOrderJob : Job {
                             val submitTransactionResponse =
                                 cardanoRepository.submitTransaction(transactionBuilderResponse.transactionCbor)
                             if (submitTransactionResponse.result == "MsgAcceptTx") {
-                                earningsRepository.update(
-                                    claimOrder.copy(
-                                        status = ClaimOrderStatus.Completed,
-                                        transactionId = transactionBuilderResponse.transactionId
+                                newSuspendedTransaction(transactionIsolation = TRANSACTION_SERIALIZABLE) {
+                                    earningsRepository.claimed(
+                                        claimOrderId = claimOrder.id,
+                                        earningsIds = claimOrder.earningsIds
                                     )
-                                )
+                                    earningsRepository.update(
+                                        claimOrder.copy(
+                                            status = ClaimOrderStatus.Completed,
+                                            transactionId = transactionBuilderResponse.transactionId
+                                        )
+                                    )
+                                }
                                 log.info {
                                     "Claim order ${claimOrder.id} completed successfully -> ${newmAmountToClaim.toBigDecimal(
                                         scale = 6

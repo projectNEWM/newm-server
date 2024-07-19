@@ -44,7 +44,7 @@ interface EarningsRepository {
      * Mark the earnings as claimed by a claim order
      */
     suspend fun claimed(
-        earningIds: List<UUID>,
+        earningsIds: List<UUID>,
         claimOrderId: UUID
     )
 
