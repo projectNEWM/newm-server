@@ -16,7 +16,7 @@ import io.newm.server.features.distribution.createDistributionRoutes
 import io.newm.server.features.earnings.createEarningsRoutes
 import io.newm.server.features.idenfy.createIdenfyRoutes
 import io.newm.server.features.marketplace.createMarketplaceRoutes
-import io.newm.server.features.mobileconfig.createMobileConfigRoutes
+import io.newm.server.features.clientconfig.createClientConfigRoutes
 import io.newm.server.features.playlist.createPlaylistRoutes
 import io.newm.server.features.song.createSongRoutes
 import io.newm.server.features.user.createUserRoutes
@@ -62,7 +62,7 @@ fun Application.module() {
         createEarningsRoutes()
         createWalletConnectionRoutes()
         createMarketplaceRoutes()
-        createMobileConfigRoutes()
+        createClientConfigRoutes()
     }
 
     initializeDaemons()

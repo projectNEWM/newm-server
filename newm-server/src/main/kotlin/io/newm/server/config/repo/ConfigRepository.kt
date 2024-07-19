@@ -57,7 +57,6 @@ interface ConfigRepository {
         const val CONFIG_KEY_RECAPTCHA_ENABLED = "recaptcha.enabled"
         const val CONFIG_KEY_RECAPTCHA_MIN_SCORE = "recaptcha.minScore"
         const val CONFIG_KEY_NFTCDN_ENABLED = "nftcdn.enabled"
-        const val CONFIG_KEY_MOBILE_CONFIG_PAYLOAD = "mobile.configPayload"
         const val CONFIG_KEY_MARKETPLACE_MONITORING_ENABLED = "marketplace.monitoringEnabled"
         const val CONFIG_KEY_MARKETPLACE_MONITORING_RETRY_DELAY = "marketplace.monitoringRetryDelay"
         const val CONFIG_KEY_MARKETPLACE_SALE_CONTRACT_ADDRESS = "marketplace.saleContractAddress"
@@ -75,5 +74,8 @@ interface ConfigRepository {
         const val CONFIG_KEY_EARNINGS_MONITOR_PAYMENT_ADDRESS_TIMEOUT_MIN = "earnings.monitorPaymentAddressTimeoutMin"
         const val CONFIG_KEY_EARNINGS_CLAIM_ORDER_FEE = "earnings.claimOrderFee"
         const val CONFIG_KEY_NEWM_PLAYLIST_ID = "newm.playlist.id"
+        const val CONFIG_KEY_CLIENT_CONFIG_STUDIO = "clientConfig.studio"
+        const val CONFIG_KEY_CLIENT_CONFIG_MARKETPLACE = "clientConfig.marketplace"
+        const val CONFIG_KEY_CLIENT_CONFIG_MOBILE = "clientConfig.mobile"
     }
 }
