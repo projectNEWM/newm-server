@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class SpotifyRequest(
     @SerialName("uris")
-    val uris: Array<String>,
+    val uris: List<String>,
     @SerialName("position")
     val position: Int,
 )
