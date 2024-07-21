@@ -3,17 +3,37 @@ package io.newm.server.features.distribution.eveara
 import com.amazonaws.HttpMethod
 import com.amazonaws.services.s3.AmazonS3
 import com.github.benmanes.caffeine.cache.Caffeine
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.plugins.ServerResponseException
+import io.ktor.client.plugins.retry
+import io.ktor.client.plugins.timeout
+import io.ktor.client.request.accept
+import io.ktor.client.request.bearerAuth
+import io.ktor.client.request.delete
+import io.ktor.client.request.forms.InputProvider
+import io.ktor.client.request.forms.formData
+import io.ktor.client.request.forms.submitFormWithBinaryData
+import io.ktor.client.request.get
+import io.ktor.client.request.parameter
+import io.ktor.client.request.patch
+import io.ktor.client.request.post
+import io.ktor.client.request.put
+import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsChannel
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.ContentType
+import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
+import io.ktor.http.contentType
+import io.ktor.http.isSuccess
+import io.ktor.http.quote
+import io.ktor.server.application.ApplicationEnvironment
+import io.ktor.utils.io.core.isNotEmpty
+import io.ktor.utils.io.core.readBytes
+import io.ktor.utils.io.core.toByteArray
+import io.ktor.utils.io.streams.asInput
 import io.newm.chain.util.toB64String
-import io.ktor.client.*
-import io.ktor.client.call.*
-import io.ktor.client.plugins.*
-import io.ktor.client.request.*
-import io.ktor.client.request.forms.*
-import io.ktor.client.statement.*
-import io.ktor.http.*
-import io.ktor.server.application.*
-import io.ktor.utils.io.core.*
-import io.ktor.utils.io.streams.*
 import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_EVEARA_CLIENT_ID
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_EVEARA_CLIENT_SECRET
@@ -23,7 +43,58 @@ import io.newm.server.features.collaboration.model.Collaboration
 import io.newm.server.features.collaboration.model.CollaborationStatus
 import io.newm.server.features.collaboration.repo.CollaborationRepository
 import io.newm.server.features.distribution.DistributionRepository
-import io.newm.server.features.distribution.model.*
+import io.newm.server.features.distribution.model.AddAlbumRequest
+import io.newm.server.features.distribution.model.AddAlbumResponse
+import io.newm.server.features.distribution.model.AddArtistRequest
+import io.newm.server.features.distribution.model.AddArtistResponse
+import io.newm.server.features.distribution.model.AddParticipantRequest
+import io.newm.server.features.distribution.model.AddParticipantResponse
+import io.newm.server.features.distribution.model.AddTrackResponse
+import io.newm.server.features.distribution.model.AddUserLabelRequest
+import io.newm.server.features.distribution.model.AddUserLabelResponse
+import io.newm.server.features.distribution.model.AddUserRequest
+import io.newm.server.features.distribution.model.AddUserResponse
+import io.newm.server.features.distribution.model.AddUserSubscriptionRequest
+import io.newm.server.features.distribution.model.AddUserSubscriptionResponse
+import io.newm.server.features.distribution.model.CoverImage
+import io.newm.server.features.distribution.model.DeleteUserLabelResponse
+import io.newm.server.features.distribution.model.DistributeFutureReleaseRequest
+import io.newm.server.features.distribution.model.DistributeReleaseRequest
+import io.newm.server.features.distribution.model.DistributeReleaseResponse
+import io.newm.server.features.distribution.model.DistributionOutletReleaseStatusResponse
+import io.newm.server.features.distribution.model.EvearaErrorResponse
+import io.newm.server.features.distribution.model.EvearaSimpleResponse
+import io.newm.server.features.distribution.model.GetAlbumResponse
+import io.newm.server.features.distribution.model.GetArtistResponse
+import io.newm.server.features.distribution.model.GetCountriesResponse
+import io.newm.server.features.distribution.model.GetGenresResponse
+import io.newm.server.features.distribution.model.GetLanguagesResponse
+import io.newm.server.features.distribution.model.GetOutletProfileNamesResponse
+import io.newm.server.features.distribution.model.GetOutletsResponse
+import io.newm.server.features.distribution.model.GetParticipantsResponse
+import io.newm.server.features.distribution.model.GetPayoutBalanceResponse
+import io.newm.server.features.distribution.model.GetPayoutHistoryResponse
+import io.newm.server.features.distribution.model.GetRolesResponse
+import io.newm.server.features.distribution.model.GetTrackStatusResponse
+import io.newm.server.features.distribution.model.GetTracksResponse
+import io.newm.server.features.distribution.model.GetUserLabelResponse
+import io.newm.server.features.distribution.model.GetUserResponse
+import io.newm.server.features.distribution.model.GetUserSubscriptionResponse
+import io.newm.server.features.distribution.model.InitiatePayoutResponse
+import io.newm.server.features.distribution.model.OutletProfile
+import io.newm.server.features.distribution.model.OutletStatusCode
+import io.newm.server.features.distribution.model.OutletsDetail
+import io.newm.server.features.distribution.model.Participant
+import io.newm.server.features.distribution.model.Preview
+import io.newm.server.features.distribution.model.Subscription
+import io.newm.server.features.distribution.model.Track
+import io.newm.server.features.distribution.model.UpdateArtistRequest
+import io.newm.server.features.distribution.model.UpdateArtistResponse
+import io.newm.server.features.distribution.model.UpdateTrackRequest
+import io.newm.server.features.distribution.model.UpdateUserLabelRequest
+import io.newm.server.features.distribution.model.UpdateUserLabelResponse
+import io.newm.server.features.distribution.model.UpdateUserRequest
+import io.newm.server.features.distribution.model.ValidateAlbumResponse
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Release
 import io.newm.server.features.song.model.Song
@@ -31,7 +102,11 @@ import io.newm.server.features.song.model.toSongBarcodeType
 import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.features.user.model.User
 import io.newm.server.features.user.repo.UserRepository
-import io.newm.server.ktx.*
+import io.newm.server.ktx.asValidUrl
+import io.newm.server.ktx.getFileNameWithExtensionFromUrl
+import io.newm.server.ktx.getSecureConfigString
+import io.newm.server.ktx.toAudioContentType
+import io.newm.server.ktx.toBucketAndKey
 import io.newm.server.logging.logRequestJson
 import io.newm.server.typealiases.UserId
 import io.newm.shared.exception.HttpServiceUnavailableException
@@ -40,6 +115,15 @@ import io.newm.shared.koin.inject
 import io.newm.shared.ktx.getConfigString
 import io.newm.shared.ktx.info
 import io.newm.shared.ktx.orNull
+import java.io.File
+import java.time.Duration
+import java.time.Instant
+import java.time.LocalDate
+import java.time.temporal.ChronoUnit
+import java.util.Date
+import kotlin.collections.set
+import kotlin.random.Random.Default.nextLong
+import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
@@ -51,15 +135,6 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.koin.core.parameter.parametersOf
 import org.slf4j.Logger
-import java.io.File
-import java.time.Duration
-import java.time.Instant
-import java.time.LocalDate
-import java.time.temporal.ChronoUnit
-import java.util.*
-import kotlin.collections.set
-import kotlin.random.Random.Default.nextLong
-import kotlin.time.Duration.Companion.minutes
 
 class EvearaDistributionRepositoryImpl(
     private val collabRepository: CollaborationRepository,
@@ -1703,9 +1778,16 @@ class EvearaDistributionRepositoryImpl(
 
         // Create the newm participant if they don't exist yet
         var getParticipantsResponse = getParticipants(user)
-        if (getParticipantsResponse.totalRecords > 0 && getParticipantsResponse.participantData.any { it.name == "NEWM" }) {
-            val existingNewmParticipant = getParticipantsResponse.participantData.first { it.name == "NEWM" }
-            log.info { "Found existing distribution participant NEWM with id ${existingNewmParticipant.participantId}" }
+        if (getParticipantsResponse.totalRecords > 0 &&
+            getParticipantsResponse.participantData.any { it.name.equals(NEWM_PARTICIPANT_NAME, ignoreCase = true) }
+        ) {
+            val existingNewmParticipant = getParticipantsResponse.participantData.first {
+                it.name.equals(
+                    NEWM_PARTICIPANT_NAME,
+                    ignoreCase = true
+                )
+            }
+            log.info { "Found existing distribution participant $NEWM_PARTICIPANT_NAME with id ${existingNewmParticipant.participantId}" }
             if (user.distributionNewmParticipantId == null) {
                 user.distributionNewmParticipantId = existingNewmParticipant.participantId
                 userRepository.updateUserData(user.id, user)
@@ -1718,8 +1800,8 @@ class EvearaDistributionRepositoryImpl(
             require(user.distributionNewmParticipantId == null) {
                 "User.distributionNewmParticipantId: ${user.distributionNewmParticipantId} not found in Eveara!"
             }
-            val response = addParticipant(User(distributionUserId = user.distributionUserId!!, nickname = "NEWM"))
-            log.info { "Created NEWM participant with id ${response.participantId}: ${response.message}" }
+            val response = addParticipant(User(distributionUserId = user.distributionUserId!!, nickname = NEWM_PARTICIPANT_NAME))
+            log.info { "Created $NEWM_PARTICIPANT_NAME participant with id ${response.participantId}: ${response.message}" }
             user.distributionNewmParticipantId = response.participantId
             userRepository.updateUserData(user.id, user)
             getParticipantsResponse = getParticipants(user)
@@ -1828,7 +1910,7 @@ class EvearaDistributionRepositoryImpl(
         val desiredLabelName = song.phonographicCopyrightOwner ?: user.companyOrStageOrFullName
         val getUserLabelsResponse = getUserLabel(user)
         if (getUserLabelsResponse.totalRecords > 1) {
-            val existingLabel = getUserLabelsResponse.userLabelData.first { it.name != NEWM_LABEL_NAME }
+            val existingLabel = getUserLabelsResponse.userLabelData.first { !it.name.equals(NEWM_LABEL_NAME, ignoreCase = true) }
             log.info { "Found existing distribution label ${user.email} with id ${existingLabel.labelId}, name ${existingLabel.name}" }
             if (user.distributionLabelId == null) {
                 user.distributionLabelId = existingLabel.labelId
@@ -2160,5 +2242,6 @@ class EvearaDistributionRepositoryImpl(
         private const val GRANT_TYPE = "client_credentials"
         private const val FIVE_MINUTES_IN_MILLIS = 300_000L
         private const val NEWM_LABEL_NAME = "NEWM"
+        private const val NEWM_PARTICIPANT_NAME = "NEWM"
     }
 }
