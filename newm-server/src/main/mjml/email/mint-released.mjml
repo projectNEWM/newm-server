@@ -1,0 +1,70 @@
+<mjml>
+    <mj-head>
+        <mj-preview>Now available on all major streaming platforms</mj-preview>
+        <mj-font name="Inter" href="https://fonts.googleapis.com/css?family=Inter" />
+        <mj-attributes>
+            <mj-section padding="0 40px" />
+            <mj-column padding="0 0" />
+            <mj-image padding="0 0" />
+            <mj-text padding="0 0" />
+            <mj-social padding="0px 0px" border-radius="0" />
+            <mj-social-element padding="20px 40px" border-radius="0" />
+            <mj-class name="separator1" height="1px" container-background-color="var(--gradients-gradient-music, linear-gradient(53deg, #C341F0 0%, #F53C69 100%))" />
+            <mj-class name="separator2" height="1px" container-background-color="var(--greys-grey-400, #2C2C2E)" />
+        </mj-attributes>
+    </mj-head>
+    <mj-body background-color="#000" width="800px">
+        <mj-section>
+            <mj-column>
+                <mj-image padding-top="100px" width="150px" align="left" src="https://res.cloudinary.com/newm/image/upload/f_auto,q_auto/v1/newmserver-emails/j0hw1ggc1damiefj0uju" />
+            </mj-column>
+        </mj-section>
+        <mj-section>
+            <mj-column>
+                <mj-text padding-top="24px" color="#FFF" align="left" font-family="Inter,sans-serif" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
+                    Congrats {owner}! Your track has been officially released and can now be found on all major streaming platforms.<br><br>
+                    "{song}"<br>
+                    <ul style="padding-left:0;list-style-position:inside">{collabs}</ul>
+                </mj-text>
+                <mj-text padding-top="24px" color="#FFF" align="left" font-family="Inter,sans-serif" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
+                    Now that your song has been minted, distributed and released, it will begin accruing royalties for every stream. Please note that NEWM has no control over royalty distribution and timelines from third-party music streaming platforms. We recommend consulting each platform&#8217;s terms and conditions for more information on their royalty distribution policies.<br><br>
+                    All earnings, including streaming royalties, can be viewed in the wallet tab on your NEWM Studio account. Once your royalties are available, simply select "Claim now" to transfer your earnings to your designated external wallet.<br><br>
+                    <span style="font-weight:bold;">Please note that release times vary across different streaming platforms. However, if your song is still not listed on a particular streaming platform more than two days past your set release date,</span>
+                    or if you have any questions about the release process, please email <a href="mailto:support@newm.io" style="color: #8E8E93">support@newm.io</a> for assistance.<br><br>
+                    Cheers, The NEWM Team<br><br>
+                </mj-text>
+                <mj-text padding="40px 0 60px 0" color="#636366" align="center" font-family="Inter,sans-serif" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
+                    PLEASE DO NOT REPLY TO THIS MESSAGE
+                </mj-text>
+                <mj-spacer mj-class="separator1" />
+            </mj-column>
+        </mj-section>
+        <mj-section padding="0 0">
+            <mj-column>
+                <mj-social padding-top="40px" icon-size="24px">
+                    <mj-social-element src="https://res.cloudinary.com/newm/image/upload/f_auto,q_auto/v1/newmserver-emails/uguj3in5g8hg4ofrzdwq" href="https://t.me/NEWMofficial" />
+                    <mj-social-element src="https://res.cloudinary.com/newm/image/upload/f_auto,q_auto/v1/newmserver-emails/aqvu7wjkpymijdbjovhf" href="https://twitter.com/projectNEWM" />
+                    <mj-social-element src="https://res.cloudinary.com/newm/image/upload/f_auto,q_auto/v1/newmserver-emails/f8u1zdg6osweqmioeesl" href="https://discord.com/invite/z4sYqxqgvQ" />
+                    <mj-social-element src="https://res.cloudinary.com/newm/image/upload/f_auto,q_auto/v1/newmserver-emails/at5dxsfeqpy30snybkw1" href="https://instagram.com/projectnewm.io" />
+                    <mj-social-element src="https://res.cloudinary.com/newm/image/upload/f_auto,q_auto/v1/newmserver-emails/l5w03sjsdw0bt0qpst8f" href="https://github.com/projectNEWM" />
+                    <mj-social-element src="https://res.cloudinary.com/newm/image/upload/f_auto,q_auto/v1/newmserver-emails/vmvrwooaithktecqjd6p" href="https://www.youtube.com/channel/UCcsBNWGjIf8YarD9uaZEEvw" />
+                </mj-social>
+            </mj-column>
+        </mj-section>
+        <mj-section>
+            <mj-column>
+                <mj-text padding="20px 0 53px 0" color="#FFF" align="center" font-family="Inter,sans-serif" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
+                    Join our community on <a href="https://discord.com/invite/z4sYqxqgvQ" style="color: #DC3CAA;text-decoration: none;font-weight: 700">Discord</a>!
+                </mj-text>
+                <mj-spacer mj-class="separator2" />
+            </mj-column>
+        </mj-section>
+        <mj-section>
+            <mj-column>
+                <mj-text padding="40px 0 62px 0" color="#636366" align="center" font-family="Inter,sans-serif" font-size="12px" font-style="italic" font-weight="500" line-height="18px">
+                    Copyright &copy; 2023 NEWM, All rights reserved
+                </mj-text>
+            </mj-column>
+        </mj-section>
+    </mj-body>
+</mjml>
