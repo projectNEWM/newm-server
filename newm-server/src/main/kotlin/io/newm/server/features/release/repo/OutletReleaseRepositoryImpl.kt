@@ -72,12 +72,12 @@ internal class OutletReleaseRepositoryImpl(
                     }
                     contentType(ContentType.Application.Json)
                     accept(ContentType.Application.Json)
-                    setBody {
+                    setBody(
                         SpotifyRequest(
-                            arrayOf(trackUri),
-                            0
+                            uris = listOf("spotify:track:$trackUri"),
+                            position = 0
                         )
-                    }
+                    )
                 }
         return response
     }
