@@ -1,11 +1,17 @@
 package io.newm.server.auth.twofactor.repo
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.ktor.server.application.*
+import io.ktor.server.application.ApplicationEnvironment
 import io.newm.server.auth.twofactor.database.TwoFactorAuthEntity
 import io.newm.server.features.email.repo.EmailRepository
 import io.newm.server.features.user.database.UserEntity
-import io.newm.shared.ktx.*
+import io.newm.shared.ktx.getConfigChild
+import io.newm.shared.ktx.getInt
+import io.newm.shared.ktx.getLong
+import io.newm.shared.ktx.getString
+import io.newm.shared.ktx.nextDigitCode
+import io.newm.shared.ktx.toHash
+import io.newm.shared.ktx.verify
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.security.SecureRandom
 import java.time.LocalDateTime
@@ -20,7 +26,8 @@ internal class TwoFactorAuthRepositoryImpl(
 
     override suspend fun sendCode(
         email: String,
-        mustExists: Boolean
+        mustExists: Boolean,
+        isMobileApp: Boolean
     ) {
         logger.debug { "sendCode: $email" }
         val exists = transaction { UserEntity.existsByEmail(email) }
@@ -35,7 +42,11 @@ internal class TwoFactorAuthRepositoryImpl(
                 to = email,
                 subject = getString("$emailType.subject"),
                 messageUrl = getString("$emailType.messageUrl"),
-                messageArgs = mapOf("code" to code)
+                messageArgs = mapOf(
+                    "code" to code,
+                    "webAppDisplay" to if (isMobileApp) "none" else "inline",
+                    "mobileAppDisplay" to if (isMobileApp) "inline" else "none"
+                )
             )
 
             val codeHash = code.toHash()
