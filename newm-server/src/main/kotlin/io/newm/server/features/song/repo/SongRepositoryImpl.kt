@@ -776,8 +776,7 @@ internal class SongRepositoryImpl(
 
             MintingStatus.Released -> {
                 logger.info { "Released song $songId SUCCESS!" }
-                // TODO: Maybe send an email once the song is live on spotify.
-                // sendMintingNotification("released", songId)
+                sendMintingNotification("released", songId)
             }
 
             else -> Unit
