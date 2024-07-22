@@ -3,7 +3,8 @@ package io.newm.server.auth.twofactor.repo
 interface TwoFactorAuthRepository {
     suspend fun sendCode(
         email: String,
-        mustExists: Boolean
+        mustExists: Boolean,
+        isMobileApp: Boolean
     )
 
     suspend fun verifyCode(

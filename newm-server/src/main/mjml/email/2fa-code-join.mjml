@@ -28,7 +28,7 @@
           {code}
         </mj-text>
         <mj-text padding-top="60px" color="#FFF" align="left" font-family="Inter,sans-serif" font-size="16px" font-style="normal" font-weight="500" line-height="18px">
-          Enter this code at <a href="{webAppUrl}" style="color: #DC3CAA;text-decoration: none;font-weight: 700">newm.studio</a> to activate your account and complete your profile.<br><br>
+          Enter this code at <a href="{webAppUrl}" style="display: {webAppDisplay};color: #DC3CAA;text-decoration: none;font-weight: 700">newm.studio</a><span style="display: {mobileAppDisplay}">the NEWM Mobile App</span> to activate your account and complete your profile.<br><br>
           If you are not attempting to create a NEWM account or believe you have received this email by mistake, please ignore this message.
         </mj-text>
         <mj-text padding="40px 0 60px 0" color="#636366" align="center" font-family="Inter,sans-serif" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
