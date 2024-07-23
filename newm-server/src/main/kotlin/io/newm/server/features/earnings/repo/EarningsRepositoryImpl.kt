@@ -155,7 +155,7 @@ class EarningsRepositoryImpl(
 
     override suspend fun update(claimOrder: ClaimOrder) {
         transaction {
-            val entity = ClaimOrderEntity[claimOrder.id]
+            val entity = ClaimOrderEntity[claimOrder.id!!]
             entity.stakeAddress = claimOrder.stakeAddress
             entity.keyId = EntityID(claimOrder.keyId, KeyTable)
             entity.paymentAddress = claimOrder.paymentAddress
@@ -198,7 +198,6 @@ class EarningsRepositoryImpl(
 
                     val claimOrder =
                         ClaimOrder(
-                            id = UUID.randomUUID(),
                             stakeAddress = stakeAddress,
                             keyId = keyId,
                             paymentAddress = key.address,
@@ -211,8 +210,8 @@ class EarningsRepositoryImpl(
                             errorMessage = null,
                         )
 
-                    add(claimOrder)
-                    claimOrder
+                    val id = add(claimOrder)
+                    claimOrder.copy(id = id)
                 }
             }
 

@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class ClaimOrder(
     @Contextual
-    val id: UUID,
+    val id: UUID? = null,
     val stakeAddress: String,
     @Contextual
     val keyId: UUID,
