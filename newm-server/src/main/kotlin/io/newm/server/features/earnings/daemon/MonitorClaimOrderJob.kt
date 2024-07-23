@@ -47,7 +47,7 @@ class MonitorClaimOrderJob : Job {
     @Throws(JobExecutionException::class)
     override fun execute(context: JobExecutionContext) {
         log.info {
-            "MonitorClaimOrderJob key: ${context.jobDetail.key.name} executed at ${
+            "MonitorClaimOrderJob key: ${context.jobDetail.key.name} started at ${
                 LocalDateTime.ofInstant(
                     context.fireTime.toInstant(),
                     ZoneOffset.UTC
@@ -216,7 +216,7 @@ class MonitorClaimOrderJob : Job {
                             if (submitTransactionResponse.result == "MsgAcceptTx") {
                                 newSuspendedTransaction(transactionIsolation = TRANSACTION_SERIALIZABLE) {
                                     earningsRepository.claimed(
-                                        claimOrderId = claimOrder.id,
+                                        claimOrderId = claimOrder.id!!,
                                         earningsIds = claimOrder.earningsIds
                                     )
                                     earningsRepository.update(
@@ -241,7 +241,7 @@ class MonitorClaimOrderJob : Job {
                         log.info { "Payment timed out for claim order ${claimOrder.id}" }
                         earningsRepository.update(claimOrder.copy(status = ClaimOrderStatus.Timeout))
                     }
-                }
+                } ?: log.error { "Claim order not found for id $claimOrderId" }
             } catch (e: Throwable) {
                 log.error(e) { "Error in MonitorClaimOrderJob" }
                 // re-schedule this job by throwing since requestRecovery is true
