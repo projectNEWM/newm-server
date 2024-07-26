@@ -23,6 +23,7 @@ import io.newm.server.ktx.asValidEmail
 import io.newm.server.ktx.asValidName
 import io.newm.server.ktx.asValidUrl
 import io.newm.server.ktx.checkLength
+import io.newm.server.model.ClientPlatform
 import io.newm.server.typealiases.UserId
 import io.newm.shared.auth.Password
 import io.newm.shared.exception.HttpBadRequestException
@@ -52,8 +53,11 @@ internal class UserRepositoryImpl(
 ) : UserRepository {
     private val logger = KotlinLogging.logger {}
 
-    override suspend fun add(user: User): UserId {
-        logger.debug { "add: user = $user" }
+    override suspend fun add(
+        user: User,
+        clientPlatform: ClientPlatform?
+    ): UserId {
+        logger.debug { "add: user = $user, clientPlatform = $clientPlatform" }
 
         user.checkWhitelist()
         user.checkFieldLengths()
@@ -79,6 +83,7 @@ internal class UserRepositoryImpl(
             email.checkEmailUnique()
             UserEntity
                 .new {
+                    this.signupPlatform = clientPlatform ?: ClientPlatform.Studio
                     this.firstName = user.firstName?.asValidName()
                     this.lastName = user.lastName?.asValidName()
                     this.nickname = user.nickname
@@ -130,17 +135,17 @@ internal class UserRepositoryImpl(
 
     override suspend fun findOrAdd(
         oauthType: OAuthType,
-        oauthTokens: OAuthTokens
+        oauthTokens: OAuthTokens,
+        clientPlatform: ClientPlatform?
     ): UserId {
         logger.debug { "findOrAdd: oauthType = $oauthType" }
 
-        val user =
-            when (oauthType) {
-                OAuthType.Google -> googleUserProvider.getUser(oauthTokens)
-                OAuthType.Facebook -> facebookUserProvider.getUser(oauthTokens)
-                OAuthType.LinkedIn -> linkedInUserProvider.getUser(oauthTokens)
-                OAuthType.Apple -> appleUserProvider.getUser(oauthTokens)
-            }
+        val user = when (oauthType) {
+            OAuthType.Google -> googleUserProvider.getUser(oauthTokens)
+            OAuthType.Facebook -> facebookUserProvider.getUser(oauthTokens)
+            OAuthType.LinkedIn -> linkedInUserProvider.getUser(oauthTokens)
+            OAuthType.Apple -> appleUserProvider.getUser(oauthTokens)
+        }
         logger.debug { "findOrAdd: oauthUser = $user" }
 
         user.checkWhitelist()
@@ -149,13 +154,13 @@ internal class UserRepositoryImpl(
             throw HttpUnauthorizedException("Unverified email: $email")
         }
         return transaction {
-            val entity =
-                UserEntity.getByEmail(email) ?: UserEntity.new {
-                    this.firstName = user.firstName?.asValidName()
-                    this.lastName = user.lastName?.asValidName()
-                    this.pictureUrl = user.pictureUrl?.asValidUrl()
-                    this.email = email
-                }
+            val entity = UserEntity.getByEmail(email) ?: UserEntity.new {
+                this.signupPlatform = clientPlatform ?: ClientPlatform.Studio
+                this.firstName = user.firstName?.asValidName()
+                this.lastName = user.lastName?.asValidName()
+                this.pictureUrl = user.pictureUrl?.asValidUrl()
+                this.email = email
+            }
             entity.oauthType = oauthType
             entity.oauthId = user.id
             entity.id.value
@@ -231,22 +236,19 @@ internal class UserRepositoryImpl(
             user.instagramUrl?.let { entity.instagramUrl = it.orNull()?.asValidUrl() }
             try {
                 user.spotifyProfile?.let {
-                    entity.spotifyProfile =
-                        it
-                            .asUrlWithHost("open.spotify.com")
-                            ?.also { profile -> spotifyProfileUrlVerifier.verify(profile, entity.stageOrFullName) }
+                    entity.spotifyProfile = it
+                        .asUrlWithHost("open.spotify.com")
+                        ?.also { profile -> spotifyProfileUrlVerifier.verify(profile, entity.stageOrFullName) }
                 }
                 user.soundCloudProfile?.let {
-                    entity.soundCloudProfile =
-                        it
-                            .asUrlWithHost("soundcloud.com")
-                            ?.also { profile -> soundCloudProfileUrlVerifier.verify(profile, entity.stageOrFullName) }
+                    entity.soundCloudProfile = it
+                        .asUrlWithHost("soundcloud.com")
+                        ?.also { profile -> soundCloudProfileUrlVerifier.verify(profile, entity.stageOrFullName) }
                 }
                 user.appleMusicProfile?.let {
-                    entity.appleMusicProfile =
-                        it
-                            .asUrlWithHost("music.apple.com")
-                            ?.also { profile -> appleMusicProfileUrlVerifier.verify(profile, entity.stageOrFullName) }
+                    entity.appleMusicProfile = it
+                        .asUrlWithHost("music.apple.com")
+                        ?.also { profile -> appleMusicProfileUrlVerifier.verify(profile, entity.stageOrFullName) }
                 }
             } catch (exception: OutletProfileUrlVerificationException) {
                 val message = exception.message ?: exception.toString()
@@ -395,10 +397,9 @@ internal class UserRepositoryImpl(
 
     private suspend fun checkWhitelist(email: String) {
         if (configRepository.exists(CONFIG_KEY_EMAIL_WHITELIST)) {
-            val whitelistRegexList =
-                configRepository.getStrings(CONFIG_KEY_EMAIL_WHITELIST).map {
-                    Regex(it, RegexOption.IGNORE_CASE)
-                }
+            val whitelistRegexList = configRepository.getStrings(CONFIG_KEY_EMAIL_WHITELIST).map {
+                Regex(it, RegexOption.IGNORE_CASE)
+            }
             if (whitelistRegexList.none { it.matches(email) }) {
                 logger.error { "Email not whitelisted: $email" }
                 throw HttpUnauthorizedException("Email not whitelisted: $email")
