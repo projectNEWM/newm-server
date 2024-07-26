@@ -2,6 +2,7 @@ package io.newm.server.features.user.model
 
 import com.google.common.annotations.VisibleForTesting
 import io.newm.server.auth.oauth.model.OAuthType
+import io.newm.server.model.ClientPlatform
 import io.newm.server.typealiases.UserId
 import io.newm.shared.auth.Password
 import io.newm.shared.serialization.LocalDateTimeSerializer
@@ -17,6 +18,7 @@ data class User(
     @Serializable(with = LocalDateTimeSerializer::class)
     val createdAt: LocalDateTime? = null,
     val oauthType: OAuthType? = null,
+    val signupPlatform: ClientPlatform? = null,
     val oauthId: String? = null,
     val firstName: String? = null,
     val lastName: String? = null,

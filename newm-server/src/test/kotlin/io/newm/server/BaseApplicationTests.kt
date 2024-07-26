@@ -3,12 +3,12 @@ package io.newm.server
 import com.amazonaws.services.kms.AWSKMSAsync
 import com.amazonaws.services.s3.AmazonS3
 import com.zaxxer.hikari.HikariDataSource
-import io.ktor.client.*
-import io.ktor.client.plugins.*
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.serialization.kotlinx.json.*
-import io.ktor.server.config.*
-import io.ktor.server.testing.*
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.serialization.kotlinx.json.json
+import io.ktor.server.config.ApplicationConfig
+import io.ktor.server.testing.TestApplication
 import io.mockk.mockk
 import io.newm.server.auth.jwt.database.JwtTable
 import io.newm.server.auth.twofactor.database.TwoFactorAuthTable
@@ -24,7 +24,11 @@ import io.newm.server.features.marketplace.database.MarketplacePurchaseTable
 import io.newm.server.features.marketplace.database.MarketplaceSaleTable
 import io.newm.server.features.playlist.database.PlaylistTable
 import io.newm.server.features.playlist.database.SongsInPlaylistsTable
-import io.newm.server.features.song.database.*
+import io.newm.server.features.song.database.ReleaseEntity
+import io.newm.server.features.song.database.ReleaseTable
+import io.newm.server.features.song.database.SongEntity
+import io.newm.server.features.song.database.SongReceiptTable
+import io.newm.server.features.song.database.SongTable
 import io.newm.server.features.song.model.Release
 import io.newm.server.features.song.model.ReleaseType
 import io.newm.server.features.song.model.Song
@@ -42,6 +46,7 @@ import io.newm.server.features.user.verify.OutletProfileUrlVerifier
 import io.newm.server.features.walletconnection.database.WalletConnectionChallengeTable
 import io.newm.server.features.walletconnection.database.WalletConnectionTable
 import io.newm.server.ktx.asValidUrl
+import io.newm.server.model.ClientPlatform
 import io.newm.server.recaptcha.repo.RecaptchaRepository
 import io.newm.shared.auth.Password
 import io.newm.shared.serialization.BigDecimalSerializer
@@ -64,37 +69,34 @@ import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 import java.math.BigDecimal
 import java.math.BigInteger
-import java.util.*
+import java.util.UUID
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 @Testcontainers
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 open class BaseApplicationTests {
-    protected val application =
-        TestApplication {
-            environment {
-                config = ApplicationConfig("test-application.conf")
-            }
+    protected val application = TestApplication {
+        environment {
+            config = ApplicationConfig("test-application.conf")
         }
+    }
 
     protected val client: HttpClient by lazy {
         application
             .createClient {
                 install(ContentNegotiation) {
                     json(
-                        json =
-                            Json {
-                                ignoreUnknownKeys = true
-                                explicitNulls = false
-                                isLenient = true
-                                serializersModule =
-                                    SerializersModule {
-                                        contextual(BigDecimal::class, BigDecimalSerializer)
-                                        contextual(BigInteger::class, BigIntegerSerializer)
-                                        contextual(UUID::class, UUIDSerializer)
-                                    }
+                        json = Json {
+                            ignoreUnknownKeys = true
+                            explicitNulls = false
+                            isLenient = true
+                            serializersModule = SerializersModule {
+                                contextual(BigDecimal::class, BigDecimalSerializer)
+                                contextual(BigInteger::class, BigIntegerSerializer)
+                                contextual(UUID::class, UUIDSerializer)
                             }
+                        }
                     )
                 }
                 install(HttpTimeout) {
@@ -187,6 +189,7 @@ open class BaseApplicationTests {
     protected fun addUserToDatabase(user: User): UUID =
         transaction {
             UserEntity.new {
+                signupPlatform = user.signupPlatform ?: ClientPlatform.Studio
                 firstName = user.firstName
                 lastName = user.lastName
                 nickname = user.nickname
@@ -231,24 +234,23 @@ open class BaseApplicationTests {
         song: Song
     ): UUID =
         transaction {
-            val releaseId =
-                ReleaseEntity
-                    .new {
-                        archived = false
-                        this.ownerId = EntityID(release.ownerId!!, UserTable)
-                        this.title = release.title!!
-                        // TODO: Refactor 'single' hardcoding once we have album support in the UI/UX
-                        releaseType = ReleaseType.SINGLE
-                        barcodeType = release.barcodeType
-                        barcodeNumber = release.barcodeNumber
-                        releaseDate = release.releaseDate
-                        publicationDate = release.publicationDate
-                        coverArtUrl = release.coverArtUrl?.asValidUrl()
-                        arweaveCoverArtUrl = release.arweaveCoverArtUrl
-                        hasSubmittedForDistribution = false
-                        errorMessage = song.errorMessage
-                        forceDistributed = false
-                    }.id.value
+            val releaseId = ReleaseEntity
+                .new {
+                    archived = false
+                    this.ownerId = EntityID(release.ownerId!!, UserTable)
+                    this.title = release.title!!
+                    // TODO: Refactor 'single' hardcoding once we have album support in the UI/UX
+                    releaseType = ReleaseType.SINGLE
+                    barcodeType = release.barcodeType
+                    barcodeNumber = release.barcodeNumber
+                    releaseDate = release.releaseDate
+                    publicationDate = release.publicationDate
+                    coverArtUrl = release.coverArtUrl?.asValidUrl()
+                    arweaveCoverArtUrl = release.arweaveCoverArtUrl
+                    hasSubmittedForDistribution = false
+                    errorMessage = song.errorMessage
+                    forceDistributed = false
+                }.id.value
             SongEntity
                 .new {
                     ownerId = EntityID(song.ownerId!!, UserTable)
@@ -287,11 +289,10 @@ open class BaseApplicationTests {
 
     companion object {
         @Container
-        val container =
-            PostgreSQLContainer<Nothing>("postgres:12").apply {
-                withDatabaseName("newm-db")
-                withUsername("tester")
-                withPassword("newm1234")
-            }
+        val container = PostgreSQLContainer<Nothing>("postgres:12").apply {
+            withDatabaseName("newm-db")
+            withUsername("tester")
+            withPassword("newm1234")
+        }
     }
 }

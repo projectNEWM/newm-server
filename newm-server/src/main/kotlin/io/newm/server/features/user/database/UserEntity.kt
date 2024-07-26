@@ -4,6 +4,7 @@ import io.newm.server.auth.oauth.model.OAuthType
 import io.newm.server.features.user.model.User
 import io.newm.server.features.user.model.UserFilters
 import io.newm.server.features.user.model.UserVerificationStatus
+import io.newm.server.model.ClientPlatform
 import io.newm.server.typealiases.UserId
 import io.newm.shared.ktx.exists
 import org.jetbrains.exposed.dao.UUIDEntity
@@ -24,6 +25,7 @@ open class UserEntity(
     id: EntityID<UserId>
 ) : UUIDEntity(id) {
     val createdAt: LocalDateTime by UserTable.createdAt
+    var signupPlatform: ClientPlatform by UserTable.signupPlatform
     var oauthType: OAuthType? by UserTable.oauthType
     var oauthId: String? by UserTable.oauthId
     var firstName: String? by UserTable.firstName
@@ -65,6 +67,7 @@ open class UserEntity(
         User(
             id = id.value,
             createdAt = createdAt,
+            signupPlatform = signupPlatform.takeIf { includeAll },
             oauthType = oauthType.takeIf { includeAll },
             oauthId = oauthId.takeIf { includeAll },
             firstName = firstName,

@@ -4,11 +4,15 @@ import io.newm.server.auth.oauth.model.OAuthTokens
 import io.newm.server.auth.oauth.model.OAuthType
 import io.newm.server.features.user.model.User
 import io.newm.server.features.user.model.UserFilters
+import io.newm.server.model.ClientPlatform
 import io.newm.server.typealiases.UserId
 import io.newm.shared.auth.Password
 
 interface UserRepository {
-    suspend fun add(user: User): UserId
+    suspend fun add(
+        user: User,
+        clientPlatform: ClientPlatform?
+    ): UserId
 
     suspend fun find(
         email: String,
@@ -19,7 +23,8 @@ interface UserRepository {
 
     suspend fun findOrAdd(
         oauthType: OAuthType,
-        oauthTokens: OAuthTokens
+        oauthTokens: OAuthTokens,
+        clientPlatform: ClientPlatform?
     ): UserId
 
     suspend fun exists(userId: UserId): Boolean

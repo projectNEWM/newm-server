@@ -11,6 +11,7 @@ import io.newm.server.features.model.CountResponse
 import io.newm.server.features.user.model.UserIdBody
 import io.newm.server.features.user.model.userFilters
 import io.newm.server.features.user.repo.UserRepository
+import io.newm.server.ktx.clientPlatform
 import io.newm.server.ktx.identifyUser
 import io.newm.server.ktx.limit
 import io.newm.server.ktx.offset
@@ -29,27 +30,28 @@ fun Routing.createUserRoutes() {
     val recaptchaRepository: RecaptchaRepository by inject()
     val userRepository: UserRepository by inject()
 
-    authenticate(AUTH_JWT) {
-        route("$USERS_PATH/{userId}") {
-            get {
-                identifyUser { userId, isMe ->
-                    respond(userRepository.get(userId, isMe))
+    route(USERS_PATH) {
+        authenticate(AUTH_JWT) {
+            route("{userId}") {
+                get {
+                    identifyUser { userId, isMe ->
+                        respond(userRepository.get(userId, isMe))
+                    }
+                }
+                patch {
+                    restrictToMe { myUserId ->
+                        userRepository.update(myUserId, receive())
+                        respond(HttpStatusCode.NoContent)
+                    }
+                }
+                delete {
+                    restrictToMe { myUserId ->
+                        userRepository.delete(myUserId)
+                        respond(HttpStatusCode.NoContent)
+                    }
                 }
             }
-            patch {
-                restrictToMe { myUserId ->
-                    userRepository.update(myUserId, receive())
-                    respond(HttpStatusCode.NoContent)
-                }
-            }
-            delete {
-                restrictToMe { myUserId ->
-                    userRepository.delete(myUserId)
-                    respond(HttpStatusCode.NoContent)
-                }
-            }
-        }
-        route(USERS_PATH) {
+
             get {
                 respond(userRepository.getAll(userFilters, offset, limit))
             }
@@ -57,12 +59,9 @@ fun Routing.createUserRoutes() {
                 respond(CountResponse(userRepository.getAllCount(userFilters)))
             }
         }
-    }
-
-    route(USERS_PATH) {
         post {
             recaptchaRepository.verify("signup", request)
-            respond(UserIdBody(userRepository.add(receive())))
+            respond(UserIdBody(userRepository.add(receive(), clientPlatform)))
         }
         put("password") {
             recaptchaRepository.verify("password_reset", request)
