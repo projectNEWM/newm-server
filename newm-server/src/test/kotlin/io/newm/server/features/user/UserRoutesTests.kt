@@ -26,6 +26,7 @@ import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
 import io.newm.server.features.user.model.User
 import io.newm.server.features.user.model.UserIdBody
+import io.newm.server.model.ClientPlatform
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.existsHavingId
 import io.newm.shared.ktx.toHash
@@ -63,20 +64,19 @@ class UserRoutesTests : BaseApplicationTests() {
             }
 
             // Post User
-            val response =
-                client.post("v1/users") {
-                    contentType(ContentType.Application.Json)
-                    setBody(testUser1)
-                }
+            val response = client.post("v1/users") {
+                contentType(ContentType.Application.Json)
+                setBody(testUser1)
+            }
             assertThat(response.status).isEqualTo(HttpStatusCode.OK)
             val userId = response.body<UserIdBody>().userId
 
             // Read User directly from database & verify it
-            val (user, passwordHash) =
-                transaction {
-                    UserEntity[userId].let { it.toModel() to it.passwordHash!! }
-                }
+            val (user, passwordHash) = transaction {
+                UserEntity[userId].let { it.toModel() to it.passwordHash!! }
+            }
             assertThat(user.createdAt).isAtLeast(startTime)
+            assertThat(user.signupPlatform).isEqualTo(testUser1.signupPlatform)
             assertThat(user.firstName).isEqualTo(testUser1.firstName)
             assertThat(user.lastName).isEqualTo(testUser1.lastName)
             assertThat(user.nickname).isEqualTo(testUser1.nickname)
@@ -114,11 +114,10 @@ class UserRoutesTests : BaseApplicationTests() {
             }
 
             // Post User
-            val response =
-                client.post("v1/users") {
-                    contentType(ContentType.Application.Json)
-                    setBody(testUser1)
-                }
+            val response = client.post("v1/users") {
+                contentType(ContentType.Application.Json)
+                setBody(testUser1)
+            }
             assertThat(response.status).isEqualTo(HttpStatusCode.Unauthorized)
         }
 
@@ -144,20 +143,19 @@ class UserRoutesTests : BaseApplicationTests() {
             }
 
             // Post User
-            val response =
-                client.post("v1/users") {
-                    contentType(ContentType.Application.Json)
-                    setBody(testUser1)
-                }
+            val response = client.post("v1/users") {
+                contentType(ContentType.Application.Json)
+                setBody(testUser1)
+            }
             assertThat(response.status).isEqualTo(HttpStatusCode.OK)
             val userId = response.body<UserIdBody>().userId
 
             // Read User directly from database & verify it
-            val (user, passwordHash) =
-                transaction {
-                    UserEntity[userId].let { it.toModel() to it.passwordHash!! }
-                }
+            val (user, passwordHash) = transaction {
+                UserEntity[userId].let { it.toModel() to it.passwordHash!! }
+            }
             assertThat(user.createdAt).isAtLeast(startTime)
+            assertThat(user.signupPlatform).isEqualTo(testUser1.signupPlatform)
             assertThat(user.firstName).isEqualTo(testUser1.firstName)
             assertThat(user.lastName).isEqualTo(testUser1.lastName)
             assertThat(user.nickname).isEqualTo(testUser1.nickname)
@@ -191,11 +189,10 @@ class UserRoutesTests : BaseApplicationTests() {
             val userId = addUserToDatabase(testUser1)
 
             // Get User
-            val response =
-                client.get("v1/users/me") {
-                    bearerAuth(userId.toString())
-                    accept(ContentType.Application.Json)
-                }
+            val response = client.get("v1/users/me") {
+                bearerAuth(userId.toString())
+                accept(ContentType.Application.Json)
+            }
             assertThat(response.status).isEqualTo(HttpStatusCode.OK)
 
             // verify it
@@ -242,20 +239,19 @@ class UserRoutesTests : BaseApplicationTests() {
             }
 
             // Patch User1 with User2
-            val response =
-                client.patch("v1/users/me") {
-                    bearerAuth(userId.toString())
-                    contentType(ContentType.Application.Json)
-                    setBody(testUser2)
-                }
+            val response = client.patch("v1/users/me") {
+                bearerAuth(userId.toString())
+                contentType(ContentType.Application.Json)
+                setBody(testUser2)
+            }
             assertThat(response.status).isEqualTo(HttpStatusCode.NoContent)
 
             // Read resulting User directly from database & verify it
-            val (user, passwordHash) =
-                transaction {
-                    UserEntity[userId].let { it.toModel() to it.passwordHash!! }
-                }
+            val (user, passwordHash) = transaction {
+                UserEntity[userId].let { it.toModel() to it.passwordHash!! }
+            }
             assertThat(user.id).isEqualTo(userId)
+            assertThat(user.signupPlatform).isEqualTo(testUser1.signupPlatform)
             assertThat(user.firstName).isEqualTo(testUser2.firstName)
             assertThat(user.lastName).isEqualTo(testUser2.lastName)
             assertThat(user.nickname).isEqualTo(testUser2.nickname)
@@ -289,10 +285,9 @@ class UserRoutesTests : BaseApplicationTests() {
             val userId = addUserToDatabase(testUser1)
 
             // Get User
-            val response =
-                client.delete("v1/users/me") {
-                    bearerAuth(userId.toString())
-                }
+            val response = client.delete("v1/users/me") {
+                bearerAuth(userId.toString())
+            }
             assertThat(response.status).isEqualTo(HttpStatusCode.NoContent)
 
             // verify that is gone directly form the database
@@ -304,13 +299,12 @@ class UserRoutesTests : BaseApplicationTests() {
     fun testPutUserPassword() =
         runBlocking {
             // Put User directly into database
-            val userId =
-                transaction {
-                    UserEntity.new {
-                        email = testUser1.email!!
-                        passwordHash = testUser1.newPassword!!.toHash()
-                    }
-                }.id.value
+            val userId = transaction {
+                UserEntity.new {
+                    email = testUser1.email!!
+                    passwordHash = testUser1.newPassword!!.toHash()
+                }
+            }.id.value
 
             // Put 2FA code directly into database
             transaction {
@@ -322,18 +316,17 @@ class UserRoutesTests : BaseApplicationTests() {
             }
 
             // Put new password
-            val response =
-                client.put("v1/users/password") {
-                    contentType(ContentType.Application.Json)
-                    setBody(
-                        User(
-                            email = testUser1.email,
-                            newPassword = testUser2.newPassword,
-                            confirmPassword = testUser2.confirmPassword,
-                            authCode = testUser1.authCode
-                        )
+            val response = client.put("v1/users/password") {
+                contentType(ContentType.Application.Json)
+                setBody(
+                    User(
+                        email = testUser1.email,
+                        newPassword = testUser2.newPassword,
+                        confirmPassword = testUser2.confirmPassword,
+                        authCode = testUser1.authCode
                     )
-                }
+                )
+            }
             assertThat(response.status).isEqualTo(HttpStatusCode.NoContent)
 
             // verify it
@@ -356,13 +349,12 @@ class UserRoutesTests : BaseApplicationTests() {
             val actualUsers = mutableListOf<User>()
             val token = expectedUsers.first().id.toString()
             while (true) {
-                val response =
-                    client.get("v1/users") {
-                        bearerAuth(token)
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                    }
+                val response = client.get("v1/users") {
+                    bearerAuth(token)
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val users = response.body<List<User>>()
                 if (users.isEmpty()) break
@@ -375,6 +367,7 @@ class UserRoutesTests : BaseApplicationTests() {
             expectedUsers.forEachIndexed { i, expectedUser ->
                 val actualUser = actualUsers[i]
                 assertThat(actualUser.id).isEqualTo(expectedUser.id)
+                assertThat(actualUser.signupPlatform).isEqualTo(expectedUser.signupPlatform)
                 assertThat(actualUser.firstName).isEqualTo(expectedUser.firstName)
                 assertThat(actualUser.lastName).isEqualTo(expectedUser.lastName)
                 assertThat(actualUser.nickname).isEqualTo(expectedUser.nickname)
@@ -415,14 +408,13 @@ class UserRoutesTests : BaseApplicationTests() {
             val actualUsers = mutableListOf<User>()
             val token = expectedUsers.first().id.toString()
             while (true) {
-                val response =
-                    client.get("v1/users") {
-                        bearerAuth(token)
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("sortOrder", "desc")
-                    }
+                val response = client.get("v1/users") {
+                    bearerAuth(token)
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("sortOrder", "desc")
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val users = response.body<List<User>>()
                 if (users.isEmpty()) break
@@ -435,6 +427,7 @@ class UserRoutesTests : BaseApplicationTests() {
             expectedUsers.forEachIndexed { i, expectedUser ->
                 val actualUser = actualUsers[i]
                 assertThat(actualUser.id).isEqualTo(expectedUser.id)
+                assertThat(actualUser.signupPlatform).isEqualTo(expectedUser.signupPlatform)
                 assertThat(actualUser.firstName).isEqualTo(expectedUser.firstName)
                 assertThat(actualUser.lastName).isEqualTo(expectedUser.lastName)
                 assertThat(actualUser.nickname).isEqualTo(expectedUser.nickname)
@@ -478,14 +471,13 @@ class UserRoutesTests : BaseApplicationTests() {
             val actualUsers = mutableListOf<User>()
             val token = expectedUsers.first().id.toString()
             while (true) {
-                val response =
-                    client.get("v1/users") {
-                        bearerAuth(token)
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("ids", ids)
-                    }
+                val response = client.get("v1/users") {
+                    bearerAuth(token)
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("ids", ids)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val users = response.body<List<User>>()
                 if (users.isEmpty()) break
@@ -498,6 +490,7 @@ class UserRoutesTests : BaseApplicationTests() {
             expectedUsers.forEachIndexed { i, expectedUser ->
                 val actualUser = actualUsers[i]
                 assertThat(actualUser.id).isEqualTo(expectedUser.id)
+                assertThat(actualUser.signupPlatform).isEqualTo(expectedUser.signupPlatform)
                 assertThat(actualUser.firstName).isEqualTo(expectedUser.firstName)
                 assertThat(actualUser.lastName).isEqualTo(expectedUser.lastName)
                 assertThat(actualUser.nickname).isEqualTo(expectedUser.nickname)
@@ -541,14 +534,13 @@ class UserRoutesTests : BaseApplicationTests() {
             val actualUsers = mutableListOf<User>()
             val token = expectedUsers.first().id.toString()
             while (true) {
-                val response =
-                    client.get("v1/users") {
-                        bearerAuth(token)
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("ids", ids)
-                    }
+                val response = client.get("v1/users") {
+                    bearerAuth(token)
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("ids", ids)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val users = response.body<List<User>>()
                 if (users.isEmpty()) break
@@ -561,6 +553,7 @@ class UserRoutesTests : BaseApplicationTests() {
             expectedUsers.forEachIndexed { i, expectedUser ->
                 val actualUser = actualUsers[i]
                 assertThat(actualUser.id).isEqualTo(expectedUser.id)
+                assertThat(actualUser.signupPlatform).isEqualTo(expectedUser.signupPlatform)
                 assertThat(actualUser.firstName).isEqualTo(expectedUser.firstName)
                 assertThat(actualUser.lastName).isEqualTo(expectedUser.lastName)
                 assertThat(actualUser.nickname).isEqualTo(expectedUser.nickname)
@@ -604,14 +597,13 @@ class UserRoutesTests : BaseApplicationTests() {
             val actualUsers = mutableListOf<User>()
             val token = expectedUsers.first().id.toString()
             while (true) {
-                val response =
-                    client.get("v1/users") {
-                        bearerAuth(token)
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("roles", roles)
-                    }
+                val response = client.get("v1/users") {
+                    bearerAuth(token)
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("roles", roles)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val users = response.body<List<User>>()
                 if (users.isEmpty()) break
@@ -624,6 +616,7 @@ class UserRoutesTests : BaseApplicationTests() {
             expectedUsers.forEachIndexed { i, expectedUser ->
                 val actualUser = actualUsers[i]
                 assertThat(actualUser.id).isEqualTo(expectedUser.id)
+                assertThat(actualUser.signupPlatform).isEqualTo(expectedUser.signupPlatform)
                 assertThat(actualUser.firstName).isEqualTo(expectedUser.firstName)
                 assertThat(actualUser.lastName).isEqualTo(expectedUser.lastName)
                 assertThat(actualUser.nickname).isEqualTo(expectedUser.nickname)
@@ -667,14 +660,13 @@ class UserRoutesTests : BaseApplicationTests() {
             val actualUsers = mutableListOf<User>()
             val token = expectedUsers.first().id.toString()
             while (true) {
-                val response =
-                    client.get("v1/users") {
-                        bearerAuth(token)
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("genres", genres)
-                    }
+                val response = client.get("v1/users") {
+                    bearerAuth(token)
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("genres", genres)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val users = response.body<List<User>>()
                 if (users.isEmpty()) break
@@ -687,6 +679,7 @@ class UserRoutesTests : BaseApplicationTests() {
             expectedUsers.forEachIndexed { i, expectedUser ->
                 val actualUser = actualUsers[i]
                 assertThat(actualUser.id).isEqualTo(expectedUser.id)
+                assertThat(actualUser.signupPlatform).isEqualTo(expectedUser.signupPlatform)
                 assertThat(actualUser.firstName).isEqualTo(expectedUser.firstName)
                 assertThat(actualUser.lastName).isEqualTo(expectedUser.lastName)
                 assertThat(actualUser.nickname).isEqualTo(expectedUser.nickname)
@@ -730,14 +723,13 @@ class UserRoutesTests : BaseApplicationTests() {
             val actualUsers = mutableListOf<User>()
             val token = expectedUsers.first().id.toString()
             while (true) {
-                val response =
-                    client.get("v1/users") {
-                        bearerAuth(token)
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("genres", genres)
-                    }
+                val response = client.get("v1/users") {
+                    bearerAuth(token)
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("genres", genres)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val users = response.body<List<User>>()
                 if (users.isEmpty()) break
@@ -750,6 +742,7 @@ class UserRoutesTests : BaseApplicationTests() {
             expectedUsers.forEachIndexed { i, expectedUser ->
                 val actualUser = actualUsers[i]
                 assertThat(actualUser.id).isEqualTo(expectedUser.id)
+                assertThat(actualUser.signupPlatform).isEqualTo(expectedUser.signupPlatform)
                 assertThat(actualUser.firstName).isEqualTo(expectedUser.firstName)
                 assertThat(actualUser.lastName).isEqualTo(expectedUser.lastName)
                 assertThat(actualUser.nickname).isEqualTo(expectedUser.nickname)
@@ -793,14 +786,13 @@ class UserRoutesTests : BaseApplicationTests() {
             val actualUsers = mutableListOf<User>()
             val token = expectedUsers.first().id.toString()
             while (true) {
-                val response =
-                    client.get("v1/users") {
-                        bearerAuth(token)
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("roles", roles)
-                    }
+                val response = client.get("v1/users") {
+                    bearerAuth(token)
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("roles", roles)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val users = response.body<List<User>>()
                 if (users.isEmpty()) break
@@ -813,6 +805,7 @@ class UserRoutesTests : BaseApplicationTests() {
             expectedUsers.forEachIndexed { i, expectedUser ->
                 val actualUser = actualUsers[i]
                 assertThat(actualUser.id).isEqualTo(expectedUser.id)
+                assertThat(actualUser.signupPlatform).isEqualTo(expectedUser.signupPlatform)
                 assertThat(actualUser.firstName).isEqualTo(expectedUser.firstName)
                 assertThat(actualUser.lastName).isEqualTo(expectedUser.lastName)
                 assertThat(actualUser.nickname).isEqualTo(expectedUser.nickname)
@@ -856,14 +849,13 @@ class UserRoutesTests : BaseApplicationTests() {
             val actualUsers = mutableListOf<User>()
             val token = expectedUsers.first().id.toString()
             while (true) {
-                val response =
-                    client.get("v1/users") {
-                        bearerAuth(token)
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("olderThan", olderThan)
-                    }
+                val response = client.get("v1/users") {
+                    bearerAuth(token)
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("olderThan", olderThan)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val users = response.body<List<User>>()
                 if (users.isEmpty()) break
@@ -876,6 +868,7 @@ class UserRoutesTests : BaseApplicationTests() {
             expectedUsers.forEachIndexed { i, expectedUser ->
                 val actualUser = actualUsers[i]
                 assertThat(actualUser.id).isEqualTo(expectedUser.id)
+                assertThat(actualUser.signupPlatform).isEqualTo(expectedUser.signupPlatform)
                 assertThat(actualUser.firstName).isEqualTo(expectedUser.firstName)
                 assertThat(actualUser.lastName).isEqualTo(expectedUser.lastName)
                 assertThat(actualUser.nickname).isEqualTo(expectedUser.nickname)
@@ -919,14 +912,13 @@ class UserRoutesTests : BaseApplicationTests() {
             val actualUsers = mutableListOf<User>()
             val token = expectedUsers.first().id.toString()
             while (true) {
-                val response =
-                    client.get("v1/users") {
-                        bearerAuth(token)
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("newerThan", newerThan)
-                    }
+                val response = client.get("v1/users") {
+                    bearerAuth(token)
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("newerThan", newerThan)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val users = response.body<List<User>>()
                 if (users.isEmpty()) break
@@ -939,6 +931,7 @@ class UserRoutesTests : BaseApplicationTests() {
             expectedUsers.forEachIndexed { i, expectedUser ->
                 val actualUser = actualUsers[i]
                 assertThat(actualUser.id).isEqualTo(expectedUser.id)
+                assertThat(actualUser.signupPlatform).isEqualTo(expectedUser.signupPlatform)
                 assertThat(actualUser.firstName).isEqualTo(expectedUser.firstName)
                 assertThat(actualUser.lastName).isEqualTo(expectedUser.lastName)
                 assertThat(actualUser.nickname).isEqualTo(expectedUser.nickname)
@@ -968,10 +961,9 @@ class UserRoutesTests : BaseApplicationTests() {
         runBlocking {
             var count = 1L
             while (true) {
-                val response =
-                    client.get("v1/users/count") {
-                        bearerAuth(testUserToken)
-                    }
+                val response = client.get("v1/users/count") {
+                    bearerAuth(testUserToken)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val actualCount = response.body<CountResponse>().count
                 assertThat(actualCount).isEqualTo(count)
@@ -990,6 +982,7 @@ class UserRoutesTests : BaseApplicationTests() {
 private fun addUserToDatabase(offset: Int): User =
     transaction {
         UserEntity.new {
+            signupPlatform = ClientPlatform.entries[offset % ClientPlatform.entries.size]
             firstName = "firstName$offset"
             lastName = "lastName$offset"
             nickname = "nickname$offset"

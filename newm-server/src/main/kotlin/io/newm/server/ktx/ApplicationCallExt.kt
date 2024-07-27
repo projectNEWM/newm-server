@@ -10,6 +10,7 @@ import io.ktor.server.response.respond
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.bits.Memory
 import io.newm.server.features.song.model.MintingStatus
+import io.newm.server.model.ClientPlatform
 import io.newm.server.model.FilterCriteria
 import io.newm.server.model.toFilterCriteria
 import io.newm.server.model.toStringFilterCriteria
@@ -114,6 +115,9 @@ val ApplicationCall.artistId: UserId
 
 val ApplicationCall.artistIds: FilterCriteria<UserId>?
     get() = parameters["artistIds"]?.toUUIDFilterCriteria()
+
+val ApplicationCall.clientPlatform: ClientPlatform?
+    get() = parameters["clientPlatform"]?.let(ClientPlatform::valueOf)
 
 suspend inline fun ApplicationCall.identifyUser(crossinline body: suspend ApplicationCall.(UUID, Boolean) -> Unit) {
     val uid = userId
