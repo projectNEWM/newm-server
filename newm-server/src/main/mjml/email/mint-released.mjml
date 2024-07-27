@@ -1,7 +1,7 @@
 <mjml>
     <mj-head>
         <mj-preview>Now available on all major streaming platforms</mj-preview>
-        <mj-font name="Inter" href="https://fonts.googleapis.com/css?family=Inter" />
+        <mj-font name="Inter" href="https://fonts.googleapis.com/css?family=Inter:500,700" />
         <mj-attributes>
             <mj-section padding="0 40px" />
             <mj-column padding="0 0" />
@@ -29,7 +29,7 @@
                 <mj-text padding-top="24px" color="#FFF" align="left" font-family="Inter,sans-serif" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
                     Now that your song has been minted, distributed and released, it will begin accruing royalties for every stream. Please note that NEWM has no control over royalty distribution and timelines from third-party music streaming platforms. We recommend consulting each platform&#8217;s terms and conditions for more information on their royalty distribution policies.<br><br>
                     All earnings, including streaming royalties, can be viewed in the wallet tab on your NEWM Studio account. Once your royalties are available, simply select "Claim now" to transfer your earnings to your designated external wallet.<br><br>
-                    <span style="font-weight:bold;">Please note that release times vary across different streaming platforms. However, if your song is still not listed on a particular streaming platform more than two days past your set release date,</span>
+                    <span style="font-weight:700;">Please note that release times vary across different streaming platforms. However, if your song is still not listed on a particular streaming platform more than two days past your set release date,</span>
                     or if you have any questions about the release process, please email <a href="mailto:support@newm.io" style="color: #8E8E93">support@newm.io</a> for assistance.<br><br>
                     Cheers, The NEWM Team<br><br>
                 </mj-text>
