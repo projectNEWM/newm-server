@@ -1,0 +1,2823 @@
+openapi: "3.1.0"
+info:
+  title: "newm_server API"
+  description: "newm_server API"
+  version: "1.0.0"
+servers:
+  - url: "https://garage.newm.io"
+    description: "Garage Environment"
+  - url: "https://studio.newm.io"
+    description: "Studio Environment"
+security:
+  - bearerAuth: [ ]
+paths:
+  /v1/auth/code:
+    get:
+      tags:
+        - "Auth"
+      description: ""
+      parameters:
+        - name: "mustExists"
+          in: "query"
+          required: false
+          schema:
+            type: "boolean"
+        - name: "mobile"
+          in: "query"
+          required: false
+          schema:
+            type: "boolean"
+      responses:
+        "400":
+          description: "Bad Request"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+        "204":
+          description: "No Content"
+          content:
+            'application/json':
+              schema:
+                type: "object"
+  /v1/auth/jwt:
+    get:
+      tags:
+        - "Auth"
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/JwtData"
+  /v1/auth/login:
+    post:
+      tags:
+        - "Auth"
+      description: ""
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+  /v1/auth/login/${..}:
+    post:
+      tags:
+        - "Auth"
+      description: ""
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OAuthLoginRequest"
+        required: true
+      responses:
+        "400":
+          description: "Bad Request"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+  /v1/auth/refresh:
+    get:
+      tags:
+        - "Auth"
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+  /v1/cardano/encryption:
+    post:
+      tags:
+        - "Cardano"
+      description: ""
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EncryptionRequest"
+        required: true
+      responses:
+        "201":
+          description: "Created"
+          content:
+            'application/json':
+              schema:
+                type: "object"
+  /v1/cardano/images:
+    get:
+      tags:
+        - "Cardano"
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                type: "array"
+                items:
+                  type: "string"
+  /v1/cardano/key:
+    post:
+      tags:
+        - "Cardano"
+      description: ""
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CliKeyPair"
+        required: true
+      responses:
+        "201":
+          description: "Created"
+          content:
+            'application/json':
+              schema:
+                type: "object"
+  /v1/cardano/nft/songs:
+    get:
+      tags:
+        - "Cardano"
+      description: ""
+      parameters:
+        - name: "legacy"
+          in: "query"
+          required: false
+          schema:
+            type: "boolean"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/NFTSong"
+  /v1/cardano/prices/ada:
+    get:
+      tags:
+        - "Cardano"
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/QueryPriceResponse"
+  /v1/cardano/prices/newm:
+    get:
+      tags:
+        - "Cardano"
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/QueryPriceResponse"
+  /v1/cardano/scriptAddressWhitelist:
+    post:
+      tags:
+        - "Cardano"
+      description: ""
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScriptAddressWhitelistRequest"
+        required: true
+      responses:
+        "201":
+          description: "Created"
+          content:
+            'application/json':
+              schema:
+                type: "object"
+  /v1/cardano/songs:
+    post:
+      tags:
+        - "Cardano"
+      description: ""
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: "array"
+              items:
+                type: "string"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/GetWalletSongsResponse"
+  /v1/cardano/submitTransaction:
+    post:
+      tags:
+        - "Cardano"
+      description: ""
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitTransactionRequest"
+        required: true
+      responses:
+        "202":
+          description: "Accepted"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/SubmitTransactionResponse"
+  /v1/client-config/marketplace:
+    get:
+      tags:
+        - "ClientConfig"
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: "string"
+  /v1/client-config/mobile:
+    get:
+      tags:
+        - "ClientConfig"
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: "string"
+  /v1/client-config/studio:
+    get:
+      tags:
+        - "ClientConfig"
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: "string"
+  /v1/cloudinary/sign:
+    post:
+      tags:
+        - "Cloudinary"
+      description: ""
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Map_String"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/CloudinarySignResponse"
+  /v1/collaborations:
+    get:
+      tags:
+        - "Collaborations"
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/Collaboration"
+    post:
+      tags:
+        - "Collaborations"
+      description: ""
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Collaboration"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/CollaborationIdBody"
+  /v1/collaborations/{collaborationId}:
+    delete:
+      tags:
+        - "Collaborations"
+      description: ""
+      parameters:
+        - name: "collaborationId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "204":
+          description: "No Content"
+          content:
+            'application/json':
+              schema:
+                type: "object"
+    get:
+      tags:
+        - "Collaborations"
+      description: ""
+      parameters:
+        - name: "collaborationId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/Collaboration"
+    patch:
+      tags:
+        - "Collaborations"
+      description: ""
+      parameters:
+        - name: "collaborationId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Collaboration"
+        required: true
+      responses:
+        "204":
+          description: "No Content"
+          content:
+            'application/json':
+              schema:
+                type: "object"
+  /v1/collaborations/{collaborationId}/reply:
+    put:
+      tags:
+        - "Collaborations"
+      description: ""
+      parameters:
+        - name: "collaborationId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CollaborationReply"
+        required: true
+      responses:
+        "204":
+          description: "No Content"
+          content:
+            'application/json':
+              schema:
+                type: "object"
+  /v1/collaborations/collaborators:
+    get:
+      tags:
+        - "Collaborations"
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/Collaborator"
+  /v1/collaborations/collaborators/count:
+    get:
+      tags:
+        - "Collaborations"
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/CountResponse"
+  /v1/collaborations/count:
+    get:
+      tags:
+        - "Collaborations"
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/CountResponse"
+  /v1/distribution/countries:
+    get:
+      tags:
+        - "Distribution"
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/Country"
+  /v1/distribution/countries/count:
+    get:
+      tags:
+        - "Distribution"
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/CountResponse"
+  /v1/distribution/earliest-release-date:
+    get:
+      tags:
+        - "Distribution"
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/GetDateResponse"
+  /v1/distribution/genres:
+    get:
+      tags:
+        - "Distribution"
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/Genre"
+  /v1/distribution/genres/count:
+    get:
+      tags:
+        - "Distribution"
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/CountResponse"
+  /v1/distribution/languages:
+    get:
+      tags:
+        - "Distribution"
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/Language"
+  /v1/distribution/languages/count:
+    get:
+      tags:
+        - "Distribution"
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/CountResponse"
+  /v1/distribution/roles:
+    get:
+      tags:
+        - "Distribution"
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/Role"
+  /v1/distribution/roles/count:
+    get:
+      tags:
+        - "Distribution"
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/CountResponse"
+  /v1/earnings/{walletAddress}:
+    get:
+      tags:
+        - "Earnings"
+      description: "get earnings"
+      parameters:
+        - name: "walletAddress"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/Earning"
+    post:
+      tags:
+        - "Earnings"
+      description: "create a claim for all earnings on this wallet stake address"
+      parameters:
+        - name: "walletAddress"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/ClaimOrder"
+        "404":
+          description: "Not Found"
+          content:
+            'application/json':
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: "No unclaimed earnings found for this wallet address."
+  /v1/earnings/admin:
+    get:
+      tags:
+        - "Earnings"
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/Earning"
+    post:
+      tags:
+        - "Earnings"
+      description: "create earning records"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: "array"
+              items:
+                $ref: "#/components/schemas/Earning"
+        required: true
+      responses:
+        "201":
+          description: "Created"
+          content:
+            'application/json':
+              schema:
+                type: "object"
+  /v1/earnings/admin/{songId}:
+    get:
+      tags:
+        - "Earnings"
+      description: ""
+      parameters:
+        - name: "songId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/Earning"
+    post:
+      tags:
+        - "Earnings"
+      description: ""
+      parameters:
+        - name: "songId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddSongRoyaltyRequest"
+        required: true
+      responses:
+        "201":
+          description: "Created"
+          content:
+            'application/json':
+              schema:
+                type: "object"
+  /v1/idenfy/callback:
+    post:
+      tags:
+        - "Idenfy"
+      description: ""
+      requestBody:
+        content:
+          application/json:
+            schema: { }
+        required: true
+      responses:
+        "401":
+          description: "Unauthorized"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                type: "object"
+  /v1/idenfy/session:
+    get:
+      tags:
+        - "Idenfy"
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/IdenfyCreateSessionResponse"
+  /v1/marketplace/artists:
+    get:
+      tags:
+        - "Marketplace"
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/Artist"
+  /v1/marketplace/artists/{artistId}:
+    get:
+      tags:
+        - "Marketplace"
+      description: ""
+      parameters:
+        - name: "artistId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/Artist"
+  /v1/marketplace/artists/count:
+    get:
+      tags:
+        - "Marketplace"
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/CountResponse"
+  /v1/marketplace/orders/amount:
+    post:
+      tags:
+        - "Marketplace"
+      description: ""
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderAmountRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/OrderAmountResponse"
+  /v1/marketplace/orders/transaction:
+    post:
+      tags:
+        - "Marketplace"
+      description: ""
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderTransactionRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/OrderTransactionResponse"
+  /v1/marketplace/sales:
+    get:
+      tags:
+        - "Marketplace"
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/Sale"
+  /v1/marketplace/sales/{saleId}:
+    get:
+      tags:
+        - "Marketplace"
+      description: ""
+      parameters:
+        - name: "saleId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/Sale"
+  /v1/marketplace/sales/count:
+    get:
+      tags:
+        - "Marketplace"
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/CountResponse"
+  /v1/marketplace/sales/end/amount:
+    post:
+      tags:
+        - "Marketplace"
+      description: ""
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaleEndAmountRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/SaleEndAmountResponse"
+  /v1/marketplace/sales/end/transaction:
+    post:
+      tags:
+        - "Marketplace"
+      description: ""
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaleEndTransactionRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/SaleEndTransactionResponse"
+  /v1/marketplace/sales/start/amount:
+    post:
+      tags:
+        - "Marketplace"
+      description: ""
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaleStartAmountRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/SaleStartAmountResponse"
+  /v1/marketplace/sales/start/transaction:
+    post:
+      tags:
+        - "Marketplace"
+      description: ""
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaleStartTransactionRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/SaleStartTransactionResponse"
+  /v1/mobile-config:
+    get:
+      tags:
+        - "MobileConfig"
+      description: "TODO: remove next route after mobile client migrate to \"v1/client-config/mobile\""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: "string"
+  /v1/playlists:
+    get:
+      tags:
+        - "Playlist"
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/Playlist"
+    post:
+      tags:
+        - "Playlist"
+      description: ""
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Playlist"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/PlaylistIdBody"
+  /v1/playlists/{playlistId}:
+    delete:
+      tags:
+        - "Playlist"
+      description: ""
+      parameters:
+        - name: "playlistId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "204":
+          description: "No Content"
+          content:
+            'application/json':
+              schema:
+                type: "object"
+    get:
+      tags:
+        - "Playlist"
+      description: ""
+      parameters:
+        - name: "playlistId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/Playlist"
+    patch:
+      tags:
+        - "Playlist"
+      description: ""
+      parameters:
+        - name: "playlistId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Playlist"
+        required: true
+      responses:
+        "204":
+          description: "No Content"
+          content:
+            'application/json':
+              schema:
+                type: "object"
+  /v1/playlists/{playlistId}/songs:
+    get:
+      tags:
+        - "Playlist"
+      description: ""
+      parameters:
+        - name: "playlistId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/Song"
+    put:
+      tags:
+        - "Playlist"
+      description: ""
+      parameters:
+        - name: "playlistId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SongIdBody"
+        required: true
+      responses:
+        "204":
+          description: "No Content"
+          content:
+            'application/json':
+              schema:
+                type: "object"
+  /v1/playlists/{playlistId}/songs/{songId}:
+    delete:
+      tags:
+        - "Playlist"
+      description: ""
+      parameters:
+        - name: "playlistId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+        - name: "songId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "204":
+          description: "No Content"
+          content:
+            'application/json':
+              schema:
+                type: "object"
+  /v1/playlists/count:
+    get:
+      tags:
+        - "Playlist"
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/CountResponse"
+  /v1/songs:
+    get:
+      tags:
+        - "Song"
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/Song"
+    post:
+      tags:
+        - "Song"
+      description: ""
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Song"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/SongIdBody"
+  /v1/songs/{songId}:
+    delete:
+      tags:
+        - "Song"
+      description: ""
+      parameters:
+        - name: "songId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "204":
+          description: "No Content"
+          content:
+            'application/json':
+              schema:
+                type: "object"
+    get:
+      tags:
+        - "Song"
+      description: ""
+      parameters:
+        - name: "songId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/Song"
+    patch:
+      tags:
+        - "Song"
+      description: ""
+      parameters:
+        - name: "songId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Song"
+        required: true
+      responses:
+        "204":
+          description: "No Content"
+          content:
+            'application/json':
+              schema:
+                type: "object"
+  /v1/songs/{songId}/agreement:
+    put:
+      tags:
+        - "Song"
+      description: ""
+      parameters:
+        - name: "songId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StreamTokenAgreementRequest"
+        required: true
+      responses:
+        "204":
+          description: "No Content"
+          content:
+            'application/json':
+              schema:
+                type: "object"
+  /v1/songs/{songId}/audio:
+    post:
+      tags:
+        - "Song"
+      description: ""
+      parameters:
+        - name: "songId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/AudioUploadReport"
+  /v1/songs/{songId}/mint/payment:
+    get:
+      tags:
+        - "Song"
+      description: ""
+      parameters:
+        - name: "songId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/MintPaymentResponse"
+    post:
+      tags:
+        - "Song"
+      description: ""
+      parameters:
+        - name: "songId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MintPaymentRequest"
+        required: true
+      responses:
+        "402":
+          description: "Payment Required"
+          content:
+            'application/json':
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: "No UTXOs provided!"
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/MintPaymentResponse"
+  /v1/songs/{songId}/redistribute:
+    post:
+      tags:
+        - "Song"
+      description: ""
+      parameters:
+        - name: "songId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "204":
+          description: "No Content"
+          content:
+            'application/json':
+              schema:
+                type: "object"
+  /v1/songs/{songId}/refund:
+    post:
+      tags:
+        - "Song"
+      description: ""
+      parameters:
+        - name: "songId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/RefundPaymentResponse"
+  /v1/songs/{songId}/reprocess/{mintingStatus}:
+    post:
+      tags:
+        - "Song"
+      description: ""
+      parameters:
+        - name: "songId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+        - name: "mintingStatus"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "202":
+          description: "Accepted"
+          content:
+            'application/json':
+              schema:
+                type: "object"
+  /v1/songs/{songId}/stream:
+    get:
+      tags:
+        - "Song"
+      description: ""
+      parameters:
+        - name: "songId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/AudioStreamResponse"
+  /v1/songs/count:
+    get:
+      tags:
+        - "Song"
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/CountResponse"
+  /v1/songs/genres:
+    get:
+      tags:
+        - "Song"
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                type: "array"
+                items:
+                  type: "string"
+  /v1/songs/genres/count:
+    get:
+      tags:
+        - "Song"
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/CountResponse"
+  /v1/songs/mint/estimate:
+    get:
+      tags:
+        - "Song"
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/MintPaymentResponse"
+  /v1/users:
+    get:
+      tags:
+        - "User"
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/User"
+    post:
+      tags:
+        - "User"
+      description: ""
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/UserIdBody"
+  /v1/users/{userId}:
+    delete:
+      tags:
+        - "User"
+      description: ""
+      parameters:
+        - name: "userId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "403":
+          description: "Forbidden"
+          content:
+            'application/json':
+              schema:
+                type: "object"
+        "204":
+          description: "No Content"
+          content:
+            'application/json':
+              schema:
+                type: "object"
+    get:
+      tags:
+        - "User"
+      description: ""
+      parameters:
+        - name: "userId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/User"
+    patch:
+      tags:
+        - "User"
+      description: ""
+      parameters:
+        - name: "userId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+        required: true
+      responses:
+        "403":
+          description: "Forbidden"
+          content:
+            'application/json':
+              schema:
+                type: "object"
+        "204":
+          description: "No Content"
+          content:
+            'application/json':
+              schema:
+                type: "object"
+  /v1/users/count:
+    get:
+      tags:
+        - "User"
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/CountResponse"
+  /v1/users/password:
+    put:
+      tags:
+        - "User"
+      description: ""
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+        required: true
+      responses:
+        "204":
+          description: "No Content"
+          content:
+            'application/json':
+              schema:
+                type: "object"
+  /v1/wallet-connections:
+    get:
+      tags:
+        - "Wallet"
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/WalletConnection"
+  /v1/wallet-connections/{connectionId}:
+    delete:
+      tags:
+        - "Wallet"
+      description: ""
+      parameters:
+        - name: "connectionId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "204":
+          description: "No Content"
+          content:
+            'application/json':
+              schema:
+                type: "object"
+    get:
+      tags:
+        - "Wallet"
+      description: ""
+      parameters:
+        - name: "connectionId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/WalletConnection"
+  /v1/wallet-connections/{connectionId}/qrcode:
+    get:
+      tags:
+        - "Wallet"
+      description: ""
+      parameters:
+        - name: "connectionId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            image/png:
+              schema:
+                type: "string"
+                format: "byte"
+  /v1/wallet-connections/challenges/answer:
+    post:
+      tags:
+        - "Wallet"
+      description: ""
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnswerChallengeRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/AnswerChallengeResponse"
+  /v1/wallet-connections/challenges/generate:
+    post:
+      tags:
+        - "Wallet"
+      description: ""
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateChallengeRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/GenerateChallengeResponse"
+components:
+  schemas:
+    StatusResponse:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          format: "int32"
+        description:
+          type: "string"
+        cause:
+          type: "string"
+      required:
+        - "description"
+        - "cause"
+    JwtData:
+      type: "object"
+      properties:
+        id:
+          type: "string"
+        issuer:
+          type: "string"
+        audience:
+          type: "string"
+        subject:
+          type: "string"
+        expiresAt:
+          type: "string"
+      required:
+        - "id"
+        - "issuer"
+        - "audience"
+        - "subject"
+        - "expiresAt"
+    Password:
+      type: "object"
+      properties:
+        value:
+          type: "string"
+      required:
+        - "value"
+    LoginRequest:
+      type: "object"
+      properties:
+        email:
+          type: "string"
+        password:
+          $ref: "#/components/schemas/Password"
+      required:
+        - "email"
+        - "password"
+    LoginResponse:
+      type: "object"
+      properties:
+        accessToken:
+          type: "string"
+        refreshToken:
+          type: "string"
+      required:
+        - "accessToken"
+        - "refreshToken"
+    OAuthLoginRequest:
+      type: "object"
+      properties:
+        accessToken:
+          type: "string"
+        idToken:
+          type: "string"
+        code:
+          type: "string"
+        redirectUri:
+          type: "string"
+    EncryptionRequest:
+      type: "object"
+      properties:
+        s:
+          type: "string"
+        password:
+          type: "string"
+      required:
+        - "s"
+        - "password"
+    CliKey:
+      type: "object"
+      properties:
+        type:
+          type: "string"
+        description:
+          type: "string"
+        cborHex:
+          type: "string"
+      required:
+        - "type"
+        - "description"
+        - "cborHex"
+    CliKeyPair:
+      type: "object"
+      properties:
+        name:
+          type: "string"
+        vkey:
+          $ref: "#/components/schemas/CliKey"
+        skey:
+          $ref: "#/components/schemas/CliKey"
+      required:
+        - "name"
+        - "vkey"
+    NFTSong:
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          format: "uuid"
+        fingerprint:
+          type: "string"
+        policyId:
+          type: "string"
+        assetName:
+          type: "string"
+        amount:
+          type: "integer"
+          format: "int64"
+        title:
+          type: "string"
+        imageUrl:
+          type: "string"
+        audioUrl:
+          type: "string"
+        duration:
+          type: "integer"
+          format: "int64"
+        artists:
+          type: "array"
+          items:
+            type: "string"
+        genres:
+          type: "array"
+          items:
+            type: "string"
+        moods:
+          type: "array"
+          items:
+            type: "string"
+      required:
+        - "id"
+        - "fingerprint"
+        - "policyId"
+        - "assetName"
+        - "title"
+        - "imageUrl"
+        - "audioUrl"
+        - "artists"
+        - "genres"
+        - "moods"
+    QueryPriceResponse:
+      type: "object"
+      properties:
+        usdPrice:
+          type: "integer"
+          format: "int64"
+    ScriptAddressWhitelistRequest:
+      type: "object"
+      properties:
+        scriptAddress:
+          type: "string"
+      required:
+        - "scriptAddress"
+    Song:
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          format: "uuid"
+        archived:
+          type: "boolean"
+        ownerId:
+          type: "string"
+          format: "uuid"
+        createdAt:
+          type: "string"
+          format: "date-time"
+        title:
+          type: "string"
+        genres:
+          type: "array"
+          items:
+            type: "string"
+        moods:
+          type: "array"
+          items:
+            type: "string"
+        coverArtUrl:
+          type: "string"
+        description:
+          type: "string"
+        releaseId:
+          type: "string"
+          format: "uuid"
+        track:
+          type: "integer"
+          format: "int32"
+        language:
+          type: "string"
+        coverRemixSample:
+          type: "boolean"
+        compositionCopyrightOwner:
+          type: "string"
+        compositionCopyrightYear:
+          type: "integer"
+          format: "int32"
+        phonographicCopyrightOwner:
+          type: "string"
+        phonographicCopyrightYear:
+          type: "integer"
+          format: "int32"
+        parentalAdvisory:
+          type: "string"
+        barcodeType:
+          type: "string"
+          enum:
+            - "Upc"
+            - "Ean"
+            - "Jan"
+        barcodeNumber:
+          type: "string"
+        isrc:
+          type: "string"
+        iswc:
+          type: "string"
+        ipis:
+          type: "array"
+          items:
+            type: "string"
+        releaseDate:
+          type: "string"
+          format: "date"
+        publicationDate:
+          type: "string"
+          format: "date"
+        lyricsUrl:
+          type: "string"
+        tokenAgreementUrl:
+          type: "string"
+        originalAudioUrl:
+          type: "string"
+        clipUrl:
+          type: "string"
+        streamUrl:
+          type: "string"
+        duration:
+          type: "integer"
+          format: "int32"
+        nftPolicyId:
+          type: "string"
+        nftName:
+          type: "string"
+        audioEncodingStatus:
+          type: "string"
+          enum:
+            - "NotStarted"
+            - "Started"
+            - "Completed"
+            - "Failed"
+        mintingStatus:
+          type: "string"
+          enum:
+            - "Undistributed"
+            - "StreamTokenAgreementApproved"
+            - "MintingPaymentRequested"
+            - "MintingPaymentSubmitted"
+            - "MintingPaymentReceived"
+            - "AwaitingAudioEncoding"
+            - "AwaitingCollaboratorApproval"
+            - "ReadyToDistribute"
+            - "SubmittedForDistribution"
+            - "Distributed"
+            - "Declined"
+            - "Pending"
+            - "Minted"
+            - "MintingPaymentTimeout"
+            - "MintingPaymentException"
+            - "DistributionException"
+            - "SubmittedForDistributionException"
+            - "ArweaveUploadException"
+            - "MintingException"
+            - "ReleaseCheckException"
+            - "Released"
+        mintingTxId:
+          type: "string"
+        marketplaceStatus:
+          type: "string"
+          enum:
+            - "NotSelling"
+            - "Selling"
+        paymentKeyId:
+          type: "string"
+          format: "uuid"
+        arweaveLyricsUrl:
+          type: "string"
+        arweaveTokenAgreementUrl:
+          type: "string"
+        arweaveClipUrl:
+          type: "string"
+        distributionTrackId:
+          type: "integer"
+          format: "int64"
+        mintCostLovelace:
+          type: "integer"
+          format: "int64"
+        forceDistributed:
+          type: "boolean"
+        errorMessage:
+          type: "string"
+        instrumental:
+          type: "boolean"
+    WalletSong:
+      type: "object"
+      properties:
+        song:
+          $ref: "#/components/schemas/Song"
+        tokenAmount:
+          type: "integer"
+          format: "int64"
+      required:
+        - "song"
+    GetWalletSongsResponse:
+      type: "object"
+      properties:
+        songs:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/WalletSong"
+        total:
+          type: "integer"
+          format: "int64"
+        offset:
+          type: "integer"
+          format: "int32"
+        limit:
+          type: "integer"
+          format: "int32"
+      required:
+        - "songs"
+    SubmitTransactionRequest:
+      type: "object"
+      properties:
+        songId:
+          type: "string"
+          format: "uuid"
+        cborHex:
+          type: "string"
+      required:
+        - "songId"
+        - "cborHex"
+    SubmitTransactionResponse:
+      type: "object"
+      properties:
+        txId:
+          type: "string"
+        result:
+          type: "string"
+    Map:
+      type: "object"
+      properties: { }
+    Map_String:
+      type: "string"
+    CloudinarySignResponse:
+      type: "object"
+      properties:
+        signature:
+          type: "string"
+        timestamp:
+          type: "integer"
+          format: "int64"
+        cloudName:
+          type: "string"
+        apiKey:
+          type: "string"
+      required:
+        - "signature"
+        - "cloudName"
+        - "apiKey"
+    BigDecimal:
+      type: "object"
+      properties: { }
+    Collaboration:
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          format: "uuid"
+        createdAt:
+          type: "string"
+          format: "date-time"
+        songId:
+          type: "string"
+          format: "uuid"
+        email:
+          type: "string"
+        role:
+          type: "string"
+        royaltyRate:
+          $ref: "#/components/schemas/BigDecimal"
+        credited:
+          type: "boolean"
+        featured:
+          type: "boolean"
+        status:
+          type: "string"
+          enum:
+            - "Editing"
+            - "Waiting"
+            - "Accepted"
+            - "Rejected"
+        distributionArtistId:
+          type: "integer"
+          format: "int64"
+        distributionParticipantId:
+          type: "integer"
+          format: "int64"
+    CollaborationIdBody:
+      type: "object"
+      properties:
+        collaborationId:
+          type: "string"
+          format: "uuid"
+      required:
+        - "collaborationId"
+    CollaborationReply:
+      type: "object"
+      properties:
+        accepted:
+          type: "boolean"
+    User:
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          format: "uuid"
+        createdAt:
+          type: "string"
+          format: "date-time"
+        oauthType:
+          type: "string"
+          enum:
+            - "Google"
+            - "Facebook"
+            - "LinkedIn"
+            - "Apple"
+        oauthId:
+          type: "string"
+        firstName:
+          type: "string"
+        lastName:
+          type: "string"
+        nickname:
+          type: "string"
+        pictureUrl:
+          type: "string"
+        bannerUrl:
+          type: "string"
+        websiteUrl:
+          type: "string"
+        twitterUrl:
+          type: "string"
+        instagramUrl:
+          type: "string"
+        spotifyProfile:
+          type: "string"
+        soundCloudProfile:
+          type: "string"
+        appleMusicProfile:
+          type: "string"
+        location:
+          type: "string"
+        role:
+          type: "string"
+        genre:
+          type: "string"
+        biography:
+          type: "string"
+        walletAddress:
+          type: "string"
+        email:
+          type: "string"
+        newPassword:
+          $ref: "#/components/schemas/Password"
+        confirmPassword:
+          $ref: "#/components/schemas/Password"
+        currentPassword:
+          $ref: "#/components/schemas/Password"
+        authCode:
+          type: "string"
+        verificationStatus:
+          type: "string"
+          enum:
+            - "Unverified"
+            - "Pending"
+            - "Verified"
+        companyName:
+          type: "string"
+        companyLogoUrl:
+          type: "string"
+        companyIpRights:
+          type: "boolean"
+        isni:
+          type: "string"
+        ipi:
+          type: "string"
+        dspPlanSubscribed:
+          type: "boolean"
+        distributionUserId:
+          type: "string"
+        distributionArtistId:
+          type: "integer"
+          format: "int64"
+        distributionParticipantId:
+          type: "integer"
+          format: "int64"
+        distributionSubscriptionId:
+          type: "integer"
+          format: "int64"
+        distributionLabelId:
+          type: "integer"
+          format: "int64"
+        distributionIsni:
+          type: "string"
+        distributionIpn:
+          type: "string"
+        distributionNewmParticipantId:
+          type: "integer"
+          format: "int64"
+    Collaborator:
+      type: "object"
+      properties:
+        email:
+          type: "string"
+        songCount:
+          type: "integer"
+          format: "int64"
+        user:
+          $ref: "#/components/schemas/User"
+    CountResponse:
+      type: "object"
+      properties:
+        count:
+          type: "integer"
+          format: "int64"
+    State:
+      type: "object"
+      properties:
+        stateCode:
+          type: "string"
+        stateName:
+          type: "string"
+      required:
+        - "stateCode"
+        - "stateName"
+    Country:
+      type: "object"
+      properties:
+        countryCode:
+          type: "string"
+        countryName:
+          type: "string"
+        states:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/State"
+      required:
+        - "countryCode"
+        - "countryName"
+        - "states"
+    GetDateResponse:
+      type: "object"
+      properties:
+        date:
+          type: "string"
+          format: "date"
+      required:
+        - "date"
+    Genre:
+      type: "object"
+      properties:
+        genreId:
+          type: "integer"
+          format: "int64"
+        name:
+          type: "string"
+      required:
+        - "name"
+    Language:
+      type: "object"
+      properties:
+        code:
+          type: "string"
+        name:
+          type: "string"
+      required:
+        - "code"
+        - "name"
+    Role:
+      type: "object"
+      properties:
+        roleId:
+          type: "integer"
+          format: "int64"
+        name:
+          type: "string"
+      required:
+        - "name"
+    Earning:
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          format: "uuid"
+        songId:
+          type: "string"
+          format: "uuid"
+        stakeAddress:
+          type: "string"
+        amount:
+          type: "integer"
+          format: "int64"
+        memo:
+          type: "string"
+        startDate:
+          type: "string"
+          format: "date-time"
+        endDate:
+          type: "string"
+          format: "date-time"
+        claimed:
+          type: "boolean"
+        claimedAt:
+          type: "string"
+          format: "date-time"
+        claimOrderId:
+          type: "string"
+          format: "uuid"
+        createdAt:
+          type: "string"
+          format: "date-time"
+      required:
+        - "stakeAddress"
+        - "memo"
+        - "createdAt"
+    ClaimOrder:
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          format: "uuid"
+        stakeAddress:
+          type: "string"
+        keyId:
+          type: "string"
+          format: "uuid"
+        paymentAddress:
+          type: "string"
+        paymentAmount:
+          type: "integer"
+          format: "int64"
+        status:
+          type: "string"
+          enum:
+            - "Pending"
+            - "Processing"
+            - "Completed"
+            - "Timeout"
+            - "Blocked"
+            - "Failed"
+        earningsIds:
+          type: "array"
+          items:
+            type: "string"
+            format: "uuid"
+        failedEarningsIds:
+          type: "array"
+          items:
+            type: "string"
+            format: "uuid"
+        transactionId:
+          type: "string"
+        createdAt:
+          type: "string"
+          format: "date-time"
+        errorMessage:
+          type: "string"
+      required:
+        - "stakeAddress"
+        - "keyId"
+        - "paymentAddress"
+        - "status"
+        - "earningsIds"
+        - "createdAt"
+    BigInteger:
+      type: "object"
+      properties: { }
+    AddSongRoyaltyRequest:
+      type: "object"
+      properties:
+        newmAmount:
+          $ref: "#/components/schemas/BigInteger"
+        usdAmount:
+          $ref: "#/components/schemas/BigInteger"
+    IdenfyCreateSessionResponse:
+      type: "object"
+      properties:
+        authToken:
+          type: "string"
+        expiryTime:
+          type: "integer"
+          format: "int32"
+      required:
+        - "authToken"
+    Artist:
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          format: "uuid"
+        createdAt:
+          type: "string"
+          format: "date-time"
+        name:
+          type: "string"
+        genre:
+          type: "string"
+        location:
+          type: "string"
+        biography:
+          type: "string"
+        pictureUrl:
+          type: "string"
+        bannerUrl:
+          type: "string"
+        websiteUrl:
+          type: "string"
+        twitterUrl:
+          type: "string"
+        instagramUrl:
+          type: "string"
+        spotifyProfile:
+          type: "string"
+        soundCloudProfile:
+          type: "string"
+        appleMusicProfile:
+          type: "string"
+        releasedSongCount:
+          type: "integer"
+          format: "int64"
+        marketplaceSongCount:
+          type: "integer"
+          format: "int64"
+      required:
+        - "id"
+        - "createdAt"
+        - "name"
+    OrderAmountResponse:
+      type: "object"
+      properties:
+        orderId:
+          type: "string"
+          format: "uuid"
+        amountCborHex:
+          type: "string"
+      required:
+        - "orderId"
+        - "amountCborHex"
+    OrderAmountRequest:
+      type: "object"
+      properties:
+        saleId:
+          type: "string"
+          format: "uuid"
+        bundleQuantity:
+          type: "integer"
+          format: "int64"
+        incentiveAmount:
+          type: "integer"
+          format: "int64"
+      required:
+        - "saleId"
+    OrderTransactionResponse:
+      type: "object"
+      properties:
+        txCborHex:
+          type: "string"
+      required:
+        - "txCborHex"
+    OrderTransactionRequest:
+      type: "object"
+      properties:
+        orderId:
+          type: "string"
+          format: "uuid"
+        changeAddress:
+          type: "string"
+        utxoCborHexList:
+          type: "array"
+          items:
+            type: "string"
+      required:
+        - "orderId"
+        - "changeAddress"
+        - "utxoCborHexList"
+    SongCollaborator:
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          format: "uuid"
+        name:
+          type: "string"
+        pictureUrl:
+          type: "string"
+        role:
+          type: "string"
+      required:
+        - "id"
+    Sale:
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          format: "uuid"
+        createdAt:
+          type: "string"
+          format: "date-time"
+        status:
+          type: "string"
+          enum:
+            - "Started"
+            - "SoldOut"
+            - "Ended"
+        bundlePolicyId:
+          type: "string"
+        bundleAssetName:
+          type: "string"
+        bundleAmount:
+          type: "integer"
+          format: "int64"
+        costPolicyId:
+          type: "string"
+        costAssetName:
+          type: "string"
+        costAmount:
+          type: "integer"
+          format: "int64"
+        costAmountUsd:
+          type: "string"
+        maxBundleSize:
+          type: "integer"
+          format: "int64"
+        totalBundleQuantity:
+          type: "integer"
+          format: "int64"
+        availableBundleQuantity:
+          type: "integer"
+          format: "int64"
+        song:
+          $ref: "#/components/schemas/Song"
+      required:
+        - "id"
+        - "createdAt"
+        - "status"
+        - "bundlePolicyId"
+        - "bundleAssetName"
+        - "costPolicyId"
+        - "costAssetName"
+        - "costAmountUsd"
+    SaleEndAmountResponse:
+      type: "object"
+      properties:
+        amountCborHex:
+          type: "string"
+      required:
+        - "amountCborHex"
+    SaleEndAmountRequest:
+      type: "object"
+      properties:
+        saleId:
+          type: "string"
+          format: "uuid"
+      required:
+        - "saleId"
+    SaleEndTransactionResponse:
+      type: "object"
+      properties:
+        txCborHex:
+          type: "string"
+      required:
+        - "txCborHex"
+    SaleEndTransactionRequest:
+      type: "object"
+      properties:
+        saleId:
+          type: "string"
+          format: "uuid"
+        changeAddress:
+          type: "string"
+        utxoCborHexList:
+          type: "array"
+          items:
+            type: "string"
+      required:
+        - "saleId"
+        - "changeAddress"
+        - "utxoCborHexList"
+    SaleStartAmountResponse:
+      type: "object"
+      properties:
+        saleId:
+          type: "string"
+          format: "uuid"
+        amountCborHex:
+          type: "string"
+      required:
+        - "saleId"
+        - "amountCborHex"
+    SaleStartAmountRequest:
+      type: "object"
+      properties:
+        ownerAddress:
+          type: "string"
+        bundlePolicyId:
+          type: "string"
+        bundleAssetName:
+          type: "string"
+        bundleAmount:
+          type: "integer"
+          format: "int64"
+        costPolicyId:
+          type: "string"
+        costAssetName:
+          type: "string"
+        costAmount:
+          type: "integer"
+          format: "int64"
+        totalBundleQuantity:
+          type: "integer"
+          format: "int64"
+      required:
+        - "ownerAddress"
+        - "bundlePolicyId"
+        - "bundleAssetName"
+    SaleStartTransactionResponse:
+      type: "object"
+      properties:
+        txCborHex:
+          type: "string"
+      required:
+        - "txCborHex"
+    SaleStartTransactionRequest:
+      type: "object"
+      properties:
+        saleId:
+          type: "string"
+          format: "uuid"
+        changeAddress:
+          type: "string"
+        utxoCborHexList:
+          type: "array"
+          items:
+            type: "string"
+      required:
+        - "saleId"
+        - "changeAddress"
+        - "utxoCborHexList"
+    Playlist:
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          format: "uuid"
+        createdAt:
+          type: "string"
+          format: "date-time"
+        ownerId:
+          type: "string"
+          format: "uuid"
+        name:
+          type: "string"
+    PlaylistIdBody:
+      type: "object"
+      properties:
+        playlistId:
+          type: "string"
+          format: "uuid"
+      required:
+        - "playlistId"
+    SongIdBody:
+      type: "object"
+      properties:
+        songId:
+          type: "string"
+          format: "uuid"
+      required:
+        - "songId"
+    StreamTokenAgreementRequest:
+      type: "object"
+      properties:
+        accepted:
+          type: "boolean"
+    AudioUploadReport:
+      type: "object"
+      properties:
+        url:
+          type: "string"
+        mimeType:
+          type: "string"
+        fileSize:
+          type: "integer"
+          format: "int64"
+        duration:
+          type: "integer"
+          format: "int32"
+        sampleRate:
+          type: "integer"
+          format: "int32"
+      required:
+        - "url"
+        - "mimeType"
+    MintPaymentResponse:
+      type: "object"
+      properties:
+        cborHex:
+          type: "string"
+        adaPrice:
+          type: "string"
+        usdPrice:
+          type: "string"
+        dspPriceAda:
+          type: "string"
+        dspPriceUsd:
+          type: "string"
+        mintPriceAda:
+          type: "string"
+        mintPriceUsd:
+          type: "string"
+        collabPriceAda:
+          type: "string"
+        collabPriceUsd:
+          type: "string"
+        collabPerArtistPriceAda:
+          type: "string"
+        collabPerArtistPriceUsd:
+          type: "string"
+        usdAdaExchangeRate:
+          type: "string"
+      required:
+        - "cborHex"
+    MintPaymentRequest:
+      type: "object"
+      properties:
+        changeAddress:
+          type: "string"
+        utxoCborHexList:
+          type: "array"
+          items:
+            type: "string"
+      required:
+        - "changeAddress"
+    RefundPaymentResponse:
+      type: "object"
+      properties:
+        transactionId:
+          type: "string"
+        message:
+          type: "string"
+      required:
+        - "transactionId"
+        - "message"
+    AudioStreamResponse:
+      type: "object"
+      properties:
+        url:
+          type: "string"
+      required:
+        - "url"
+    UserIdBody:
+      type: "object"
+      properties:
+        userId:
+          type: "string"
+          format: "uuid"
+      required:
+        - "userId"
+    WalletConnection:
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          format: "uuid"
+        createdAt:
+          type: "string"
+          format: "date-time"
+        stakeAddress:
+          type: "string"
+      required:
+        - "id"
+        - "createdAt"
+        - "stakeAddress"
+    AnswerChallengeResponse:
+      type: "object"
+      properties:
+        connectionId:
+          type: "string"
+          format: "uuid"
+        expiresAt:
+          type: "string"
+          format: "date-time"
+      required:
+        - "connectionId"
+        - "expiresAt"
+    AnswerChallengeRequest:
+      type: "object"
+      properties:
+        challengeId:
+          type: "string"
+          format: "uuid"
+        payload:
+          type: "string"
+        key:
+          type: "string"
+      required:
+        - "challengeId"
+        - "payload"
+    GenerateChallengeResponse:
+      type: "object"
+      properties:
+        challengeId:
+          type: "string"
+          format: "uuid"
+        expiresAt:
+          type: "string"
+          format: "date-time"
+        payload:
+          type: "string"
+      required:
+        - "challengeId"
+        - "expiresAt"
+        - "payload"
+    GenerateChallengeRequest:
+      type: "object"
+      properties:
+        method:
+          type: "string"
+          enum:
+            - "SignedData"
+            - "SignedTransaction"
+        stakeAddress:
+          type: "string"
+        utxoCborHexList:
+          type: "array"
+          items:
+            type: "string"
+        changeAddress:
+          type: "string"
+      required:
+        - "method"
+        - "stakeAddress"
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
