@@ -88,6 +88,7 @@ object Dependencies {
         const val SERIALIZATION_JSON = "io.ktor:ktor-serialization-kotlinx-json:$VERSION"
         const val SERVER_TESTS = "io.ktor:ktor-server-tests:$VERSION"
         const val SERVER_FORWARDED_HEADER = "io.ktor:ktor-server-forwarded-header:$VERSION"
+        const val SERVER_SWAGGER = "io.ktor:ktor-server-swagger:$VERSION"
     }
 
     object LogBack {
@@ -345,5 +346,10 @@ object Dependencies {
     object KotlinLogging {
         private const val VERSION = "7.0.0"
         const val ALL = "io.github.oshai:kotlin-logging:$VERSION"
+    }
+
+    object Swagger {
+        private const val VERSION = "1.0.50"
+        const val SWAGGER_CODEGEN_GENERATORS = "io.swagger.codegen.v3:swagger-codegen-generators:$VERSION"
     }
 }

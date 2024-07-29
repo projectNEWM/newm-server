@@ -53,7 +53,7 @@ class MintingMessageReceiver : SqsMessageReceiver {
             // sometimes, we will send an SQS message manually to re-process a given song. This is fine, but we need to
             // sync the DB with the SQS message.
             log.warn {
-                "DB MintingStatus: ${dbSong.mintingStatus} does not match SQS MintingStatus: ${mintingStatusSqsMessage.mintingStatus}... updating db"
+                "DB MintingStatus: ${dbSong.mintingStatus}(${dbSong.mintingStatus?.ordinal}) does not match SQS MintingStatus: ${mintingStatusSqsMessage.mintingStatus}(${mintingStatusSqsMessage.mintingStatus.ordinal})... updating db"
             }
             songRepository.update(
                 mintingStatusSqsMessage.songId,

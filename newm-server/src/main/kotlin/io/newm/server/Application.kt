@@ -10,13 +10,14 @@ import io.newm.server.curator.installCurator
 import io.newm.server.database.initializeDatabase
 import io.newm.server.di.installDependencyInjection
 import io.newm.server.features.cardano.createCardanoRoutes
+import io.newm.server.features.clientconfig.createClientConfigRoutes
 import io.newm.server.features.cloudinary.createCloudinaryRoutes
 import io.newm.server.features.collaboration.createCollaborationRoutes
 import io.newm.server.features.distribution.createDistributionRoutes
+import io.newm.server.features.doc.createOpenApiDocumentationRoutes
 import io.newm.server.features.earnings.createEarningsRoutes
 import io.newm.server.features.idenfy.createIdenfyRoutes
 import io.newm.server.features.marketplace.createMarketplaceRoutes
-import io.newm.server.features.clientconfig.createClientConfigRoutes
 import io.newm.server.features.playlist.createPlaylistRoutes
 import io.newm.server.features.song.createSongRoutes
 import io.newm.server.features.user.createUserRoutes
@@ -63,6 +64,8 @@ fun Application.module() {
         createWalletConnectionRoutes()
         createMarketplaceRoutes()
         createClientConfigRoutes()
+
+        createOpenApiDocumentationRoutes()
     }
 
     initializeDaemons()

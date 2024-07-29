@@ -62,6 +62,8 @@ dependencies {
     implementation(Dependencies.Ktor.SERVER_STATUS_PAGES)
     implementation(Dependencies.Ktor.SERVER_CORS)
     implementation(Dependencies.Ktor.SERVER_FORWARDED_HEADER)
+    implementation(Dependencies.Ktor.SERVER_SWAGGER)
+    implementation(Dependencies.Swagger.SWAGGER_CODEGEN_GENERATORS)
 
     implementation(Dependencies.Koin.KTOR)
 
