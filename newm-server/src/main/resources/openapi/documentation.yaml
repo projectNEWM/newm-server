@@ -679,7 +679,7 @@ paths:
     post:
       tags:
         - "Earnings"
-      description: ""
+      description: "Create earnings for a song"
       parameters:
         - name: "songId"
           in: "path"
@@ -691,14 +691,25 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/AddSongRoyaltyRequest"
+            examples:
+              Example#1:
+                value: |-
+                  {
+                      "songId": "f9d3fa34-378b-42c0-b070-0e834c2a36cc",
+                      "usdAmount": 50000000
+                  }
+                description: "USD amount (6 decimals - $50_USD) to be distributed to the song's contributors"
+              Example#2:
+                value: |-
+                  {
+                        "songId": "f9d3fa34-378b-42c0-b070-0e834c2a36cc",
+                        "newmAmount": 123456000000
+                  }
+                description: "NEWM amount (6 decimals - 123456 NEWM) to be distributed to the song's contributors"
         required: true
       responses:
         "201":
           description: "Created"
-          content:
-            'application/json':
-              schema:
-                type: "object"
   /v1/idenfy/callback:
     post:
       tags:
@@ -2350,8 +2361,7 @@ components:
         - "earningsIds"
         - "createdAt"
     BigInteger:
-      type: "object"
-      properties: { }
+      type: "integer"
     AddSongRoyaltyRequest:
       type: "object"
       properties:

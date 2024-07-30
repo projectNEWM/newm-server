@@ -130,7 +130,13 @@ class EarningsRepositoryImpl(
                     amount = (totalNewmAmount * (streamTokenAmount.setScale(6) / totalSupply.setScale(6))).toLong(),
                     memo = "Royalty for: ${song.title} - ${user.stageOrFullName}$exchangeRate",
                     createdAt = now,
-                    startDate = now.plusHours(24),
+                    startDate = if (cardanoRepository.isMainnet()) {
+                        // wait 24 hours before starting the royalties
+                        now.plusHours(24)
+                    } else {
+                        // on testnet, start immediately
+                        now
+                    },
                 )
             }
         addAll(earnings)
@@ -227,7 +233,9 @@ class EarningsRepositoryImpl(
         transaction {
             EarningEntity
                 .wrapRows(
-                    EarningEntity.searchQuery(EarningsTable.songId eq songId).orderBy(EarningsTable.createdAt, SortOrder.DESC)
+                    EarningEntity
+                        .searchQuery(EarningsTable.songId eq songId)
+                        .orderBy(EarningsTable.createdAt, SortOrder.DESC)
                 ).map { it.toModel() }
         }
 
@@ -235,7 +243,9 @@ class EarningsRepositoryImpl(
         transaction {
             EarningEntity
                 .wrapRows(
-                    EarningEntity.searchQuery(EarningsTable.stakeAddress eq stakeAddress).orderBy(EarningsTable.createdAt, SortOrder.DESC)
+                    EarningEntity
+                        .searchQuery(EarningsTable.stakeAddress eq stakeAddress)
+                        .orderBy(EarningsTable.createdAt, SortOrder.DESC)
                 ).map { it.toModel() }
         }
 
