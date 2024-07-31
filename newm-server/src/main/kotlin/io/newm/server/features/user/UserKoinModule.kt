@@ -41,7 +41,9 @@ val userKoinModule =
                 get(),
                 get(QUALIFIER_SPOTIFY_PROFILE_URL_VERIFIER),
                 get(QUALIFIER_APPLE_MUSIC_PROFILE_URL_VERIFIER),
-                get(QUALIFIER_SOUND_CLOUD_PROFILE_URL_VERIFIER)
+                get(QUALIFIER_SOUND_CLOUD_PROFILE_URL_VERIFIER),
+                get(),
+                get()
             )
         }
         single { GoogleUserProvider(get(), get()) }

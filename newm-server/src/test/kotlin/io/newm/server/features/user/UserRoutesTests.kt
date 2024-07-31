@@ -14,6 +14,9 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
+import io.ktor.server.application.*
+import io.mockk.coEvery
+import io.mockk.mockk
 import io.newm.server.BaseApplicationTests
 import io.newm.server.auth.twofactor.database.TwoFactorAuthEntity
 import io.newm.server.auth.twofactor.database.TwoFactorAuthTable
@@ -21,6 +24,7 @@ import io.newm.server.config.database.ConfigEntity
 import io.newm.server.config.database.ConfigTable
 import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_EMAIL_WHITELIST
+import io.newm.server.features.email.repo.EmailRepositoryImpl
 import io.newm.server.features.model.CountResponse
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
@@ -29,15 +33,37 @@ import io.newm.server.features.user.model.UserIdBody
 import io.newm.server.model.ClientPlatform
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.existsHavingId
+import io.newm.shared.ktx.getConfigString
 import io.newm.shared.ktx.toHash
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.sql.deleteAll
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.koin.core.context.GlobalContext.loadKoinModules
+import org.koin.dsl.module
 import java.time.LocalDateTime
 
 class UserRoutesTests : BaseApplicationTests() {
+    @BeforeAll
+    fun beforeAllSongRoutesTests() {
+        val module = module {
+            single {
+                mockk<ApplicationEnvironment>(relaxed = true) {
+                    coEvery {
+                        getConfigString(
+                            "passwordChanged.subject"
+                        )
+                    } returns "Your password has been reset /Password reset confirmation"
+                    coEvery { getConfigString("passwordChanged.messageUrl") } returns "/email/password-changed.html"
+                }
+            }
+            single { mockk<EmailRepositoryImpl>(relaxed = true) {} }
+        }
+        loadKoinModules(module)
+    }
+
     @BeforeEach
     fun beforeEach() {
         transaction {
