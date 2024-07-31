@@ -133,7 +133,7 @@ object Dependencies {
     }
 
     object FlywayDB {
-        private const val VERSION = "10.15.2"
+        private const val VERSION = "10.17.0"
 
         const val CORE = "org.flywaydb:flyway-core:$VERSION"
         const val POSTGRES = "org.flywaydb:flyway-database-postgresql:$VERSION"
@@ -160,7 +160,7 @@ object Dependencies {
     }
 
     object ApacheCommonsCodec {
-        private const val VERSION = "1.17.0"
+        private const val VERSION = "1.17.1"
 
         const val ALL = "commons-codec:commons-codec:$VERSION"
     }
@@ -221,8 +221,8 @@ object Dependencies {
     }
 
     object Aws {
-        private const val VERSION = "1.12.761"
-        private const val VERSION2 = "2.26.20"
+        private const val VERSION = "1.12.767"
+        private const val VERSION2 = "2.26.27"
         private const val JAXB_VERSION = "2.3.1"
 
         const val BOM = "com.amazonaws:aws-java-sdk-bom:$VERSION"
