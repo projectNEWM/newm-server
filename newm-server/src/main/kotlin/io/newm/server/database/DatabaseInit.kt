@@ -18,7 +18,7 @@ fun Application.initializeDatabase() {
         hikariDataSource,
         databaseConfig =
             DatabaseConfig {
-                warnLongQueriesDuration = 2000L
+                warnLongQueriesDuration = 5000L
             }
     )
 
