@@ -11,6 +11,8 @@ import io.newm.server.ktx.markFailed
 import io.newm.server.logging.captureToSentry
 import io.newm.shared.daemon.Daemon
 import io.newm.shared.koin.inject
+import io.newm.shared.ktx.coLazy
+import io.newm.shared.ktx.getConfigBoolean
 import io.newm.shared.ktx.getConfigChildren
 import io.newm.shared.ktx.getInt
 import io.newm.shared.ktx.getLong
@@ -19,20 +21,39 @@ import kotlin.reflect.full.primaryConstructor
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.apache.curator.framework.recipes.leader.LeaderLatch
+import org.apache.curator.framework.recipes.leader.LeaderLatchListener
+import org.koin.core.parameter.parametersOf
 
-class AwsSqsDaemon : Daemon {
+private const val LEADER_LATCH_PATH = "/leader-latches/aws-sqs"
+
+class AwsSqsDaemon :
+    Daemon,
+    LeaderLatchListener {
     override val log = KotlinLogging.logger {}
     private val environment: ApplicationEnvironment by inject()
+    private val leaderLatch: LeaderLatch by inject { parametersOf(LEADER_LATCH_PATH) }
+    private val isEnabled: Boolean by coLazy {
+        environment.getConfigBoolean("curator.enabled")
+    }
 
     override fun start() {
         log.info { "starting..." }
-        startSqsReceivers()
-        log.info { "startup complete." }
+        if (!isEnabled) {
+            log.warn { "ZooKeeper Curator Disabled, assume we're leader" }
+            startSqsReceivers()
+            return
+        }
+        leaderLatch.addListener(this)
+        leaderLatch.start()
     }
 
     override fun shutdown() {
         log.info { "begin shutdown..." }
         coroutineContext.cancelChildren()
+        if (isEnabled) {
+            leaderLatch.close()
+        }
         log.info { "shutdown complete." }
     }
 
@@ -40,6 +61,16 @@ class AwsSqsDaemon : Daemon {
         for (config in environment.getConfigChildren("aws.sqs")) {
             config.startSqsMessageReceiver()
         }
+    }
+
+    override fun isLeader() {
+        log.info { "This instance is now the leader" }
+        startSqsReceivers()
+    }
+
+    override fun notLeader() {
+        log.info { "This instance is no longer the leader" }
+        coroutineContext.cancelChildren()
     }
 
     private fun ApplicationConfig.startSqsMessageReceiver() {

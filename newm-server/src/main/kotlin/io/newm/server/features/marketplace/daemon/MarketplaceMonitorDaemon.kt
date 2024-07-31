@@ -75,6 +75,7 @@ class MarketplaceMonitorDaemon(
     override fun notLeader() {
         // we may become the leader later, but only if the current leader shutdowns or crashes
         log.info { "This instance is not currently the leader" }
+        coroutineContext.cancelChildren()
     }
 
     private suspend fun monitorContractAddress(
