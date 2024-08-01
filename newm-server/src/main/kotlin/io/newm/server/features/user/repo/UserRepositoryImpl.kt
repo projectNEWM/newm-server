@@ -1,12 +1,14 @@
 package io.newm.server.features.user.repo
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.ktor.server.application.*
 import io.newm.server.auth.jwt.database.JwtTable
 import io.newm.server.auth.oauth.model.OAuthTokens
 import io.newm.server.auth.oauth.model.OAuthType
 import io.newm.server.auth.twofactor.repo.TwoFactorAuthRepository
 import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_EMAIL_WHITELIST
+import io.newm.server.features.email.repo.EmailRepository
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.model.User
 import io.newm.server.features.user.model.UserFilters
@@ -33,6 +35,7 @@ import io.newm.shared.exception.HttpNotFoundException
 import io.newm.shared.exception.HttpUnauthorizedException
 import io.newm.shared.exception.HttpUnprocessableEntityException
 import io.newm.shared.ktx.existsHavingId
+import io.newm.shared.ktx.getConfigString
 import io.newm.shared.ktx.isValidPassword
 import io.newm.shared.ktx.orNull
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
@@ -50,6 +53,8 @@ internal class UserRepositoryImpl(
     private val spotifyProfileUrlVerifier: OutletProfileUrlVerifier,
     private val appleMusicProfileUrlVerifier: OutletProfileUrlVerifier,
     private val soundCloudProfileUrlVerifier: OutletProfileUrlVerifier,
+    private val environment: ApplicationEnvironment,
+    private val emailRepository: EmailRepository,
 ) : UserRepository {
     private val logger = KotlinLogging.logger {}
 
@@ -333,9 +338,17 @@ internal class UserRepositoryImpl(
         val email = user.email.asValidEmail().asVerifiedEmail(user.authCode)
         val passwordHash = user.newPassword.asValidPassword(user.confirmPassword).toHash()
 
-        transaction {
-            getUserEntityByEmail(email).passwordHash = passwordHash
+        val userEntity = transaction {
+            getUserEntityByEmail(email).apply {
+                this.passwordHash = passwordHash
+            }
         }
+        emailRepository.send(
+            to = email,
+            subject = environment.getConfigString("passwordChanged.subject"),
+            messageUrl = environment.getConfigString("passwordChanged.messageUrl"),
+            messageArgs = mapOf("owner" to userEntity.stageOrFullName)
+        )
     }
 
     override suspend fun delete(userId: UserId) {
