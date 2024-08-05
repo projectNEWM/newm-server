@@ -1,14 +1,12 @@
 package io.newm.server.features.song.model
 
 import io.newm.server.typealiases.UserId
-import io.newm.shared.serialization.LocalDateSerializer
-import io.newm.shared.serialization.LocalDateTimeSerializer
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
 
 @Serializable
 data class Release(
@@ -17,16 +15,16 @@ data class Release(
     val archived: Boolean? = null,
     @Contextual
     val ownerId: UserId? = null,
-    @Serializable(with = LocalDateTimeSerializer::class)
+    @Contextual
     val createdAt: LocalDateTime? = null,
     val title: String? = null,
     val releaseType: ReleaseType? = null,
     val coverArtUrl: String? = null,
     val barcodeType: ReleaseBarcodeType? = null,
     val barcodeNumber: String? = null,
-    @Serializable(with = LocalDateSerializer::class)
+    @Contextual
     val releaseDate: LocalDate? = null,
-    @Serializable(with = LocalDateSerializer::class)
+    @Contextual
     val publicationDate: LocalDate? = null,
     @Transient
     val arweaveCoverArtUrl: String? = null,

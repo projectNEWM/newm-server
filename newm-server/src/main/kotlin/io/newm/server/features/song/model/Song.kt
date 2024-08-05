@@ -3,8 +3,6 @@ package io.newm.server.features.song.model
 import io.newm.server.typealiases.ReleaseId
 import io.newm.server.typealiases.SongId
 import io.newm.server.typealiases.UserId
-import io.newm.shared.serialization.LocalDateSerializer
-import io.newm.shared.serialization.LocalDateTimeSerializer
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -19,7 +17,7 @@ data class Song(
     val archived: Boolean? = null,
     @Contextual
     val ownerId: UserId? = null,
-    @Serializable(with = LocalDateTimeSerializer::class)
+    @Contextual
     val createdAt: LocalDateTime? = null,
     val title: String? = null,
     val genres: List<String>? = null,
@@ -45,10 +43,10 @@ data class Song(
     val iswc: String? = null,
     val ipis: List<String>? = null,
     // FIXME: Keep releaseDate for now since the UI/UX expects it. Eventually this will only be on the Release instead of the Song.
-    @Serializable(with = LocalDateSerializer::class)
+    @Contextual
     val releaseDate: LocalDate? = null,
     // FIXME: Keep publicationDate for now since the UI/UX expects it. Eventually this will only be on the Release instead of the Song.
-    @Serializable(with = LocalDateSerializer::class)
+    @Contextual
     val publicationDate: LocalDate? = null,
     val lyricsUrl: String? = null,
     val tokenAgreementUrl: String? = null,

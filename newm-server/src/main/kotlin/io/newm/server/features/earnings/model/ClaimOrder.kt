@@ -1,10 +1,9 @@
 package io.newm.server.features.earnings.model
 
-import io.newm.shared.serialization.LocalDateTimeSerializer
 import kotlinx.serialization.Contextual
+import kotlinx.serialization.Serializable
 import java.time.LocalDateTime
 import java.util.UUID
-import kotlinx.serialization.Serializable
 
 @Serializable
 data class ClaimOrder(
@@ -25,7 +24,7 @@ data class ClaimOrder(
         UUID
     >?,
     val transactionId: String?,
-    @Serializable(with = LocalDateTimeSerializer::class)
+    @Contextual
     val createdAt: LocalDateTime,
     val errorMessage: String?
 ) {

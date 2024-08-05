@@ -1,7 +1,6 @@
 package io.newm.server.features.collaboration.model
 
 import io.newm.server.typealiases.SongId
-import io.newm.shared.serialization.LocalDateTimeSerializer
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 import java.math.BigDecimal
@@ -12,7 +11,7 @@ import java.util.UUID
 data class Collaboration(
     @Contextual
     val id: UUID? = null,
-    @Serializable(with = LocalDateTimeSerializer::class)
+    @Contextual
     val createdAt: LocalDateTime? = null,
     @Contextual
     val songId: SongId? = null,

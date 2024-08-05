@@ -20,7 +20,6 @@ import io.newm.chain.util.toHexString
 import io.newm.chain.util.toRequiredSigner
 import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.shared.koin.inject
-import io.newm.shared.serialization.LocalDateTimeSerializer
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 import org.bouncycastle.crypto.generators.Ed25519KeyPairGenerator
@@ -36,7 +35,7 @@ import kotlin.concurrent.getOrSet
 data class Key(
     @Contextual
     val id: UUID? = null,
-    @Serializable(with = LocalDateTimeSerializer::class)
+    @Contextual
     val createdAt: LocalDateTime? = null,
     val skey: ByteArray,
     val vkey: ByteArray,
