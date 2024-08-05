@@ -1,5 +1,6 @@
 package io.newm.server.features.marketplace.model
 
+import io.newm.server.typealiases.SaleId
 import io.newm.shared.serialization.LocalDateTimeSerializer
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
@@ -9,7 +10,7 @@ import java.util.UUID
 @Serializable
 data class Sale(
     @Contextual
-    val id: UUID,
+    val id: SaleId,
     @Serializable(with = LocalDateTimeSerializer::class)
     val createdAt: LocalDateTime,
     val status: SaleStatus,

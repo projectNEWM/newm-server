@@ -1,20 +1,21 @@
 package io.newm.server.features.marketplace.database
 
 import io.newm.chain.grpc.MonitorAddressResponse
+import io.newm.server.typealiases.BookmarkId
 import org.jetbrains.exposed.dao.Entity
 import org.jetbrains.exposed.dao.EntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 
 class MarketplaceBookmarkEntity(
-    id: EntityID<String>
-) : Entity<String>(id) {
+    id: EntityID<BookmarkId>
+) : Entity<BookmarkId>(id) {
     var txId: String by MarketplaceBookmarkTable.txId
     var block: Long by MarketplaceBookmarkTable.block
     var slot: Long by MarketplaceBookmarkTable.slot
 
-    companion object : EntityClass<String, MarketplaceBookmarkEntity>(MarketplaceBookmarkTable) {
+    companion object : EntityClass<BookmarkId, MarketplaceBookmarkEntity>(MarketplaceBookmarkTable) {
         fun update(
-            id: String,
+            id: BookmarkId,
             response: MonitorAddressResponse
         ) {
             val doUpdate = { entity: MarketplaceBookmarkEntity ->

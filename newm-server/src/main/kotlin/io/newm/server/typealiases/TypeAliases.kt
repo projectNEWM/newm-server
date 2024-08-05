@@ -8,3 +8,13 @@ typealias SongId = UUID
 typealias UserId = UUID
 
 typealias ReleaseId = UUID
+
+typealias SaleId = UUID
+
+typealias PurchaseId = UUID
+
+typealias PendingOrderId = UUID
+
+typealias PendingSaleId = UUID
+
+typealias BookmarkId = String

@@ -2,14 +2,14 @@ package io.newm.server.features.marketplace.model
 
 import io.newm.chain.grpc.Utxo
 import io.newm.server.ktx.cborHexToUtxos
+import io.newm.server.typealiases.PendingSaleId
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
-import java.util.UUID
 
 @Serializable
 data class SaleStartTransactionRequest(
     @Contextual
-    val saleId: UUID,
+    val saleId: PendingSaleId,
     val changeAddress: String,
     val utxoCborHexList: List<String>,
 ) {
