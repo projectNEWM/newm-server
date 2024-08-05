@@ -4,7 +4,7 @@ import org.apache.curator.ensemble.EnsembleProvider
 import java.io.File
 
 class FileEnsembleProvider(
-    val filePath: String
+    private val filePath: String
 ) : EnsembleProvider {
     override fun close() {}
 

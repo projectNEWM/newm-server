@@ -15,6 +15,7 @@ import io.newm.server.features.song.database.SongTable
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
 import io.newm.server.ktx.arweaveToWebUrl
+import io.newm.server.typealiases.SaleId
 import io.newm.shared.exposed.notOverlaps
 import io.newm.shared.exposed.overlaps
 import io.newm.shared.koin.inject
@@ -43,7 +44,7 @@ private val nftCdnRepository: NftCdnRepository by inject()
 private val mintingRepository: MintingRepository by inject()
 
 class MarketplaceSaleEntity(
-    id: EntityID<UUID>
+    id: EntityID<SaleId>
 ) : UUIDEntity(id) {
     var createdAt: LocalDateTime by MarketplaceSaleTable.createdAt
     var status: SaleStatus by MarketplaceSaleTable.status

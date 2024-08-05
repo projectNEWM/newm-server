@@ -12,17 +12,19 @@ import io.newm.server.ktx.songIds
 import io.newm.server.ktx.sortOrder
 import io.newm.server.model.FilterCriteria
 import io.newm.server.model.toFilterCriteria
+import io.newm.server.typealiases.SaleId
+import io.newm.server.typealiases.SongId
+import io.newm.server.typealiases.UserId
 import org.jetbrains.exposed.sql.SortOrder
 import java.time.LocalDateTime
-import java.util.UUID
 
 data class SaleFilters(
     val sortOrder: SortOrder?,
     val olderThan: LocalDateTime?,
     val newerThan: LocalDateTime?,
-    val ids: FilterCriteria<UUID>?,
-    val songIds: FilterCriteria<UUID>?,
-    val artistIds: FilterCriteria<UUID>?,
+    val ids: FilterCriteria<SaleId>?,
+    val songIds: FilterCriteria<SongId>?,
+    val artistIds: FilterCriteria<UserId>?,
     val statuses: FilterCriteria<SaleStatus>?,
     val genres: FilterCriteria<String>?,
     val moods: FilterCriteria<String>?,

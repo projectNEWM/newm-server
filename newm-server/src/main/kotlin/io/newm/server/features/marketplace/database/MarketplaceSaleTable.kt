@@ -2,18 +2,18 @@ package io.newm.server.features.marketplace.database
 
 import io.newm.server.features.marketplace.model.SaleStatus
 import io.newm.server.features.song.database.SongTable
+import io.newm.server.typealiases.SongId
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.javatime.datetime
 import java.time.LocalDateTime
-import java.util.UUID
 
 object MarketplaceSaleTable : UUIDTable(name = "marketplace_sales") {
     val createdAt: Column<LocalDateTime> = datetime("created_at")
     val status: Column<SaleStatus> = enumeration("status", SaleStatus::class)
-    val songId: Column<EntityID<UUID>> = reference("song_id", SongTable, ReferenceOption.RESTRICT, ReferenceOption.RESTRICT)
+    val songId: Column<EntityID<SongId>> = reference("song_id", SongTable, ReferenceOption.RESTRICT, ReferenceOption.RESTRICT)
     val ownerAddress: Column<String> = text("owner_address")
     val pointerPolicyId: Column<String> = text("pointer_policy_id")
     val pointerAssetName: Column<String> = text("pointer_asset_name")

@@ -1,15 +1,15 @@
 package io.newm.server.features.marketplace.database
 
+import io.newm.server.typealiases.PendingSaleId
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.lessEq
 import org.jetbrains.exposed.sql.deleteWhere
 import java.time.LocalDateTime
-import java.util.UUID
 
 class MarketplacePendingSaleEntity(
-    id: EntityID<UUID>
+    id: EntityID<PendingSaleId>
 ) : UUIDEntity(id) {
     val createdAt: LocalDateTime by MarketplacePendingSaleTable.createdAt
     var ownerAddress: String by MarketplacePendingSaleTable.ownerAddress
