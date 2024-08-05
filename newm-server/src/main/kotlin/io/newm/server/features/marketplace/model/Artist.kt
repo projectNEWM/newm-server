@@ -1,7 +1,6 @@
 package io.newm.server.features.marketplace.model
 
 import io.newm.server.typealiases.UserId
-import io.newm.shared.serialization.LocalDateTimeSerializer
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 import java.time.LocalDateTime
@@ -10,7 +9,7 @@ import java.time.LocalDateTime
 data class Artist(
     @Contextual
     val id: UserId,
-    @Serializable(with = LocalDateTimeSerializer::class)
+    @Contextual
     val createdAt: LocalDateTime,
     val name: String,
     val genre: String?,

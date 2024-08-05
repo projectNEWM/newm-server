@@ -1,7 +1,6 @@
 package io.newm.server.features.earnings.model
 
 import io.newm.server.typealiases.SongId
-import io.newm.shared.serialization.LocalDateTimeSerializer
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 import java.time.LocalDateTime
@@ -20,15 +19,15 @@ data class Earning(
     val stakeAddress: String,
     val amount: Long,
     val memo: String,
-    @Serializable(with = LocalDateTimeSerializer::class)
+    @Contextual
     val startDate: LocalDateTime? = null,
-    @Serializable(with = LocalDateTimeSerializer::class)
+    @Contextual
     val endDate: LocalDateTime? = null,
     val claimed: Boolean = false,
-    @Serializable(with = LocalDateTimeSerializer::class)
+    @Contextual
     val claimedAt: LocalDateTime? = null,
     @Contextual
     val claimOrderId: UUID? = null,
-    @Serializable(with = LocalDateTimeSerializer::class)
+    @Contextual
     val createdAt: LocalDateTime
 )
