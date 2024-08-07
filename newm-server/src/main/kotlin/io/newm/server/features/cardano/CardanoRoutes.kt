@@ -24,6 +24,7 @@ import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.ktx.limit
 import io.newm.server.ktx.myUserId
 import io.newm.server.ktx.offset
+import io.newm.server.recaptcha.repo.RecaptchaRepository
 import io.newm.shared.ktx.error
 import io.newm.shared.ktx.get
 import io.newm.shared.ktx.post
@@ -36,6 +37,8 @@ fun Routing.createCardanoRoutes() {
     val log: Logger by inject { parametersOf("CardanoRoutes") }
     val songRepository: SongRepository by inject()
     val cardanoRepository: CardanoRepository by inject()
+    val recaptchaRepository: RecaptchaRepository by inject()
+
     route("/v1/cardano") {
         authenticate(AUTH_JWT_ADMIN) {
             post("key") {
@@ -160,14 +163,15 @@ fun Routing.createCardanoRoutes() {
                     throw e
                 }
             }
+        }
 
-            get("prices/ada") {
-                respond(QueryPriceResponse(cardanoRepository.queryAdaUSDPrice()))
-            }
-
-            get("prices/newm") {
-                respond(QueryPriceResponse(cardanoRepository.queryNEWMUSDPrice()))
-            }
+        get("prices/ada") {
+            recaptchaRepository.verify("get_ada_price", request)
+            respond(QueryPriceResponse(cardanoRepository.queryAdaUSDPrice()))
+        }
+        get("prices/newm") {
+            recaptchaRepository.verify("get_newm_price", request)
+            respond(QueryPriceResponse(cardanoRepository.queryNEWMUSDPrice()))
         }
     }
 }
