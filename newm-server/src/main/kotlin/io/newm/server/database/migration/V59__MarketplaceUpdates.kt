@@ -3,7 +3,6 @@ package io.newm.server.database.migration
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_CURRENCY_ASSET_NAME
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_CURRENCY_POLICY_ID
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_INCENTIVE_MIN_AMOUNT
-import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_MONITORING_ENABLED
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_MONITORING_RETRY_DELAY
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_ORDER_LOVELACE
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_PENDING_ORDER_TTL
@@ -36,7 +35,7 @@ class V59__MarketplaceUpdates : BaseJavaMigration() {
                         total_bundle_quantity bigint NOT NULL
                     )
                     """.trimIndent(),
-                    "INSERT INTO config VALUES ('$CONFIG_KEY_MARKETPLACE_MONITORING_ENABLED','true') ON CONFLICT(id) DO NOTHING",
+                    "INSERT INTO config VALUES ('marketplace.monitoringEnabled','true') ON CONFLICT(id) DO NOTHING",
                     "INSERT INTO config VALUES ('$CONFIG_KEY_MARKETPLACE_MONITORING_RETRY_DELAY','30') ON CONFLICT(id) DO NOTHING",
                     "INSERT INTO config VALUES ('$CONFIG_KEY_MARKETPLACE_SALE_CONTRACT_ADDRESS','addr_test1xrdcxs8czy6k778aa6dql97l97845qvk8ne3r895at74ntk40rxn7yxhflf44xw7hazl5ttaym2samu9av394s3e8cwq9dp8zt') ON CONFLICT(id) DO NOTHING",
                     "INSERT INTO config VALUES ('$CONFIG_KEY_MARKETPLACE_QUEUE_CONTRACT_ADDRESS','addr_test1xzgsgmax3sf0u66ymfmyu6vaeuj7r2tv729uyh9gtd0ul5x40rxn7yxhflf44xw7hazl5ttaym2samu9av394s3e8cwqgar3zw') ON CONFLICT(id) DO NOTHING",

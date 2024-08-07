@@ -57,7 +57,7 @@ interface ConfigRepository {
         const val CONFIG_KEY_RECAPTCHA_ENABLED = "recaptcha.enabled"
         const val CONFIG_KEY_RECAPTCHA_MIN_SCORE = "recaptcha.minScore"
         const val CONFIG_KEY_NFTCDN_ENABLED = "nftcdn.enabled"
-        const val CONFIG_KEY_MARKETPLACE_MONITORING_ENABLED = "marketplace.monitoringEnabled"
+        const val CONFIG_KEY_MARKETPLACE_MONITORING_MULTI_MODE_ENABLED = "marketplace.monitoringMultiModeEnabled"
         const val CONFIG_KEY_MARKETPLACE_MONITORING_RETRY_DELAY = "marketplace.monitoringRetryDelay"
         const val CONFIG_KEY_MARKETPLACE_SALE_CONTRACT_ADDRESS = "marketplace.saleContractAddress"
         const val CONFIG_KEY_MARKETPLACE_QUEUE_CONTRACT_ADDRESS = "marketplace.queueContractAddress"

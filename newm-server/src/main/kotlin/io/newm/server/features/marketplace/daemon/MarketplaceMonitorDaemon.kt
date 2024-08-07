@@ -3,7 +3,7 @@ package io.newm.server.features.marketplace.daemon
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.newm.chain.grpc.MonitorAddressResponse
 import io.newm.server.config.repo.ConfigRepository
-import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_MONITORING_ENABLED
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_MONITORING_MULTI_MODE_ENABLED
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_MONITORING_RETRY_DELAY
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_QUEUE_CONTRACT_ADDRESS
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_SALE_CONTRACT_ADDRESS
@@ -31,24 +31,25 @@ class MarketplaceMonitorDaemon(
     LeaderLatchListener {
     override val log = KotlinLogging.logger {}
     private val leaderLatch: LeaderLatch by inject { parametersOf(LEADER_LATCH_PATH) }
-    private val isEnabled: Boolean by coLazy {
-        configRepository.getBoolean(CONFIG_KEY_MARKETPLACE_MONITORING_ENABLED)
+    private val isMultiModeEnabled: Boolean by coLazy {
+        configRepository.getBoolean(CONFIG_KEY_MARKETPLACE_MONITORING_MULTI_MODE_ENABLED)
     }
 
     override fun start() {
-        if (isEnabled) {
-            log.info { "Starting..." }
+        if (isMultiModeEnabled) {
+            log.info { "Starting in multi-mode..." }
             leaderLatch.addListener(this)
             leaderLatch.start()
         } else {
-            log.info { "Disabled" }
+            log.info { "Starting in single-mode..." }
+            startMonitoring()
         }
     }
 
     override fun shutdown() {
         log.info { "Shutting down..." }
         coroutineContext.cancelChildren()
-        if (isEnabled) {
+        if (isMultiModeEnabled) {
             leaderLatch.close()
         }
     }
@@ -56,6 +57,16 @@ class MarketplaceMonitorDaemon(
     override fun isLeader() {
         // only the leader runs
         log.info { "This instance is now the leader" }
+        startMonitoring()
+    }
+
+    override fun notLeader() {
+        // we may become the leader later, but only if the current leader shutdowns or crashes
+        log.info { "This instance is not currently the leader" }
+        coroutineContext.cancelChildren()
+    }
+
+    private fun startMonitoring() {
         launch {
             monitorContractAddress(
                 addressKey = CONFIG_KEY_MARKETPLACE_SALE_CONTRACT_ADDRESS,
@@ -70,12 +81,6 @@ class MarketplaceMonitorDaemon(
                 processTransaction = marketplaceRepository::processQueueTransaction
             )
         }
-    }
-
-    override fun notLeader() {
-        // we may become the leader later, but only if the current leader shutdowns or crashes
-        log.info { "This instance is not currently the leader" }
-        coroutineContext.cancelChildren()
     }
 
     private suspend fun monitorContractAddress(
