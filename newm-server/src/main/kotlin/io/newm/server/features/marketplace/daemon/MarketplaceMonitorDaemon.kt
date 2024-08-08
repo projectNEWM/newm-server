@@ -1,6 +1,8 @@
 package io.newm.server.features.marketplace.daemon
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.grpc.Status
+import io.grpc.StatusException
 import io.newm.chain.grpc.MonitorAddressResponse
 import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_MONITORING_MULTI_MODE_ENABLED
@@ -12,6 +14,7 @@ import io.newm.server.features.marketplace.repo.MarketplaceRepository
 import io.newm.shared.daemon.Daemon
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.coLazy
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.delay
@@ -19,7 +22,6 @@ import kotlinx.coroutines.launch
 import org.apache.curator.framework.recipes.leader.LeaderLatch
 import org.apache.curator.framework.recipes.leader.LeaderLatchListener
 import org.koin.core.parameter.parametersOf
-import kotlin.time.Duration.Companion.seconds
 
 private const val LEADER_LATCH_PATH = "/leader-latches/marketplace-monitor"
 
@@ -96,17 +98,33 @@ class MarketplaceMonitorDaemon(
 
         val address = configRepository.getString(addressKey)
         val retryDelay = configRepository.getLong(CONFIG_KEY_MARKETPLACE_MONITORING_RETRY_DELAY)
+        var logStart = true
         while (true) {
             try {
                 val tip = getTip()
-                log.info { "Starting monitoring $address after TxId $tip" }
+                if (logStart) {
+                    log.info { "Starting monitoring $address after TxId $tip" }
+                    logStart = false
+                }
                 cardanoRepository.monitorAddress(address, tip).collect(processTransaction)
             } catch (e: CancellationException) {
                 log.info { "Ending monitoring $address" }
                 throw e
+            } catch (e: StatusException) {
+                if (e.status.code == Status.Code.UNAVAILABLE || e.status.code == Status.Code.OK) {
+                    // Probably just a connection that reached max age and disconnected cleanly.
+                    // Retry immediately without any scary log.
+                    log.debug { "Disconnected monitoring $address - retry immediately" }
+                    delay(1.seconds)
+                } else {
+                    log.error(e) { "Failed monitoring $address - will retry in $retryDelay seconds" }
+                    delay(retryDelay.seconds)
+                    logStart = true
+                }
             } catch (t: Throwable) {
                 log.error(t) { "Failed monitoring $address - will retry in $retryDelay seconds" }
                 delay(retryDelay.seconds)
+                logStart = true
             }
         }
     }
