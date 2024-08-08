@@ -1,6 +1,5 @@
 package io.newm.server.features.scheduler
 
-import com.amazonaws.services.lambda.model.InvokeRequest
 import io.ktor.server.application.ApplicationEnvironment
 import io.newm.server.features.arweave.model.WeaveProps
 import io.newm.server.features.arweave.model.WeaveRequest
@@ -11,6 +10,9 @@ import io.newm.shared.koin.inject
 import io.newm.shared.ktx.error
 import io.newm.shared.ktx.getConfigString
 import io.newm.shared.ktx.info
+import java.time.LocalDateTime
+import java.time.ZoneOffset
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -19,9 +21,8 @@ import org.quartz.DisallowConcurrentExecution
 import org.quartz.Job
 import org.quartz.JobExecutionContext
 import org.slf4j.Logger
-import java.time.LocalDateTime
-import java.time.ZoneOffset
-import kotlin.coroutines.cancellation.CancellationException
+import software.amazon.awssdk.core.SdkBytes
+import software.amazon.awssdk.services.lambda.model.InvokeRequest
 
 @DisallowConcurrentExecution
 class ArweaveCheckAndFundJob : Job {
@@ -51,13 +52,13 @@ class ArweaveCheckAndFundJob : Job {
                         )
                     )
 
-                val invokeRequest =
-                    InvokeRequest()
-                        .withFunctionName(environment.getConfigString("arweave.lambdaFunctionName"))
-                        .withPayload(json.encodeToString(newmWeaveRequest))
-
+                val invokeRequest = InvokeRequest
+                    .builder()
+                    .functionName(environment.getConfigString("arweave.lambdaFunctionName"))
+                    .payload(SdkBytes.fromUtf8String(json.encodeToString(newmWeaveRequest)))
+                    .build()
                 val invokeResult = invokeRequest.await()
-                val weaveResponse: WeaveResponse = json.decodeFromString(invokeResult.payload.array().decodeToString())
+                val weaveResponse: WeaveResponse = json.decodeFromString(invokeResult.payload().asUtf8String())
                 if (weaveResponse.statusCode != 200) {
                     log.error { "Error invoking Arweave lambda: $weaveResponse" }
                 }

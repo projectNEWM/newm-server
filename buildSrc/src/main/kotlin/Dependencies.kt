@@ -15,7 +15,7 @@ object Dependencies {
     }
 
     object KotlinPlugin {
-        const val VERSION = "2.0.0"
+        const val VERSION = "2.0.10"
         const val JVM_ID = "jvm"
         const val SERIALIZATION_ID = "plugin.serialization"
     }
@@ -61,7 +61,7 @@ object Dependencies {
     }
 
     object KtLint {
-        const val VERSION = "1.2.1"
+        const val VERSION = "1.3.1"
     }
 
     object Ktor {
@@ -221,20 +221,15 @@ object Dependencies {
     }
 
     object Aws {
-        private const val VERSION = "1.12.767"
-        private const val VERSION2 = "2.26.27"
-        private const val JAXB_VERSION = "2.3.1"
+        private const val VERSION = "2.27.0"
 
-        const val BOM = "com.amazonaws:aws-java-sdk-bom:$VERSION"
-        const val S3 = "com.amazonaws:aws-java-sdk-s3"
-        const val SQS = "com.amazonaws:aws-java-sdk-sqs"
-        const val KMS = "com.amazonaws:aws-java-sdk-kms"
-        const val SECRETS_MANAGER = "com.amazonaws:aws-java-sdk-secretsmanager"
-        const val LAMBDA = "com.amazonaws:aws-java-sdk-lambda"
-        const val JAXB = "javax.xml.bind:jaxb-api:$JAXB_VERSION"
-
-        const val BOM2 = "software.amazon.awssdk:bom:$VERSION2"
+        const val BOM = "software.amazon.awssdk:bom:$VERSION"
         const val CLOUDFRONT = "software.amazon.awssdk:cloudfront"
+        const val S3 = "software.amazon.awssdk:s3"
+        const val SQS = "software.amazon.awssdk:sqs"
+        const val KMS = "software.amazon.awssdk:kms"
+        const val SECRETS_MANAGER = "software.amazon.awssdk:secretsmanager"
+        const val LAMBDA = "software.amazon.awssdk:lambda"
     }
 
     object Zensum {
@@ -274,7 +269,7 @@ object Dependencies {
     }
 
     object Sentry {
-        private const val VERSION = "7.9.0"
+        private const val VERSION = "7.13.0"
 
         const val CORE = "io.sentry:sentry:$VERSION"
         const val LOGBACK = "io.sentry:sentry-logback:$VERSION"
@@ -287,7 +282,7 @@ object Dependencies {
     }
 
     object Grpc {
-        private const val VERSION = "1.65.1"
+        private const val VERSION = "1.66.0"
 
         const val STUB = "io.grpc:grpc-stub:$VERSION"
         const val API = "io.grpc:grpc-api:$VERSION"
@@ -304,7 +299,7 @@ object Dependencies {
     }
 
     object Protobuf {
-        private const val VERSION = "4.27.2"
+        private const val VERSION = "4.27.3"
 
         const val JAVA_UTIL = "com.google.protobuf:protobuf-java-util:$VERSION"
         const val KOTLIN = "com.google.protobuf:protobuf-kotlin:$VERSION"
@@ -325,7 +320,7 @@ object Dependencies {
     }
 
     object TestContainers {
-        private const val VERSION = "1.20.0"
+        private const val VERSION = "1.20.1"
 
         const val CORE = "org.testcontainers:testcontainers:$VERSION"
         const val JUINT = "org.testcontainers:junit-jupiter:$VERSION"

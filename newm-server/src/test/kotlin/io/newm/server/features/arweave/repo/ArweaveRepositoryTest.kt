@@ -1,6 +1,5 @@
 package io.newm.server.features.arweave.repo
 
-import com.amazonaws.services.lambda.model.InvokeRequest
 import com.google.common.truth.Truth.assertThat
 import io.newm.server.features.arweave.model.WeaveFile
 import io.newm.server.features.arweave.model.WeaveProps
@@ -10,13 +9,15 @@ import io.newm.server.features.arweave.model.WeaveResponseItem
 import io.newm.server.ktx.asValidUrl
 import io.newm.server.ktx.await
 import io.newm.shared.serialization.BigDecimalSerializer
+import java.math.BigDecimal
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
-import java.math.BigDecimal
+import software.amazon.awssdk.core.SdkBytes
+import software.amazon.awssdk.services.lambda.model.InvokeRequest
 
 class ArweaveRepositoryTest {
     @Test
@@ -60,13 +61,15 @@ class ArweaveRepositoryTest {
             val payload = json.encodeToString(newmWeaveRequest)
             println("payload: $payload")
             val invokeRequest =
-                InvokeRequest()
-                    .withFunctionName("<arn here>")
-                    .withPayload(payload)
+                InvokeRequest
+                    .builder()
+                    .functionName("<arn here>")
+                    .payload(SdkBytes.fromUtf8String(payload))
+                    .build()
 
             val invokeResult = invokeRequest.await()
 
-            val responseString = invokeResult.payload.array().decodeToString()
+            val responseString = invokeResult.payload().asUtf8String()
             println("responseString: $responseString")
             val weaveResponse: WeaveResponse = json.decodeFromString(responseString)
             val weaveResponsItems: List<WeaveResponseItem> = json.decodeFromString(weaveResponse.body)

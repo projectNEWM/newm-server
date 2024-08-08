@@ -1,11 +1,5 @@
 package io.newm.server.features.cardano.repo
 
-import com.amazonaws.handlers.AsyncHandler
-import com.amazonaws.services.kms.AWSKMSAsync
-import com.amazonaws.services.kms.model.DecryptRequest
-import com.amazonaws.services.kms.model.DecryptResult
-import com.amazonaws.services.kms.model.EncryptRequest
-import com.amazonaws.services.kms.model.EncryptResult
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.google.protobuf.ByteString
 import com.google.protobuf.kotlin.toByteString
@@ -89,22 +83,26 @@ import io.newm.shared.ktx.isValidPassword
 import io.newm.txbuilder.ktx.fingerprint
 import io.newm.txbuilder.ktx.mergeAmounts
 import io.newm.txbuilder.ktx.toNativeAssetMap
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import org.jetbrains.exposed.sql.transactions.transaction
-import org.springframework.security.crypto.encrypt.BytesEncryptor
-import org.springframework.security.crypto.encrypt.Encryptors
 import java.time.Duration
 import java.util.UUID
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 import kotlin.time.Duration.Companion.minutes
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import org.jetbrains.exposed.sql.transactions.transaction
+import org.springframework.security.crypto.encrypt.BytesEncryptor
+import org.springframework.security.crypto.encrypt.Encryptors
+import software.amazon.awssdk.core.SdkBytes
+import software.amazon.awssdk.services.kms.KmsAsyncClient
+import software.amazon.awssdk.services.kms.model.DecryptRequest
+import software.amazon.awssdk.services.kms.model.EncryptRequest
 
 internal class CardanoRepositoryImpl(
     private val client: NewmChainCoroutineStub,
-    private val kms: AWSKMSAsync,
+    private val kms: KmsAsyncClient,
     private val kmsKeyId: String,
     private val configRepository: ConfigRepository,
     private val nftCdnRepository: NftCdnRepository,
@@ -580,24 +578,17 @@ internal class CardanoRepositoryImpl(
             plaintextBuffer.put(bytes)
             plaintextBuffer.flip()
             return suspendCoroutine { continuation ->
-                kms.encryptAsync(
-                    EncryptRequest().withKeyId(kmsKeyId).withPlaintext(plaintextBuffer),
-                    object : AsyncHandler<EncryptRequest, EncryptResult> {
-                        override fun onError(exception: Exception) {
-                            continuation.resumeWithException(exception)
-                        }
-
-                        override fun onSuccess(
-                            request: EncryptRequest,
-                            result: EncryptResult
-                        ) {
-                            val ciphertextBuffer = result.ciphertextBlob.asReadOnlyBuffer()
-                            val ciphertextBytes = ByteArray(ciphertextBuffer.remaining())
-                            ciphertextBuffer.get(ciphertextBytes)
-                            continuation.resume(ciphertextBytes.toB64String())
-                        }
-                    }
-                )
+                val request =
+                    EncryptRequest
+                        .builder()
+                        .keyId(kmsKeyId)
+                        .plaintext(SdkBytes.fromByteBuffer(plaintextBuffer))
+                        .build()
+                kms.encrypt(request).whenComplete { result, throwable ->
+                    throwable?.let {
+                        continuation.resumeWithException(it)
+                    } ?: continuation.resume(result.ciphertextBlob().asByteArray().toB64String())
+                }
             }
         } finally {
             DefaultByteBufferPool.recycle(plaintextBuffer)
@@ -618,26 +609,23 @@ internal class CardanoRepositoryImpl(
             ciphertextBuffer.flip()
 
             return suspendCoroutine { continuation ->
-                kms.decryptAsync(
-                    DecryptRequest().withKeyId(kmsKeyId).withCiphertextBlob(ciphertextBuffer),
-                    object : AsyncHandler<DecryptRequest, DecryptResult> {
-                        override fun onError(exception: Exception) {
-                            kmsCache.invalidate(cipherText)
-                            continuation.resumeWithException(exception)
-                        }
-
-                        override fun onSuccess(
-                            request: DecryptRequest,
-                            result: DecryptResult
-                        ) {
-                            val plaintextBuffer = result.plaintext.asReadOnlyBuffer()
-                            val plaintext = ByteArray(plaintextBuffer.remaining())
-                            plaintextBuffer.get(plaintext)
-                            kmsCache.put(cipherText, plaintext)
-                            continuation.resume(plaintext)
-                        }
+                val request =
+                    DecryptRequest
+                        .builder()
+                        .keyId(kmsKeyId)
+                        .ciphertextBlob(SdkBytes.fromByteBuffer(ciphertextBuffer))
+                        .build()
+                kms.decrypt(request).whenComplete { result, throwable ->
+                    throwable?.let {
+                        continuation.resumeWithException(it)
+                    } ?: run {
+                        val plaintextBuffer = result.plaintext().asByteBuffer()
+                        val plaintext = ByteArray(plaintextBuffer.remaining())
+                        plaintextBuffer.get(plaintext)
+                        kmsCache.put(cipherText, plaintext)
+                        continuation.resume(plaintext)
                     }
-                )
+                }
             }
         } finally {
             DefaultByteBufferPool.recycle(ciphertextBuffer)

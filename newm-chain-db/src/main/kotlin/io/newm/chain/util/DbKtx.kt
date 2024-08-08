@@ -332,10 +332,15 @@ fun MetadataMap?.extractAssetMetadata(ledgerAssets: List<LedgerAsset>): List<Led
 
                                         ledgerAsset
                                             ?.let {
-                                                (detailsMetadataValue as? MetadataMap)?.mapNotNull {
-                                                        (keyMetadataValue, valueMetadataValue) ->
-                                                    buildAssetMetadata(it.id!!, keyMetadataValue, valueMetadataValue, 0)
-                                                }
+                                                (detailsMetadataValue as? MetadataMap)
+                                                    ?.mapNotNull { (keyMetadataValue, valueMetadataValue) ->
+                                                        buildAssetMetadata(
+                                                            it.id!!,
+                                                            keyMetadataValue,
+                                                            valueMetadataValue,
+                                                            0
+                                                        )
+                                                    }
                                             }.orEmpty()
                                     }.orEmpty()
                             }

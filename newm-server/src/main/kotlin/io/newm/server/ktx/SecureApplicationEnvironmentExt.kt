@@ -1,9 +1,5 @@
 package io.newm.server.ktx
 
-import com.amazonaws.handlers.AsyncHandler
-import com.amazonaws.services.secretsmanager.AWSSecretsManagerAsync
-import com.amazonaws.services.secretsmanager.model.GetSecretValueRequest
-import com.amazonaws.services.secretsmanager.model.GetSecretValueResult
 import com.github.benmanes.caffeine.cache.Caffeine
 import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.server.config.ApplicationConfig
@@ -11,16 +7,17 @@ import io.newm.shared.koin.inject
 import io.newm.shared.ktx.getChildFullPath
 import io.newm.shared.ktx.getString
 import io.newm.shared.ktx.splitAndTrim
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.json.Json
 import java.time.Duration
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.serialization.json.Json
+import software.amazon.awssdk.services.secretsmanager.SecretsManagerAsyncClient
+import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueRequest
 
-private val secretsManager: AWSSecretsManagerAsync by inject()
+private val secretsManager: SecretsManagerAsyncClient by inject()
 private val json: Json by inject()
 private val secretsMutex = Mutex()
 private val secretsCache =
@@ -47,25 +44,15 @@ suspend fun ApplicationConfig.getSecureString(path: String): String {
     val fullPath = getChildFullPath(path)
     secretsMutex.withLock {
         return secretsCache.getIfPresent(configValue)?.get(fullPath) ?: suspendCoroutine { continuation ->
-            secretsManager.getSecretValueAsync(
-                GetSecretValueRequest().withSecretId(configValue),
-                object : AsyncHandler<GetSecretValueRequest, GetSecretValueResult> {
-                    override fun onSuccess(
-                        request: GetSecretValueRequest,
-                        result: GetSecretValueResult
-                    ) {
-                        val secretsMap: Map<String, String> = json.decodeFromString(result.secretString)
-                        secretsCache.put(configValue, secretsMap)
-                        secretsMap[fullPath]?.let {
-                            continuation.resume(it)
-                        } ?: continuation.resumeWithException(IllegalArgumentException("No secret found for $fullPath !"))
-                    }
-
-                    override fun onError(exception: Exception) {
-                        continuation.resumeWithException(exception)
-                    }
+            val request = GetSecretValueRequest.builder().secretId(configValue).build()
+            secretsManager.getSecretValue(request).whenComplete { result, throwable ->
+                throwable?.let { continuation.resumeWithException(it) } ?: run {
+                    val secretsMap: Map<String, String> = json.decodeFromString(result.secretString())
+                    secretsCache.put(configValue, secretsMap)
+                    secretsMap[fullPath]?.let { continuation.resume(it) }
+                        ?: continuation.resumeWithException(IllegalArgumentException("No secret found for $fullPath !"))
                 }
-            )
+            }
         }
     }
 }

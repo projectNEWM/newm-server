@@ -1,16 +1,9 @@
 package io.newm.server.features.minting
 
-import com.amazonaws.services.sqs.model.Message
 import io.mockk.coEvery
-import io.mockk.mockk
-import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Test
-import org.koin.core.context.startKoin
-import org.koin.core.context.stopKoin
-import org.koin.dsl.module
-import io.mockk.*
+import io.mockk.every
 import io.mockk.junit5.MockKExtension
+import io.mockk.mockk
 import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.features.arweave.repo.ArweaveRepository
 import io.newm.server.features.cardano.repo.CardanoRepository
@@ -22,20 +15,27 @@ import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.logging.json
 import io.newm.server.typealiases.SongId
 import io.newm.shared.serialization.UUIDSerializer
+import java.util.UUID
+import kotlin.test.assertFailsWith
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import org.koin.test.KoinTest
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
+import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.koin.core.context.startKoin
+import org.koin.core.context.stopKoin
+import org.koin.dsl.module
+import org.koin.test.KoinTest
 import org.quartz.JobDataMap
 import org.quartz.JobExecutionContext
 import org.quartz.Scheduler
 import org.quartz.impl.JobDetailImpl
-import java.util.*
-import kotlin.test.assertFailsWith
+import software.amazon.awssdk.services.sqs.model.Message
 
 @ExtendWith(MockKExtension::class)
 class MintingMessageReceiverTest : KoinTest {
@@ -119,9 +119,11 @@ class MintingMessageReceiverTest : KoinTest {
             every { mockJobExecutionContext.scheduler } returns mockScheduler
 
             val mintingMsg = MintingStatusSqsMessage(SongId.randomUUID(), MintingStatus.SubmittedForDistribution)
-            val msg = Message()
-            msg.messageId = "test-minting-message-receiver"
-            msg.body = json.encodeToString(mintingMsg)
+            val msg = Message
+                .builder()
+                .messageId("test-minting-message-receiver")
+                .body(json.encodeToString(mintingMsg))
+                .build()
 
             mintingMessageReceiver = MintingMessageReceiver()
             // When we call display() with the wrong argument

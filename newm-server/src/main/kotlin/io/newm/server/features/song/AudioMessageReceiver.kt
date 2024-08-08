@@ -1,8 +1,7 @@
 package io.newm.server.features.song
 
-import com.amazonaws.services.sqs.model.Message
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.ktor.server.application.*
+import io.ktor.server.application.ApplicationEnvironment
 import io.newm.server.aws.SqsMessageReceiver
 import io.newm.server.features.song.model.AudioMessage
 import io.newm.server.features.song.model.Song
@@ -11,6 +10,7 @@ import io.newm.shared.koin.inject
 import io.newm.shared.ktx.getConfigString
 import io.newm.shared.ktx.toUUID
 import kotlinx.serialization.json.Json
+import software.amazon.awssdk.services.sqs.model.Message
 
 class AudioMessageReceiver : SqsMessageReceiver {
     private val repository: SongRepository by inject()
@@ -20,7 +20,7 @@ class AudioMessageReceiver : SqsMessageReceiver {
     private val logger = KotlinLogging.logger {}
 
     override suspend fun onMessageReceived(message: Message) {
-        val msg: AudioMessage = json.decodeFromString(message.body)
+        val msg: AudioMessage = json.decodeFromString(message.body())
         logger.debug { "Audio ${msg.transcodingType} job status: ${msg.status}" }
 
         if (msg.status != "COMPLETE") return

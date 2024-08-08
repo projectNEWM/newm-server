@@ -1,7 +1,5 @@
 package io.newm.server.features.distribution.eveara
 
-import com.amazonaws.HttpMethod
-import com.amazonaws.services.s3.AmazonS3
 import com.github.benmanes.caffeine.cache.Caffeine
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -117,10 +115,7 @@ import io.newm.shared.ktx.info
 import io.newm.shared.ktx.orNull
 import java.io.File
 import java.time.Duration
-import java.time.Instant
 import java.time.LocalDate
-import java.time.temporal.ChronoUnit
-import java.util.Date
 import kotlin.collections.set
 import kotlin.random.Random.Default.nextLong
 import kotlin.time.Duration.Companion.minutes
@@ -135,6 +130,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.koin.core.parameter.parametersOf
 import org.slf4j.Logger
+import software.amazon.awssdk.services.s3.model.GetObjectRequest
+import software.amazon.awssdk.services.s3.presigner.S3Presigner
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest
 
 class EvearaDistributionRepositoryImpl(
     private val collabRepository: CollaborationRepository,
@@ -145,7 +143,7 @@ class EvearaDistributionRepositoryImpl(
     private val userRepository: UserRepository by inject()
     private val songRepository: SongRepository by inject()
     private val httpClient: HttpClient by inject()
-    private val amazonS3: AmazonS3 by inject()
+    private val s3Presigner: S3Presigner by inject()
     private val applicationEnvironment: ApplicationEnvironment by inject()
     private val evearaServer by lazy { applicationEnvironment.getConfigString(CONFIG_KEY_EVEARA_SERVER) }
     private val evearaApiBaseUrl by lazy {
@@ -1800,7 +1798,8 @@ class EvearaDistributionRepositoryImpl(
             require(user.distributionNewmParticipantId == null) {
                 "User.distributionNewmParticipantId: ${user.distributionNewmParticipantId} not found in Eveara!"
             }
-            val response = addParticipant(User(distributionUserId = user.distributionUserId!!, nickname = NEWM_PARTICIPANT_NAME))
+            val response =
+                addParticipant(User(distributionUserId = user.distributionUserId!!, nickname = NEWM_PARTICIPANT_NAME))
             log.info { "Created $NEWM_PARTICIPANT_NAME participant with id ${response.participantId}: ${response.message}" }
             user.distributionNewmParticipantId = response.participantId
             userRepository.updateUserData(user.id, user)
@@ -1910,7 +1909,8 @@ class EvearaDistributionRepositoryImpl(
         val desiredLabelName = song.phonographicCopyrightOwner ?: user.companyOrStageOrFullName
         val getUserLabelsResponse = getUserLabel(user)
         if (getUserLabelsResponse.totalRecords > 1) {
-            val existingLabel = getUserLabelsResponse.userLabelData.first { !it.name.equals(NEWM_LABEL_NAME, ignoreCase = true) }
+            val existingLabel =
+                getUserLabelsResponse.userLabelData.first { !it.name.equals(NEWM_LABEL_NAME, ignoreCase = true) }
             log.info { "Found existing distribution label ${user.email} with id ${existingLabel.labelId}, name ${existingLabel.name}" }
             if (user.distributionLabelId == null) {
                 user.distributionLabelId = existingLabel.labelId
@@ -1959,14 +1959,17 @@ class EvearaDistributionRepositoryImpl(
         if (mutableSong.distributionTrackId == null) {
             val s3Url = mutableSong.originalAudioUrl!!
             val (bucket, key) = s3Url.toBucketAndKey()
-            val url =
-                amazonS3
-                    .generatePresignedUrl(
-                        bucket,
-                        key,
-                        Date.from(Instant.now().plus(30, ChronoUnit.MINUTES)),
-                        HttpMethod.GET
-                    ).toExternalForm()
+            val getObjectRequest = GetObjectRequest
+                .builder()
+                .bucket(bucket)
+                .key(key)
+                .build()
+            val getObjectPresignRequest = GetObjectPresignRequest
+                .builder()
+                .signatureDuration(Duration.ofMinutes(30))
+                .getObjectRequest(getObjectRequest)
+                .build()
+            val url = s3Presigner.presignGetObject(getObjectPresignRequest).url().toExternalForm()
             log.info { "Generated pre-signed url for $s3Url: $url" }
 
             val audioFileResponse =

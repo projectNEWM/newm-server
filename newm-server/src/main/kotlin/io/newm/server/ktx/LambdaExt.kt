@@ -1,31 +1,18 @@
 package io.newm.server.ktx
 
-import com.amazonaws.handlers.AsyncHandler
-import com.amazonaws.services.lambda.AWSLambdaAsync
-import com.amazonaws.services.lambda.model.InvokeRequest
-import com.amazonaws.services.lambda.model.InvokeResult
 import io.newm.shared.koin.inject
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
+import software.amazon.awssdk.services.lambda.LambdaAsyncClient
+import software.amazon.awssdk.services.lambda.model.InvokeRequest
+import software.amazon.awssdk.services.lambda.model.InvokeResponse
 
-private val awsLambda: AWSLambdaAsync by inject()
+private val awsLambda: LambdaAsyncClient by inject()
 
-suspend fun InvokeRequest.await(): InvokeResult =
+suspend fun InvokeRequest.await(): InvokeResponse =
     suspendCoroutine { continuation ->
-        awsLambda.invokeAsync(
-            this,
-            object : AsyncHandler<InvokeRequest, InvokeResult> {
-                override fun onSuccess(
-                    request: InvokeRequest,
-                    result: InvokeResult
-                ) {
-                    continuation.resume(result)
-                }
-
-                override fun onError(exception: Exception) {
-                    continuation.resumeWithException(exception)
-                }
-            }
-        )
+        awsLambda.invoke(this).whenComplete { invokeResponse, throwable ->
+            throwable?.let { continuation.resumeWithException(it) } ?: continuation.resume(invokeResponse)
+        }
     }

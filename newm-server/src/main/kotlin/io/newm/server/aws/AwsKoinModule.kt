@@ -1,58 +1,62 @@
 package io.newm.server.aws
 
-import com.amazonaws.services.kms.AWSKMSAsync
-import com.amazonaws.services.kms.AWSKMSAsyncClientBuilder
-import com.amazonaws.services.lambda.AWSLambdaAsync
-import com.amazonaws.services.lambda.AWSLambdaAsyncClientBuilder
-import com.amazonaws.services.s3.AmazonS3
-import com.amazonaws.services.s3.AmazonS3ClientBuilder
-import com.amazonaws.services.secretsmanager.AWSSecretsManagerAsync
-import com.amazonaws.services.secretsmanager.AWSSecretsManagerAsyncClientBuilder
-import com.amazonaws.services.sqs.AmazonSQSAsync
-import com.amazonaws.services.sqs.AmazonSQSAsyncClientBuilder
-import io.ktor.server.application.*
+import io.ktor.server.application.ApplicationEnvironment
 import io.newm.shared.ktx.getConfigString
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.kms.KmsAsyncClient
+import software.amazon.awssdk.services.lambda.LambdaAsyncClient
+import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.presigner.S3Presigner
+import software.amazon.awssdk.services.secretsmanager.SecretsManagerAsyncClient
+import software.amazon.awssdk.services.sqs.SqsAsyncClient
 
 val AWS_REGION = named("aws.region")
 
 val awsKoinModule =
     module {
-        single<AmazonS3> {
-            AmazonS3ClientBuilder
-                .standard()
-                .withRegion(get<String>(AWS_REGION))
+        single<S3Client> {
+            S3Client
+                .builder()
+                .region(get<Region>(AWS_REGION))
                 .build()
         }
 
-        single<AmazonSQSAsync> {
-            AmazonSQSAsyncClientBuilder
-                .standard()
-                .withRegion(get<String>(AWS_REGION))
+        single<S3Presigner> {
+            S3Presigner
+                .builder()
+                .region(get<Region>(AWS_REGION))
                 .build()
         }
 
-        single<AWSKMSAsync> {
-            AWSKMSAsyncClientBuilder
-                .standard()
-                .withRegion(get<String>(AWS_REGION))
+        single<SqsAsyncClient> {
+            SqsAsyncClient
+                .builder()
+                .region(get<Region>(AWS_REGION))
                 .build()
         }
 
-        single<AWSSecretsManagerAsync> {
-            AWSSecretsManagerAsyncClientBuilder
-                .standard()
-                .withRegion(get<String>(AWS_REGION))
+        single<KmsAsyncClient> {
+            KmsAsyncClient
+                .builder()
+                .region(get<Region>(AWS_REGION))
                 .build()
         }
 
-        single<AWSLambdaAsync> {
-            AWSLambdaAsyncClientBuilder
-                .standard()
-                .withRegion(get<String>(AWS_REGION))
+        single<SecretsManagerAsyncClient> {
+            SecretsManagerAsyncClient
+                .builder()
+                .region(get<Region>(AWS_REGION))
                 .build()
         }
 
-        single<String>(AWS_REGION) { get<ApplicationEnvironment>().getConfigString("aws.region") }
+        single<LambdaAsyncClient> {
+            LambdaAsyncClient
+                .builder()
+                .region(get<Region>(AWS_REGION))
+                .build()
+        }
+
+        single<Region>(AWS_REGION) { Region.of(get<ApplicationEnvironment>().getConfigString("aws.region")) }
     }
