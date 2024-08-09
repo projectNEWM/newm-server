@@ -1,7 +1,5 @@
 package io.newm.server.features.song.repo
 
-import com.amazonaws.services.s3.AmazonS3
-import com.amazonaws.services.sqs.model.SendMessageRequest
 import com.google.iot.cbor.CborInteger
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.http.URLBuilder
@@ -14,6 +12,7 @@ import io.newm.chain.grpc.outputUtxo
 import io.newm.chain.util.toAdaString
 import io.newm.chain.util.toHexString
 import io.newm.server.aws.cloudfront.cloudfrontAudioStreamData
+import io.newm.server.aws.s3.doesObjectExist
 import io.newm.server.aws.s3.s3UrlStringOf
 import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_DISTRIBUTION_PRICE_USD
@@ -88,10 +87,14 @@ import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
+import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest
+import software.amazon.awssdk.services.s3.model.PutObjectRequest
+import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 
 internal class SongRepositoryImpl(
     private val environment: ApplicationEnvironment,
-    private val s3: AmazonS3,
+    private val s3: S3Client,
     private val configRepository: ConfigRepository,
     private val cardanoRepository: CardanoRepository,
     private val distributionRepository: DistributionRepository,
@@ -395,7 +398,12 @@ internal class SongRepositoryImpl(
 
                 val bucket = config.getString("bucketName")
                 val key = "$songId/audio.$ext"
-                s3.putObject(bucket, key, file)
+                val request = PutObjectRequest
+                    .builder()
+                    .bucket(bucket)
+                    .key(key)
+                    .build()
+                s3.putObject(request, file.toPath())
 
                 val url = s3UrlStringOf(bucket, key)
                 transaction {
@@ -470,7 +478,12 @@ internal class SongRepositoryImpl(
             )
         } else {
             update(songId, Song(mintingStatus = MintingStatus.Undistributed))
-            s3.deleteObject(bucketName, key)
+            val request = DeleteObjectRequest
+                .builder()
+                .bucket(bucketName)
+                .key(key)
+                .build()
+            s3.deleteObject(request)
         }
     }
 
@@ -736,9 +749,11 @@ internal class SongRepositoryImpl(
                         )
                     )
                 logger.info { "sending: $messageToSend" }
-                SendMessageRequest()
-                    .withQueueUrl(queueUrl)
-                    .withMessageBody(messageToSend)
+                SendMessageRequest
+                    .builder()
+                    .queueUrl(queueUrl)
+                    .messageBody(messageToSend)
+                    .build()
                     .await()
                 logger.info { "sent: $messageToSend" }
             }

@@ -1,7 +1,7 @@
-import org.gradle.api.tasks.testing.logging.TestLogEvent
-import org.jetbrains.kotlin.util.capitalizeDecapitalize.toLowerCaseAsciiOnly
 import java.time.Instant
+import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.util.capitalizeDecapitalize.toLowerCaseAsciiOnly
 
 plugins {
     application
@@ -103,9 +103,6 @@ dependencies {
     implementation(Dependencies.Aws.KMS)
     implementation(Dependencies.Aws.SECRETS_MANAGER)
     implementation(Dependencies.Aws.LAMBDA)
-    implementation(Dependencies.Aws.JAXB)
-
-    implementation(platform(Dependencies.Aws.BOM2))
     implementation(Dependencies.Aws.CLOUDFRONT)
 
     implementation(Dependencies.Arweave.ARWEAVE4S)

@@ -1,6 +1,5 @@
 package io.newm.server.features.daemon
 
-import com.amazonaws.services.sqs.model.ReceiveMessageRequest
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.server.config.ApplicationConfig
@@ -24,6 +23,7 @@ import kotlinx.coroutines.launch
 import org.apache.curator.framework.recipes.leader.LeaderLatch
 import org.apache.curator.framework.recipes.leader.LeaderLatchListener
 import org.koin.core.parameter.parametersOf
+import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
 
 private const val LEADER_LATCH_PATH = "/leader-latches/aws-sqs"
 
@@ -85,27 +85,31 @@ class AwsSqsDaemon :
                 while (true) {
                     try {
                         val request =
-                            ReceiveMessageRequest()
-                                .withQueueUrl(queueUrl)
-                                .withWaitTimeSeconds(waitTime)
-                                .withMaxNumberOfMessages(1)
+                            ReceiveMessageRequest
+                                .builder()
+                                .queueUrl(queueUrl)
+                                .waitTimeSeconds(waitTime)
+                                .maxNumberOfMessages(1)
+                                .build()
                         val result = request.await()
-                        for (message in result.messages) {
-                            try {
-                                receiver.onMessageReceived(message)
-
-                                // If receiver processing throws, we skip deleting the message
-                                // so it ends up in the dead-letter queue for reprocessing.
-                                log.info { "$queueUrl -> Deleting SQS message: ${message.body}" }
-                                message.delete(queueUrl)
-                                log.info { "$queueUrl -> Deleted SQS message: ${message.body}" }
-                            } catch (e: Throwable) {
-                                log.error(e) { "Failure processing SQS message: $queueUrl" }
-                                e.captureToSentry()
+                        if (result.hasMessages()) {
+                            for (message in result.messages()) {
                                 try {
-                                    message.markFailed(queueUrl)
+                                    receiver.onMessageReceived(message)
+
+                                    // If receiver processing throws, we skip deleting the message
+                                    // so it ends up in the dead-letter queue for reprocessing.
+                                    log.info { "$queueUrl -> Deleting SQS message: ${message.body()}" }
+                                    message.delete(queueUrl)
+                                    log.info { "$queueUrl -> Deleted SQS message: ${message.body()}" }
                                 } catch (e: Throwable) {
-                                    log.error { "Failed to set visibility timeout to zero: ${message.body}" }
+                                    log.error(e) { "Failure processing SQS message: $queueUrl" }
+                                    e.captureToSentry()
+                                    try {
+                                        message.markFailed(queueUrl)
+                                    } catch (e: Throwable) {
+                                        log.error { "Failed to set visibility timeout to zero: ${message.body()}" }
+                                    }
                                 }
                             }
                         }

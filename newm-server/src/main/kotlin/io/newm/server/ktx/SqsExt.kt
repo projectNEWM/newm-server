@@ -1,98 +1,59 @@
 package io.newm.server.ktx
 
-import com.amazonaws.handlers.AsyncHandler
-import com.amazonaws.services.sqs.AmazonSQSAsync
-import com.amazonaws.services.sqs.model.ChangeMessageVisibilityRequest
-import com.amazonaws.services.sqs.model.ChangeMessageVisibilityResult
-import com.amazonaws.services.sqs.model.DeleteMessageRequest
-import com.amazonaws.services.sqs.model.DeleteMessageResult
-import com.amazonaws.services.sqs.model.Message
-import com.amazonaws.services.sqs.model.ReceiveMessageRequest
-import com.amazonaws.services.sqs.model.ReceiveMessageResult
-import com.amazonaws.services.sqs.model.SendMessageRequest
-import com.amazonaws.services.sqs.model.SendMessageResult
 import io.newm.shared.koin.inject
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
+import software.amazon.awssdk.services.sqs.SqsAsyncClient
+import software.amazon.awssdk.services.sqs.model.ChangeMessageVisibilityRequest
+import software.amazon.awssdk.services.sqs.model.ChangeMessageVisibilityResponse
+import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest
+import software.amazon.awssdk.services.sqs.model.DeleteMessageResponse
+import software.amazon.awssdk.services.sqs.model.Message
+import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
+import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse
+import software.amazon.awssdk.services.sqs.model.SendMessageRequest
+import software.amazon.awssdk.services.sqs.model.SendMessageResponse
 
-private val sqs: AmazonSQSAsync by inject()
+private val sqs: SqsAsyncClient by inject()
 
-suspend fun SendMessageRequest.await(): SendMessageResult =
+suspend fun SendMessageRequest.await(): SendMessageResponse =
     suspendCoroutine { continuation ->
-        sqs.sendMessageAsync(
-            this,
-            object : AsyncHandler<SendMessageRequest, SendMessageResult> {
-                override fun onSuccess(
-                    request: SendMessageRequest,
-                    result: SendMessageResult
-                ) {
-                    continuation.resume(result)
-                }
-
-                override fun onError(exception: Exception) {
-                    continuation.resumeWithException(exception)
-                }
-            }
-        )
+        sqs.sendMessage(this).whenComplete { sendMessageResponse, throwable ->
+            throwable?.let { continuation.resumeWithException(it) } ?: continuation.resume(sendMessageResponse)
+        }
     }
 
-suspend fun ReceiveMessageRequest.await(): ReceiveMessageResult =
+suspend fun ReceiveMessageRequest.await(): ReceiveMessageResponse =
     suspendCoroutine { continuation ->
-        sqs.receiveMessageAsync(
-            this,
-            object : AsyncHandler<ReceiveMessageRequest, ReceiveMessageResult> {
-                override fun onSuccess(
-                    request: ReceiveMessageRequest,
-                    result: ReceiveMessageResult
-                ) {
-                    continuation.resume(result)
-                }
-
-                override fun onError(exception: Exception) {
-                    continuation.resumeWithException(exception)
-                }
-            }
-        )
+        sqs.receiveMessage(this).whenComplete { receiveMessageResponse, throwable ->
+            throwable?.let { continuation.resumeWithException(it) } ?: continuation.resume(receiveMessageResponse)
+        }
     }
 
-suspend fun Message.delete(queueUrl: String): DeleteMessageResult =
+suspend fun Message.delete(queueUrl: String): DeleteMessageResponse =
     suspendCoroutine { continuation ->
-        sqs.deleteMessageAsync(
-            queueUrl,
-            receiptHandle,
-            object : AsyncHandler<DeleteMessageRequest, DeleteMessageResult> {
-                override fun onSuccess(
-                    request: DeleteMessageRequest,
-                    result: DeleteMessageResult
-                ) {
-                    continuation.resume(result)
-                }
-
-                override fun onError(exception: Exception) {
-                    continuation.resumeWithException(exception)
-                }
-            }
-        )
+        val request = DeleteMessageRequest
+            .builder()
+            .queueUrl(queueUrl)
+            .receiptHandle(receiptHandle())
+            .build()
+        sqs.deleteMessage(request).whenComplete { deleteMessageResponse, throwable ->
+            throwable?.let { continuation.resumeWithException(it) } ?: continuation.resume(deleteMessageResponse)
+        }
     }
 
-suspend fun Message.markFailed(queueUrl: String): ChangeMessageVisibilityResult =
+suspend fun Message.markFailed(queueUrl: String): ChangeMessageVisibilityResponse =
     suspendCoroutine { continuation ->
-        sqs.changeMessageVisibilityAsync(
-            queueUrl,
-            receiptHandle,
-            0,
-            object : AsyncHandler<ChangeMessageVisibilityRequest, ChangeMessageVisibilityResult> {
-                override fun onSuccess(
-                    request: ChangeMessageVisibilityRequest,
-                    result: ChangeMessageVisibilityResult
-                ) {
-                    continuation.resume(result)
-                }
-
-                override fun onError(exception: Exception) {
-                    continuation.resumeWithException(exception)
-                }
-            }
-        )
+        val request = ChangeMessageVisibilityRequest
+            .builder()
+            .queueUrl(queueUrl)
+            .receiptHandle(receiptHandle())
+            .visibilityTimeout(0)
+            .build()
+        sqs.changeMessageVisibility(request).whenComplete { changeMessageVisibilityResponse, throwable ->
+            throwable?.let { continuation.resumeWithException(it) } ?: continuation.resume(
+                changeMessageVisibilityResponse
+            )
+        }
     }

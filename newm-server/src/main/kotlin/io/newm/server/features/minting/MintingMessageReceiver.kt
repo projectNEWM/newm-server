@@ -1,6 +1,5 @@
 package io.newm.server.features.minting
 
-import com.amazonaws.services.sqs.model.Message
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.newm.chain.grpc.monitorPaymentAddressRequest
 import io.newm.server.aws.SqsMessageReceiver
@@ -27,6 +26,7 @@ import org.quartz.JobBuilder.newJob
 import org.quartz.JobKey
 import org.quartz.SimpleScheduleBuilder.simpleSchedule
 import org.quartz.TriggerBuilder.newTrigger
+import software.amazon.awssdk.services.sqs.model.Message
 
 class MintingMessageReceiver : SqsMessageReceiver {
     private val log = KotlinLogging.logger {}
@@ -39,8 +39,8 @@ class MintingMessageReceiver : SqsMessageReceiver {
     private val json: Json by inject()
 
     override suspend fun onMessageReceived(message: Message) {
-        log.info { "received: ${message.body}" }
-        val mintingStatusSqsMessage: MintingStatusSqsMessage = json.decodeFromString(message.body)
+        log.info { "received: ${message.body()}" }
+        val mintingStatusSqsMessage: MintingStatusSqsMessage = json.decodeFromString(message.body())
         val dbSong = songRepository.get(mintingStatusSqsMessage.songId)
         if (dbSong.mintingStatus == MintingStatus.Released) {
             // Sometimes, we will manually reprocess a song. If it is already minted & released successfully when we do
@@ -184,8 +184,11 @@ class MintingMessageReceiver : SqsMessageReceiver {
                             .forJob(jobDetail)
                             .withSchedule(
                                 simpleSchedule()
-                                    .withIntervalInMinutes(configRepository.getInt(CONFIG_KEY_EVEARA_STATUS_CHECK_MINUTES))
-                                    .repeatForever()
+                                    .withIntervalInMinutes(
+                                        configRepository.getInt(
+                                            CONFIG_KEY_EVEARA_STATUS_CHECK_MINUTES
+                                        )
+                                    ).repeatForever()
                             ).build()
 
                     quartzSchedulerDaemon.scheduleJob(jobDetail, trigger)
@@ -299,8 +302,11 @@ class MintingMessageReceiver : SqsMessageReceiver {
                             .forJob(jobDetail)
                             .withSchedule(
                                 simpleSchedule()
-                                    .withIntervalInMinutes(configRepository.getInt(CONFIG_KEY_OUTLET_STATUS_CHECK_MINUTES))
-                                    .repeatForever()
+                                    .withIntervalInMinutes(
+                                        configRepository.getInt(
+                                            CONFIG_KEY_OUTLET_STATUS_CHECK_MINUTES
+                                        )
+                                    ).repeatForever()
                             ).build()
 
                     quartzSchedulerDaemon.scheduleJob(jobDetail, trigger)

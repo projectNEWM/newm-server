@@ -1,19 +1,34 @@
 package io.newm.server.features.arweave.repo
 
+import co.upvest.arweave4s.adt.`Signable$`.`MODULE$` as signableApi
+import co.upvest.arweave4s.adt.Tag.`Custom$`.`MODULE$` as tagApi
+import co.upvest.arweave4s.adt.`Transaction$`.`MODULE$` as Tx
+import co.upvest.arweave4s.adt.`Wallet$`.`MODULE$` as walletApi
+import co.upvest.arweave4s.api.`address$`.`MODULE$` as addressApi
+import co.upvest.arweave4s.api.`package`.`Config$`.`MODULE$` as configApi
+import co.upvest.arweave4s.api.`package`.`future$`.`MODULE$` as future
+import co.upvest.arweave4s.api.`price$`.`MODULE$` as priceApi
+import co.upvest.arweave4s.api.`tx$`.`MODULE$` as txApi
 import cats.Monad
 import cats.arrow.FunctionK
-import co.upvest.arweave4s.adt.*
-import com.amazonaws.HttpMethod
-import com.amazonaws.services.lambda.model.InvokeRequest
-import com.amazonaws.services.s3.AmazonS3
+import co.upvest.arweave4s.adt.Data
+import co.upvest.arweave4s.adt.Signed
+import co.upvest.arweave4s.adt.Tag
+import co.upvest.arweave4s.adt.Transaction
+import co.upvest.arweave4s.adt.Wallet
+import co.upvest.arweave4s.adt.Winston
 import com.softwaremill.sttp.Response
 import com.softwaremill.sttp.SttpBackendOptions
 import com.softwaremill.sttp.Uri
 import com.softwaremill.sttp.asynchttpclient.future.AsyncHttpClientFutureBackend
-import io.ktor.server.application.*
+import io.ktor.server.application.ApplicationEnvironment
 import io.newm.chain.util.b64ToByteArray
 import io.newm.server.features.arweave.ktx.toFiles
-import io.newm.server.features.arweave.model.*
+import io.newm.server.features.arweave.model.WeaveFile
+import io.newm.server.features.arweave.model.WeaveProps
+import io.newm.server.features.arweave.model.WeaveRequest
+import io.newm.server.features.arweave.model.WeaveResponse
+import io.newm.server.features.arweave.model.WeaveResponseItem
 import io.newm.server.features.email.repo.EmailRepository
 import io.newm.server.features.song.model.Release
 import io.newm.server.features.song.model.Song
@@ -23,7 +38,18 @@ import io.newm.server.ktx.getSecureConfigString
 import io.newm.server.ktx.toBucketAndKey
 import io.newm.shared.coroutine.SupervisorScope
 import io.newm.shared.koin.inject
-import io.newm.shared.ktx.*
+import io.newm.shared.ktx.getConfigBigDecimal
+import io.newm.shared.ktx.getConfigChild
+import io.newm.shared.ktx.getConfigString
+import io.newm.shared.ktx.getString
+import io.newm.shared.ktx.info
+import io.newm.shared.ktx.warn
+import java.io.IOException
+import java.math.BigDecimal
+import java.time.Duration
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+import java.util.concurrent.Executors
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.time.delay
 import kotlinx.coroutines.time.withTimeout
@@ -38,22 +64,11 @@ import scala.compat.java8.FutureConverters.toJava
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.io.Source
-import java.io.IOException
-import java.math.BigDecimal
-import java.time.Duration
-import java.time.Instant
-import java.time.temporal.ChronoUnit
-import java.util.*
-import java.util.concurrent.Executors
-import co.upvest.arweave4s.adt.`Signable$`.`MODULE$` as signableApi
-import co.upvest.arweave4s.adt.Tag.`Custom$`.`MODULE$` as tagApi
-import co.upvest.arweave4s.adt.`Transaction$`.`MODULE$` as Tx
-import co.upvest.arweave4s.adt.`Wallet$`.`MODULE$` as walletApi
-import co.upvest.arweave4s.api.`address$`.`MODULE$` as addressApi
-import co.upvest.arweave4s.api.`package`.`Config$`.`MODULE$` as configApi
-import co.upvest.arweave4s.api.`package`.`future$`.`MODULE$` as future
-import co.upvest.arweave4s.api.`price$`.`MODULE$` as priceApi
-import co.upvest.arweave4s.api.`tx$`.`MODULE$` as txApi
+import software.amazon.awssdk.core.SdkBytes
+import software.amazon.awssdk.services.lambda.model.InvokeRequest
+import software.amazon.awssdk.services.s3.model.GetObjectRequest
+import software.amazon.awssdk.services.s3.presigner.S3Presigner
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest
 
 class ArweaveRepositoryImpl(
     private val environment: ApplicationEnvironment,
@@ -63,7 +78,7 @@ class ArweaveRepositoryImpl(
     override val log: Logger by inject { parametersOf(javaClass.simpleName) }
     private val json: Json by inject()
     private val songRepository: SongRepository by inject()
-    private val amazonS3: AmazonS3 by inject()
+    private val s3Presigner: S3Presigner by inject()
     private val arweaveUri by lazy {
         Uri.apply(environment.getConfigString("arweave.scheme"), environment.getConfigString("arweave.host"))
     }
@@ -259,13 +274,19 @@ class ArweaveRepositoryImpl(
                                 val downloadUrl =
                                     if (inputUrl.startsWith("s3://")) {
                                         val (bucket, key) = inputUrl.toBucketAndKey()
-                                        amazonS3
-                                            .generatePresignedUrl(
-                                                bucket,
-                                                key,
-                                                Date.from(Instant.now().plus(30, ChronoUnit.MINUTES)),
-                                                HttpMethod.GET
-                                            ).toExternalForm()
+                                        val getObjectRequest = GetObjectRequest
+                                            .builder()
+                                            .bucket(bucket)
+                                            .key(key)
+                                            .build()
+
+                                        val presignGetObjectRequest = GetObjectPresignRequest
+                                            .builder()
+                                            .signatureDuration(Duration.ofMinutes(30))
+                                            .getObjectRequest(getObjectRequest)
+                                            .build()
+
+                                        s3Presigner.presignGetObject(presignGetObjectRequest).url().toExternalForm()
                                     } else {
                                         inputUrl
                                     }
@@ -279,17 +300,18 @@ class ArweaveRepositoryImpl(
                 )
             )
 
-        val invokeRequest =
-            InvokeRequest()
-                .withFunctionName(environment.getConfigString("arweave.lambdaFunctionName"))
-                .withPayload(json.encodeToString(newmWeaveRequest))
+        val invokeRequest = InvokeRequest
+            .builder()
+            .functionName(environment.getConfigString("arweave.lambdaFunctionName"))
+            .payload(SdkBytes.fromUtf8String(json.encodeToString(newmWeaveRequest)))
+            .build()
 
-        val invokeResult = invokeRequest.await()
+        val invokeResponse = invokeRequest.await()
         val weaveResponsItems: List<WeaveResponseItem> =
             json.decodeFromString(
                 json
                     .decodeFromString<WeaveResponse>(
-                        invokeResult.payload.array().decodeToString()
+                        invokeResponse.payload().asUtf8String()
                     ).body
             )
 
@@ -316,6 +338,7 @@ class ArweaveRepositoryImpl(
                         songRepository.update(song.id!!, toUpdate)
                         log.info { "Song ${song.id} updated: $toUpdate" }
                     }
+
                     is Release -> {
                         songRepository.update(song.releaseId, toUpdate)
                         log.info { "Release ${song.releaseId} updated: $toUpdate" }

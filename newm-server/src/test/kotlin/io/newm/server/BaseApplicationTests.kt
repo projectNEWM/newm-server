@@ -1,7 +1,5 @@
 package io.newm.server
 
-import com.amazonaws.services.kms.AWSKMSAsync
-import com.amazonaws.services.s3.AmazonS3
 import com.zaxxer.hikari.HikariDataSource
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpTimeout
@@ -54,6 +52,13 @@ import io.newm.shared.serialization.BigIntegerSerializer
 import io.newm.shared.serialization.LocalDateSerializer
 import io.newm.shared.serialization.LocalDateTimeSerializer
 import io.newm.shared.serialization.UUIDSerializer
+import java.math.BigDecimal
+import java.math.BigInteger
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.util.UUID
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import org.jetbrains.exposed.dao.id.EntityID
@@ -69,13 +74,9 @@ import org.koin.dsl.module
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
-import java.math.BigDecimal
-import java.math.BigInteger
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.util.UUID
-import kotlin.time.Duration.Companion.minutes
-import kotlin.time.Duration.Companion.seconds
+import software.amazon.awssdk.services.kms.KmsAsyncClient
+import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.presigner.S3Presigner
 
 @Testcontainers
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -170,8 +171,9 @@ open class BaseApplicationTests {
                 single { mockk<FacebookUserProvider>(relaxed = true) }
                 single { mockk<LinkedInUserProvider>(relaxed = true) }
                 single { mockk<AppleUserProvider>(relaxed = true) }
-                single { mockk<AmazonS3>(relaxed = true) }
-                single { mockk<AWSKMSAsync>(relaxed = true) }
+                single { mockk<S3Client>(relaxed = true) }
+                single { mockk<S3Presigner>(relaxed = true) }
+                single { mockk<KmsAsyncClient>(relaxed = true) }
                 single { mockk<RecaptchaRepository>(relaxed = true) }
                 single<OutletProfileUrlVerifier>(QUALIFIER_SPOTIFY_PROFILE_URL_VERIFIER) {
                     mockk<OutletProfileUrlVerifier>(relaxed = true)

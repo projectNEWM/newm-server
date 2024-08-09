@@ -1,12 +1,13 @@
 package io.newm.server.health
 
 import cc.rbbl.ktor_health_check.Health
-import com.amazonaws.services.s3.AmazonS3
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.server.application.install
+import io.newm.server.aws.s3.doesBucketExist
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.getConfigString
+import software.amazon.awssdk.services.s3.S3Client
 
 // livez is the preferred endpoint over the deprecated healthz. We implement both for good measure.
 private const val HEALTHZ_CHECK_URL = "healthz"
@@ -23,7 +24,7 @@ fun Health.Configuration.healthtechChecks() {
 fun Application.installHealthCheck() {
 //    val hikariDataSource: HikariDataSource by inject()
     val environment: ApplicationEnvironment by inject()
-    val s3: AmazonS3 by inject()
+    val s3: S3Client by inject()
 
     install(Health) {
         healthtechChecks()
@@ -34,7 +35,7 @@ fun Application.installHealthCheck() {
 
         readyCheck("aws.s3") {
             val bucketName = environment.getConfigString("aws.s3.agreement.bucketName")
-            s3.doesBucketExistV2(bucketName)
+            s3.doesBucketExist(bucketName)
         }
     }
 }
