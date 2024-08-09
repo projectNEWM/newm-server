@@ -7,12 +7,14 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.Routing
 import io.ktor.server.routing.route
 import io.newm.server.auth.jwt.AUTH_JWT
+import io.newm.server.auth.jwt.repo.JwtRepository
 import io.newm.server.features.model.CountResponse
 import io.newm.server.features.user.model.UserIdBody
 import io.newm.server.features.user.model.userFilters
 import io.newm.server.features.user.repo.UserRepository
 import io.newm.server.ktx.clientPlatform
 import io.newm.server.ktx.identifyUser
+import io.newm.server.ktx.jwtId
 import io.newm.server.ktx.limit
 import io.newm.server.ktx.offset
 import io.newm.server.ktx.restrictToMe
@@ -29,6 +31,7 @@ private const val USERS_PATH = "v1/users"
 fun Routing.createUserRoutes() {
     val recaptchaRepository: RecaptchaRepository by inject()
     val userRepository: UserRepository by inject()
+    val jwtRepository: JwtRepository by inject()
 
     route(USERS_PATH) {
         authenticate(AUTH_JWT) {
@@ -46,6 +49,7 @@ fun Routing.createUserRoutes() {
                 }
                 delete {
                     restrictToMe { myUserId ->
+                        jwtId?.let { jwtRepository.blackList(it) }
                         userRepository.delete(myUserId)
                         respond(HttpStatusCode.NoContent)
                     }

@@ -1,8 +1,7 @@
 package io.newm.server.features.user.repo
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.ktor.server.application.*
-import io.newm.server.auth.jwt.database.JwtTable
+import io.ktor.server.application.ApplicationEnvironment
 import io.newm.server.auth.oauth.model.OAuthTokens
 import io.newm.server.auth.oauth.model.OAuthType
 import io.newm.server.auth.twofactor.repo.TwoFactorAuthRepository
@@ -38,8 +37,6 @@ import io.newm.shared.ktx.existsHavingId
 import io.newm.shared.ktx.getConfigString
 import io.newm.shared.ktx.isValidPassword
 import io.newm.shared.ktx.orNull
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
 
@@ -354,7 +351,6 @@ internal class UserRepositoryImpl(
     override suspend fun delete(userId: UserId) {
         logger.debug { "delete: userId = $userId" }
         transaction {
-            JwtTable.deleteWhere { JwtTable.userId eq userId }
             UserEntity[userId].delete()
         }
     }

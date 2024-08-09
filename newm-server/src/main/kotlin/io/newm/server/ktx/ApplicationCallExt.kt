@@ -18,23 +18,24 @@ import io.newm.server.model.toUUIDFilterCriteria
 import io.newm.server.typealiases.SongId
 import io.newm.server.typealiases.UserId
 import io.newm.shared.exception.HttpUnauthorizedException
+import io.newm.shared.ktx.orNull
 import io.newm.shared.ktx.orZero
 import io.newm.shared.ktx.toHexString
 import io.newm.shared.ktx.toLocalDateTime
 import io.newm.shared.ktx.toUUID
-import org.jetbrains.exposed.sql.SortOrder
 import java.nio.ByteBuffer
 import java.security.Key
 import java.time.LocalDateTime
 import java.util.UUID
 import javax.crypto.Mac
 import kotlin.reflect.KClass
+import org.jetbrains.exposed.sql.SortOrder
 
 val ApplicationCall.jwtPrincipal: JWTPrincipal
     get() = principal()!!
 
-val ApplicationCall.jwtId: UUID
-    get() = jwtPrincipal.jwtId!!.toUUID()
+val ApplicationCall.jwtId: UUID?
+    get() = jwtPrincipal.jwtId?.orNull()?.toUUID()
 
 val ApplicationCall.myUserId: UserId
     get() = jwtPrincipal.subject!!.toUUID()
