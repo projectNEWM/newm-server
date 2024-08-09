@@ -113,6 +113,7 @@ import io.newm.shared.koin.inject
 import io.newm.shared.ktx.getConfigString
 import io.newm.shared.ktx.info
 import io.newm.shared.ktx.orNull
+import io.newm.shared.ktx.orZero
 import java.io.File
 import java.time.Duration
 import java.time.LocalDate
@@ -130,6 +131,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.koin.core.parameter.parametersOf
 import org.slf4j.Logger
+import java.math.BigDecimal
 import software.amazon.awssdk.services.s3.model.GetObjectRequest
 import software.amazon.awssdk.services.s3.presigner.S3Presigner
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest
@@ -1481,7 +1483,13 @@ class EvearaDistributionRepositoryImpl(
         user: User,
         collabs: List<Collaboration>
     ) {
-        require(collabs.all { it.status == CollaborationStatus.Accepted }) { "All Collaborations must be accepted!" }
+        val filteredCollars =
+            collabs.filter { it.royaltyRate.orZero() > BigDecimal.ZERO }
+        require(
+            filteredCollars.all {
+                it.status == CollaborationStatus.Accepted
+            }
+        ) { "All Collaborations must be accepted!" }
 
         // if genre contains classical, there must be at least one collaborator with a role of "Composer"
         if (song.genres?.any { it.equals("Classical", ignoreCase = true) } == true) {
@@ -1798,8 +1806,7 @@ class EvearaDistributionRepositoryImpl(
             require(user.distributionNewmParticipantId == null) {
                 "User.distributionNewmParticipantId: ${user.distributionNewmParticipantId} not found in Eveara!"
             }
-            val response =
-                addParticipant(User(distributionUserId = user.distributionUserId!!, nickname = NEWM_PARTICIPANT_NAME))
+            val response = addParticipant(User(distributionUserId = user.distributionUserId!!, nickname = NEWM_PARTICIPANT_NAME))
             log.info { "Created $NEWM_PARTICIPANT_NAME participant with id ${response.participantId}: ${response.message}" }
             user.distributionNewmParticipantId = response.participantId
             userRepository.updateUserData(user.id, user)
