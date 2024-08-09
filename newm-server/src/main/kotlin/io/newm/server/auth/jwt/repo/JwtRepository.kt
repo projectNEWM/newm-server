@@ -11,7 +11,7 @@ interface JwtRepository {
         admin: Boolean
     ): String
 
-    suspend fun delete(jwtId: UUID)
+    fun blackList(jwtId: UUID)
 
-    suspend fun exists(jwtId: UUID): Boolean
+    fun isBlacklisted(jwtId: UUID): Boolean
 }

@@ -8,7 +8,6 @@ import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.config.ApplicationConfig
 import io.ktor.server.testing.TestApplication
 import io.mockk.mockk
-import io.newm.server.auth.jwt.database.JwtTable
 import io.newm.server.auth.twofactor.database.TwoFactorAuthTable
 import io.newm.server.config.database.ConfigEntity
 import io.newm.server.config.database.ConfigTable
@@ -150,7 +149,6 @@ open class BaseApplicationTests {
                 ConfigTable,
                 UserTable,
                 TwoFactorAuthTable,
-                JwtTable,
                 KeyTable,
                 SongTable,
                 CollaborationTable,

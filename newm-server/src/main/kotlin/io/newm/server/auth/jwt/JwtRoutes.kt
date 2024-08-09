@@ -10,8 +10,8 @@ import io.newm.server.features.user.repo.UserRepository
 import io.newm.server.ktx.jwtId
 import io.newm.server.ktx.jwtPrincipal
 import io.newm.server.ktx.myUserId
-import io.newm.shared.ktx.get
 import io.newm.shared.koin.inject
+import io.newm.shared.ktx.get
 
 fun Routing.createJwtRoutes() {
     val jwtRepository: JwtRepository by inject()
@@ -34,7 +34,7 @@ fun Routing.createJwtRoutes() {
     }
     authenticate(AUTH_JWT_REFRESH) {
         get("$AUTH_PATH/refresh") {
-            jwtRepository.delete(jwtId)
+            jwtId?.let { jwtRepository.blackList(it) }
             val admin = userRepository.isAdmin(myUserId)
             respond(jwtRepository.createLoginResponse(myUserId, admin))
         }

@@ -12,6 +12,7 @@ import io.newm.server.ktx.getSecureConfigString
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.getConfigString
 import io.newm.shared.ktx.toUUID
+import java.time.Instant
 import kotlinx.coroutines.runBlocking
 
 const val AUTH_JWT = "auth-jwt"
@@ -48,14 +49,15 @@ private fun AuthenticationConfig.configureJwt(
         )
         validate { credential ->
             with(credential) {
+                val blacklisted = payload.id?.let { jwtId -> repository.isBlacklisted(jwtId.toUUID()) } ?: true
+                val expired = payload.expiresAtAsInstant?.isBefore(Instant.now()) ?: true
                 val admin = payload.getClaim("admin")?.asBoolean() == true
-                val exists = payload.id?.let { jwkId -> repository.exists(jwkId.toUUID()) } == true
 
                 val isValid =
                     if (name == AUTH_JWT_ADMIN) {
-                        admin && exists
+                        !blacklisted && !expired && admin
                     } else {
-                        exists
+                        !blacklisted && !expired
                     }
 
                 if (isValid) {
