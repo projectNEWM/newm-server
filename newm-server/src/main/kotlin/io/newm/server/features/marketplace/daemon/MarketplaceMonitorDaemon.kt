@@ -58,7 +58,7 @@ class MarketplaceMonitorDaemon(
 
     override fun isLeader() {
         // only the leader runs
-        log.info { "This instance is now the leader" }
+        log.warn { "This instance is now the leader" }
         startMonitoring()
     }
 
