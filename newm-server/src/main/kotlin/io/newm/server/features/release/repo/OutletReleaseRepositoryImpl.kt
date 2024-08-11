@@ -1,11 +1,16 @@
 package io.newm.server.features.release.repo
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.ktor.client.*
-import io.ktor.client.plugins.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
-import io.ktor.http.*
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.retry
+import io.ktor.client.request.accept
+import io.ktor.client.request.get
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
+import io.ktor.http.isSuccess
 import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_NEWM_PLAYLIST_ID
 import io.newm.server.features.release.model.SpotifyRequest
@@ -48,11 +53,15 @@ internal class OutletReleaseRepositoryImpl(
                 }.checkedBody<SpotifyResponse>()
         // Call addSongToPlaylist in case the song was released
         if (response.tracks.total > 0) {
-            val httpResponse = addSongToPlaylist(response.tracks.items[0].uri)
-            if (httpResponse.status.isSuccess()) {
-                logger.debug { "Song was successfully added to spotify playlist" }
-            } else {
-                logger.error { "Song was not added to spotify playlist, $httpResponse" }
+            try {
+                val httpResponse = addSongToPlaylist(response.tracks.items[0].uri)
+                if (httpResponse.status.isSuccess()) {
+                    logger.debug { "Song was successfully added to spotify playlist" }
+                } else {
+                    logger.error { "Song was not added to spotify playlist, $httpResponse" }
+                }
+            } catch (e: Throwable) {
+                logger.error { "Error adding song to spotify playlist, $e" }
             }
         }
         return response.tracks.total > 0

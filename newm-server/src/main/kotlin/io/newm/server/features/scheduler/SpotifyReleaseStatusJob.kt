@@ -20,7 +20,7 @@ import java.time.LocalDateTime
 import java.time.ZoneOffset
 
 @DisallowConcurrentExecution
-class OutletReleaseStatusJob : Job {
+class SpotifyReleaseStatusJob : Job {
     private val log: Logger by inject { parametersOf(javaClass.simpleName) }
     private val songRepository: SongRepository by inject()
     private val outletReleaseRepository: OutletReleaseRepository by inject()
@@ -28,7 +28,7 @@ class OutletReleaseStatusJob : Job {
 
     override fun execute(context: JobExecutionContext) {
         log.info {
-            "OutletReleaseStatusJob key: ${context.jobDetail.key.name} executed at ${
+            "SpotifyReleaseStatusJob key: ${context.jobDetail.key.name} executed at ${
                 LocalDateTime.ofInstant(
                     context.fireTime.toInstant(),
                     ZoneOffset.UTC
@@ -65,7 +65,7 @@ class OutletReleaseStatusJob : Job {
                     }
                 }
             } catch (e: Exception) {
-                val errorMessage = "Error in OutletReleaseStatusJob: ${context.mergedJobDataMap}"
+                val errorMessage = "Error in SpotifyReleaseStatusJob: ${context.mergedJobDataMap}"
                 log.error(errorMessage, e)
                 if (e !is EOFException && e !is HttpStatusException) {
                     songRepository.updateSongMintingStatus(
