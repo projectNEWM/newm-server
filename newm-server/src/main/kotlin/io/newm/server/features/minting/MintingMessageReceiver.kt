@@ -12,7 +12,7 @@ import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.daemon.QuartzSchedulerDaemon
 import io.newm.server.features.minting.repo.MintingRepository
 import io.newm.server.features.scheduler.EvearaReleaseStatusJob
-import io.newm.server.features.scheduler.SpotifyReleaseStatusJob
+import io.newm.server.features.scheduler.OutletReleaseStatusJob
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.repo.SongRepository
@@ -286,13 +286,13 @@ class MintingMessageReceiver : SqsMessageReceiver {
                     // Schedule a job to check the stream platform release status every 12 hours
                     val song = songRepository.get(mintingStatusSqsMessage.songId)
 
-                    val jobKey = JobKey("SpotifyReleaseStatusJob-${song.id}", "SpotifyReleaseStatusJobGroup")
+                    val jobKey = JobKey("OutletReleaseStatusJob-${song.id}", "OutletReleaseStatusJobGroup")
                     if (quartzSchedulerDaemon.jobExists(jobKey)) {
                         log.warn { "Job $jobKey is already scheduled" }
                         return
                     }
                     val jobDetail =
-                        newJob(SpotifyReleaseStatusJob::class.java)
+                        newJob(OutletReleaseStatusJob::class.java)
                             .withIdentity(jobKey)
                             .usingJobData("songId", song.id.toString())
                             .requestRecovery(true)
@@ -311,7 +311,7 @@ class MintingMessageReceiver : SqsMessageReceiver {
 
                     quartzSchedulerDaemon.scheduleJob(jobDetail, trigger)
                 } catch (e: Throwable) {
-                    val errorMessage = "Error while creating SpotifyReleaseStatusJob!"
+                    val errorMessage = "Error while creating OutletReleaseStatusJob!"
                     log.error(e) { errorMessage }
                     songRepository.updateSongMintingStatus(
                         songId = mintingStatusSqsMessage.songId,

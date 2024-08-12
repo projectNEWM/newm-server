@@ -8,6 +8,9 @@ import io.newm.shared.exception.HttpStatusException
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.info
 import io.newm.shared.ktx.toUUID
+import java.io.EOFException
+import java.time.LocalDateTime
+import java.time.ZoneOffset
 import kotlinx.coroutines.runBlocking
 import org.koin.core.parameter.parametersOf
 import org.quartz.DisallowConcurrentExecution
@@ -15,12 +18,9 @@ import org.quartz.Job
 import org.quartz.JobExecutionContext
 import org.quartz.JobKey
 import org.slf4j.Logger
-import java.io.EOFException
-import java.time.LocalDateTime
-import java.time.ZoneOffset
 
 @DisallowConcurrentExecution
-class SpotifyReleaseStatusJob : Job {
+class OutletReleaseStatusJob : Job {
     private val log: Logger by inject { parametersOf(javaClass.simpleName) }
     private val songRepository: SongRepository by inject()
     private val outletReleaseRepository: OutletReleaseRepository by inject()
@@ -28,7 +28,7 @@ class SpotifyReleaseStatusJob : Job {
 
     override fun execute(context: JobExecutionContext) {
         log.info {
-            "SpotifyReleaseStatusJob key: ${context.jobDetail.key.name} executed at ${
+            "OutletReleaseStatusJob key: ${context.jobDetail.key.name} executed at ${
                 LocalDateTime.ofInstant(
                     context.fireTime.toInstant(),
                     ZoneOffset.UTC
@@ -65,7 +65,7 @@ class SpotifyReleaseStatusJob : Job {
                     }
                 }
             } catch (e: Exception) {
-                val errorMessage = "Error in SpotifyReleaseStatusJob: ${context.mergedJobDataMap}"
+                val errorMessage = "Error in OutletReleaseStatusJob: ${context.mergedJobDataMap}"
                 log.error(errorMessage, e)
                 if (e !is EOFException && e !is HttpStatusException) {
                     songRepository.updateSongMintingStatus(
