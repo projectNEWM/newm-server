@@ -62,7 +62,9 @@ import io.newm.server.features.cardano.parser.toResourceUrl
 import io.newm.server.features.cardano.repo.CardanoRepository.Companion.CHARLI3_ADA_USD_NAME
 import io.newm.server.features.cardano.repo.CardanoRepository.Companion.CHARLI3_ADA_USD_POLICY
 import io.newm.server.features.cardano.repo.CardanoRepository.Companion.CHARLI3_NEWM_USD_NAME
+import io.newm.server.features.cardano.repo.CardanoRepository.Companion.CHARLI3_NEWM_USD_NAME_PREPROD
 import io.newm.server.features.cardano.repo.CardanoRepository.Companion.CHARLI3_NEWM_USD_POLICY
+import io.newm.server.features.cardano.repo.CardanoRepository.Companion.CHARLI3_NEWM_USD_POLICY_PREPROD
 import io.newm.server.features.cardano.repo.CardanoRepository.Companion.MUTEX_NAME
 import io.newm.server.features.cardano.repo.CardanoRepository.Companion.NEWM_TOKEN_NAME
 import io.newm.server.features.cardano.repo.CardanoRepository.Companion.NEWM_TOKEN_NAME_TEST
@@ -374,12 +376,21 @@ internal class CardanoRepositoryImpl(
      * Returns the current NEWM price in USD as a Long assuming 6 decimal places.
      */
     override suspend fun queryNEWMUSDPrice(): Long =
-        queryCharli3OracleFeed(
-            "newm",
-            CHARLI3_NEWM_USD_POLICY,
-            CHARLI3_NEWM_USD_NAME,
-            5000L,
-        )
+        if (isMainnet()) {
+            queryCharli3OracleFeed(
+                "newm",
+                CHARLI3_NEWM_USD_POLICY,
+                CHARLI3_NEWM_USD_NAME,
+                5000L,
+            )
+        } else {
+            queryCharli3OracleFeed(
+                "newm",
+                CHARLI3_NEWM_USD_POLICY_PREPROD,
+                CHARLI3_NEWM_USD_NAME_PREPROD,
+                5000L,
+            )
+        }
 
     override suspend fun queryNativeTokenUSDPrice(
         policyId: String,
