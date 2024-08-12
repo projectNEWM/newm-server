@@ -1,6 +1,7 @@
 package io.newm.server.features.cardano.repo
 
 import com.github.benmanes.caffeine.cache.Caffeine
+import com.google.common.annotations.VisibleForTesting
 import com.google.protobuf.ByteString
 import com.google.protobuf.kotlin.toByteString
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -84,6 +85,7 @@ import io.newm.shared.ktx.isValidHex
 import io.newm.shared.ktx.isValidPassword
 import io.newm.txbuilder.ktx.fingerprint
 import io.newm.txbuilder.ktx.mergeAmounts
+import io.newm.txbuilder.ktx.toCborObject
 import io.newm.txbuilder.ktx.toNativeAssetMap
 import java.time.Duration
 import java.util.UUID
@@ -113,13 +115,15 @@ internal class CardanoRepositoryImpl(
 
     private val songRepository: SongRepository by inject()
 
-    private var isMainnet: Boolean? = null
+    @VisibleForTesting
+    internal var isMainnet: Boolean? = null
 
     private var bytesEncryptor: BytesEncryptor? = null
 
     private val oracleMutex = Mutex()
 
-    private val oracleUtxoCache =
+    @VisibleForTesting
+    internal val oracleUtxoCache =
         Caffeine
             .newBuilder()
             .expireAfterWrite(Duration.ofMinutes(5L))
@@ -306,58 +310,69 @@ internal class CardanoRepositoryImpl(
             val now = System.currentTimeMillis()
             var cachedOracleUtxo = oracleUtxoCache.getIfPresent(cacheKey)
             val failoverOracleUtxo = failoverOracleUtxoCache.getIfPresent(cacheKey)
-            val oracleUtxoStartTimestamp =
-                cachedOracleUtxo
-                    ?.datumOrNull
-                    ?.listOrNull
-                    ?.getListItem(0)
-                    ?.listOrNull
-                    ?.getListItem(0)
-                    ?.mapOrNull
-                    ?.getMapItem(1)
-                    ?.mapItemValueOrNull
-                    ?.int
-                    ?: Long.MAX_VALUE
-            val oracleUtxoEndTimestamp =
-                cachedOracleUtxo
-                    ?.datumOrNull
-                    ?.listOrNull
-                    ?.getListItem(0)
-                    ?.listOrNull
-                    ?.getListItem(0)
-                    ?.mapOrNull
-                    ?.getMapItem(2)
-                    ?.mapItemValueOrNull
-                    ?.int
-                    ?: Long.MIN_VALUE
-            if (now < oracleUtxoStartTimestamp || now > oracleUtxoEndTimestamp) {
-                // Outside of range. Get a new oracle utxo
-                cachedOracleUtxo = client.queryUtxoByNativeAsset(
-                    queryByNativeAssetRequest {
-                        this.policy = policy
-                        this.name = name
-                    }
-                )
-                oracleUtxoCache.put(cacheKey, cachedOracleUtxo)
-                failoverOracleUtxoCache.put(cacheKey, cachedOracleUtxo)
-            }
-            val usdPrice = (cachedOracleUtxo ?: failoverOracleUtxo)
-                ?.datumOrNull
-                ?.listOrNull
-                ?.getListItem(0)
-                ?.listOrNull
-                ?.getListItem(0)
-                ?.mapOrNull
-                ?.getMapItem(0)
-                ?.mapItemValueOrNull
-                ?.int
-            return usdPrice ?: run {
-                if (isMainnet()) {
-                    throw IllegalStateException("Oracle Utxo does not contain a USD price!")
-                } else {
-                    // On testnet, we don't have an oracle utxo, so we just return a default price
-                    default
+            try {
+                val oracleUtxoStartTimestamp =
+                    cachedOracleUtxo
+                        ?.datumOrNull
+                        ?.listOrNull
+                        ?.getListItem(0)
+                        ?.listOrNull
+                        ?.getListItem(0)
+                        ?.mapOrNull
+                        ?.getMapItem(1)
+                        ?.mapItemValueOrNull
+                        ?.int
+                        ?: Long.MAX_VALUE
+                val oracleUtxoEndTimestamp =
+                    cachedOracleUtxo
+                        ?.datumOrNull
+                        ?.listOrNull
+                        ?.getListItem(0)
+                        ?.listOrNull
+                        ?.getListItem(0)
+                        ?.mapOrNull
+                        ?.getMapItem(2)
+                        ?.mapItemValueOrNull
+                        ?.int
+                        ?: Long.MIN_VALUE
+                if (now < oracleUtxoStartTimestamp || now > oracleUtxoEndTimestamp) {
+                    // Outside of range. Get a new oracle utxo
+                    cachedOracleUtxo = client.queryUtxoByNativeAsset(
+                        queryByNativeAssetRequest {
+                            this.policy = policy
+                            this.name = name
+                        }
+                    )
+                    oracleUtxoCache.put(cacheKey, cachedOracleUtxo)
+                    failoverOracleUtxoCache.put(cacheKey, cachedOracleUtxo)
                 }
+                val usdPrice = (cachedOracleUtxo ?: failoverOracleUtxo)
+                    ?.datumOrNull
+                    ?.listOrNull
+                    ?.getListItem(0)
+                    ?.listOrNull
+                    ?.getListItem(0)
+                    ?.mapOrNull
+                    ?.getMapItem(0)
+                    ?.mapItemValueOrNull
+                    ?.int
+                return usdPrice ?: run {
+                    if (isMainnet()) {
+                        throw IllegalStateException("Oracle Utxo does not contain a USD price!")
+                    } else {
+                        // On testnet, we don't have an oracle utxo, so we just return a default price
+                        logger.warn { "Oracle Utxo does not contain a USD price! Using default value: $default" }
+                        default
+                    }
+                }
+            } catch (e: Throwable) {
+                throw IllegalStateException(
+                    "Error parsing oracle feed!: ${
+                        (cachedOracleUtxo ?: failoverOracleUtxo)?.datumOrNull?.toCborObject()?.toCborByteArray()
+                            ?.toHexString()
+                    }",
+                    e
+                )
             }
         }
     }
