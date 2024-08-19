@@ -371,7 +371,7 @@ internal class CardanoRepositoryImpl(
                 }
             } catch (e: Throwable) {
                 throw IllegalStateException(
-                    "Error parsing oracle feed! for $cacheKey - $policy.$name: ${
+                    "Error parsing oracle feed! for $cacheKey - $policy.$name: ${cachedOracleUtxo ?: failoverOracleUtxo} ${
                         (cachedOracleUtxo ?: failoverOracleUtxo)?.datumOrNull?.toCborObject()?.toCborByteArray()
                             ?.toHexString()
                     }",

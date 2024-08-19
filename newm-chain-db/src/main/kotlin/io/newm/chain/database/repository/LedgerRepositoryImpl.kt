@@ -218,7 +218,8 @@ class LedgerRepositoryImpl : LedgerRepository {
                 .where {
                     LedgerUtxosTable.blockSpent.isNull() and
                         (LedgerAssetsTable.name eq name) and (LedgerAssetsTable.policy eq policy)
-                }.firstOrNull()
+                }.orderBy(LedgerUtxosTable.blockCreated, SortOrder.DESC)
+                .firstOrNull()
                 ?.let { row ->
                     val ledgerUtxoId = row[LedgerUtxosTable.id].value
                     val nativeAssets =
@@ -1204,9 +1205,13 @@ class LedgerRepositoryImpl : LedgerRepository {
 
     override fun queryDatumByHash(datumHashHex: String): String? =
         transaction {
-            LedgerUtxosTable.selectAll().where { LedgerUtxosTable.datumHash eq datumHashHex }.firstOrNull()?.let { row ->
-                row[LedgerUtxosTable.datum]
-            }
+            LedgerUtxosTable
+                .selectAll()
+                .where { LedgerUtxosTable.datumHash eq datumHashHex }
+                .firstOrNull()
+                ?.let { row ->
+                    row[LedgerUtxosTable.datum]
+                }
         }
 
     override fun snapshotNativeAssets(

@@ -29,6 +29,8 @@ import io.newm.chain.grpc.snapshotNativeAssetsRequest
 import io.newm.chain.grpc.submitTransactionRequest
 import io.newm.chain.grpc.walletRequest
 import io.newm.chain.util.Constants
+import io.newm.server.features.cardano.repo.CardanoRepository.Companion.CHARLI3_NEWM_USD_NAME_PREPROD
+import io.newm.server.features.cardano.repo.CardanoRepository.Companion.CHARLI3_NEWM_USD_POLICY_PREPROD
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Disabled
@@ -163,7 +165,9 @@ class GrpcTests {
         runBlocking {
             val client = buildClient()
             val request =
-                queryDatumByHashRequest { datumHash = "2ecb792a1da27a4e8a3c7ff126eb4b721ea7d6708f84162a82c097f4ace8f4d1" }
+                queryDatumByHashRequest {
+                    datumHash = "2ecb792a1da27a4e8a3c7ff126eb4b721ea7d6708f84162a82c097f4ace8f4d1"
+                }
             val response = client.queryDatumByHash(request)
             assertThat(response).isInstanceOf(QueryDatumByHashResponse::class.java)
             assertThat(
@@ -409,8 +413,8 @@ class GrpcTests {
             val client = buildClient()
             val request =
                 queryByNativeAssetRequest {
-                    policy = "3d0d75aad1eb32f0ce78fb1ebc101b6b51de5d8f13c12daa88017624"
-                    name = "4f7261636c6546656564" // OracleFeed
+                    policy = CHARLI3_NEWM_USD_POLICY_PREPROD
+                    name = CHARLI3_NEWM_USD_NAME_PREPROD
                 }
             val response = client.queryUtxoByNativeAsset(request)
             println("response: $response")
