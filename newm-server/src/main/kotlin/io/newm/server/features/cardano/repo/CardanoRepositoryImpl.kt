@@ -358,16 +358,20 @@ internal class CardanoRepositoryImpl(
                     ?.int
                 return usdPrice ?: run {
                     if (isMainnet()) {
-                        throw IllegalStateException("Oracle Utxo does not contain a USD price!")
+                        throw IllegalStateException(
+                            "Oracle Utxo does not contain a USD price! - ${(cachedOracleUtxo ?: failoverOracleUtxo)}"
+                        )
                     } else {
                         // On testnet, we don't have an oracle utxo, so we just return a default price
-                        logger.warn { "Oracle Utxo does not contain a USD price! Using default value: $default" }
+                        logger.warn {
+                            "Oracle Utxo does not contain a USD price! Using default value: $default - ${cachedOracleUtxo ?: failoverOracleUtxo}"
+                        }
                         default
                     }
                 }
             } catch (e: Throwable) {
                 throw IllegalStateException(
-                    "Error parsing oracle feed!: ${
+                    "Error parsing oracle feed! for $cacheKey - $policy.$name: ${
                         (cachedOracleUtxo ?: failoverOracleUtxo)?.datumOrNull?.toCborObject()?.toCborByteArray()
                             ?.toHexString()
                     }",
