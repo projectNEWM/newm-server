@@ -130,7 +130,15 @@ private operator fun List<LedgerAssetMetadataItem>.get(key: String): LedgerAsset
 
 private fun List<LedgerAssetMetadataItem>.value(key: String): String? = this[key]?.value
 
-private fun LedgerAssetMetadataItem.values(): List<String> = childrenList?.map { it.value }.orEmpty()
+private fun LedgerAssetMetadataItem.values(): List<String> =
+    childrenList
+        ?.mapNotNull {
+            when (it.valueType) {
+                "string" -> it.value
+                "map" -> it.childrenList.firstOrNull()?.key // only if CIP60-V3 or above
+                else -> null
+            }
+        }.orEmpty()
 
 private fun LedgerAssetMetadataItem.artists(): List<String> =
     childrenList
