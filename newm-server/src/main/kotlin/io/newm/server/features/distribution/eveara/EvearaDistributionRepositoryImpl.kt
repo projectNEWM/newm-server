@@ -115,6 +115,7 @@ import io.newm.shared.ktx.info
 import io.newm.shared.ktx.orNull
 import io.newm.shared.ktx.orZero
 import java.io.File
+import java.math.BigDecimal
 import java.time.Duration
 import java.time.LocalDate
 import kotlin.collections.set
@@ -131,7 +132,6 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.koin.core.parameter.parametersOf
 import org.slf4j.Logger
-import java.math.BigDecimal
 import software.amazon.awssdk.services.s3.model.GetObjectRequest
 import software.amazon.awssdk.services.s3.presigner.S3Presigner
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest
@@ -1312,6 +1312,9 @@ class EvearaDistributionRepositoryImpl(
         // Create the distribution user if they don't exist yet
         createDistributionUserIfNeeded(releaseOwner)
 
+        // Create the distribution subscription if it doesn't yet exist
+        createDistributionSubscription(releaseOwner)
+
         requireNotNull(releaseOwner.id) { "User.id must not be null!" }
         val songs = songRepository.getAllByReleaseId(release.id)
 
@@ -1324,9 +1327,6 @@ class EvearaDistributionRepositoryImpl(
                 // Create the distribution artistId for each collaborator under this user account if they don't exist yet
                 val collabs = collabRepository.getAllBySongId(song.id!!)
                 createDistributionArtistsForCollabs(song, releaseOwner, collabs)
-
-                // Create the distribution subscription if it doesn't yet exist
-                createDistributionSubscription(releaseOwner)
 
                 // Create the distribution participants if they don't exist yet
                 createDistributionParticipants(releaseOwner, collabs)
@@ -1384,6 +1384,7 @@ class EvearaDistributionRepositoryImpl(
     override suspend fun getEarliestReleaseDate(userId: UserId): LocalDate {
         val user = userRepository.get(userId)
         createDistributionUserIfNeeded(user)
+        createDistributionSubscription(user)
         val maxDays =
             getOutlets(user).outlets.maxOfOrNull { it.processDurationDates }
                 ?: throw HttpServiceUnavailableException("No Distribution Outlets available - retry later")
