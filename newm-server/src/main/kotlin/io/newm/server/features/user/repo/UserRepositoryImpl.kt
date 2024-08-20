@@ -220,7 +220,7 @@ internal class UserRepositoryImpl(
         val email = user.email?.asValidEmail()?.asVerifiedEmail(user.authCode)
         val passwordHash = user.newPassword?.asValidPassword(user.confirmPassword)?.toHash()
 
-        newSuspendedTransaction {
+        val userEntity = newSuspendedTransaction {
             val entity = UserEntity[userId]
             user.firstName?.let {
                 entity.checkNameModifiable(it, entity.firstName)
@@ -285,6 +285,10 @@ internal class UserRepositoryImpl(
             user.distributionLabelId?.let { entity.distributionLabelId = it }
             user.distributionIsni?.let { entity.distributionIsni = it.orNull() }
             user.distributionIpn?.let { entity.distributionIpn = it.orNull() }
+            entity
+        }
+        passwordHash?.let {
+            userEntity.notifyPasswordChanged()
         }
     }
 
@@ -340,12 +344,7 @@ internal class UserRepositoryImpl(
                 this.passwordHash = passwordHash
             }
         }
-        emailRepository.send(
-            to = email,
-            subject = environment.getConfigString("passwordChanged.subject"),
-            messageUrl = environment.getConfigString("passwordChanged.messageUrl"),
-            messageArgs = mapOf("owner" to userEntity.stageOrFullName)
-        )
+        userEntity.notifyPasswordChanged()
     }
 
     override suspend fun delete(userId: UserId) {
@@ -425,5 +424,14 @@ internal class UserRepositoryImpl(
         genre?.checkLength("genre")
         biography?.checkLength("biography", 250)
         companyName?.checkLength("companyName")
+    }
+
+    private suspend fun UserEntity.notifyPasswordChanged() {
+        emailRepository.send(
+            to = email,
+            subject = environment.getConfigString("passwordChangeNotification.subject"),
+            messageUrl = environment.getConfigString("passwordChangeNotification.messageUrl"),
+            messageArgs = mapOf("owner" to stageOrFullName)
+        )
     }
 }
