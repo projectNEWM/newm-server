@@ -61,7 +61,9 @@ import io.newm.server.features.cardano.model.WalletSong
 import io.newm.server.features.cardano.parser.toNFTSongs
 import io.newm.server.features.cardano.parser.toResourceUrl
 import io.newm.server.features.cardano.repo.CardanoRepository.Companion.CHARLI3_ADA_USD_NAME
+import io.newm.server.features.cardano.repo.CardanoRepository.Companion.CHARLI3_ADA_USD_NAME_PREPROD
 import io.newm.server.features.cardano.repo.CardanoRepository.Companion.CHARLI3_ADA_USD_POLICY
+import io.newm.server.features.cardano.repo.CardanoRepository.Companion.CHARLI3_ADA_USD_POLICY_PREPROD
 import io.newm.server.features.cardano.repo.CardanoRepository.Companion.CHARLI3_NEWM_USD_NAME
 import io.newm.server.features.cardano.repo.CardanoRepository.Companion.CHARLI3_NEWM_USD_NAME_PREPROD
 import io.newm.server.features.cardano.repo.CardanoRepository.Companion.CHARLI3_NEWM_USD_POLICY
@@ -385,11 +387,19 @@ internal class CardanoRepositoryImpl(
      * Returns the current ada price in USD as a Long assuming 6 decimal places.
      */
     override suspend fun queryAdaUSDPrice(): Long =
-        queryCharli3OracleFeed(
-            "ada",
-            CHARLI3_ADA_USD_POLICY,
-            CHARLI3_ADA_USD_NAME,
-        )
+        if (isMainnet()) {
+            queryCharli3OracleFeed(
+                "ada",
+                CHARLI3_ADA_USD_POLICY,
+                CHARLI3_ADA_USD_NAME,
+            )
+        } else {
+            queryCharli3OracleFeed(
+                "ada",
+                CHARLI3_ADA_USD_POLICY_PREPROD,
+                CHARLI3_ADA_USD_NAME_PREPROD,
+            )
+        }
 
     /**
      * Returns the current NEWM price in USD as a Long assuming 6 decimal places.

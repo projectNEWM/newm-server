@@ -47,7 +47,7 @@ object Dependencies {
     }
 
     object KotlinXDateTime {
-        private const val VERSION = "0.6.0"
+        private const val VERSION = "0.6.1"
 
         const val DATETIME = "org.jetbrains.kotlinx:kotlinx-datetime:$VERSION"
     }
@@ -92,7 +92,7 @@ object Dependencies {
     }
 
     object LogBack {
-        private const val VERSION = "1.5.6"
+        private const val VERSION = "1.5.7"
 
         const val CLASSIC = "ch.qos.logback:logback-classic:$VERSION"
     }
@@ -133,7 +133,7 @@ object Dependencies {
     }
 
     object FlywayDB {
-        private const val VERSION = "10.17.0"
+        private const val VERSION = "10.17.1"
 
         const val CORE = "org.flywaydb:flyway-core:$VERSION"
         const val POSTGRES = "org.flywaydb:flyway-database-postgresql:$VERSION"
@@ -166,7 +166,7 @@ object Dependencies {
     }
 
     object ApacheCommonsNumbers {
-        private const val VERSION = "1.1"
+        private const val VERSION = "1.2"
 
         const val FRACTION = "org.apache.commons:commons-numbers-fraction:$VERSION"
     }
@@ -208,7 +208,7 @@ object Dependencies {
     }
 
     object SpringSecurity {
-        private const val VERSION = "6.3.1"
+        private const val VERSION = "6.3.2"
 
         const val CORE = "org.springframework.security:spring-security-core:$VERSION"
     }
@@ -221,7 +221,7 @@ object Dependencies {
     }
 
     object Aws {
-        private const val VERSION = "2.27.0"
+        private const val VERSION = "2.27.8"
 
         const val BOM = "software.amazon.awssdk:bom:$VERSION"
         const val CLOUDFRONT = "software.amazon.awssdk:cloudfront"
@@ -245,7 +245,7 @@ object Dependencies {
     }
 
     object JUnit {
-        private const val VERSION = "5.10.3"
+        private const val VERSION = "5.11.0"
 
         const val JUPITER = "org.junit.jupiter:junit-jupiter:$VERSION"
     }
@@ -269,7 +269,7 @@ object Dependencies {
     }
 
     object Sentry {
-        private const val VERSION = "7.13.0"
+        private const val VERSION = "7.14.0"
 
         const val CORE = "io.sentry:sentry:$VERSION"
         const val LOGBACK = "io.sentry:sentry-logback:$VERSION"
@@ -344,7 +344,7 @@ object Dependencies {
     }
 
     object Swagger {
-        private const val VERSION = "1.0.50"
+        private const val VERSION = "1.0.51"
         const val SWAGGER_CODEGEN_GENERATORS = "io.swagger.codegen.v3:swagger-codegen-generators:$VERSION"
     }
 }

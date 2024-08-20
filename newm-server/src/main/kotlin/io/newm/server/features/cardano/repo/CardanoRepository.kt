@@ -127,6 +127,10 @@ interface CardanoRepository {
         const val CHARLI3_ADA_USD_POLICY = "08c56c0fa73748a23c3bc1d9e6a60a4187416fc4ff8fe3475506990e"
         const val CHARLI3_ADA_USD_NAME = "4f7261636c6546656564"
 
+        // Charli3 ADA/USD OracleFeed token preprod
+        const val CHARLI3_ADA_USD_POLICY_PREPROD = "1116903479e7320b8e4592207aaebf627898267fcd80e2d9646cbf07"
+        const val CHARLI3_ADA_USD_NAME_PREPROD = "4f7261636c6546656564"
+
         // Charli3 NEWM/USD OracleFeed token
         const val CHARLI3_NEWM_USD_POLICY = "f155a26044efe91b3c44f87a7536d2d631c847717930ff547ae9d05c"
         const val CHARLI3_NEWM_USD_NAME = "4f7261636c6546656564"
