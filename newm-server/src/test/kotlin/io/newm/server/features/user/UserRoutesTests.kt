@@ -24,6 +24,7 @@ import io.newm.server.config.database.ConfigEntity
 import io.newm.server.config.database.ConfigTable
 import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_EMAIL_WHITELIST
+import io.newm.server.features.distribution.DistributionRepository
 import io.newm.server.features.email.repo.EmailRepositoryImpl
 import io.newm.server.features.model.CountResponse
 import io.newm.server.features.user.database.UserEntity
@@ -60,6 +61,10 @@ class UserRoutesTests : BaseApplicationTests() {
                 }
             }
             single { mockk<EmailRepositoryImpl>(relaxed = true) {} }
+            single {
+                mockk<DistributionRepository>(relaxed = true) {
+                }
+            }
         }
         loadKoinModules(module)
     }

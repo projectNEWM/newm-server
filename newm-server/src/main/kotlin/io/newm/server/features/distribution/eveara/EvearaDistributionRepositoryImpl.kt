@@ -1448,7 +1448,7 @@ class EvearaDistributionRepositoryImpl(
         return initiatePayoutResponse
     }
 
-    private suspend fun createDistributionUserIfNeeded(user: User) {
+    override suspend fun createDistributionUserIfNeeded(user: User) {
         // Create the distribution user if they don't yet exist
         val getUserResponse = getUser(user)
         if (getUserResponse.totalRecords > 0) {
@@ -1751,7 +1751,7 @@ class EvearaDistributionRepositoryImpl(
         }
     }
 
-    private suspend fun createDistributionSubscription(user: User) {
+    override suspend fun createDistributionSubscription(user: User) {
         val getSubscriptionResponse = getUserSubscription(user)
         if (getSubscriptionResponse.totalRecords > 0) {
             val existingSubscription = getSubscriptionResponse.subscriptions.first()

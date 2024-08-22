@@ -158,4 +158,8 @@ interface DistributionRepository {
     suspend fun getPayoutHistory(userId: UserId): GetPayoutHistoryResponse
 
     suspend fun initiatePayout(userId: UserId): InitiatePayoutResponse
+
+    suspend fun createDistributionUserIfNeeded(user: User)
+
+    suspend fun createDistributionSubscription(user: User)
 }
