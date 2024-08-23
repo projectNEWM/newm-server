@@ -8,7 +8,9 @@ import io.ktor.server.routing.Routing
 import io.ktor.server.routing.route
 import io.newm.server.auth.jwt.AUTH_JWT
 import io.newm.server.auth.jwt.repo.JwtRepository
+import io.newm.server.features.distribution.DistributionRepository
 import io.newm.server.features.model.CountResponse
+import io.newm.server.features.user.model.User
 import io.newm.server.features.user.model.UserIdBody
 import io.newm.server.features.user.model.userFilters
 import io.newm.server.features.user.repo.UserRepository
@@ -32,6 +34,7 @@ fun Routing.createUserRoutes() {
     val recaptchaRepository: RecaptchaRepository by inject()
     val userRepository: UserRepository by inject()
     val jwtRepository: JwtRepository by inject()
+    val distributionRepository: DistributionRepository by inject()
 
     route(USERS_PATH) {
         authenticate(AUTH_JWT) {
@@ -43,7 +46,10 @@ fun Routing.createUserRoutes() {
                 }
                 patch {
                     restrictToMe { myUserId ->
-                        userRepository.update(myUserId, receive())
+                        val requestBody: User = this.receive()
+                        userRepository.update(myUserId, requestBody)
+                        distributionRepository.createDistributionUserIfNeeded(requestBody)
+                        distributionRepository.createDistributionSubscription(requestBody)
                         respond(HttpStatusCode.NoContent)
                     }
                 }
