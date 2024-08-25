@@ -15,7 +15,7 @@ object Dependencies {
     }
 
     object KotlinPlugin {
-        const val VERSION = "2.0.10"
+        const val VERSION = "2.0.20"
         const val JVM_ID = "jvm"
         const val SERIALIZATION_ID = "plugin.serialization"
     }
@@ -121,7 +121,7 @@ object Dependencies {
     }
 
     object PostgreSQL {
-        private const val VERSION = "42.7.3"
+        private const val VERSION = "42.7.4"
 
         const val ALL = "org.postgresql:postgresql:$VERSION"
     }
@@ -133,7 +133,7 @@ object Dependencies {
     }
 
     object FlywayDB {
-        private const val VERSION = "10.17.1"
+        private const val VERSION = "10.17.2"
 
         const val CORE = "org.flywaydb:flyway-core:$VERSION"
         const val POSTGRES = "org.flywaydb:flyway-database-postgresql:$VERSION"
@@ -208,7 +208,7 @@ object Dependencies {
     }
 
     object SpringSecurity {
-        private const val VERSION = "6.3.2"
+        private const val VERSION = "6.3.3"
 
         const val CORE = "org.springframework.security:spring-security-core:$VERSION"
     }
@@ -221,7 +221,7 @@ object Dependencies {
     }
 
     object Aws {
-        private const val VERSION = "2.27.8"
+        private const val VERSION = "2.27.12"
 
         const val BOM = "software.amazon.awssdk:bom:$VERSION"
         const val CLOUDFRONT = "software.amazon.awssdk:cloudfront"
@@ -276,7 +276,7 @@ object Dependencies {
     }
 
     object Newm {
-        private const val VERSION = "2.2.2"
+        private const val VERSION = "2.3.0"
 
         const val KOGMIOS = "io.newm:kogmios:$VERSION"
     }
