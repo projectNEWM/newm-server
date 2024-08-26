@@ -148,3 +148,28 @@ suspend fun CardanoRepository.buildSaleEndTransaction(
             throw HttpUnprocessableEntityException("Failed to build sale-end transaction: ${it.errorMessage}")
         }
     }
+
+suspend fun CardanoRepository.buildOrderTransaction(
+    sourceUtxos: List<Utxo>,
+    contractAddress: String,
+    changeAddress: String,
+    lovelace: Long,
+    nativeAssets: List<NativeAsset>,
+    queueDatum: PlutusData
+): TransactionBuilderResponse =
+    buildTransaction {
+        this.sourceUtxos.addAll(sourceUtxos)
+        this.outputUtxos.add(
+            outputUtxo {
+                this.address = contractAddress
+                this.lovelace = lovelace.toString()
+                this.nativeAssets.addAll(nativeAssets.mergeAmounts())
+                this.datum = queueDatum.toCborObject().toCborByteArray().toHexString()
+            }
+        )
+        this.changeAddress = changeAddress
+    }.also {
+        if (it.hasErrorMessage()) {
+            throw HttpUnprocessableEntityException("Failed to build order transaction: ${it.errorMessage}")
+        }
+    }

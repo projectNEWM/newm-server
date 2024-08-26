@@ -16,6 +16,7 @@ class MarketplacePendingOrderEntity(
     var saleId: EntityID<SaleId> by MarketplacePendingOrderTable.saleId
     var bundleQuantity: Long by MarketplacePendingOrderTable.bundleQuantity
     var incentiveAmount: Long by MarketplacePendingOrderTable.incentiveAmount
+    var currencyAmount: String by MarketplacePendingOrderTable.currencyAmount
 
     companion object : UUIDEntityClass<MarketplacePendingOrderEntity>(MarketplacePendingOrderTable) {
         fun deleteAllExpired(timeToLiveSeconds: Long) {
