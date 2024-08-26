@@ -37,6 +37,9 @@ import io.newm.txbuilder.ktx.withMinUtxo
 import java.math.BigInteger
 import java.security.SecureRandom
 import kotlin.math.ceil
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 
 /**
  * A builder for cardano babbage transactions.
@@ -46,6 +49,7 @@ class TransactionBuilder(
     private val protocolParameters: ProtocolParametersResult,
     private val cardanoEra: CardanoEra = CardanoEra.BABBAGE,
     private val calculateTxExecutionUnits: (suspend (ByteArray) -> EvaluateTxResult)? = null,
+    private val calculateReferenceScriptBytes: (suspend (Set<Utxo>) -> Long)? = null,
 ) {
     private val secureRandom by lazy { SecureRandom() }
 
@@ -270,11 +274,43 @@ class TransactionBuilder(
         }
     }
 
-    private fun updateFeesAndCollateral(
+    private suspend fun updateFeesAndCollateral(
         cborByteSize: Int,
-        computationalFee: Long?
+        computationalFee: Long?,
+        referenceScriptBytes: Long?,
     ) {
-        fee = (txFeeFixed + txFeePerByte * cborByteSize) + (computationalFee ?: 0L)
+        val referenceInputsFee: Long? = listOf(
+            referenceScriptBytes?.takeIf { it > 0 },
+            protocolParameters.maxReferenceScriptsSize?.bytes?.toLong(),
+            protocolParameters.minFeeReferenceScripts?.range,
+            protocolParameters.minFeeReferenceScripts?.base,
+            protocolParameters.minFeeReferenceScripts?.multiplier,
+        ).takeIf { it.all { item -> item != null } }?.let { (sb, mrsb, r, b, m) ->
+            val scriptBytes: Long = sb!!.toLong()
+            val maxReferenceScriptBytes: Long = mrsb!!.toLong()
+            val range: Long = r!!.toLong()
+            val base: Double = b!!.toDouble()
+            val multiplier: Double = m!!.toDouble()
+
+            require(scriptBytes <= maxReferenceScriptBytes) {
+                "referenceScriptBytes($scriptBytes) must be less than or equal to maxReferenceScriptsSize($maxReferenceScriptBytes)"
+            }
+            val rangeFlow: Flow<Pair<LongRange, Long>> = flow {
+                var rangeFrom = 1L
+                var rangeTo = range
+                var lovelacePerByte = base
+                while (true) {
+                    emit(rangeFrom..rangeTo to ceil(lovelacePerByte).toLong())
+                    rangeFrom += range
+                    rangeTo += range
+                    lovelacePerByte *= multiplier
+                }
+            }
+            val (_, lovelacePerByte) = rangeFlow.first { (range, _) -> scriptBytes in range }
+            scriptBytes * lovelacePerByte
+        }
+
+        fee = (txFeeFixed + txFeePerByte * cborByteSize) + (computationalFee ?: 0L) + (referenceInputsFee ?: 0L)
         computationalFee?.let {
             totalCollateral = ceil(protocolParameters.collateralPercentage.toLong() * fee!! / 100.0).toLong()
 
@@ -408,7 +444,18 @@ class TransactionBuilder(
                 } else {
                     null
                 }
-            updateFeesAndCollateral(dummyTxCbor.size, maxComputationalFee)
+
+            // Calculate referenceInputs fee
+            val referenceScriptBytes =
+                referenceInputs?.takeIf { it.isNotEmpty() && calculateReferenceScriptBytes != null }.let {
+                    calculateReferenceScriptBytes!!.invoke(referenceInputs!!)
+                }
+
+            updateFeesAndCollateral(
+                cborByteSize = dummyTxCbor.size,
+                computationalFee = maxComputationalFee,
+                referenceScriptBytes = referenceScriptBytes
+            )
 
             if (totalCollateral != null && calculateTxExecutionUnits != null) {
                 // calculate actual totalCollateral
@@ -440,15 +487,18 @@ class TransactionBuilder(
                     }
                 }
 
-                val computationalFee: Long =
-                    ceil(
-                        (
-                            protocolParameters.scriptExecutionPrices.memory
-                                .multiply(totalMemory)
-                                .add(protocolParameters.scriptExecutionPrices.cpu.multiply(totalSteps))
-                        ).toDouble()
-                    ).toLong()
-                updateFeesAndCollateral(dummyTxCbor.size, computationalFee)
+                val computationalFee: Long = ceil(
+                    (
+                        protocolParameters.scriptExecutionPrices.memory
+                            .multiply(totalMemory)
+                            .add(protocolParameters.scriptExecutionPrices.cpu.multiply(totalSteps))
+                    ).toDouble()
+                ).toLong()
+                updateFeesAndCollateral(
+                    cborByteSize = dummyTxCbor.size,
+                    computationalFee = computationalFee,
+                    referenceScriptBytes = referenceScriptBytes
+                )
 
                 txBody = createTxBody()
                 // set a random _transactionId for dummy signing
@@ -465,7 +515,11 @@ class TransactionBuilder(
                             add(auxData ?: CborSimple.NULL)
                         }.toCborByteArray()
 
-                updateFeesAndCollateral(dummyTxCbor.size, computationalFee)
+                updateFeesAndCollateral(
+                    cborByteSize = dummyTxCbor.size,
+                    computationalFee = computationalFee,
+                    referenceScriptBytes = referenceScriptBytes
+                )
             }
         }
     }
@@ -492,7 +546,10 @@ class TransactionBuilder(
                 TX_KEY_COLLATERAL_INPUTS to collateralUtxos?.toCborObject(cardanoEra),
                 TX_KEY_REQUIRED_SIGNERS to
                     requiredSigners.takeUnless { it.isNullOrEmpty() }?.let {
-                        CborArray.create(it.map { requiredSigner -> CborByteString.create(requiredSigner) }, cardanoEra.toSetTag())
+                        CborArray.create(
+                            it.map { requiredSigner -> CborByteString.create(requiredSigner) },
+                            cardanoEra.toSetTag()
+                        )
                     },
                 TX_KEY_NETWORK_ID to networkId?.number?.let { CborInteger.create(it) },
                 TX_KEY_COLLATERAL_RETURN to collateralReturn?.toCborObject(),
@@ -627,7 +684,7 @@ class TransactionBuilder(
             }
 
         return (rawSignatures + keySignatures + requiredSignerDummySignatures).takeUnless { it.isEmpty() }?.let {
-            CborArray.create(it, cardanoEra.toSetTag(),)
+            CborArray.create(it, cardanoEra.toSetTag())
         }
     }
 
@@ -668,9 +725,15 @@ class TransactionBuilder(
             when (cardanoEra) {
                 CardanoEra.CONWAY -> {
                     CborMap.create(
-                        it.associate { redeemer -> redeemer.toConwayCborObject(maxTxExecutionMemory, maxTxExecutionSteps) }
+                        it.associate { redeemer ->
+                            redeemer.toConwayCborObject(
+                                maxTxExecutionMemory,
+                                maxTxExecutionSteps
+                            )
+                        }
                     )
                 }
+
                 else -> {
                     CborArray.create(
                         it.map { redeemer -> redeemer.toCborObject(maxTxExecutionMemory, maxTxExecutionSteps) }
@@ -811,9 +874,15 @@ class TransactionBuilder(
             protocolParameters: ProtocolParametersResult,
             cardanoEra: CardanoEra = CardanoEra.BABBAGE,
             calculateTxExecutionUnits: (suspend (ByteArray) -> EvaluateTxResult)? = null,
+            calculateReferenceScriptBytes: (suspend (Set<Utxo>) -> Long)? = null,
             block: TransactionBuilder.() -> Unit
         ): Pair<String, ByteArray> {
-            val transactionBuilder = TransactionBuilder(protocolParameters, cardanoEra, calculateTxExecutionUnits)
+            val transactionBuilder = TransactionBuilder(
+                protocolParameters,
+                cardanoEra,
+                calculateTxExecutionUnits,
+                calculateReferenceScriptBytes,
+            )
             block.invoke(transactionBuilder)
             val cborBytes = transactionBuilder.build()
             return Pair(transactionBuilder.transactionId, cborBytes)
