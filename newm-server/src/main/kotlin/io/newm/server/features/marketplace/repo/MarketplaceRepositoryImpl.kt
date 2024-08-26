@@ -749,7 +749,11 @@ internal class MarketplaceRepositoryImpl(
             ?.get(SongTable.id)
 
     private suspend fun MarketplaceSaleEntity.getCostAmountUsd(): String {
-        val unitPrice = cardanoRepository.queryNativeTokenUSDPrice(costPolicyId, costAssetName)
+        val unitPrice = if (costPolicyId == configRepository.getString(CONFIG_KEY_MARKETPLACE_USD_POLICY_ID)) {
+            1L
+        } else {
+            cardanoRepository.queryNativeTokenUSDPrice(costPolicyId, costAssetName)
+        }
         return (costAmount.toBigInteger() * unitPrice.toBigInteger()).toBigDecimal(12).toPlainString()
     }
 }
