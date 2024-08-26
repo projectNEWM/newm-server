@@ -329,6 +329,25 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                     // FIXME: We should use PlutoK, Aiken, or some other way to calculate the execution units without relying on Ogmios.
                     txSubmitClient.evaluate(cborBytes.toHexString()).result
                 }
+                val calculateReferenceScriptBytes: suspend (Set<Utxo>) -> Long = { utxos ->
+                    if (stateQueryClient.health().currentEra.ordinal < CardanoEra.CONWAY.ordinal) {
+                        // Not yet in Conway era, reference scripts don't cost anything
+                        0L
+                    } else {
+                        utxos.sumOf { utxo ->
+                            val scriptRefHexLength =
+                                ledgerRepository
+                                    .queryUtxosByOutputRef(utxo.hash, utxo.ix.toInt())
+                                    .first()
+                                    .scriptRef
+                                    ?.length
+                                    ?.toLong()
+                                    ?: 0L
+                            // divide by 2 to get the ByteSize since the scriptRef is hex encoded
+                            scriptRefHexLength / 2L
+                        }
+                    }
+                }
 
                 val updatedRequest =
                     if (request.signaturesCount == 0 && request.signingKeysCount == 0 && request.requiredSignersCount == 0) {
@@ -360,7 +379,8 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                     TransactionBuilder.transactionBuilder(
                         protocolParams,
                         cardanoEra,
-                        calculateTxExecutionUnits
+                        calculateTxExecutionUnits,
+                        calculateReferenceScriptBytes,
                     ) {
                         loadFrom(updatedRequest)
                     }

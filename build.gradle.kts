@@ -31,6 +31,10 @@ subprojects {
     repositories {
         mavenLocal()
         mavenCentral()
+        maven {
+            name = "sonatypeReleases"
+            url = uri("https://s01.oss.sonatype.org/content/repositories/releases/")
+        }
     }
 
     tasks.withType<DependencyUpdatesTask> {
