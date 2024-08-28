@@ -41,13 +41,4 @@ fun Routing.createClientConfigRoutes() {
             )
         }
     }
-
-    // TODO: remove next route after mobile client migrate to "v1/client-config/mobile"
-    get("v1/mobile-config") {
-        recaptchaRepository.verify("mobile_config", request)
-        respondText(
-            text = configRepository.getString(CONFIG_KEY_CLIENT_CONFIG_MOBILE),
-            contentType = ContentType.Application.Json
-        )
-    }
 }
