@@ -12,6 +12,7 @@ import io.newm.server.auth.jwt.AUTH_JWT_ADMIN
 import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.earnings.model.AddSongRoyaltyRequest
 import io.newm.server.features.earnings.model.Earning
+import io.newm.server.features.earnings.model.GetEarningsResponse
 import io.newm.server.features.earnings.repo.EarningsRepository
 import io.newm.server.features.user.database.UserTable.walletAddress
 import io.newm.server.ktx.songId
@@ -62,7 +63,13 @@ fun Routing.createEarningsRoutes() {
                 recaptchaRepository.verify("getearnings_$walletAddress", request)
                 val stakeAddress = parameters["walletAddress"]!!.extractStakeAddress(cardanoRepository.isMainnet())
                 val earnings = earningsRepository.getAllByStakeAddress(stakeAddress)
-                respond(earnings)
+                // calculate sum of claimed earnings
+                respond(
+                    GetEarningsResponse(
+                        totalClaimed = earnings.filter { it.claimed }.sumOf { it.amount },
+                        earnings = earnings
+                    )
+                )
             }
             // create a claim for all earnings on this wallet stake address
             post {

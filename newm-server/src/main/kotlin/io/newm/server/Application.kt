@@ -60,12 +60,11 @@ fun Application.module() {
         createCloudinaryRoutes()
         createIdenfyRoutes()
         createDistributionRoutes()
-        createEarningsRoutes()
         createWalletConnectionRoutes()
         createMarketplaceRoutes()
         createClientConfigRoutes()
-
         createOpenApiDocumentationRoutes()
+        createEarningsRoutes()
     }
 
     initializeDaemons()
