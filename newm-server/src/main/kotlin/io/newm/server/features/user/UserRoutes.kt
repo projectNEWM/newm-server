@@ -10,7 +10,6 @@ import io.newm.server.auth.jwt.AUTH_JWT
 import io.newm.server.auth.jwt.repo.JwtRepository
 import io.newm.server.features.distribution.DistributionRepository
 import io.newm.server.features.model.CountResponse
-import io.newm.server.features.user.model.User
 import io.newm.server.features.user.model.UserIdBody
 import io.newm.server.features.user.model.userFilters
 import io.newm.server.features.user.repo.UserRepository
@@ -46,10 +45,10 @@ fun Routing.createUserRoutes() {
                 }
                 patch {
                     restrictToMe { myUserId ->
-                        val requestBody: User = this.receive()
-                        userRepository.update(myUserId, requestBody)
-                        distributionRepository.createDistributionUserIfNeeded(requestBody)
-                        distributionRepository.createDistributionSubscription(requestBody)
+                        userRepository.update(myUserId, receive())
+                        val user = userRepository.get(myUserId)
+                        distributionRepository.createDistributionUserIfNeeded(user)
+                        distributionRepository.createDistributionSubscription(user)
                         respond(HttpStatusCode.NoContent)
                     }
                 }
