@@ -173,17 +173,19 @@ internal class MarketplaceRepositoryImpl(
             )
         )
 
-        val pendingSaleTimeToLive = configRepository.getLong(CONFIG_KEY_MARKETPLACE_PENDING_SALE_TTL)
+        val usdPolicyId = configRepository.getString(CONFIG_KEY_MARKETPLACE_USD_POLICY_ID)
         val costPolicyId: String
         val costAssetName: String
         if (request.costPolicyId == null && request.costAssetName == null) {
-            costPolicyId = configRepository.getString(CONFIG_KEY_MARKETPLACE_USD_POLICY_ID)
+            costPolicyId = usdPolicyId
             costAssetName = ""
         } else {
             costPolicyId = requireNotNull(request.costPolicyId) { "costPolicyId must not be null" }
             costAssetName = requireNotNull(request.costAssetName) { "costAssetName must not be null" }
+            if (costPolicyId == usdPolicyId) require(costAssetName.isEmpty()) { "costAssetName must be empty for USD" }
         }
 
+        val pendingSaleTimeToLive = configRepository.getLong(CONFIG_KEY_MARKETPLACE_PENDING_SALE_TTL)
         val sale = transaction {
             MarketplacePendingSaleEntity.deleteAllExpired(pendingSaleTimeToLive)
             MarketplacePendingSaleEntity.new {
