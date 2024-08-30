@@ -19,6 +19,7 @@ import io.newm.server.features.marketplace.database.MarketplaceArtistEntity
 import io.newm.server.features.marketplace.database.MarketplaceSaleEntity
 import io.newm.server.features.marketplace.database.MarketplaceSaleTable
 import io.newm.server.features.marketplace.model.Artist
+import io.newm.server.features.marketplace.model.CostAmountConversions
 import io.newm.server.features.marketplace.model.Sale
 import io.newm.server.features.marketplace.model.SaleStatus
 import io.newm.server.features.model.CountResponse
@@ -45,6 +46,7 @@ import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 
 private const val COST_TOKEN_USD_PRICE = 5000L
+private const val NEWM_USD_PRICE = 2500L
 
 class MarketplaceRoutesTests : BaseApplicationTests() {
     @BeforeAll
@@ -55,6 +57,8 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
                     mockk<CardanoRepository>(relaxed = true) {
                         coEvery { isMainnet() } returns false
                         coEvery { queryNativeTokenUSDPrice(any(), any()) } returns COST_TOKEN_USD_PRICE
+                        coEvery { queryNEWMUSDPrice() } returns NEWM_USD_PRICE
+                        coEvery { isNewmToken(any(), any()) } returns false
                     }
                 }
                 single {
@@ -1009,6 +1013,8 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
             }
         }
 
+        val costAmount = (offset + 1L) * 1234567L
+        val costAmountUsd = costAmount.toBigInteger() * COST_TOKEN_USD_PRICE.toBigInteger()
         return transaction {
             MarketplaceSaleEntity
                 .new {
@@ -1023,16 +1029,17 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
                     bundleAmount = offset + 1L
                     costPolicyId = "costPolicyId$offset"
                     costAssetName = "costAssetName$offset"
-                    costAmount = offset.toLong()
+                    this.costAmount = costAmount
                     maxBundleSize = offset + 100L
                     totalBundleQuantity = offset + 1000L
                     availableBundleQuantity = offset + 1000L
                 }.toModel(
                     isMainnet = false,
                     isNftCdnEnabled = false,
-                    costAmountUsd = (offset.toBigInteger() * COST_TOKEN_USD_PRICE.toBigInteger())
-                        .toBigDecimal(12)
-                        .toPlainString()
+                    costAmountConvertions = CostAmountConversions(
+                        usd = costAmountUsd.toBigDecimal(12).toPlainString(),
+                        newm = (costAmountUsd.toBigDecimal(6) / NEWM_USD_PRICE.toBigDecimal()).toPlainString()
+                    )
                 )
         }
     }

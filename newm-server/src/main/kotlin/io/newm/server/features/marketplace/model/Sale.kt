@@ -20,6 +20,7 @@ data class Sale(
     val costAssetName: String,
     val costAmount: Long,
     val costAmountUsd: String,
+    val costAmountNewm: String,
     val maxBundleSize: Long,
     val totalBundleQuantity: Long,
     val availableBundleQuantity: Long,

@@ -89,12 +89,6 @@ import io.newm.txbuilder.ktx.fingerprint
 import io.newm.txbuilder.ktx.mergeAmounts
 import io.newm.txbuilder.ktx.toCborObject
 import io.newm.txbuilder.ktx.toNativeAssetMap
-import java.time.Duration
-import java.util.UUID
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
-import kotlin.coroutines.suspendCoroutine
-import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -105,6 +99,12 @@ import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.kms.KmsAsyncClient
 import software.amazon.awssdk.services.kms.model.DecryptRequest
 import software.amazon.awssdk.services.kms.model.EncryptRequest
+import java.time.Duration
+import java.util.UUID
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
+import kotlin.time.Duration.Companion.minutes
 
 internal class CardanoRepositoryImpl(
     private val client: NewmChainCoroutineStub,
@@ -425,13 +425,21 @@ internal class CardanoRepositoryImpl(
         policyId: String,
         assetName: String
     ): Long {
-        if ((isMainnet() && policyId == NEWM_TOKEN_POLICY && assetName == NEWM_TOKEN_NAME) ||
-            (!isMainnet() && policyId == NEWM_TOKEN_POLICY_TEST && assetName == NEWM_TOKEN_NAME_TEST)
-        ) {
+        if (isNewmToken(policyId, assetName)) {
             return queryNEWMUSDPrice()
         }
         throw IllegalArgumentException("Unsupported token for price API - policyId: $policyId, assetName: $assetName")
     }
+
+    override suspend fun isNewmToken(
+        policyId: String,
+        assetName: String
+    ): Boolean =
+        if (isMainnet()) {
+            policyId == NEWM_TOKEN_POLICY && assetName == NEWM_TOKEN_NAME
+        } else {
+            policyId == NEWM_TOKEN_POLICY_TEST && assetName == NEWM_TOKEN_NAME_TEST
+        }
 
     override suspend fun snapshotToken(
         policyId: String,
