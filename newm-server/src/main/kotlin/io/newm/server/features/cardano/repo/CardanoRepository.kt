@@ -68,6 +68,11 @@ interface CardanoRepository {
         assetName: String
     ): Long
 
+    suspend fun isNewmToken(
+        policyId: String,
+        assetName: String
+    ): Boolean
+
     suspend fun <T> withLock(block: suspend () -> T): T
 
     suspend fun verifySignData(

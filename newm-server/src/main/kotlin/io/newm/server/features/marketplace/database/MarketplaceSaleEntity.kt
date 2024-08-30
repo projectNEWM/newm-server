@@ -3,6 +3,7 @@ package io.newm.server.features.marketplace.database
 import io.newm.chain.util.assetFingerprintOf
 import io.newm.chain.util.assetUrlOf
 import io.newm.server.features.collaboration.database.CollaborationEntity
+import io.newm.server.features.marketplace.model.CostAmountConversions
 import io.newm.server.features.marketplace.model.Sale
 import io.newm.server.features.marketplace.model.SaleFilters
 import io.newm.server.features.marketplace.model.SaleStatus
@@ -65,7 +66,7 @@ class MarketplaceSaleEntity(
     fun toModel(
         isMainnet: Boolean,
         isNftCdnEnabled: Boolean,
-        costAmountUsd: String
+        costAmountConvertions: CostAmountConversions
     ): Sale {
         val song = SongEntity[songId]
         val artist = UserEntity[song.ownerId]
@@ -100,7 +101,8 @@ class MarketplaceSaleEntity(
             costPolicyId = costPolicyId,
             costAssetName = costAssetName,
             costAmount = costAmount,
-            costAmountUsd = costAmountUsd,
+            costAmountUsd = costAmountConvertions.usd,
+            costAmountNewm = costAmountConvertions.newm,
             maxBundleSize = maxBundleSize,
             totalBundleQuantity = totalBundleQuantity,
             bundleAmount = bundleAmount,

@@ -44,6 +44,7 @@ import io.newm.server.features.marketplace.database.MarketplacePurchaseEntity
 import io.newm.server.features.marketplace.database.MarketplaceSaleEntity
 import io.newm.server.features.marketplace.model.Artist
 import io.newm.server.features.marketplace.model.ArtistFilters
+import io.newm.server.features.marketplace.model.CostAmountConversions
 import io.newm.server.features.marketplace.model.OrderAmountRequest
 import io.newm.server.features.marketplace.model.OrderAmountResponse
 import io.newm.server.features.marketplace.model.OrderTransactionRequest
@@ -96,8 +97,8 @@ internal class MarketplaceRepositoryImpl(
         val sale = transaction { MarketplaceSaleEntity[saleId] }
         val isMainnet = cardanoRepository.isMainnet()
         val isNftCdnEnabled = configRepository.getBoolean(CONFIG_KEY_NFTCDN_ENABLED)
-        val costAmountUsd = sale.getCostAmountUsd()
-        return transaction { sale.toModel(isMainnet, isNftCdnEnabled, costAmountUsd) }
+        val costAmountConversions = sale.computeCostAmountConversions()
+        return transaction { sale.toModel(isMainnet, isNftCdnEnabled, costAmountConversions) }
     }
 
     override suspend fun getSales(
@@ -111,9 +112,9 @@ internal class MarketplaceRepositoryImpl(
         val sales = transaction {
             MarketplaceSaleEntity.all(filters).limit(n = limit, offset = offset.toLong()).toList()
         }
-        val costAmountsUsd: Map<UUID, String> = sales.associate { it.id.value to it.getCostAmountUsd() }
+        val costAmountConversions = sales.associate { it.id.value to it.computeCostAmountConversions() }
         return transaction {
-            sales.map { it.toModel(isMainnet, isNftCdnEnabled, costAmountsUsd[it.id.value]!!) }
+            sales.map { it.toModel(isMainnet, isNftCdnEnabled, costAmountConversions[it.id.value]!!) }
         }
     }
 
@@ -748,12 +749,20 @@ internal class MarketplaceRepositoryImpl(
             .firstOrNull()
             ?.get(SongTable.id)
 
-    private suspend fun MarketplaceSaleEntity.getCostAmountUsd(): String {
-        val unitPrice = if (costPolicyId == configRepository.getString(CONFIG_KEY_MARKETPLACE_USD_POLICY_ID)) {
-            1L
-        } else {
-            cardanoRepository.queryNativeTokenUSDPrice(costPolicyId, costAssetName)
+    private suspend fun MarketplaceSaleEntity.computeCostAmountConversions(): CostAmountConversions {
+        val newmUsdPrice = cardanoRepository.queryNEWMUSDPrice()
+        val costTokenUsdPrice = when {
+            // for USD, 1 rather that 1000000 to account for costAmount being in 12 instead of 6 decimal places
+            costPolicyId == configRepository.getString(CONFIG_KEY_MARKETPLACE_USD_POLICY_ID) -> 1L
+
+            cardanoRepository.isNewmToken(costPolicyId, costAssetName) -> newmUsdPrice
+
+            else -> cardanoRepository.queryNativeTokenUSDPrice(costPolicyId, costAssetName)
         }
-        return (costAmount.toBigInteger() * unitPrice.toBigInteger()).toBigDecimal(12).toPlainString()
+        val costAmountUsd = costAmount.toBigInteger() * costTokenUsdPrice.toBigInteger()
+        return CostAmountConversions(
+            usd = costAmountUsd.toBigDecimal(12).toPlainString(),
+            newm = (costAmountUsd.toBigDecimal(6) / newmUsdPrice.toBigDecimal()).toPlainString()
+        )
     }
 }
