@@ -41,7 +41,7 @@ object Dependencies {
     }
 
     object KotlinXSerialization {
-        private const val VERSION = "1.7.1"
+        private const val VERSION = "1.7.2"
 
         const val JSON = "org.jetbrains.kotlinx:kotlinx-serialization-json:$VERSION"
     }
@@ -133,7 +133,7 @@ object Dependencies {
     }
 
     object FlywayDB {
-        private const val VERSION = "10.17.2"
+        private const val VERSION = "10.17.3"
 
         const val CORE = "org.flywaydb:flyway-core:$VERSION"
         const val POSTGRES = "org.flywaydb:flyway-database-postgresql:$VERSION"
@@ -221,7 +221,7 @@ object Dependencies {
     }
 
     object Aws {
-        private const val VERSION = "2.27.12"
+        private const val VERSION = "2.27.17"
 
         const val BOM = "software.amazon.awssdk:bom:$VERSION"
         const val CLOUDFRONT = "software.amazon.awssdk:cloudfront"
@@ -276,7 +276,7 @@ object Dependencies {
     }
 
     object Newm {
-        private const val VERSION = "2.3.1"
+        private const val VERSION = "2.3.2"
 
         const val KOGMIOS = "io.newm:kogmios:$VERSION"
     }
@@ -299,7 +299,7 @@ object Dependencies {
     }
 
     object Protobuf {
-        private const val VERSION = "4.27.3"
+        private const val VERSION = "4.28.0"
 
         const val JAVA_UTIL = "com.google.protobuf:protobuf-java-util:$VERSION"
         const val KOTLIN = "com.google.protobuf:protobuf-kotlin:$VERSION"
@@ -344,7 +344,7 @@ object Dependencies {
     }
 
     object Swagger {
-        private const val VERSION = "1.0.51"
+        private const val VERSION = "1.0.52"
         const val SWAGGER_CODEGEN_GENERATORS = "io.swagger.codegen.v3:swagger-codegen-generators:$VERSION"
     }
 }
