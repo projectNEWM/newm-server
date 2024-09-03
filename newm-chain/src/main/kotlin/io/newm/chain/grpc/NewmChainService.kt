@@ -69,31 +69,65 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
     private val submittedTransactionCache: SubmittedTransactionCache by inject()
     private val confirmedBlockFlow: MutableSharedFlow<Block> by inject(named("confirmedBlockFlow"))
 
-    override suspend fun queryUtxos(request: QueryUtxosRequest): QueryUtxosResponse =
-        ledgerRepository.queryUtxos(request.address).toQueryUtxosResponse()
+    override suspend fun queryUtxos(request: QueryUtxosRequest): QueryUtxosResponse {
+        try {
+            return ledgerRepository.queryUtxos(request.address).toQueryUtxosResponse()
+        } catch (e: Throwable) {
+            Sentry.addBreadcrumb(request.toString(), "NewmChainService")
+            log.error(e) { "queryUtxos error!" }
+            throw e
+        }
+    }
 
-    override suspend fun queryLiveUtxos(request: QueryUtxosRequest): QueryUtxosResponse =
-        ledgerRepository.queryLiveUtxos(request.address).toQueryUtxosResponse()
+    override suspend fun queryLiveUtxos(request: QueryUtxosRequest): QueryUtxosResponse {
+        try {
+            return ledgerRepository.queryLiveUtxos(request.address).toQueryUtxosResponse()
+        } catch (e: Throwable) {
+            Sentry.addBreadcrumb(request.toString(), "NewmChainService")
+            log.error(e) { "queryLiveUtxos error!" }
+            throw e
+        }
+    }
 
-    override suspend fun queryUtxosByOutputRef(request: QueryUtxosOutputRefRequest): QueryUtxosResponse =
-        ledgerRepository.queryUtxosByOutputRef(request.hash, request.ix.toInt()).toQueryUtxosResponse()
+    override suspend fun queryUtxosByOutputRef(request: QueryUtxosOutputRefRequest): QueryUtxosResponse {
+        try {
+            return ledgerRepository.queryUtxosByOutputRef(request.hash, request.ix.toInt()).toQueryUtxosResponse()
+        } catch (e: Throwable) {
+            Sentry.addBreadcrumb(request.toString(), "NewmChainService")
+            log.error(e) { "queryUtxosByOutputRef error!" }
+            throw e
+        }
+    }
 
-    override suspend fun queryPublicKeyHashByOutputRef(request: QueryUtxosOutputRefRequest): QueryPublicKeyHashResponse =
-        ledgerRepository.queryPublicKeyHashByOutputRef(request.hash, request.ix.toInt())?.let {
-            queryPublicKeyHashResponse {
-                publicKeyHash = it
-            }
-        } ?: queryPublicKeyHashResponse { }
+    override suspend fun queryPublicKeyHashByOutputRef(request: QueryUtxosOutputRefRequest): QueryPublicKeyHashResponse {
+        try {
+            return ledgerRepository.queryPublicKeyHashByOutputRef(request.hash, request.ix.toInt())?.let {
+                queryPublicKeyHashResponse {
+                    publicKeyHash = it
+                }
+            } ?: queryPublicKeyHashResponse { }
+        } catch (e: Throwable) {
+            Sentry.addBreadcrumb(request.toString(), "NewmChainService")
+            log.error(e) { "queryPublicKeyHashByOutputRef error!" }
+            throw e
+        }
+    }
 
     override suspend fun queryUtxosByStakeAddress(request: QueryUtxosRequest): QueryUtxosResponse {
-        log.debug { "queryUtxosByStakeAddress(${request.address}) started." }
-        val response: QueryUtxosResponse
-        measureTimeMillis {
-            response = ledgerRepository.queryUtxosByStakeAddress(request.address).toQueryUtxosResponse()
-        }.also {
-            log.debug { "queryUtxosByStakeAddress(${request.address}) completed in $it ms." }
+        try {
+            log.debug { "queryUtxosByStakeAddress(${request.address}) started." }
+            val response: QueryUtxosResponse
+            measureTimeMillis {
+                response = ledgerRepository.queryUtxosByStakeAddress(request.address).toQueryUtxosResponse()
+            }.also {
+                log.debug { "queryUtxosByStakeAddress(${request.address}) completed in $it ms." }
+            }
+            return response
+        } catch (e: Throwable) {
+            Sentry.addBreadcrumb(request.toString(), "NewmChainService")
+            log.error(e) { "queryUtxosByStakeAddress error!" }
+            throw e
         }
-        return response
     }
 
     private fun Set<io.newm.chain.model.Utxo>.toQueryUtxosResponse(): QueryUtxosResponse =
@@ -123,35 +157,63 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
             )
         }
 
-    override suspend fun queryDatumByHash(request: QueryDatumByHashRequest): QueryDatumByHashResponse =
-        queryDatumByHashResponse {
-            ledgerRepository.queryDatumByHash(request.datumHash)?.cborHexToPlutusData()?.let {
-                datum = it
+    override suspend fun queryDatumByHash(request: QueryDatumByHashRequest): QueryDatumByHashResponse {
+        try {
+            return queryDatumByHashResponse {
+                ledgerRepository.queryDatumByHash(request.datumHash)?.cborHexToPlutusData()?.let {
+                    datum = it
+                }
             }
+        } catch (e: Throwable) {
+            Sentry.addBreadcrumb(request.toString(), "NewmChainService")
+            log.error(e) { "queryDatumByHash error!" }
+            throw e
         }
+    }
 
     override suspend fun queryPaymentAddressForStakeAddress(
         request: QueryPaymentAddressForStakeAddressRequest
-    ): QueryPaymentAddressForStakeAddressResponse =
-        queryPaymentAddressForStakeAddressResponse {
-            chainRepository.getPaymentAddressByStakeAddress(request.stakeAddress)?.let {
-                paymentAddress = it
+    ): QueryPaymentAddressForStakeAddressResponse {
+        try {
+            return queryPaymentAddressForStakeAddressResponse {
+                chainRepository.getPaymentAddressByStakeAddress(request.stakeAddress)?.let {
+                    paymentAddress = it
+                }
             }
+        } catch (e: Throwable) {
+            Sentry.addBreadcrumb(request.toString(), "NewmChainService")
+            log.error(e) { "queryPaymentAddressForStakeAddress error!" }
+            throw e
         }
+    }
 
-    override suspend fun queryCurrentEpoch(request: QueryCurrentEpochRequest): QueryCurrentEpochResponse =
-        queryCurrentEpochResponse {
-            epoch = getCurrentEpoch()
+    override suspend fun queryCurrentEpoch(request: QueryCurrentEpochRequest): QueryCurrentEpochResponse {
+        try {
+            return queryCurrentEpochResponse {
+                epoch = getCurrentEpoch()
+            }
+        } catch (e: Throwable) {
+            Sentry.addBreadcrumb(request.toString(), "NewmChainService")
+            log.error(e) { "queryCurrentEpoch error!" }
+            throw e
         }
+    }
 
     override suspend fun queryTransactionConfirmationCount(
         request: QueryTransactionConfirmationCountRequest
-    ): QueryTransactionConfirmationCountResponse =
-        queryTransactionConfirmationCountResponse {
-            txIdToConfirmationCount.putAll(
-                ledgerRepository.queryTransactionConfirmationCounts(request.txIdsList)
-            )
+    ): QueryTransactionConfirmationCountResponse {
+        try {
+            return queryTransactionConfirmationCountResponse {
+                txIdToConfirmationCount.putAll(
+                    ledgerRepository.queryTransactionConfirmationCounts(request.txIdsList)
+                )
+            }
+        } catch (e: Throwable) {
+            Sentry.addBreadcrumb(request.toString(), "NewmChainService")
+            log.error(e) { "queryTransactionConfirmationCount error!" }
+            throw e
         }
+    }
 
     override suspend fun submitTransaction(request: SubmitTransactionRequest): SubmitTransactionResponse =
         try {
