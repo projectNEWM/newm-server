@@ -9,6 +9,7 @@ import io.newm.server.di.installDependencyInjection
 import io.newm.server.features.cardano.createCardanoRoutes
 import io.newm.server.features.cloudinary.createCloudinaryRoutes
 import io.newm.server.features.collaboration.createCollaborationRoutes
+import io.newm.server.features.earnings.createEarningsRoutes
 import io.newm.server.features.idenfy.createIdenfyFakeServerRoutes
 import io.newm.server.features.idenfy.createIdenfyRoutes
 import io.newm.server.features.marketplace.createMarketplaceRoutes
@@ -43,5 +44,6 @@ fun Application.testModule() {
         createIdenfyFakeServerRoutes()
         createWalletConnectionRoutes()
         createMarketplaceRoutes()
+        createEarningsRoutes()
     }
 }

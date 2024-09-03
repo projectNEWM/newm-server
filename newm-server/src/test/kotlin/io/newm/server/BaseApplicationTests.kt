@@ -16,6 +16,8 @@ import io.newm.server.features.collaboration.database.CollaborationEntity
 import io.newm.server.features.collaboration.database.CollaborationTable
 import io.newm.server.features.collaboration.model.Collaboration
 import io.newm.server.features.collaboration.model.CollaborationStatus
+import io.newm.server.features.earnings.database.EarningEntity
+import io.newm.server.features.earnings.database.EarningsTable
 import io.newm.server.features.marketplace.database.MarketplaceBookmarkTable
 import io.newm.server.features.marketplace.database.MarketplacePurchaseTable
 import io.newm.server.features.marketplace.database.MarketplaceSaleTable
@@ -45,6 +47,7 @@ import io.newm.server.features.walletconnection.database.WalletConnectionTable
 import io.newm.server.ktx.asValidUrl
 import io.newm.server.model.ClientPlatform
 import io.newm.server.recaptcha.repo.RecaptchaRepository
+import io.newm.server.typealiases.SongId
 import io.newm.shared.auth.Password
 import io.newm.shared.serialization.BigDecimalSerializer
 import io.newm.shared.serialization.BigIntegerSerializer
@@ -160,6 +163,7 @@ open class BaseApplicationTests {
                 MarketplaceBookmarkTable,
                 MarketplaceSaleTable,
                 MarketplacePurchaseTable,
+                EarningsTable
             )
         }
         application.start()
@@ -283,6 +287,22 @@ open class BaseApplicationTests {
                     originalAudioUrl = song.originalAudioUrl
                 }.id.value
         }
+
+    protected fun addEarningsToDatabase(
+        songId: SongId,
+        stakeAddress: String,
+        amount: Long,
+        createdAt: LocalDateTime
+    ): UUID =
+        transaction {
+            EarningEntity.new {
+                this.songId = EntityID(songId, SongTable)
+                this.amount = amount
+                this.stakeAddress = stakeAddress
+                this.memo = "default"
+                this.createdAt = createdAt
+            }
+        }.id.value
 
     protected fun addConfigToDatabase(
         id: String,
