@@ -398,9 +398,11 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                     } else {
                         utxos.sumOf { utxo ->
                             val scriptRefHexLength =
-                                ledgerRepository
-                                    .queryUtxosByOutputRef(utxo.hash, utxo.ix.toInt())
-                                    .first()
+                                requireNotNull(
+                                    ledgerRepository
+                                        .queryUtxosByOutputRef(utxo.hash, utxo.ix.toInt())
+                                        .firstOrNull()
+                                ) { "Utxo not found in ledger: ${utxo.hash}#${utxo.ix}" }
                                     .scriptRef
                                     ?.length
                                     ?.toLong()
