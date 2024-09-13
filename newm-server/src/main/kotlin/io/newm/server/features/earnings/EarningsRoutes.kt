@@ -10,11 +10,12 @@ import io.newm.chain.util.extractStakeAddress
 import io.newm.server.auth.jwt.AUTH_JWT
 import io.newm.server.auth.jwt.AUTH_JWT_ADMIN
 import io.newm.server.features.cardano.repo.CardanoRepository
-import io.newm.server.features.earnings.model.AddSongRoyaltyRequest
-import io.newm.server.features.earnings.model.Earning
-import io.newm.server.features.earnings.model.GetEarningsResponse
+import io.newm.server.features.earnings.model.*
 import io.newm.server.features.earnings.repo.EarningsRepository
 import io.newm.server.features.user.database.UserTable.walletAddress
+import io.newm.server.features.user.model.User
+import io.newm.server.features.user.repo.UserRepository
+import io.newm.server.ktx.myUserId
 import io.newm.server.ktx.songId
 import io.newm.server.recaptcha.repo.RecaptchaRepository
 import io.newm.shared.koin.inject
@@ -22,12 +23,14 @@ import io.newm.shared.ktx.get
 import io.newm.shared.ktx.post
 
 private const val EARNINGS_PATH = "v1/earnings"
+private const val EARNINGS_RETRIEVAL_PATH = "v1/earnings/payment"
 private const val EARNINGS_PATH_ADMIN = "v1/earnings/admin"
 
 fun Routing.createEarningsRoutes() {
     val cardanoRepository: CardanoRepository by inject()
     val earningsRepository: EarningsRepository by inject()
     val recaptchaRepository: RecaptchaRepository by inject()
+    val userRepository: UserRepository by inject()
 
     authenticate(AUTH_JWT_ADMIN) {
         route(EARNINGS_PATH_ADMIN) {
@@ -81,6 +84,36 @@ fun Routing.createEarningsRoutes() {
                     respond(claimOrder)
                 } else {
                     respond(HttpStatusCode.NotFound, "No unclaimed earnings found for this wallet address.")
+                }
+            }
+        }
+    }
+
+    // Claiming is un-authenticated, but we still check recaptcha to prevent bots
+    authenticate(AUTH_JWT, optional = true) {
+        route("$EARNINGS_RETRIEVAL_PATH/{walletAddress}") {
+            post {
+                val request = receive<EarningPayment>()
+                val utxos = request.utxos
+                if (utxos.isEmpty()) {
+                    respond(HttpStatusCode.PaymentRequired, "No UTXOs provided!")
+                } else {
+                    val user = userRepository.get(myUserId)
+                    if (user.walletAddress.isNullOrBlank()) {
+                        // We need to update the user's wallet address since it wasn't set properly at this point.
+                        userRepository.updateUserData(myUserId, User(walletAddress = parameters["walletAddress"]))
+                    }
+                    respond(
+                        EarningPaymentResponse(
+                            cborHex =
+                                earningsRepository.generateRetrieveEarningsPaymentTransaction(
+                                    songId = songId,
+                                    requesterId = myUserId,
+                                    sourceUtxos = utxos,
+                                    changeAddress = request.changeAddress
+                                )
+                        )
+                    )
                 }
             }
         }

@@ -1,6 +1,9 @@
 package io.newm.server.features.earnings.repo
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.newm.chain.grpc.Utxo
+import io.newm.chain.grpc.outputUtxo
+import io.newm.chain.util.toHexString
 import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_EARNINGS_CLAIM_ORDER_FEE
 import io.newm.server.features.cardano.database.KeyTable
@@ -17,10 +20,18 @@ import io.newm.server.features.earnings.model.ClaimOrder
 import io.newm.server.features.earnings.model.ClaimOrder.Companion.ACTIVE_STATUSES
 import io.newm.server.features.earnings.model.ClaimOrderStatus
 import io.newm.server.features.earnings.model.Earning
+import io.newm.server.features.song.database.ReleaseEntity
+import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.database.SongTable
+import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.repo.SongRepository
+import io.newm.server.features.user.database.UserEntity
+import io.newm.server.features.user.model.UserVerificationStatus
 import io.newm.server.features.user.repo.UserRepository
 import io.newm.server.typealiases.SongId
+import io.newm.server.typealiases.UserId
+import io.newm.shared.exception.HttpForbiddenException
+import io.newm.shared.exception.HttpUnprocessableEntityException
 import io.newm.shared.ktx.toDate
 import java.sql.Connection.TRANSACTION_SERIALIZABLE
 import java.time.Instant
@@ -311,5 +322,63 @@ class EarningsRepositoryImpl(
                 .build()
 
         schedulerDaemon.scheduleJob(jobDetail, trigger)
+    }
+
+    override suspend fun generateRetrieveEarningsPaymentTransaction(
+        songId: SongId,
+        requesterId: UserId,
+        sourceUtxos: List<Utxo>,
+        changeAddress: String
+    ): String {
+        log.debug { "generateRetrieveEarningsPaymentTransaction: songId = $songId" }
+
+        checkRequester(songId, requesterId, verified = true)
+
+        val song = get(songId)
+        val key = Key.generateNew()
+        val keyId = cardanoRepository.saveKey(key)
+        val transaction =
+            cardanoRepository.buildTransaction {
+                this.sourceUtxos.addAll(sourceUtxos)
+                this.outputUtxos.add(
+                    outputUtxo {
+                        address = key.address
+                        lovelace = song.mintCostLovelace.toString()
+                    }
+                )
+                this.changeAddress = changeAddress
+            }
+
+        // update(songId, Song(paymentKeyId = keyId))
+        // updateSongMintingStatus(songId, MintingStatus.MintingPaymentRequested)
+        return transaction.transactionCbor.toByteArray().toHexString()
+    }
+
+    private fun checkRequester(
+        songId: SongId,
+        requesterId: UserId,
+        verified: Boolean = false
+    ) = transaction {
+        SongEntity[songId].checkRequester(requesterId, verified)
+    }
+
+    private fun SongEntity.checkRequester(
+        requesterId: UserId,
+        verified: Boolean = false
+    ) {
+        if (ownerId.value != requesterId) throw HttpForbiddenException("operation allowed only by owner")
+        if (verified && UserEntity[requesterId].verificationStatus != UserVerificationStatus.Verified) {
+            throw HttpUnprocessableEntityException("operation allowed only after owner is KYC verified")
+        }
+    }
+
+    suspend fun get(songId: SongId): Song {
+        log.debug { "get: songId = $songId" }
+        return transaction {
+            SongEntity[songId].let {
+                val release = ReleaseEntity[it.releaseId!!].toModel()
+                it.toModel(release)
+            }
+        }
     }
 }

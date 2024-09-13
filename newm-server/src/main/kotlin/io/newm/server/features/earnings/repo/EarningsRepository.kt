@@ -1,9 +1,11 @@
 package io.newm.server.features.earnings.repo
 
+import io.newm.chain.grpc.Utxo
 import io.newm.server.features.earnings.model.AddSongRoyaltyRequest
 import io.newm.server.features.earnings.model.ClaimOrder
 import io.newm.server.features.earnings.model.Earning
 import io.newm.server.typealiases.SongId
+import io.newm.server.typealiases.UserId
 import java.util.UUID
 
 interface EarningsRepository {
@@ -82,4 +84,14 @@ interface EarningsRepository {
      * Get a claim order by id
      */
     suspend fun getByClaimOrderId(claimOrderId: UUID): ClaimOrder?
+
+    /**
+     * Generate Retrieve Earnings Payment Transaction
+     */
+    suspend fun generateRetrieveEarningsPaymentTransaction(
+        songId: SongId,
+        requesterId: UserId,
+        sourceUtxos: List<Utxo>,
+        changeAddress: String
+    ): String
 }
