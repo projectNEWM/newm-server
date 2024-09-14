@@ -37,4 +37,5 @@ object ReleaseTable : UUIDTable(name = "releases") {
     val errorMessage: Column<String?> = text("error_message").nullable()
     val forceDistributed: Column<Boolean?> = bool("force_distributed").nullable()
     val preSavePage: Column<String?> = text("pre_save_page").nullable()
+    val mintCostLovelace: Column<Long?> = long("mint_cost_lovelace").nullable()
 }

@@ -76,7 +76,6 @@ class SongEntity(
     var arweaveTokenAgreementUrl: String? by SongTable.arweaveTokenAgreementUrl
     var arweaveClipUrl: String? by SongTable.arweaveClipUrl
     var distributionTrackId: Long? by SongTable.distributionTrackId
-    var mintCostLovelace: Long? by SongTable.mintCostLovelace
     var instrumental: Boolean by SongTable.instrumental
 
     fun toModel(release: Release): Song =
@@ -123,7 +122,7 @@ class SongEntity(
             arweaveTokenAgreementUrl = arweaveTokenAgreementUrl,
             arweaveClipUrl = arweaveClipUrl,
             distributionTrackId = distributionTrackId,
-            mintCostLovelace = mintCostLovelace,
+            mintCostLovelace = release.mintCostLovelace,
             forceDistributed = release.forceDistributed,
             errorMessage = release.errorMessage,
             instrumental = instrumental,
@@ -151,16 +150,15 @@ class SongEntity(
         fun genres(filters: SongFilters): SizedIterable<String> {
             val ops = filters.toOps()
             val genre = SongTable.genres.unnest()
-            val table =
-                if (filters.phrase == null) {
-                    SongTable
-                } else {
-                    SongTable.innerJoin(
-                        otherTable = UserTable,
-                        onColumn = { ownerId },
-                        otherColumn = { id }
-                    )
-                }
+            val table = if (filters.phrase == null) {
+                SongTable
+            } else {
+                SongTable.innerJoin(
+                    otherTable = UserTable,
+                    onColumn = { ownerId },
+                    otherColumn = { id }
+                )
+            }
             val fields = table.select(SongTable.id.count(), genre)
             val query = if (ops.isEmpty()) fields else fields.where(AndOp(ops))
             return query

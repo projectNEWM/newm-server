@@ -1,7 +1,7 @@
 package io.newm.server.features.song
 
-import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.ReleaseBarcodeType
+import io.newm.server.features.song.model.Song
 import java.time.LocalDate
 
 val testSong1 =
@@ -28,6 +28,7 @@ val testSong1 =
         releaseDate = LocalDate.of(2023, 1, 1),
         publicationDate = LocalDate.of(2023, 1, 2),
         lyricsUrl = "https://projectnewm.io/lirycs1.txt",
+        mintCostLovelace = 1000000L
     )
 
 val testSong2 =
@@ -54,4 +55,5 @@ val testSong2 =
         releaseDate = LocalDate.of(2023, 2, 2),
         publicationDate = LocalDate.of(2023, 2, 3),
         lyricsUrl = "https://projectnewm.io/lirycs2.txt",
+        mintCostLovelace = 2000000L
     )
