@@ -70,7 +70,6 @@ data class Song(
     val arweaveClipUrl: String? = null,
     @Transient
     val distributionTrackId: Long? = null,
-    @Transient
     val mintCostLovelace: Long? = null,
     @Transient
     val forceDistributed: Boolean? = null,

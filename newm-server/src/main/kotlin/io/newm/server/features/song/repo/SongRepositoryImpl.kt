@@ -67,15 +67,6 @@ import io.newm.shared.ktx.orNull
 import io.newm.shared.ktx.orZero
 import io.newm.shared.ktx.propertiesFromResource
 import io.newm.shared.ktx.toTempFile
-import java.math.BigDecimal
-import java.math.BigInteger
-import java.math.RoundingMode
-import java.net.URI
-import java.time.Instant
-import java.time.LocalDateTime
-import java.time.ZoneId
-import java.util.Properties
-import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
@@ -91,6 +82,15 @@ import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
+import java.math.BigDecimal
+import java.math.BigInteger
+import java.math.RoundingMode
+import java.net.URI
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.util.Properties
+import java.util.UUID
 
 internal class SongRepositoryImpl(
     private val environment: ApplicationEnvironment,
@@ -223,7 +223,7 @@ internal class SongRepositoryImpl(
                     arweaveClipUrl?.let { songEntity.arweaveClipUrl = it.orNull()?.asValidUrl() }
                     arweaveTokenAgreementUrl?.let { songEntity.arweaveTokenAgreementUrl = it.orNull()?.asValidUrl() }
                     distributionTrackId?.let { songEntity.distributionTrackId = it }
-                    mintCostLovelace?.let { songEntity.mintCostLovelace = it }
+                    mintCostLovelace?.let { releaseEntity.mintCostLovelace = it }
                     forceDistributed?.let { releaseEntity.forceDistributed = it }
                     errorMessage?.let { releaseEntity.errorMessage = it.orNull() }
                 }
@@ -259,6 +259,7 @@ internal class SongRepositoryImpl(
                     distributionReleaseId?.let { releaseEntity.distributionReleaseId = it }
                     forceDistributed?.let { releaseEntity.forceDistributed = it }
                     errorMessage?.let { releaseEntity.errorMessage = it.orNull() }
+                    mintCostLovelace?.let { releaseEntity.mintCostLovelace = it }
                 }
             }
         }

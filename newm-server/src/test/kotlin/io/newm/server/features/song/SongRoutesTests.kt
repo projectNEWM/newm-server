@@ -1,10 +1,21 @@
 package io.newm.server.features.song
 
 import com.google.common.truth.Truth.assertThat
-import io.ktor.client.call.*
-import io.ktor.client.request.*
-import io.ktor.http.*
-import io.ktor.server.application.*
+import io.ktor.client.call.body
+import io.ktor.client.request.accept
+import io.ktor.client.request.bearerAuth
+import io.ktor.client.request.delete
+import io.ktor.client.request.get
+import io.ktor.client.request.parameter
+import io.ktor.client.request.patch
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.URLProtocol
+import io.ktor.http.contentType
+import io.ktor.http.setCookie
+import io.ktor.server.application.ApplicationEnvironment
 import io.mockk.coEvery
 import io.mockk.mockk
 import io.newm.server.BaseApplicationTests
@@ -12,8 +23,21 @@ import io.newm.server.features.cardano.database.KeyEntity
 import io.newm.server.features.cardano.database.KeyTable
 import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.model.CountResponse
-import io.newm.server.features.song.database.*
-import io.newm.server.features.song.model.*
+import io.newm.server.features.song.database.ReleaseEntity
+import io.newm.server.features.song.database.ReleaseTable
+import io.newm.server.features.song.database.SongEntity
+import io.newm.server.features.song.database.SongReceiptTable
+import io.newm.server.features.song.database.SongTable
+import io.newm.server.features.song.model.AudioEncodingStatus
+import io.newm.server.features.song.model.AudioStreamResponse
+import io.newm.server.features.song.model.AudioUploadReport
+import io.newm.server.features.song.model.MarketplaceStatus
+import io.newm.server.features.song.model.MintPaymentResponse
+import io.newm.server.features.song.model.MintingStatus
+import io.newm.server.features.song.model.ReleaseBarcodeType
+import io.newm.server.features.song.model.ReleaseType
+import io.newm.server.features.song.model.Song
+import io.newm.server.features.song.model.SongIdBody
 import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.features.song.repo.SongRepositoryImpl
 import io.newm.server.features.user.database.UserEntity
@@ -36,28 +60,27 @@ import org.koin.core.context.GlobalContext.loadKoinModules
 import org.koin.dsl.module
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
 
 class SongRoutesTests : BaseApplicationTests() {
     @BeforeAll
     fun beforeAllSongRoutesTests() {
-        val module =
-            module {
-                single<SongRepository> {
-                    SongRepositoryImpl(
-                        get(),
-                        get(),
-                        get(),
-                        // we need to mock the CardanoRepository to have a fixed ada price
-                        mockk<CardanoRepository>(relaxed = true) {
-                            coEvery { queryAdaUSDPrice() } returns 253400L // $0.2534 ada price
-                        },
-                        get(),
-                        get(),
-                        get()
-                    )
-                }
+        val module = module {
+            single<SongRepository> {
+                SongRepositoryImpl(
+                    get(),
+                    get(),
+                    get(),
+                    // we need to mock the CardanoRepository to have a fixed ada price
+                    mockk<CardanoRepository>(relaxed = true) {
+                        coEvery { queryAdaUSDPrice() } returns 253400L // $0.2534 ada price
+                    },
+                    get(),
+                    get(),
+                    get()
+                )
             }
+        }
         loadKoinModules(module)
     }
 
@@ -78,12 +101,11 @@ class SongRoutesTests : BaseApplicationTests() {
             val startTime = LocalDateTime.now()
 
             // Post
-            val response =
-                client.post("v1/songs") {
-                    bearerAuth(testUserToken)
-                    contentType(ContentType.Application.Json)
-                    setBody(testSong1)
-                }
+            val response = client.post("v1/songs") {
+                bearerAuth(testUserToken)
+                contentType(ContentType.Application.Json)
+                setBody(testSong1)
+            }
             assertThat(response.status).isEqualTo(HttpStatusCode.OK)
             val songId = response.body<SongIdBody>().songId
 
@@ -124,11 +146,10 @@ class SongRoutesTests : BaseApplicationTests() {
             val song = addSongToDatabase()
 
             // Get it
-            val response =
-                client.get("v1/songs/${song.id}") {
-                    bearerAuth(testUserToken)
-                    accept(ContentType.Application.Json)
-                }
+            val response = client.get("v1/songs/${song.id}") {
+                bearerAuth(testUserToken)
+                accept(ContentType.Application.Json)
+            }
             assertThat(response.status).isEqualTo(HttpStatusCode.OK)
             assertThat(response.body<Song>()).isEqualTo(song)
         }
@@ -147,13 +168,12 @@ class SongRoutesTests : BaseApplicationTests() {
             val limit = 5
             val actualSongs = mutableListOf<Song>()
             while (true) {
-                val response =
-                    client.get("v1/songs") {
-                        bearerAuth(testUserToken)
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                    }
+                val response = client.get("v1/songs") {
+                    bearerAuth(testUserToken)
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val songs = response.body<List<Song>>()
                 if (songs.isEmpty()) break
@@ -180,14 +200,13 @@ class SongRoutesTests : BaseApplicationTests() {
             val limit = 5
             val actualSongs = mutableListOf<Song>()
             while (true) {
-                val response =
-                    client.get("v1/songs") {
-                        bearerAuth(testUserToken)
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("sortOrder", "desc")
-                    }
+                val response = client.get("v1/songs") {
+                    bearerAuth(testUserToken)
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("sortOrder", "desc")
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val songs = response.body<List<Song>>()
                 if (songs.isEmpty()) break
@@ -216,13 +235,12 @@ class SongRoutesTests : BaseApplicationTests() {
             val limit = 5
             val actualSongs = mutableListOf<Song>()
             while (true) {
-                val response =
-                    client.get("v1/songs") {
-                        bearerAuth(testUserToken)
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                    }
+                val response = client.get("v1/songs") {
+                    bearerAuth(testUserToken)
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val songs = response.body<List<Song>>()
                 if (songs.isEmpty()) break
@@ -251,14 +269,13 @@ class SongRoutesTests : BaseApplicationTests() {
             val limit = 5
             val actualSongs = mutableListOf<Song>()
             while (true) {
-                val response =
-                    client.get("v1/songs") {
-                        bearerAuth(testUserToken)
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("archived", false)
-                    }
+                val response = client.get("v1/songs") {
+                    bearerAuth(testUserToken)
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("archived", false)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val songs = response.body<List<Song>>()
                 if (songs.isEmpty()) break
@@ -287,14 +304,13 @@ class SongRoutesTests : BaseApplicationTests() {
             val limit = 5
             val actualSongs = mutableListOf<Song>()
             while (true) {
-                val response =
-                    client.get("v1/songs") {
-                        bearerAuth(testUserToken)
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("archived", true)
-                    }
+                val response = client.get("v1/songs") {
+                    bearerAuth(testUserToken)
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("archived", true)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val songs = response.body<List<Song>>()
                 if (songs.isEmpty()) break
@@ -324,14 +340,13 @@ class SongRoutesTests : BaseApplicationTests() {
             val limit = 5
             val actualSongs = mutableListOf<Song>()
             while (true) {
-                val response =
-                    client.get("v1/songs") {
-                        bearerAuth(testUserToken)
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("ids", ids)
-                    }
+                val response = client.get("v1/songs") {
+                    bearerAuth(testUserToken)
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("ids", ids)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val songs = response.body<List<Song>>()
                 if (songs.isEmpty()) break
@@ -361,14 +376,13 @@ class SongRoutesTests : BaseApplicationTests() {
             val limit = 5
             val actualSongs = mutableListOf<Song>()
             while (true) {
-                val response =
-                    client.get("v1/songs") {
-                        bearerAuth(testUserToken)
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("ids", ids)
-                    }
+                val response = client.get("v1/songs") {
+                    bearerAuth(testUserToken)
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("ids", ids)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val songs = response.body<List<Song>>()
                 if (songs.isEmpty()) break
@@ -398,14 +412,13 @@ class SongRoutesTests : BaseApplicationTests() {
             val limit = 5
             val actualSongs = mutableListOf<Song>()
             while (true) {
-                val response =
-                    client.get("v1/songs") {
-                        bearerAuth(testUserToken)
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("ownerIds", ownerIds)
-                    }
+                val response = client.get("v1/songs") {
+                    bearerAuth(testUserToken)
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("ownerIds", ownerIds)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val songs = response.body<List<Song>>()
                 if (songs.isEmpty()) break
@@ -435,14 +448,13 @@ class SongRoutesTests : BaseApplicationTests() {
             val limit = 5
             val actualSongs = mutableListOf<Song>()
             while (true) {
-                val response =
-                    client.get("v1/songs") {
-                        bearerAuth(testUserToken)
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("ownerIds", ownerIds)
-                    }
+                val response = client.get("v1/songs") {
+                    bearerAuth(testUserToken)
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("ownerIds", ownerIds)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val songs = response.body<List<Song>>()
                 if (songs.isEmpty()) break
@@ -472,14 +484,13 @@ class SongRoutesTests : BaseApplicationTests() {
             val limit = 5
             val actualSongs = mutableListOf<Song>()
             while (true) {
-                val response =
-                    client.get("v1/songs") {
-                        bearerAuth(testUserToken)
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("genres", genres)
-                    }
+                val response = client.get("v1/songs") {
+                    bearerAuth(testUserToken)
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("genres", genres)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val songs = response.body<List<Song>>()
                 if (songs.isEmpty()) break
@@ -509,14 +520,13 @@ class SongRoutesTests : BaseApplicationTests() {
             val limit = 5
             val actualSongs = mutableListOf<Song>()
             while (true) {
-                val response =
-                    client.get("v1/songs") {
-                        bearerAuth(testUserToken)
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("genres", genres)
-                    }
+                val response = client.get("v1/songs") {
+                    bearerAuth(testUserToken)
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("genres", genres)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val songs = response.body<List<Song>>()
                 if (songs.isEmpty()) break
@@ -546,14 +556,13 @@ class SongRoutesTests : BaseApplicationTests() {
             val limit = 5
             val actualSongs = mutableListOf<Song>()
             while (true) {
-                val response =
-                    client.get("v1/songs") {
-                        bearerAuth(testUserToken)
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("moods", moods)
-                    }
+                val response = client.get("v1/songs") {
+                    bearerAuth(testUserToken)
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("moods", moods)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val songs = response.body<List<Song>>()
                 if (songs.isEmpty()) break
@@ -583,14 +592,13 @@ class SongRoutesTests : BaseApplicationTests() {
             val limit = 5
             val actualSongs = mutableListOf<Song>()
             while (true) {
-                val response =
-                    client.get("v1/songs") {
-                        bearerAuth(testUserToken)
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("moods", moods)
-                    }
+                val response = client.get("v1/songs") {
+                    bearerAuth(testUserToken)
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("moods", moods)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val songs = response.body<List<Song>>()
                 if (songs.isEmpty()) break
@@ -620,14 +628,13 @@ class SongRoutesTests : BaseApplicationTests() {
                 val limit = 5
                 val actualSongs = mutableListOf<Song>()
                 while (true) {
-                    val response =
-                        client.get("v1/songs") {
-                            bearerAuth(testUserToken)
-                            accept(ContentType.Application.Json)
-                            parameter("offset", offset)
-                            parameter("limit", limit)
-                            parameter("mintingStatuses", expectedMintingStatus)
-                        }
+                    val response = client.get("v1/songs") {
+                        bearerAuth(testUserToken)
+                        accept(ContentType.Application.Json)
+                        parameter("offset", offset)
+                        parameter("limit", limit)
+                        parameter("mintingStatuses", expectedMintingStatus)
+                    }
                     assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                     val songs = response.body<List<Song>>()
                     if (songs.isEmpty()) break
@@ -658,14 +665,13 @@ class SongRoutesTests : BaseApplicationTests() {
                 val limit = 5
                 val actualSongs = mutableListOf<Song>()
                 while (true) {
-                    val response =
-                        client.get("v1/songs") {
-                            bearerAuth(testUserToken)
-                            accept(ContentType.Application.Json)
-                            parameter("offset", offset)
-                            parameter("limit", limit)
-                            parameter("mintingStatuses", "-$expectedMintingStatus")
-                        }
+                    val response = client.get("v1/songs") {
+                        bearerAuth(testUserToken)
+                        accept(ContentType.Application.Json)
+                        parameter("offset", offset)
+                        parameter("limit", limit)
+                        parameter("mintingStatuses", "-$expectedMintingStatus")
+                    }
                     assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                     val songs = response.body<List<Song>>()
                     if (songs.isEmpty()) break
@@ -696,14 +702,13 @@ class SongRoutesTests : BaseApplicationTests() {
             val limit = 5
             val actualSongs = mutableListOf<Song>()
             while (true) {
-                val response =
-                    client.get("v1/songs") {
-                        bearerAuth(testUserToken)
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("olderThan", olderThan)
-                    }
+                val response = client.get("v1/songs") {
+                    bearerAuth(testUserToken)
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("olderThan", olderThan)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val songs = response.body<List<Song>>()
                 if (songs.isEmpty()) break
@@ -733,14 +738,13 @@ class SongRoutesTests : BaseApplicationTests() {
             val limit = 5
             val actualSongs = mutableListOf<Song>()
             while (true) {
-                val response =
-                    client.get("v1/songs") {
-                        bearerAuth(testUserToken)
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("newerThan", newerThan)
-                    }
+                val response = client.get("v1/songs") {
+                    bearerAuth(testUserToken)
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("newerThan", newerThan)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val songs = response.body<List<Song>>()
                 if (songs.isEmpty()) break
@@ -764,28 +768,26 @@ class SongRoutesTests : BaseApplicationTests() {
             }
 
             // filter out for phrase
-            val expectedSongs =
-                allSongs.filter { song ->
-                    val stageOrFullName = transaction { UserEntity[song.ownerId!!].stageOrFullName }
-                    phrase in song.title!! ||
-                        phrase in song.description!! ||
-                        phrase in song.nftName!! ||
-                        phrase in stageOrFullName
-                }
+            val expectedSongs = allSongs.filter { song ->
+                val stageOrFullName = transaction { UserEntity[song.ownerId!!].stageOrFullName }
+                phrase in song.title!! ||
+                    phrase in song.description!! ||
+                    phrase in song.nftName!! ||
+                    phrase in stageOrFullName
+            }
 
             // Get all songs forcing pagination
             var offset = 0
             val limit = 5
             val actualSongs = mutableListOf<Song>()
             while (true) {
-                val response =
-                    client.get("v1/songs") {
-                        bearerAuth(testUserToken)
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("phrase", phrase)
-                    }
+                val response = client.get("v1/songs") {
+                    bearerAuth(testUserToken)
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("phrase", phrase)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val songs = response.body<List<Song>>()
                 if (songs.isEmpty()) break
@@ -801,28 +803,25 @@ class SongRoutesTests : BaseApplicationTests() {
     fun testPatchSong() =
         runBlocking {
             // Add Song directly into database
-            val song1 =
-                addSongToDatabase(ownerId = testUserId) {
-                    ReleaseEntity[releaseId!!].hasSubmittedForDistribution = true
-                }
+            val song1 = addSongToDatabase(ownerId = testUserId) {
+                ReleaseEntity[releaseId!!].hasSubmittedForDistribution = true
+            }
             val songId = song1.id!!
 
             // Patch it with Song2
-            val response =
-                client.patch("v1/songs/$songId") {
-                    bearerAuth(testUserToken)
-                    contentType(ContentType.Application.Json)
-                    setBody(testSong2)
-                }
+            val response = client.patch("v1/songs/$songId") {
+                bearerAuth(testUserToken)
+                contentType(ContentType.Application.Json)
+                setBody(testSong2)
+            }
             assertThat(response.status).isEqualTo(HttpStatusCode.NoContent)
 
             // Read Song directly from database & verify it
-            val song2 =
-                transaction {
-                    val song = SongEntity[songId]
-                    val release = ReleaseEntity[song.releaseId!!].toModel()
-                    song.toModel(release)
-                }
+            val song2 = transaction {
+                val song = SongEntity[songId]
+                val release = ReleaseEntity[song.releaseId!!].toModel()
+                song.toModel(release)
+            }
             assertThat(song2.id).isEqualTo(songId)
             assertThat(song2.archived).isEqualTo(testSong2.archived)
             assertThat(song2.ownerId).isEqualTo(testUserId)
@@ -859,10 +858,9 @@ class SongRoutesTests : BaseApplicationTests() {
             val songId = addSongToDatabase(ownerId = testUserId).id!!
 
             // delete it
-            val response =
-                client.delete("v1/songs/$songId") {
-                    bearerAuth(testUserToken)
-                }
+            val response = client.delete("v1/songs/$songId") {
+                bearerAuth(testUserToken)
+            }
             assertThat(response.status).isEqualTo(HttpStatusCode.NoContent)
 
             // make sure doesn't exist in database
@@ -878,12 +876,11 @@ class SongRoutesTests : BaseApplicationTests() {
             val songId = addSongToDatabase(ownerId = testUserId).id!!
 
             // Request upload
-            val response =
-                client.post("v1/songs/$songId/audio") {
-                    bearerAuth(testUserToken)
-                    contentType(ContentType.Application.OctetStream) // intentionally not set to "audio/x-flac" to make sure we detect
-                    setBody(ResourceOutgoingContent("sample1.flac"))
-                }
+            val response = client.post("v1/songs/$songId/audio") {
+                bearerAuth(testUserToken)
+                contentType(ContentType.Application.OctetStream) // intentionally not set to "audio/x-flac" to make sure we detect
+                setBody(ResourceOutgoingContent("sample1.flac"))
+            }
             assertThat(response.status).isEqualTo(HttpStatusCode.OK)
             val expectedAudioUrl = "s3://$bucketName/$songId/audio.flac"
             with(response.body<AudioUploadReport>()) {
@@ -901,12 +898,11 @@ class SongRoutesTests : BaseApplicationTests() {
     @Test
     fun testGetAllGenres() =
         runBlocking {
-            val ownerId =
-                transaction {
-                    UserEntity.new {
-                        email = "artist1@newm.io"
-                    }
-                }.id.value
+            val ownerId = transaction {
+                UserEntity.new {
+                    email = "artist1@newm.io"
+                }
+            }.id.value
 
             // Add Songs directly into database generating genres histogram
             val expectedGenres = listOf("genreG", "genreF", "genreE", "genreD", "genreC", "genreB", "genreA")
@@ -929,13 +925,12 @@ class SongRoutesTests : BaseApplicationTests() {
             val limit = 3
             val actualGenres = mutableListOf<String>()
             while (true) {
-                val response =
-                    client.get("v1/songs/genres") {
-                        bearerAuth(testUserToken)
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                    }
+                val response = client.get("v1/songs/genres") {
+                    bearerAuth(testUserToken)
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val genres = response.body<List<String>>()
                 if (genres.isEmpty()) break
@@ -950,19 +945,17 @@ class SongRoutesTests : BaseApplicationTests() {
     @Test
     fun testGetGenresByOwner() =
         runBlocking {
-            val ownerId1 =
-                transaction {
-                    UserEntity.new {
-                        email = "artist1@newm.io"
-                    }
-                }.id.value
+            val ownerId1 = transaction {
+                UserEntity.new {
+                    email = "artist1@newm.io"
+                }
+            }.id.value
 
-            val ownerId2 =
-                transaction {
-                    UserEntity.new {
-                        email = "artist2@newm.io"
-                    }
-                }.id.value
+            val ownerId2 = transaction {
+                UserEntity.new {
+                    email = "artist2@newm.io"
+                }
+            }.id.value
 
             // Add Songs directly into database generating genres histogram
             val expectedGenres = listOf("genreG", "genreF", "genreE", "genreD", "genreC", "genreB", "genreA")
@@ -996,14 +989,13 @@ class SongRoutesTests : BaseApplicationTests() {
             val limit = 3
             val actualGenres = mutableListOf<String>()
             while (true) {
-                val response =
-                    client.get("v1/songs/genres") {
-                        bearerAuth(testUserToken)
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("ownerIds", ownerId1)
-                    }
+                val response = client.get("v1/songs/genres") {
+                    bearerAuth(testUserToken)
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("ownerIds", ownerId1)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val genres = response.body<List<String>>()
                 if (genres.isEmpty()) break
@@ -1020,10 +1012,9 @@ class SongRoutesTests : BaseApplicationTests() {
         runBlocking {
             var count = 0L
             while (true) {
-                val response =
-                    client.get("v1/songs/count") {
-                        bearerAuth(testUserToken)
-                    }
+                val response = client.get("v1/songs/count") {
+                    bearerAuth(testUserToken)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val actualCount = response.body<CountResponse>().count
                 assertThat(actualCount).isEqualTo(count)
@@ -1045,10 +1036,9 @@ class SongRoutesTests : BaseApplicationTests() {
         runBlocking {
             var count = 0L
             while (true) {
-                val response =
-                    client.get("v1/songs/genres/count") {
-                        bearerAuth(testUserToken)
-                    }
+                val response = client.get("v1/songs/genres/count") {
+                    bearerAuth(testUserToken)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val actualCount = response.body<CountResponse>().count
                 assertThat(actualCount).isEqualTo(count)
@@ -1079,10 +1069,9 @@ class SongRoutesTests : BaseApplicationTests() {
             val songId = addSongToDatabase(ownerId = testUserId).id!!
 
             // get required payment amount
-            val response =
-                client.get("v1/songs/$songId/mint/payment") {
-                    bearerAuth(testUserToken)
-                }
+            val response = client.get("v1/songs/$songId/mint/payment") {
+                bearerAuth(testUserToken)
+            }
             assertThat(response.status).isEqualTo(HttpStatusCode.OK)
             val responseBody: MintPaymentResponse = response.body()
             val actualCborHex = responseBody.cborHex
@@ -1096,20 +1085,18 @@ class SongRoutesTests : BaseApplicationTests() {
         runBlocking {
             // Add song directly into database
             val streamId = UUID.randomUUID().toString()
-            val songId =
-                addSongToDatabase(ownerId = testUserId, init = {
-                    streamUrl = "https://newm.io/$streamId/$streamId.m3u8"
-                }).id!!
+            val songId = addSongToDatabase(ownerId = testUserId, init = {
+                streamUrl = "https://newm.io/$streamId/$streamId.m3u8"
+            }).id!!
 
             // Fetch stream metadata
-            val response =
-                client.get("v1/songs/$songId/stream") {
-                    bearerAuth(testUserToken)
-                    contentType(ContentType.Application.Json)
-                    url {
-                        protocol = URLProtocol.HTTPS
-                    }
+            val response = client.get("v1/songs/$songId/stream") {
+                bearerAuth(testUserToken)
+                contentType(ContentType.Application.Json)
+                url {
+                    protocol = URLProtocol.HTTPS
                 }
+            }
             assertThat(response.status).isEqualTo(HttpStatusCode.OK)
 
             val resp = response.body<AudioStreamResponse>()
@@ -1167,44 +1154,42 @@ fun addSongToDatabase(
 ): Song {
     fun phraseOrEmpty(target: Int) = phrase?.takeIf { offset % 7 == target }.orEmpty()
 
-    val ownerEntityId =
-        ownerId?.let {
-            EntityID(it, UserTable)
-        } ?: transaction {
-            UserEntity.new {
-                email = "artist$offset@newm.io"
-                if (offset % 4 == 0) {
-                    nickname = "nickname$offset ${phraseOrEmpty(0)} blah blah"
-                }
-                firstName = "firstName$offset ${phraseOrEmpty(1)} blah blah"
-                lastName = "lastName$offset ${phraseOrEmpty(2)} blah blah"
+    val ownerEntityId = ownerId?.let {
+        EntityID(it, UserTable)
+    } ?: transaction {
+        UserEntity.new {
+            email = "artist$offset@newm.io"
+            if (offset % 4 == 0) {
+                nickname = "nickname$offset ${phraseOrEmpty(0)} blah blah"
             }
-        }.id
+            firstName = "firstName$offset ${phraseOrEmpty(1)} blah blah"
+            lastName = "lastName$offset ${phraseOrEmpty(2)} blah blah"
+        }
+    }.id
 
-    val paymentKeyId =
-        transaction {
-            KeyEntity.new {
-                this.address = ""
-                this.vkey = ""
-                this.skey = ""
-            }
-        }.id
+    val paymentKeyId = transaction {
+        KeyEntity.new {
+            this.address = ""
+            this.vkey = ""
+            this.skey = ""
+        }
+    }.id
 
     val title = "title$offset ${phraseOrEmpty(3)} blah blah"
-    val releaseId =
-        transaction {
-            ReleaseEntity
-                .new {
-                    this.title = title
-                    this.ownerId = ownerEntityId
-                    releaseType = ReleaseType.SINGLE
-                    coverArtUrl = "https://newm.io/cover$offset"
-                    barcodeType = ReleaseBarcodeType.entries[offset % ReleaseBarcodeType.entries.size]
-                    barcodeNumber = "barcodeNumber$offset"
-                    releaseDate = LocalDate.of(2023, 1, offset % 31 + 1)
-                    publicationDate = LocalDate.of(2023, 1, offset % 31 + 1)
-                }.id.value
-        }
+    val releaseId = transaction {
+        ReleaseEntity
+            .new {
+                this.title = title
+                this.ownerId = ownerEntityId
+                releaseType = ReleaseType.SINGLE
+                coverArtUrl = "https://newm.io/cover$offset"
+                barcodeType = ReleaseBarcodeType.entries[offset % ReleaseBarcodeType.entries.size]
+                barcodeNumber = "barcodeNumber$offset"
+                releaseDate = LocalDate.of(2023, 1, offset % 31 + 1)
+                publicationDate = LocalDate.of(2023, 1, offset % 31 + 1)
+                mintCostLovelace = offset.toLong()
+            }.id.value
+    }
     val release = transaction { ReleaseEntity[releaseId].toModel() }
     return transaction {
         SongEntity.new {

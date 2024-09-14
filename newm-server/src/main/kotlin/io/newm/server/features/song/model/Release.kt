@@ -35,6 +35,7 @@ data class Release(
     val forceDistributed: Boolean? = null,
     val errorMessage: String? = null,
     val preSavePage: String? = null,
+    val mintCostLovelace: Long? = null,
 ) {
     @Transient
     val releaseProductCodeType: String =

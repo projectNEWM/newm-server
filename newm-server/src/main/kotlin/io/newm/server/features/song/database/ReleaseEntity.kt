@@ -11,13 +11,21 @@ import io.newm.shared.ktx.exists
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.AndOp
+import org.jetbrains.exposed.sql.Op
+import org.jetbrains.exposed.sql.SizedIterable
+import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.notInList
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.innerJoin
+import org.jetbrains.exposed.sql.lowerCase
+import org.jetbrains.exposed.sql.or
+import org.jetbrains.exposed.sql.selectAll
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -40,6 +48,7 @@ class ReleaseEntity(
     var errorMessage: String? by ReleaseTable.errorMessage
     var forceDistributed: Boolean? by ReleaseTable.forceDistributed
     var preSavePage: String? by ReleaseTable.preSavePage
+    var mintCostLovelace: Long? by ReleaseTable.mintCostLovelace
 
     fun toModel(): Release =
         Release(
@@ -59,7 +68,8 @@ class ReleaseEntity(
             hasSubmittedForDistribution = hasSubmittedForDistribution,
             errorMessage = errorMessage,
             forceDistributed = forceDistributed,
-            preSavePage = preSavePage
+            preSavePage = preSavePage,
+            mintCostLovelace = mintCostLovelace
         )
 
     companion object : UUIDEntityClass<ReleaseEntity>(ReleaseTable) {
