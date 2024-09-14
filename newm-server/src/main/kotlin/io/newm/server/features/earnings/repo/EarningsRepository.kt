@@ -2,6 +2,7 @@ package io.newm.server.features.earnings.repo
 
 import io.newm.server.features.earnings.model.AddSongRoyaltyRequest
 import io.newm.server.features.earnings.model.ClaimOrder
+import io.newm.server.features.earnings.model.ClaimOrderRequest
 import io.newm.server.features.earnings.model.Earning
 import io.newm.server.typealiases.SongId
 import java.util.UUID
@@ -33,7 +34,7 @@ interface EarningsRepository {
     /**
      * Create a new claim order for a stake address
      */
-    suspend fun createClaimOrder(stakeAddress: String): ClaimOrder?
+    suspend fun createClaimOrder(claimOrderRequest: ClaimOrderRequest): ClaimOrder?
 
     /**
      * Update a claim order

@@ -33,7 +33,8 @@ class ClaimOrderEntity(
             failedEarningsIds = failedEarningsIds?.toList(),
             transactionId = transactionId,
             createdAt = createdAt,
-            errorMessage = errorMessage
+            errorMessage = errorMessage,
+            cborHex = "",
         )
 
     companion object : UUIDEntityClass<ClaimOrderEntity>(ClaimOrdersTable)
