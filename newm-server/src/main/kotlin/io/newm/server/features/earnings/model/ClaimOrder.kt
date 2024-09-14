@@ -26,7 +26,8 @@ data class ClaimOrder(
     val transactionId: String?,
     @Contextual
     val createdAt: LocalDateTime,
-    val errorMessage: String?
+    val errorMessage: String?,
+    val cborHex: String,
 ) {
     companion object {
         val ACTIVE_STATUSES = listOf(ClaimOrderStatus.Pending, ClaimOrderStatus.Processing).map { it.name }

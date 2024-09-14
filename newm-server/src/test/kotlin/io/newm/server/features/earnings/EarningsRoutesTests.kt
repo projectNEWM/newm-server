@@ -148,7 +148,8 @@ class EarningsRoutesTests : BaseApplicationTests() {
                     Earning(id = earning1, amount = 200, stakeAddress = testStakeAddress1, memo = "default", createdAt = createdAt),
                     Earning(id = earning2, amount = 300, stakeAddress = testStakeAddress1, memo = "default", createdAt = createdAt),
                     Earning(id = earning3, amount = 500, stakeAddress = testStakeAddress1, memo = "default", createdAt = createdAt),
-                )
+                ),
+                amountCborHex = "1a002dc6c0" // 2 ada for minutxo + 1 ada change
             )
 
             // Get it

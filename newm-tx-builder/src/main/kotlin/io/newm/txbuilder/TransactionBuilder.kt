@@ -362,7 +362,7 @@ class TransactionBuilder(
     private fun createScriptDataHash() {
         if (scriptDataHash == null && (!redeemers.isNullOrEmpty() || !datums.isNullOrEmpty())) {
             // calculate the scriptDataHash - // redeemerBytes + datumBytes + languageViewMap
-            val redeemerBytes = createRedeemerWitnesses()?.toCborByteArray() ?: ByteArray(1) { 0x80.toByte() }
+            val redeemerBytes = createRedeemerWitnesses()?.toCborByteArray() ?: ByteArray(1) { 0xa0.toByte() }
             val datumBytes = createDatumWitnesses()?.toCborByteArray() ?: ByteArray(0)
             val languageViewMap =
                 if (!redeemers.isNullOrEmpty()) {

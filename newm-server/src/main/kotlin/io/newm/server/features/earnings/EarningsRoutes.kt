@@ -1,5 +1,6 @@
 package io.newm.server.features.earnings
 
+import com.google.iot.cbor.CborInteger
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.auth.authenticate
 import io.ktor.server.request.receive
@@ -7,10 +8,14 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.Routing
 import io.ktor.server.routing.route
 import io.newm.chain.util.extractStakeAddress
+import io.newm.chain.util.toHexString
 import io.newm.server.auth.jwt.AUTH_JWT
 import io.newm.server.auth.jwt.AUTH_JWT_ADMIN
+import io.newm.server.config.repo.ConfigRepository
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_EARNINGS_CLAIM_ORDER_FEE
 import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.earnings.model.AddSongRoyaltyRequest
+import io.newm.server.features.earnings.model.ClaimOrderRequest
 import io.newm.server.features.earnings.model.Earning
 import io.newm.server.features.earnings.model.GetEarningsResponse
 import io.newm.server.features.earnings.repo.EarningsRepository
@@ -25,6 +30,7 @@ private const val EARNINGS_PATH = "v1/earnings"
 private const val EARNINGS_PATH_ADMIN = "v1/earnings/admin"
 
 fun Routing.createEarningsRoutes() {
+    val configRepository: ConfigRepository by inject()
     val cardanoRepository: CardanoRepository by inject()
     val earningsRepository: EarningsRepository by inject()
     val recaptchaRepository: RecaptchaRepository by inject()
@@ -57,25 +63,32 @@ fun Routing.createEarningsRoutes() {
 
     // Claiming is un-authenticated, but we still check recaptcha to prevent bots
     authenticate(AUTH_JWT, optional = true) {
-        route("$EARNINGS_PATH/{walletAddress}") {
+        route(EARNINGS_PATH) {
             // get earnings
-            get {
-                recaptchaRepository.verify("getearnings_$walletAddress", request)
+            get("{walletAddress}") {
                 val stakeAddress = parameters["walletAddress"]!!.extractStakeAddress(cardanoRepository.isMainnet())
+                recaptchaRepository.verify("getearnings_$stakeAddress", request)
                 val earnings = earningsRepository.getAllByStakeAddress(stakeAddress)
-                // calculate sum of claimed earnings
+                val totalClaimed = earnings.filter { it.claimed }.sumOf { it.amount }
+                val paymentAmountLovelace = configRepository.getLong(CONFIG_KEY_EARNINGS_CLAIM_ORDER_FEE)
+                val changeAmountLovelace = 1000000L // 1 ada
+                val amountCborHex = CborInteger
+                    .create(paymentAmountLovelace + changeAmountLovelace)
+                    .toCborByteArray()
+                    .toHexString()
                 respond(
                     GetEarningsResponse(
-                        totalClaimed = earnings.filter { it.claimed }.sumOf { it.amount },
-                        earnings = earnings
+                        totalClaimed = totalClaimed,
+                        earnings = earnings,
+                        amountCborHex = amountCborHex,
                     )
                 )
             }
             // create a claim for all earnings on this wallet stake address
             post {
-                recaptchaRepository.verify("postearnings_$walletAddress", request)
-                val stakeAddress = parameters["walletAddress"]!!.extractStakeAddress(cardanoRepository.isMainnet())
-                val claimOrder = earningsRepository.createClaimOrder(stakeAddress)
+                val claimOrderRequest = receive<ClaimOrderRequest>()
+                recaptchaRepository.verify("postearnings_${claimOrderRequest.walletAddress}", request)
+                val claimOrder = earningsRepository.createClaimOrder(claimOrderRequest)
 
                 if (claimOrder != null) {
                     respond(claimOrder)

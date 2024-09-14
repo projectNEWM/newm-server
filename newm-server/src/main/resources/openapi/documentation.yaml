@@ -597,16 +597,17 @@ paths:
                 type: "array"
                 items:
                   $ref: "#/components/schemas/Earning"
+  /v1/earnings:
     post:
       tags:
         - "Earnings"
       description: "create a claim for all earnings on this wallet stake address"
-      parameters:
-        - name: "walletAddress"
-          in: "path"
-          required: true
-          schema:
-            type: "string"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClaimOrderRequest"
+        required: true
       responses:
         "200":
           description: "OK"
@@ -2311,6 +2312,21 @@ components:
         - "stakeAddress"
         - "memo"
         - "createdAt"
+    ClaimOrderRequest:
+      type: "object"
+      properties:
+        walletAddress:
+          type: "string"
+        changeAddress:
+          type: "string"
+        utxoCborHexList:
+          type: "array"
+          items:
+              type: "string"
+      required:
+        - "walletAddress"
+        - "changeAddress"
+        - "utxoCborHexList"
     ClaimOrder:
       type: "object"
       properties:
@@ -2353,6 +2369,8 @@ components:
           format: "date-time"
         errorMessage:
           type: "string"
+        cborHex:
+          type: "string"
       required:
         - "stakeAddress"
         - "keyId"
@@ -2360,6 +2378,7 @@ components:
         - "status"
         - "earningsIds"
         - "createdAt"
+        - "cborHex"
     BigInteger:
       type: "integer"
     AddSongRoyaltyRequest:

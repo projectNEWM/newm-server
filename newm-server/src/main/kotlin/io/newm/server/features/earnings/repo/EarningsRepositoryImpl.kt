@@ -1,6 +1,8 @@
 package io.newm.server.features.earnings.repo
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.newm.chain.grpc.outputUtxo
+import io.newm.chain.util.extractStakeAddress
 import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_EARNINGS_CLAIM_ORDER_FEE
 import io.newm.server.features.cardano.database.KeyTable
@@ -15,17 +17,21 @@ import io.newm.server.features.earnings.database.EarningsTable
 import io.newm.server.features.earnings.model.AddSongRoyaltyRequest
 import io.newm.server.features.earnings.model.ClaimOrder
 import io.newm.server.features.earnings.model.ClaimOrder.Companion.ACTIVE_STATUSES
+import io.newm.server.features.earnings.model.ClaimOrderRequest
 import io.newm.server.features.earnings.model.ClaimOrderStatus
 import io.newm.server.features.earnings.model.Earning
 import io.newm.server.features.song.database.SongTable
 import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.features.user.repo.UserRepository
 import io.newm.server.typealiases.SongId
+import io.newm.shared.koin.inject
 import io.newm.shared.ktx.toDate
+import io.newm.shared.ktx.toHexString
 import java.sql.Connection.TRANSACTION_SERIALIZABLE
 import java.time.Instant
 import java.time.LocalDateTime
 import java.util.UUID
+import org.apache.curator.framework.recipes.locks.InterProcessMutex
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
@@ -34,10 +40,13 @@ import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.batchInsert
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.koin.core.parameter.parametersOf
 import org.quartz.JobBuilder.newJob
 import org.quartz.JobKey
 import org.quartz.SimpleScheduleBuilder.simpleSchedule
 import org.quartz.TriggerBuilder.newTrigger
+
+private const val CLAIM_ORDER_INTER_PROCESS_MUTEX_PATH = "/mutexes/claim-order"
 
 class EarningsRepositoryImpl(
     private val userRepository: UserRepository,
@@ -47,6 +56,7 @@ class EarningsRepositoryImpl(
     private val schedulerDaemon: MonitorClaimOrderSchedulerDaemon,
 ) : EarningsRepository {
     private val log = KotlinLogging.logger {}
+    private val claimOrderMutex: InterProcessMutex by inject { parametersOf(CLAIM_ORDER_INTER_PROCESS_MUTEX_PATH) }
 
     override suspend fun add(earning: Earning): UUID =
         transaction {
@@ -188,10 +198,20 @@ class EarningsRepositoryImpl(
         }
     }
 
-    override suspend fun createClaimOrder(stakeAddress: String): ClaimOrder? {
+    override suspend fun createClaimOrder(claimOrderRequest: ClaimOrderRequest): ClaimOrder? {
         // create any claim orders one at a time to ensure a flood attack can't create a bunch of dup claim orders
+        claimOrderMutex.acquire()
+        try {
+            return createClaimOrderInternal(claimOrderRequest)
+        } finally {
+            claimOrderMutex.release()
+        }
+    }
+
+    private suspend fun createClaimOrderInternal(claimOrderRequest: ClaimOrderRequest): ClaimOrder? {
         val claimOrder =
             newSuspendedTransaction(transactionIsolation = TRANSACTION_SERIALIZABLE) {
+                val stakeAddress = claimOrderRequest.walletAddress.extractStakeAddress(cardanoRepository.isMainnet())
                 // check for existing open claim record first
                 getActiveClaimOrderByStakeAddress(stakeAddress) ?: run {
                     // create a new claim record
@@ -214,6 +234,7 @@ class EarningsRepositoryImpl(
                             transactionId = null,
                             createdAt = LocalDateTime.now(),
                             errorMessage = null,
+                            cborHex = "",
                         )
 
                     val id = add(claimOrder)
@@ -221,7 +242,23 @@ class EarningsRepositoryImpl(
                 }
             }
 
-        return claimOrder?.also { monitor(it) }
+        val cborHex = claimOrder
+            ?.let {
+                cardanoRepository
+                    .buildTransaction {
+                        this.sourceUtxos.addAll(claimOrderRequest.utxos)
+                        this.outputUtxos.add(
+                            outputUtxo {
+                                address = claimOrder.paymentAddress
+                                lovelace = claimOrder.paymentAmount.toString()
+                            }
+                        )
+                        this.changeAddress = claimOrderRequest.changeAddress
+                    }.transactionCbor
+                    .toByteArray()
+                    .toHexString()
+            }.orEmpty()
+        return claimOrder?.copy(cborHex = cborHex)?.also { monitor(it) }
     }
 
     override suspend fun getAll(): List<Earning> =
