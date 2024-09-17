@@ -27,7 +27,6 @@ import io.newm.server.typealiases.SongId
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.toDate
 import io.newm.shared.ktx.toHexString
-import java.sql.Connection.TRANSACTION_SERIALIZABLE
 import java.time.Instant
 import java.time.LocalDateTime
 import java.util.UUID
@@ -210,7 +209,7 @@ class EarningsRepositoryImpl(
 
     private suspend fun createClaimOrderInternal(claimOrderRequest: ClaimOrderRequest): ClaimOrder? {
         val claimOrder =
-            newSuspendedTransaction(transactionIsolation = TRANSACTION_SERIALIZABLE) {
+            newSuspendedTransaction {
                 val stakeAddress = claimOrderRequest.walletAddress.extractStakeAddress(cardanoRepository.isMainnet())
                 // check for existing open claim record first
                 getActiveClaimOrderByStakeAddress(stakeAddress) ?: run {
