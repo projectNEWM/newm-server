@@ -66,7 +66,7 @@ class MarketplaceSaleEntity(
     fun toModel(
         isMainnet: Boolean,
         isNftCdnEnabled: Boolean,
-        costAmountConvertions: CostAmountConversions
+        costAmountConversions: CostAmountConversions
     ): Sale {
         val song = SongEntity[songId]
         val artist = UserEntity[song.ownerId]
@@ -77,16 +77,14 @@ class MarketplaceSaleEntity(
         if (isNftCdnEnabled) {
             val fingerprint = assetFingerprintOf(song.nftPolicyId!!, song.nftName!!)
             coverArtUrl = nftCdnRepository.generateImageUrl(fingerprint)
-            clipUrl =
-                nftCdnRepository.generateFileUrl(
-                    fingerprint = fingerprint,
-                    index = mintingRepository.getAudioClipFileIndex(song.nftPolicyId!!)
-                )
-            tokenAgreementUrl =
-                nftCdnRepository.generateFileUrl(
-                    fingerprint = fingerprint,
-                    index = mintingRepository.getTokenAgreementFileIndex(song.nftPolicyId!!)
-                )
+            clipUrl = nftCdnRepository.generateFileUrl(
+                fingerprint = fingerprint,
+                index = mintingRepository.getAudioClipFileIndex(song.nftPolicyId!!)
+            )
+            tokenAgreementUrl = nftCdnRepository.generateFileUrl(
+                fingerprint = fingerprint,
+                index = mintingRepository.getTokenAgreementFileIndex(song.nftPolicyId!!)
+            )
         } else {
             coverArtUrl = release.arweaveCoverArtUrl!!.arweaveToWebUrl()
             clipUrl = song.arweaveClipUrl!!.arweaveToWebUrl()
@@ -101,39 +99,39 @@ class MarketplaceSaleEntity(
             costPolicyId = costPolicyId,
             costAssetName = costAssetName,
             costAmount = costAmount,
-            costAmountUsd = costAmountConvertions.usd,
-            costAmountNewm = costAmountConvertions.newm,
+            costAmountUsd = costAmountConversions.usd,
+            costAmountNewm = costAmountConversions.newm,
             maxBundleSize = maxBundleSize,
             totalBundleQuantity = totalBundleQuantity,
             bundleAmount = bundleAmount,
             availableBundleQuantity = availableBundleQuantity,
-            song =
-                Sale.Song(
-                    id = songId.value,
-                    artistId = artist.id.value,
-                    artistName = artist.stageOrFullName,
-                    artistPictureUrl = artist.pictureUrl,
-                    title = song.title,
-                    description = song.description,
-                    parentalAdvisory = song.parentalAdvisory,
-                    genres = song.genres.toList(),
-                    moods = song.moods?.toList(),
-                    coverArtUrl = coverArtUrl,
-                    clipUrl = clipUrl,
-                    tokenAgreementUrl = tokenAgreementUrl,
-                    assetUrl = assetUrlOf(isMainnet, song.nftPolicyId!!, song.nftName!!),
-                    collaborators =
-                        CollaborationEntity.findBySongId(songId.value).mapNotNull { collab ->
-                            UserEntity.getByEmail(collab.email)?.run {
-                                Sale.SongCollaborator(
-                                    id = id.value,
-                                    name = stageOrFullName,
-                                    pictureUrl = pictureUrl,
-                                    role = collab.role
-                                )
-                            }
+            song = Sale.Song(
+                id = songId.value,
+                artistId = artist.id.value,
+                artistName = artist.stageOrFullName,
+                artistPictureUrl = artist.pictureUrl,
+                title = song.title,
+                description = song.description,
+                parentalAdvisory = song.parentalAdvisory,
+                genres = song.genres.toList(),
+                moods = song.moods?.toList(),
+                coverArtUrl = coverArtUrl,
+                clipUrl = clipUrl,
+                tokenAgreementUrl = tokenAgreementUrl,
+                assetUrl = assetUrlOf(isMainnet, song.nftPolicyId!!, song.nftName!!),
+                collaborators = CollaborationEntity
+                    .findBySongId(songId.value)
+                    .mapNotNull { collab ->
+                        UserEntity.getByEmail(collab.email)?.run {
+                            Sale.SongCollaborator(
+                                id = id.value,
+                                name = stageOrFullName,
+                                pictureUrl = pictureUrl,
+                                role = collab.role
+                            )
                         }
-                )
+                    }.sortedBy { it.name },
+            )
         )
     }
 

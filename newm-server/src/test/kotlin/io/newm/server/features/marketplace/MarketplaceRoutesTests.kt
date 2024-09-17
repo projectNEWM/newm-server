@@ -1036,7 +1036,7 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
                 }.toModel(
                     isMainnet = false,
                     isNftCdnEnabled = false,
-                    costAmountConvertions = CostAmountConversions(
+                    costAmountConversions = CostAmountConversions(
                         usd = costAmountUsd.toBigDecimal(12).toPlainString(),
                         newm = (costAmountUsd.toBigDecimal(6) / NEWM_USD_PRICE.toBigDecimal()).toPlainString()
                     )
