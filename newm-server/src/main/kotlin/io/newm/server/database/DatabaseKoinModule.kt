@@ -20,12 +20,12 @@ val databaseKoinModule =
                 }
                 isAutoCommit = false
                 transactionIsolation = "TRANSACTION_REPEATABLE_READ"
-                connectionTimeout = 40_000L
+                connectionTimeout = 30_000L
                 maximumPoolSize = 30
                 minimumIdle = 5
-                maxLifetime = 600_000L // 10 minutes
-                validationTimeout = 12_000L
-                idleTimeout = 12_000L
+                maxLifetime = 300_000L // 5 minutes
+                validationTimeout = 10_000L
+                idleTimeout = 60_000L
                 leakDetectionThreshold = 60_000L
             }
         }

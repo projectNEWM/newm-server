@@ -27,7 +27,6 @@ import io.newm.shared.koin.inject
 import io.newm.shared.ktx.toUUID
 import io.newm.txbuilder.ktx.extractFields
 import java.math.BigInteger
-import java.sql.Connection.TRANSACTION_SERIALIZABLE
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import kotlin.time.Duration.Companion.minutes
@@ -214,7 +213,7 @@ class MonitorClaimOrderJob : Job {
                             val submitTransactionResponse =
                                 cardanoRepository.submitTransaction(transactionBuilderResponse.transactionCbor)
                             if (submitTransactionResponse.result == "MsgAcceptTx") {
-                                newSuspendedTransaction(transactionIsolation = TRANSACTION_SERIALIZABLE) {
+                                newSuspendedTransaction {
                                     earningsRepository.claimed(
                                         claimOrderId = claimOrder.id!!,
                                         earningsIds = claimOrder.earningsIds
