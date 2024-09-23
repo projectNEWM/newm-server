@@ -25,6 +25,7 @@ import io.newm.kogmios.protocols.model.MetadataMap
 import io.newm.kogmios.protocols.model.MetadataString
 import io.newm.kogmios.protocols.model.MetadataValue
 import io.newm.kogmios.protocols.model.ScriptPlutusV2
+import io.newm.kogmios.protocols.model.ScriptPlutusV3
 import io.newm.kogmios.protocols.model.StakeCredentialRegistrationCertificate
 import io.newm.kogmios.protocols.model.StakeDelegationCertificate
 import io.newm.kogmios.protocols.model.UtxoOutput
@@ -176,8 +177,13 @@ fun List<UtxoOutput>.toCreatedUtxoList(
         lovelace = utxoOutput.value.ada.ada.lovelace,
         datumHash = datumHash,
         datum = datum,
-        // we only care about plutus v2
-        scriptRef = (utxoOutput.script as? ScriptPlutusV2)?.cbor,
+        scriptRef = utxoOutput.script?.let { script ->
+            when (script) {
+                is ScriptPlutusV2 -> script.cbor
+                is ScriptPlutusV3 -> script.cbor
+                else -> null
+            }
+        },
         nativeAssets =
             utxoOutput.value.assets
                 ?.map { asset ->
