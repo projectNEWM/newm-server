@@ -34,18 +34,41 @@ fun TransactionBuilderResponse.extractFields(): TxFields {
         }
 
         override val redeemers: List<Redeemer> by lazy {
-            (witnessSet[KEY_REDEEMERS] as CborArray).map {
-                redeemer {
-                    val redeemerArray = it as CborArray
-                    tagValue = (redeemerArray.elementAt(0) as CborInteger).intValueExact()
-                    index = (redeemerArray.elementAt(1) as CborInteger).longValue()
-                    data = redeemerArray.elementAt(2).toPlutusData()
-                    exUnits = exUnits {
-                        val exUnitsArray = redeemerArray.elementAt(3) as CborArray
-                        mem = (exUnitsArray.elementAt(0) as CborInteger).longValue()
-                        steps = (exUnitsArray.elementAt(1) as CborInteger).longValue()
+            when (witnessSet[KEY_REDEEMERS]) {
+                is CborArray -> {
+                    (witnessSet[KEY_REDEEMERS] as CborArray).map {
+                        redeemer {
+                            val redeemerArray = it as CborArray
+                            tagValue = (redeemerArray.elementAt(0) as CborInteger).intValueExact()
+                            index = (redeemerArray.elementAt(1) as CborInteger).longValue()
+                            data = redeemerArray.elementAt(2).toPlutusData()
+                            exUnits = exUnits {
+                                val exUnitsArray = redeemerArray.elementAt(3) as CborArray
+                                mem = (exUnitsArray.elementAt(0) as CborInteger).longValue()
+                                steps = (exUnitsArray.elementAt(1) as CborInteger).longValue()
+                            }
+                        }
                     }
                 }
+
+                is CborMap -> {
+                    (witnessSet[KEY_REDEEMERS] as CborMap).entrySet().map { (key, value) ->
+                        redeemer {
+                            val keyArray = key as CborArray
+                            val redeemerArray = value as CborArray
+                            tagValue = (keyArray.elementAt(0) as CborInteger).intValueExact()
+                            index = (keyArray.elementAt(1) as CborInteger).longValue()
+                            data = redeemerArray.elementAt(0).toPlutusData()
+                            exUnits = exUnits {
+                                val exUnitsArray = redeemerArray.elementAt(1) as CborArray
+                                mem = (exUnitsArray.elementAt(0) as CborInteger).longValue()
+                                steps = (exUnitsArray.elementAt(1) as CborInteger).longValue()
+                            }
+                        }
+                    }
+                }
+
+                else -> throw IllegalStateException("Expected redeemers to be a CborArray or CborMap")
             }
         }
     }

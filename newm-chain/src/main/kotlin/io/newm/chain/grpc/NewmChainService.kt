@@ -389,6 +389,7 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                 val protocolParams = stateQueryClient.protocolParameters().result
                 val calculateTxExecutionUnits: suspend (ByteArray) -> EvaluateTxResult = { cborBytes ->
                     // FIXME: We should use PlutoK, Aiken, or some other way to calculate the execution units without relying on Ogmios.
+                    // log.warn { "EvaluateTx: ${cborBytes.toHexString()}" }
                     txSubmitClient.evaluate(cborBytes.toHexString()).result
                 }
                 val calculateReferenceScriptBytes: suspend (Set<Utxo>) -> Long = { utxos ->
@@ -436,7 +437,7 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                     if (updatedRequest.hasEra()) {
                         CardanoEra.valueOf(updatedRequest.era.name)
                     } else {
-                        CardanoEra.BABBAGE
+                        CardanoEra.CONWAY
                     }
 
                 val (txId, cborBytes) =

@@ -42,15 +42,16 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 
 /**
- * A builder for cardano babbage transactions.
- * reference: https://github.com/input-output-hk/cardano-ledger/blob/master/eras/babbage/test-suite/cddl-files/babbage.cddl
+ * A builder for cardano conway transactions.
+ * reference: https://github.com/IntersectMBO/cardano-ledger/blob/master/eras/conway/impl/cddl-files/conway.cddl
  */
 class TransactionBuilder(
     private val protocolParameters: ProtocolParametersResult,
-    private val cardanoEra: CardanoEra = CardanoEra.BABBAGE,
+    private val cardanoEra: CardanoEra = CardanoEra.CONWAY,
     private val calculateTxExecutionUnits: (suspend (ByteArray) -> EvaluateTxResult)? = null,
     private val calculateReferenceScriptBytes: (suspend (Set<Utxo>) -> Long)? = null,
 ) {
+    //    private val log by lazy { LoggerFactory.getLogger("TransactionBuilder") }
     private val secureRandom by lazy { SecureRandom() }
 
     private val txFeeFixed by lazy {
@@ -382,6 +383,10 @@ class TransactionBuilder(
                     ByteArray(1) { 0xa0.toByte() }
                 }
             scriptDataHash = Blake2b.hash256(redeemerBytes + datumBytes + languageViewMap)
+//            log.warn("redeeemerBytes: ${redeemerBytes.toHexString()}")
+//            log.warn("datumBytes: ${datumBytes.toHexString()}")
+//            log.warn("languageViewMap: ${languageViewMap.toHexString()}")
+//            log.warn("scriptDataHash: ${scriptDataHash!!.toHexString()}")
         }
     }
 
@@ -872,7 +877,7 @@ class TransactionBuilder(
     companion object {
         suspend fun transactionBuilder(
             protocolParameters: ProtocolParametersResult,
-            cardanoEra: CardanoEra = CardanoEra.BABBAGE,
+            cardanoEra: CardanoEra = CardanoEra.CONWAY,
             calculateTxExecutionUnits: (suspend (ByteArray) -> EvaluateTxResult)? = null,
             calculateReferenceScriptBytes: (suspend (Set<Utxo>) -> Long)? = null,
             block: TransactionBuilder.() -> Unit

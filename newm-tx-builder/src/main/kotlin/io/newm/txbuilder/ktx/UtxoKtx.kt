@@ -28,12 +28,12 @@ fun Set<Utxo>.toCborObject(cardanoEra: CardanoEra): CborObject? {
                 listOf(
                     CborByteString.create(sourceUtxo.hash.hexToByteArray()),
                     CborInteger.create(sourceUtxo.ix),
-                ),
-                when (cardanoEra) {
-                    CardanoEra.CONWAY -> 258
-                    else -> CborTag.UNTAGGED
-                }
+                )
             )
+        },
+        when (cardanoEra) {
+            CardanoEra.CONWAY -> 258
+            else -> CborTag.UNTAGGED
         }
     )
 }
@@ -106,7 +106,12 @@ fun OutputUtxo.toCborObject(): CborObject =
                     CborArray.create(
                         listOf(
                             TransactionBuilder.DATUM_KEY_INLINE,
-                            CborByteString.create(datumBytes, 0, datumBytes.size, TransactionBuilder.INLINE_DATUM_TAG),
+                            CborByteString.create(
+                                datumBytes,
+                                0,
+                                datumBytes.size,
+                                TransactionBuilder.INLINE_DATUM_TAG
+                            ),
                         )
                     )
                 } else {
