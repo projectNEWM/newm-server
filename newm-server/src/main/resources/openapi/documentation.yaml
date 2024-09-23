@@ -594,9 +594,7 @@ paths:
           content:
             'application/json':
               schema:
-                type: "array"
-                items:
-                  $ref: "#/components/schemas/Earning"
+                $ref: "#/components/schemas/GetEarningsResponse"
   /v1/earnings:
     post:
       tags:
@@ -2312,6 +2310,22 @@ components:
         - "stakeAddress"
         - "memo"
         - "createdAt"
+    GetEarningsResponse:
+      type: "object"
+      properties:
+        totalClaimed:
+          type: "integer"
+          format: "int64"
+        earnings:
+          type: "array"
+          items:
+              $ref: "#/components/schemas/Earning"
+        amountCborHex:
+          type: "string"
+      required:
+        - "totalClaimed"
+        - "earnings"
+        - "amountCborHex"
     ClaimOrderRequest:
       type: "object"
       properties:

@@ -23,6 +23,7 @@ import io.newm.server.features.earnings.model.Earning
 import io.newm.server.features.song.database.SongTable
 import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.features.user.repo.UserRepository
+import io.newm.server.ktx.withLock
 import io.newm.server.typealiases.SongId
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.toDate
@@ -199,11 +200,8 @@ class EarningsRepositoryImpl(
 
     override suspend fun createClaimOrder(claimOrderRequest: ClaimOrderRequest): ClaimOrder? {
         // create any claim orders one at a time to ensure a flood attack can't create a bunch of dup claim orders
-        claimOrderMutex.acquire()
-        try {
-            return createClaimOrderInternal(claimOrderRequest)
-        } finally {
-            claimOrderMutex.release()
+        return claimOrderMutex.withLock(CLAIM_ORDER_INTER_PROCESS_MUTEX_PATH) {
+            createClaimOrderInternal(claimOrderRequest)
         }
     }
 
