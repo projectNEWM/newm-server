@@ -9,15 +9,20 @@ import java.math.BigInteger
 /**
  * Convert Kogmios object into a cbor object that can be used as part of the scriptDataHash calculation.
  */
-fun List<BigInteger>.toCborObject(): CborObject =
+fun List<BigInteger>.toCborObject(plutusLanguageKey: PlutusLanguageKey): CborObject =
     CborMap.create(
         mapOf(
-            LANGUAGE_KEY_PLUTUSV2 to
+            plutusLanguageKey.key to
                 CborArray.create(
                     this.map { CborInteger.create(it) }
                 )
         )
     )
 
-// PlutusV1 == 0, PlutusV2 == 1
-private val LANGUAGE_KEY_PLUTUSV2 by lazy { CborInteger.create(1) }
+enum class PlutusLanguageKey(
+    val key: CborInteger
+) {
+    PLUTUSV1(CborInteger.create(0)),
+    PLUTUSV2(CborInteger.create(1)),
+    PLUTUSV3(CborInteger.create(2))
+}
