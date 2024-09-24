@@ -2,6 +2,7 @@ package io.newm.objectpool
 
 import java.util.concurrent.atomic.AtomicLongFieldUpdater
 import java.util.concurrent.atomic.AtomicReferenceArray
+import org.slf4j.LoggerFactory
 
 private const val MULTIPLIER = 4
 private const val ATTEMPTS = 8
@@ -14,6 +15,8 @@ private const val MAX_CAPACITY = Int.MAX_VALUE / MULTIPLIER
 abstract class DefaultPool<T : Any>(
     final override val capacity: Int
 ) : ObjectPool<T> {
+    private val log by lazy { LoggerFactory.getLogger("DefaultPool") }
+
     init {
         require(capacity > 0) { "capacity must be > 0, but it was $capacity" }
         require(capacity <= MAX_CAPACITY) {
@@ -48,11 +51,34 @@ abstract class DefaultPool<T : Any>(
      */
     protected open suspend fun validateInstance(instance: T) {}
 
-    final override suspend fun borrow(): T = tryPop()?.let { clearInstance(it) } ?: produceInstance()
+    final override suspend fun borrow(): T {
+        var exception: Throwable? = null
+        repeat(ATTEMPTS) { attempt ->
+            try {
+                val instance = tryPop()?.let { popped ->
+                    clearInstance(popped).also { validateInstance(it) }
+                } ?: run {
+                    produceInstance().also { validateInstance(it) }
+                }
+                return instance
+            } catch (e: Throwable) {
+                log.warn("Failed to produce instance (attempt ${attempt + 1}). Retrying.", e)
+                exception = e
+            }
+        }
+        throw IllegalStateException("Failed to produce instance after $ATTEMPTS attempts", exception)
+    }
 
     final override suspend fun recycle(instance: T) {
-        validateInstance(instance)
-        if (!tryPush(instance)) disposeInstance(instance)
+        try {
+            validateInstance(instance)
+            if (!tryPush(instance)) {
+                disposeInstance(instance)
+            }
+        } catch (e: Throwable) {
+            log.warn("Failed to validate instance. Disposing.", e)
+            disposeInstance(instance)
+        }
     }
 
     final override fun dispose() {
