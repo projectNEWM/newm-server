@@ -41,6 +41,7 @@ class Cip68DatumTest {
                     datumHash = null,
                     datum = "d8799fa3446e616d6548537061636542756445696d6167654b697066733a2f2f7465737445696d616765583061723a2f2f66355738525a6d4151696d757a5f7679744659396f66497a6439517047614449763255587272616854753401ff",
                     scriptRef = null,
+                    scriptRefVersion = null,
                     nativeAssets =
                         listOf(
                             NativeAsset(

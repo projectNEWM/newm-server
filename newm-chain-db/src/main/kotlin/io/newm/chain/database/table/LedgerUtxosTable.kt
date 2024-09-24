@@ -22,6 +22,9 @@ object LedgerUtxosTable : LongIdTable(name = "ledger_utxos") {
     // script reference value
     val scriptRef: Column<String?> = text("script_ref").nullable()
 
+    // script reference version of plutus
+    val scriptRefVersion: Column<Int?> = integer("script_ref_version").nullable()
+
     // lovelaces in this utxo
     val lovelace: Column<String> = text("lovelace")
 

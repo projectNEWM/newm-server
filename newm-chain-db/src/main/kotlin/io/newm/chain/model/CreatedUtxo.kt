@@ -1,8 +1,8 @@
 package io.newm.chain.model
 
+import java.math.BigInteger
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
-import java.math.BigInteger
 
 @Serializable
 data class CreatedUtxo(
@@ -15,6 +15,7 @@ data class CreatedUtxo(
     val datumHash: String?,
     val datum: String?,
     val scriptRef: String?,
+    val scriptRefVersion: Int?,
     val nativeAssets: List<NativeAsset>,
     val cbor: ByteArray?,
     val paymentCred: String?,
@@ -33,6 +34,7 @@ data class CreatedUtxo(
         if (datumHash != other.datumHash) return false
         if (datum != other.datum) return false
         if (scriptRef != other.scriptRef) return false
+        if (scriptRefVersion != other.scriptRefVersion) return false
         if (nativeAssets != other.nativeAssets) return false
         if (cbor != null) {
             if (other.cbor == null) return false
@@ -54,6 +56,7 @@ data class CreatedUtxo(
         result = 31 * result + (datumHash?.hashCode() ?: 0)
         result = 31 * result + (datum?.hashCode() ?: 0)
         result = 31 * result + (scriptRef?.hashCode() ?: 0)
+        result = 31 * result + (scriptRefVersion ?: 0)
         result = 31 * result + nativeAssets.hashCode()
         result = 31 * result + (cbor?.contentHashCode() ?: 0)
         result = 31 * result + (paymentCred?.hashCode() ?: 0)

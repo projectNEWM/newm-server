@@ -103,6 +103,7 @@ class LedgerRepositoryImpl : LedgerRepository {
                     LedgerUtxosTable.datumHash,
                     LedgerUtxosTable.datum,
                     LedgerUtxosTable.scriptRef,
+                    LedgerUtxosTable.scriptRefVersion,
                     LedgerUtxosTable.blockSpent,
                 ).mapNotNull { row ->
                     if (row[LedgerUtxosTable.blockSpent] == null) {
@@ -136,6 +137,7 @@ class LedgerRepositoryImpl : LedgerRepository {
                             datumHash = row[LedgerUtxosTable.datumHash],
                             datum = row[LedgerUtxosTable.datum],
                             scriptRef = row[LedgerUtxosTable.scriptRef],
+                            scriptRefVersion = row[LedgerUtxosTable.scriptRefVersion],
                         )
                     } else {
                         null
@@ -162,6 +164,7 @@ class LedgerRepositoryImpl : LedgerRepository {
                     LedgerUtxosTable.datumHash,
                     LedgerUtxosTable.datum,
                     LedgerUtxosTable.scriptRef,
+                    LedgerUtxosTable.scriptRefVersion,
                     LedgerUtxosTable.blockSpent,
                 ).mapNotNull { row ->
                     if (row[LedgerUtxosTable.blockSpent] == null) {
@@ -195,6 +198,7 @@ class LedgerRepositoryImpl : LedgerRepository {
                             datumHash = row[LedgerUtxosTable.datumHash],
                             datum = row[LedgerUtxosTable.datum],
                             scriptRef = row[LedgerUtxosTable.scriptRef],
+                            scriptRefVersion = row[LedgerUtxosTable.scriptRefVersion],
                         )
                     } else {
                         null
@@ -252,6 +256,7 @@ class LedgerRepositoryImpl : LedgerRepository {
                         datumHash = row[LedgerUtxosTable.datumHash],
                         datum = row[LedgerUtxosTable.datum],
                         scriptRef = row[LedgerUtxosTable.scriptRef],
+                        scriptRefVersion = row[LedgerUtxosTable.scriptRefVersion],
                     )
                 }
         }
@@ -324,6 +329,7 @@ class LedgerRepositoryImpl : LedgerRepository {
                         datumHash = row[LedgerUtxosTable.datumHash],
                         datum = row[LedgerUtxosTable.datum],
                         scriptRef = row[LedgerUtxosTable.scriptRef],
+                        scriptRefVersion = row[LedgerUtxosTable.scriptRefVersion],
                     )
                 }.toHashSet()
         }
@@ -507,6 +513,14 @@ class LedgerRepositoryImpl : LedgerRepository {
                         datumHash = datumHash,
                         datum = datum,
                         scriptRef = scriptRef,
+                        scriptRefVersion = scriptRef?.let {
+                            if (it.startsWith("010100")) {
+                                3
+                            } else {
+                                // 010000 is the plutusV2 script version
+                                2
+                            }
+                        },
                     ).also {
                         if (log.isDebugEnabled) {
                             log.debug("LiveUtxo: address: $address, $it")
@@ -826,6 +840,7 @@ class LedgerRepositoryImpl : LedgerRepository {
                             ?.let { Blake2b.hash256(it).toHexString() }
                         row[datum] = createdUtxo.datum
                         row[scriptRef] = createdUtxo.scriptRef
+                        row[scriptRefVersion] = createdUtxo.scriptRefVersion
                         row[lovelace] = createdUtxo.lovelace.toString()
                         row[blockCreated] = blockNumber
                         row[blockSpent] = null
@@ -1055,6 +1070,7 @@ class LedgerRepositoryImpl : LedgerRepository {
                         datumHash = row[LedgerUtxosTable.datumHash],
                         datum = row[LedgerUtxosTable.datum],
                         scriptRef = row[LedgerUtxosTable.scriptRef],
+                        scriptRefVersion = row[LedgerUtxosTable.scriptRefVersion],
                     )
                 }
         }

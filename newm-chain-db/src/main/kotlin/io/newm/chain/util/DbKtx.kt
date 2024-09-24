@@ -24,6 +24,7 @@ import io.newm.kogmios.protocols.model.MetadataList
 import io.newm.kogmios.protocols.model.MetadataMap
 import io.newm.kogmios.protocols.model.MetadataString
 import io.newm.kogmios.protocols.model.MetadataValue
+import io.newm.kogmios.protocols.model.ScriptPlutusV1
 import io.newm.kogmios.protocols.model.ScriptPlutusV2
 import io.newm.kogmios.protocols.model.ScriptPlutusV3
 import io.newm.kogmios.protocols.model.StakeCredentialRegistrationCertificate
@@ -181,6 +182,14 @@ fun List<UtxoOutput>.toCreatedUtxoList(
             when (script) {
                 is ScriptPlutusV2 -> script.cbor
                 is ScriptPlutusV3 -> script.cbor
+                else -> null
+            }
+        },
+        scriptRefVersion = utxoOutput.script?.let { script ->
+            when (script) {
+                is ScriptPlutusV1 -> 1
+                is ScriptPlutusV2 -> 2
+                is ScriptPlutusV3 -> 3
                 else -> null
             }
         },
