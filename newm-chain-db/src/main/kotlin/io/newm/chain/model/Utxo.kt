@@ -14,6 +14,7 @@ data class Utxo(
     val datumHash: String?,
     val datum: String?,
     val scriptRef: String?,
+    val scriptRefVersion: Int?,
 )
 
 // MsgResult for utxo query

@@ -414,6 +414,20 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                     }
                 }
 
+                val calculateReferenceScriptsVersions: suspend (Set<Utxo>) -> Set<Int> = { utxos ->
+                    utxos
+                        .mapNotNull { utxo ->
+                            val firstUtxo = ledgerRepository.queryUtxosByOutputRef(utxo.hash, utxo.ix.toInt()).firstOrNull()
+                            firstUtxo?.scriptRefVersion ?: firstUtxo?.scriptRef?.let { scriptRef ->
+                                if (scriptRef.startsWith("010100")) {
+                                    3
+                                } else {
+                                    2
+                                }
+                            }
+                        }.toSet()
+                }
+
                 val updatedRequest =
                     if (request.signaturesCount == 0 && request.signingKeysCount == 0 && request.requiredSignersCount == 0) {
                         // Calculate the number of different payment keys associated with all input utxos
@@ -446,6 +460,7 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                         cardanoEra,
                         calculateTxExecutionUnits,
                         calculateReferenceScriptBytes,
+                        calculateReferenceScriptsVersions,
                     ) {
                         loadFrom(updatedRequest)
                     }

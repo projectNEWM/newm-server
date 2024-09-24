@@ -51,8 +51,9 @@ class TransactionBuilder(
     private val cardanoEra: CardanoEra = CardanoEra.CONWAY,
     private val calculateTxExecutionUnits: (suspend (ByteArray) -> EvaluateTxResult)? = null,
     private val calculateReferenceScriptBytes: (suspend (Set<Utxo>) -> Long)? = null,
+    private val calculateReferenceScriptsVersions: (suspend (Set<Utxo>) -> Set<Int>)? = null,
 ) {
-    //    private val log by lazy { LoggerFactory.getLogger("TransactionBuilder") }
+    // private val log by lazy { LoggerFactory.getLogger("TransactionBuilder") }
     private val secureRandom by lazy { SecureRandom() }
 
     private val txFeeFixed by lazy {
@@ -232,15 +233,18 @@ class TransactionBuilder(
     suspend fun build(): ByteArray {
         validateInputs()
         val auxData: CborObject? = createAuxData()
+
+        val scriptVersions = referenceInputs?.let { calculateReferenceScriptsVersions?.invoke(it) }
+
         val startingScriptDataHash = scriptDataHash
-        createScriptDataHash()
+        createScriptDataHash(scriptVersions)
         calculateTemporaryCollateral()
         calculateTxFees(auxData)
 
         if (startingScriptDataHash == null) {
             // recalculate scriptDataHash now that we've calculated proper exUnits
             scriptDataHash = null
-            createScriptDataHash()
+            createScriptDataHash(scriptVersions)
         }
 
         // assemble the final transaction now that fees and collateral are correct
@@ -361,14 +365,17 @@ class TransactionBuilder(
             }
         }
 
-    private fun createScriptDataHash() {
+    private fun createScriptDataHash(scriptVersions: Set<Int>?) {
         if (scriptDataHash == null && (!redeemers.isNullOrEmpty() || !datums.isNullOrEmpty())) {
             // calculate the scriptDataHash - // redeemerBytes + datumBytes + languageViewMap
             val redeemerBytes = createRedeemerWitnesses()?.toCborByteArray() ?: ByteArray(1) { 0xa0.toByte() }
             val datumBytes = createDatumWitnesses()?.toCborByteArray() ?: ByteArray(0)
             val languageViewMap =
                 if (!redeemers.isNullOrEmpty()) {
-                    if (!plutusV3Scripts.isNullOrEmpty() || !auxPlutusV3Scripts.isNullOrEmpty()) {
+                    if (!plutusV3Scripts.isNullOrEmpty() ||
+                        !auxPlutusV3Scripts.isNullOrEmpty() ||
+                        scriptVersions?.contains(3) == true
+                    ) {
                         // Plutus V3
                         protocolParameters.plutusCostModels.plutusV3!!
                             .toCborObject(PlutusLanguageKey.PLUTUSV3)
@@ -384,10 +391,11 @@ class TransactionBuilder(
                     ByteArray(1) { 0xa0.toByte() }
                 }
             scriptDataHash = Blake2b.hash256(redeemerBytes + datumBytes + languageViewMap)
-//            log.warn("redeeemerBytes: ${redeemerBytes.toHexString()}")
-//            log.warn("datumBytes: ${datumBytes.toHexString()}")
-//            log.warn("languageViewMap: ${languageViewMap.toHexString()}")
-//            log.warn("scriptDataHash: ${scriptDataHash!!.toHexString()}")
+            // log.warn("scriptVersions: $scriptVersions")
+            // log.warn("redeeemerBytes: ${redeemerBytes.toHexString()}")
+            // log.warn("datumBytes: ${datumBytes.toHexString()}")
+            // log.warn("languageViewMap: ${languageViewMap.toHexString()}")
+            // log.warn("scriptDataHash: ${scriptDataHash!!.toHexString()}")
         }
     }
 
@@ -881,6 +889,7 @@ class TransactionBuilder(
             cardanoEra: CardanoEra = CardanoEra.CONWAY,
             calculateTxExecutionUnits: (suspend (ByteArray) -> EvaluateTxResult)? = null,
             calculateReferenceScriptBytes: (suspend (Set<Utxo>) -> Long)? = null,
+            calculateReferenceScriptsVersions: (suspend (Set<Utxo>) -> Set<Int>)? = null,
             block: TransactionBuilder.() -> Unit
         ): Pair<String, ByteArray> {
             val transactionBuilder = TransactionBuilder(
@@ -888,6 +897,7 @@ class TransactionBuilder(
                 cardanoEra,
                 calculateTxExecutionUnits,
                 calculateReferenceScriptBytes,
+                calculateReferenceScriptsVersions,
             )
             block.invoke(transactionBuilder)
             val cborBytes = transactionBuilder.build()
