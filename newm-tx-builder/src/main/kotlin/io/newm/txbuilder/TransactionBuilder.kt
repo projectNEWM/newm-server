@@ -26,6 +26,7 @@ import io.newm.chain.util.toHexString
 import io.newm.kogmios.protocols.model.CardanoEra
 import io.newm.kogmios.protocols.model.result.EvaluateTxResult
 import io.newm.kogmios.protocols.model.result.ProtocolParametersResult
+import io.newm.txbuilder.ktx.PlutusLanguageKey
 import io.newm.txbuilder.ktx.sign
 import io.newm.txbuilder.ktx.toCborObject
 import io.newm.txbuilder.ktx.toConwayCborObject
@@ -370,12 +371,12 @@ class TransactionBuilder(
                     if (!plutusV3Scripts.isNullOrEmpty() || !auxPlutusV3Scripts.isNullOrEmpty()) {
                         // Plutus V3
                         protocolParameters.plutusCostModels.plutusV3!!
-                            .toCborObject()
+                            .toCborObject(PlutusLanguageKey.PLUTUSV3)
                             .toCborByteArray()
                     } else {
                         // Plutus V2
                         protocolParameters.plutusCostModels.plutusV2!!
-                            .toCborObject()
+                            .toCborObject(PlutusLanguageKey.PLUTUSV2)
                             .toCborByteArray()
                     }
                 } else {
