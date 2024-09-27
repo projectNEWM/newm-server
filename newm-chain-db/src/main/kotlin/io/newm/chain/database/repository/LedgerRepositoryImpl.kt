@@ -513,14 +513,7 @@ class LedgerRepositoryImpl : LedgerRepository {
                         datumHash = datumHash,
                         datum = datum,
                         scriptRef = scriptRef,
-                        scriptRefVersion = scriptRef?.let {
-                            if (it.startsWith("010100")) {
-                                3
-                            } else {
-                                // 010000 is the plutusV2 script version
-                                2
-                            }
-                        },
+                        scriptRefVersion = null,
                     ).also {
                         if (log.isDebugEnabled) {
                             log.debug("LiveUtxo: address: $address, $it")
