@@ -1,27 +1,27 @@
 object Dependencies {
     object VersionsPlugin {
-        const val VERSION = "0.51.0"
+        const val VERSION = Versions.VERSIONS_PLUGIN
         const val ID = "com.github.ben-manes.versions"
     }
 
     object ShadowPlugin {
-        const val VERSION = "8.1.1"
+        const val VERSION = Versions.SHADOW_PLUGIN
         const val ID = "com.github.johnrengelman.shadow"
     }
 
     object KtlintPlugin {
-        const val VERSION = "12.1.0"
+        const val VERSION = Versions.KTLINT_PLUGIN
         const val ID = "org.jlleitschuh.gradle.ktlint"
     }
 
     object KotlinPlugin {
-        const val VERSION = "2.0.20"
+        const val VERSION = Versions.KOTLIN_PLUGIN
         const val JVM_ID = "jvm"
         const val SERIALIZATION_ID = "plugin.serialization"
     }
 
     object ProtobufPlugin {
-        const val VERSION = "0.8.18"
+        const val VERSION = Versions.PROTOBUF_PLUGIN
         const val ID = "com.google.protobuf"
     }
 
@@ -29,31 +29,31 @@ object Dependencies {
         const val SIGNING_ID = "signing"
         const val MAVEN_PUBLISH_ID = "maven-publish"
 
-        const val MAVEN_REPO_AUTH_VERSION = "3.0.4"
+        const val MAVEN_REPO_AUTH_VERSION = Versions.MAVEN_REPO_AUTH
         const val MAVEN_REPO_AUTH_ID = "org.hibernate.build.maven-repo-auth"
     }
 
     object Kotlin {
-        private const val VERSION = KotlinPlugin.VERSION
+        private const val VERSION = Versions.KOTLIN_PLUGIN
 
         const val STDLIB_JDK8 = "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$VERSION"
         const val REFLECTION = "org.jetbrains.kotlin:kotlin-reflect:$VERSION"
     }
 
     object KotlinXSerialization {
-        private const val VERSION = "1.7.2"
+        private const val VERSION = Versions.KOTLINX_SERIALIZATION
 
         const val JSON = "org.jetbrains.kotlinx:kotlinx-serialization-json:$VERSION"
     }
 
     object KotlinXDateTime {
-        private const val VERSION = "0.6.1"
+        private const val VERSION = Versions.KOTLINX_DATETIME
 
         const val DATETIME = "org.jetbrains.kotlinx:kotlinx-datetime:$VERSION"
     }
 
     object Coroutines {
-        private const val VERSION = "1.8.1"
+        private const val VERSION = Versions.COROUTINES
 
         const val CORE = "org.jetbrains.kotlinx:kotlinx-coroutines-core:$VERSION"
         const val JDK9 = "org.jetbrains.kotlinx:kotlinx-coroutines-jdk9:$VERSION"
@@ -61,11 +61,11 @@ object Dependencies {
     }
 
     object KtLint {
-        const val VERSION = "1.3.1"
+        const val VERSION = Versions.KTLINT
     }
 
     object Ktor {
-        private const val VERSION = "2.3.12"
+        private const val VERSION = Versions.KTOR
 
         const val SERVER_CORE = "io.ktor:ktor-server-core:$VERSION"
         const val SERVER_CIO = "io.ktor:ktor-server-cio:$VERSION"
@@ -92,13 +92,13 @@ object Dependencies {
     }
 
     object LogBack {
-        private const val VERSION = "1.5.7"
+        private const val VERSION = Versions.LOGBACK
 
         const val CLASSIC = "ch.qos.logback:logback-classic:$VERSION"
     }
 
     object Koin {
-        private const val VERSION = "3.5.6"
+        private const val VERSION = Versions.KOIN
 
         const val KTOR = "io.insert-koin:koin-ktor:$VERSION"
         const val TEST = "io.insert-koin:koin-test:$VERSION"
@@ -106,7 +106,7 @@ object Dependencies {
     }
 
     object Exposed {
-        private const val VERSION = "0.47.0"
+        private const val VERSION = Versions.EXPOSED
 
         const val CORE = "org.jetbrains.exposed:exposed-core:$VERSION"
         const val DAO = "org.jetbrains.exposed:exposed-dao:$VERSION"
@@ -115,113 +115,110 @@ object Dependencies {
     }
 
     object HikariCP {
-        private const val VERSION = "5.1.0"
+        private const val VERSION = Versions.HIKARICP
 
         const val ALL = "com.zaxxer:HikariCP:$VERSION"
     }
 
     object PostgreSQL {
-        private const val VERSION = "42.7.4"
+        private const val VERSION = Versions.POSTGRESQL
 
         const val ALL = "org.postgresql:postgresql:$VERSION"
     }
 
     object KtorFlyway {
-        private const val VERSION = "2.0.0"
+        private const val VERSION = Versions.KTOR_FLYWAY
 
         const val ALL = "io.newm:ktor-flyway-feature:$VERSION"
     }
 
     object FlywayDB {
-        private const val VERSION = "10.17.3"
+        private const val VERSION = Versions.FLYWAYDB
 
         const val CORE = "org.flywaydb:flyway-core:$VERSION"
         const val POSTGRES = "org.flywaydb:flyway-database-postgresql:$VERSION"
     }
 
     object Caffeine {
-        private const val VERSION = "3.1.8"
+        private const val VERSION = Versions.CAFFEINE
 
         const val ALL = "com.github.ben-manes.caffeine:caffeine:$VERSION"
     }
 
-    // https://github.com/patrickfav/bcrypt
     object JBCrypt {
-        private const val VERSION = "0.10.2"
+        private const val VERSION = Versions.JBCRYPT
 
         const val ALL = "at.favre.lib:bcrypt:$VERSION"
     }
 
-    // https://commons.apache.org/proper/commons-email/
     object ApacheCommonsEmail {
-        private const val VERSION = "1.6.0"
+        private const val VERSION = Versions.APACHE_COMMONS_EMAIL
 
         const val ALL = "org.apache.commons:commons-email:$VERSION"
     }
 
     object ApacheCommonsCodec {
-        private const val VERSION = "1.17.1"
+        private const val VERSION = Versions.APACHE_COMMONS_CODEC
 
         const val ALL = "commons-codec:commons-codec:$VERSION"
     }
 
     object ApacheCommonsNumbers {
-        private const val VERSION = "1.2"
+        private const val VERSION = Versions.APACHE_COMMONS_NUMBERS
 
         const val FRACTION = "org.apache.commons:commons-numbers-fraction:$VERSION"
     }
 
     object ApacheCurators {
-        private const val VERSION = "5.7.0"
+        private const val VERSION = Versions.APACHE_CURATORS
 
         const val RECEIPES = "org.apache.curator:curator-recipes:$VERSION"
     }
 
     object ApacheTika {
-        private const val VERSION = "2.9.2"
+        private const val VERSION = Versions.APACHE_TIKA
 
         const val CORE = "org.apache.tika:tika-core:$VERSION"
     }
 
     object JAudioTagger {
-        private const val VERSION = "3.0.1"
+        private const val VERSION = Versions.J_AUDIO_TAGGER
 
         const val ALL = "net.jthink:jaudiotagger:$VERSION"
     }
 
     object JSoup {
-        private const val VERSION = "1.18.1"
+        private const val VERSION = Versions.JSOUP
 
         const val ALL = "org.jsoup:jsoup:$VERSION"
     }
 
     object BouncyCastle {
-        private const val VERSION = "1.70"
+        private const val VERSION = Versions.BOUNCY_CASTLE
 
         const val BCPROV = "org.bouncycastle:bcprov-jdk15on:$VERSION"
     }
 
     object I2PCrypto {
-        private const val VERSION = "0.3.0"
+        private const val VERSION = Versions.I2P_CRYPTO
 
         const val EDDSA = "net.i2p.crypto:eddsa:$VERSION"
     }
 
     object SpringSecurity {
-        private const val VERSION = "6.3.3"
+        private const val VERSION = Versions.SPRING_SECURITY
 
         const val CORE = "org.springframework.security:spring-security-core:$VERSION"
     }
 
-    // https://github.com/cloudinary/cloudinary_java
     object Cloudinary {
-        private const val VERSION = "1.39.0"
+        private const val VERSION = Versions.CLOUDINARY
 
         const val ALL = "com.cloudinary:cloudinary-http44:$VERSION"
     }
 
     object Aws {
-        private const val VERSION = "2.27.17"
+        private const val VERSION = Versions.AWS
 
         const val BOM = "software.amazon.awssdk:bom:$VERSION"
         const val CLOUDFRONT = "software.amazon.awssdk:cloudfront"
@@ -237,52 +234,52 @@ object Dependencies {
     }
 
     object Arweave {
-        private const val ARWEAVE4S_VERSION = "0.21.0"
-        private const val SCALA_JAVA8_COMPAT_VERSION = "1.0.2"
+        private const val ARWEAVE4S_VERSION = Versions.ARWEAVE4S
+        private const val SCALA_JAVA8_COMPAT_VERSION = Versions.SCALA_JAVA8_COMPAT
 
         const val ARWEAVE4S = "co.upvest:arweave4s-core_2.12:$ARWEAVE4S_VERSION"
         const val SCALA_JAVA8_COMPAT = "org.scala-lang.modules:scala-java8-compat_2.12:$SCALA_JAVA8_COMPAT_VERSION"
     }
 
     object JUnit {
-        private const val VERSION = "5.11.0"
+        private const val VERSION = Versions.JUNIT
 
         const val JUPITER = "org.junit.jupiter:junit-jupiter:$VERSION"
     }
 
     object Cbor {
-        private const val VERSION = "0.2.2-NEWM"
+        private const val VERSION = Versions.CBOR
 
         const val CBOR = "io.newm:com.google.iot.cbor:$VERSION"
     }
 
     object Mockk {
-        private const val VERSION = "1.13.12"
+        private const val VERSION = Versions.MOCKK
 
         const val MOCKK = "io.mockk:mockk:$VERSION"
     }
 
     object GoogleTruth {
-        private const val VERSION = "1.4.4"
+        private const val VERSION = Versions.GOOGLE_TRUTH
 
         const val TRUTH = "com.google.truth:truth:$VERSION"
     }
 
     object Sentry {
-        private const val VERSION = "7.14.0"
+        private const val VERSION = Versions.SENTRY
 
         const val CORE = "io.sentry:sentry:$VERSION"
         const val LOGBACK = "io.sentry:sentry-logback:$VERSION"
     }
 
     object Newm {
-        private const val VERSION = "2.3.2"
+        private const val VERSION = Versions.NEWM
 
         const val KOGMIOS = "io.newm:kogmios:$VERSION"
     }
 
     object Grpc {
-        private const val VERSION = "1.66.0"
+        private const val VERSION = Versions.GRPC
 
         const val STUB = "io.grpc:grpc-stub:$VERSION"
         const val API = "io.grpc:grpc-api:$VERSION"
@@ -292,14 +289,14 @@ object Dependencies {
     }
 
     object GrpcKotlin {
-        private const val VERSION = "1.4.1"
+        private const val VERSION = Versions.GRPC_KOTLIN
 
         const val STUB = "io.grpc:grpc-kotlin-stub:$VERSION"
         const val GRPCKT = "io.grpc:protoc-gen-grpc-kotlin:$VERSION:jdk8@jar"
     }
 
     object Protobuf {
-        private const val VERSION = "4.28.0"
+        private const val VERSION = Versions.PROTOBUF
 
         const val JAVA_UTIL = "com.google.protobuf:protobuf-java-util:$VERSION"
         const val KOTLIN = "com.google.protobuf:protobuf-kotlin:$VERSION"
@@ -307,20 +304,20 @@ object Dependencies {
     }
 
     object Quartz {
-        private const val VERSION = "2.3.2"
+        private const val VERSION = Versions.QUARTZ
 
         const val ALL = "org.quartz-scheduler:quartz:$VERSION"
     }
 
     object SSLKickstart {
-        private const val VERSION = "8.3.6"
+        private const val VERSION = Versions.SSL_KICKSTART
 
         const val PEM = "io.github.hakky54:sslcontext-kickstart-for-pem:$VERSION"
         const val NETTY = "io.github.hakky54:sslcontext-kickstart-for-netty:$VERSION"
     }
 
     object TestContainers {
-        private const val VERSION = "1.20.1"
+        private const val VERSION = Versions.TEST_CONTAINERS
 
         const val CORE = "org.testcontainers:testcontainers:$VERSION"
         const val JUINT = "org.testcontainers:junit-jupiter:$VERSION"
@@ -328,23 +325,23 @@ object Dependencies {
     }
 
     object Typesafe {
-        private const val VERSION = "1.4.3"
+        private const val VERSION = Versions.TYPESAFE
         const val CONFIG = "com.typesafe:config:$VERSION"
     }
 
     object QRCodeKotlin {
-        private const val VERSION = "4.2.0"
+        private const val VERSION = Versions.QR_CODE_KOTLIN
 
         const val ALL = "io.github.g0dkar:qrcode-kotlin:$VERSION"
     }
 
     object KotlinLogging {
-        private const val VERSION = "7.0.0"
+        private const val VERSION = Versions.KOTLIN_LOGGING
         const val ALL = "io.github.oshai:kotlin-logging:$VERSION"
     }
 
     object Swagger {
-        private const val VERSION = "1.0.52"
+        private const val VERSION = Versions.SWAGGER
         const val SWAGGER_CODEGEN_GENERATORS = "io.swagger.codegen.v3:swagger-codegen-generators:$VERSION"
     }
 }
