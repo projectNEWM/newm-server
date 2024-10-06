@@ -19,7 +19,6 @@ import io.newm.server.features.earnings.model.ClaimOrderRequest
 import io.newm.server.features.earnings.model.Earning
 import io.newm.server.features.earnings.model.GetEarningsResponse
 import io.newm.server.features.earnings.repo.EarningsRepository
-import io.newm.server.features.user.database.UserTable.walletAddress
 import io.newm.server.ktx.songId
 import io.newm.server.recaptcha.repo.RecaptchaRepository
 import io.newm.shared.koin.inject
@@ -67,7 +66,7 @@ fun Routing.createEarningsRoutes() {
             // get earnings
             get("{walletAddress}") {
                 val stakeAddress = parameters["walletAddress"]!!.extractStakeAddress(cardanoRepository.isMainnet())
-                recaptchaRepository.verify("getearnings_$stakeAddress", request)
+                recaptchaRepository.verify("get_earnings", request)
                 val earnings = earningsRepository.getAllByStakeAddress(stakeAddress)
                 val totalClaimed = earnings.filter { it.claimed }.sumOf { it.amount }
                 val paymentAmountLovelace = configRepository.getLong(CONFIG_KEY_EARNINGS_CLAIM_ORDER_FEE)
@@ -87,7 +86,7 @@ fun Routing.createEarningsRoutes() {
             // create a claim for all earnings on this wallet stake address
             post {
                 val claimOrderRequest = receive<ClaimOrderRequest>()
-                recaptchaRepository.verify("postearnings_${claimOrderRequest.walletAddress}", request)
+                recaptchaRepository.verify("post_earnings", request)
                 val claimOrder = earningsRepository.createClaimOrder(claimOrderRequest)
 
                 if (claimOrder != null) {
