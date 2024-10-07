@@ -17,6 +17,7 @@ import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.earnings.model.AddSongRoyaltyRequest
 import io.newm.server.features.earnings.model.ClaimOrderRequest
 import io.newm.server.features.earnings.model.Earning
+import io.newm.server.features.earnings.model.GetEarningsBySongIdResponse
 import io.newm.server.features.earnings.model.GetEarningsResponse
 import io.newm.server.features.earnings.repo.EarningsRepository
 import io.newm.server.ktx.songId
@@ -24,6 +25,7 @@ import io.newm.server.recaptcha.repo.RecaptchaRepository
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.get
 import io.newm.shared.ktx.post
+import io.newm.shared.ktx.toLocalDateTime
 
 private const val EARNINGS_PATH = "v1/earnings"
 private const val EARNINGS_PATH_ADMIN = "v1/earnings/admin"
@@ -80,6 +82,23 @@ fun Routing.createEarningsRoutes() {
                         totalClaimed = totalClaimed,
                         earnings = earnings,
                         amountCborHex = amountCborHex,
+                    )
+                )
+            }
+            // get earnings by song id
+            get("song/{songId}") {
+                recaptchaRepository.verify("get_earnings", request)
+                val startDate = parameters["startDate"]?.toLocalDateTime()
+                val endDate = parameters["endDate"]?.toLocalDateTime()
+                val earnings = earningsRepository.getAllBySongId(songId).filter { earning ->
+                    (startDate == null || earning.createdAt >= startDate) &&
+                        (endDate == null || earning.createdAt <= endDate)
+                }
+                val totalAmount = earnings.sumOf { it.amount }
+                respond(
+                    GetEarningsBySongIdResponse(
+                        totalAmount = totalAmount,
+                        earnings = earnings
                     )
                 )
             }

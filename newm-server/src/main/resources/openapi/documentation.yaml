@@ -595,6 +595,37 @@ paths:
             'application/json':
               schema:
                 $ref: "#/components/schemas/GetEarningsResponse"
+  /v1/earnings/song/{songId}:
+    get:
+      tags:
+        - "Earnings"
+      description: "get earnings for a song"
+      parameters:
+        - name: "songId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+          format: "uuid"
+        - name: "startDate"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+          format: "date"
+        - name: "endDate"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+          format: "date"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/GetEarningsBySongIdResponse"
   /v1/earnings:
     post:
       tags:
@@ -2319,13 +2350,26 @@ components:
         earnings:
           type: "array"
           items:
-              $ref: "#/components/schemas/Earning"
+            $ref: "#/components/schemas/Earning"
         amountCborHex:
           type: "string"
       required:
         - "totalClaimed"
         - "earnings"
         - "amountCborHex"
+    GetEarningsBySongIdResponse:
+      type: "object"
+      properties:
+        totalAmount:
+          type: "integer"
+          format: "int64"
+        earnings:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/Earning"
+      required:
+        - "totalAmount"
+        - "earnings"
     ClaimOrderRequest:
       type: "object"
       properties:
@@ -2336,7 +2380,7 @@ components:
         utxoCborHexList:
           type: "array"
           items:
-              type: "string"
+            type: "string"
       required:
         - "walletAddress"
         - "changeAddress"
