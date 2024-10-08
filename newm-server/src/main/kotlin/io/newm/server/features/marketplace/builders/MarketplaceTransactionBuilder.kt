@@ -80,6 +80,7 @@ suspend fun CardanoRepository.buildSaleStartTransaction(
     }
 
 suspend fun CardanoRepository.buildSaleEndTransaction(
+    saleUtxoIndex: Long,
     sourceUtxos: List<Utxo>,
     collateralUtxos: List<Utxo>,
     referenceInputUtxos: List<Utxo>,
@@ -125,7 +126,7 @@ suspend fun CardanoRepository.buildSaleEndTransaction(
             this.redeemers.add(
                 redeemer {
                     tag = RedeemerTag.SPEND
-                    index = 0L
+                    index = saleUtxoIndex
                     data = plutusData {
                         constr = 3
                         list = plutusDataList { }
