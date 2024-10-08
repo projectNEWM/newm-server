@@ -353,7 +353,8 @@ internal class MarketplaceRepositoryImpl(
             utxo.nativeAssetsList.any { it.policy == sale.pointerPolicyId && it.name == sale.pointerAssetName }
         } ?: throw HttpUnprocessableEntityException("Pointer asset not found in contract address utxos")
 
-        val sourceUtxos = request.utxos + saleUtxo
+        val sourceUtxos = (request.utxos + saleUtxo).sortByHashAndIx()
+        val saleUtxoIndex = sourceUtxos.indexOf(saleUtxo).toLong()
 
         val pointerAsset = nativeAsset {
             policy = sale.pointerPolicyId
@@ -381,6 +382,7 @@ internal class MarketplaceRepositoryImpl(
         // calculate required fee, totalCollateral and redeemer
         val calculatedFields = cardanoRepository
             .buildSaleEndTransaction(
+                saleUtxoIndex = saleUtxoIndex,
                 sourceUtxos = sourceUtxos,
                 collateralUtxos = collateralUtxos,
                 referenceInputUtxos = referenceInputUtxos,
@@ -394,6 +396,7 @@ internal class MarketplaceRepositoryImpl(
         // generate transaction id
         val transactionId = cardanoRepository
             .buildSaleEndTransaction(
+                saleUtxoIndex = saleUtxoIndex,
                 sourceUtxos = sourceUtxos,
                 collateralUtxos = collateralUtxos,
                 referenceInputUtxos = referenceInputUtxos,
@@ -409,6 +412,7 @@ internal class MarketplaceRepositoryImpl(
 
         // generate signed transaction
         val transaction = cardanoRepository.buildSaleEndTransaction(
+            saleUtxoIndex = saleUtxoIndex,
             sourceUtxos = sourceUtxos,
             collateralUtxos = collateralUtxos,
             referenceInputUtxos = referenceInputUtxos,
