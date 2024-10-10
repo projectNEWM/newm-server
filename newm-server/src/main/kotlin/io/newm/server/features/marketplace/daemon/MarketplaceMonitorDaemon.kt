@@ -58,13 +58,13 @@ class MarketplaceMonitorDaemon(
 
     override fun isLeader() {
         // only the leader runs
-        log.warn { "This instance is now the leader" }
+        log.warn { "This instance is: LEADER" }
         startMonitoring()
     }
 
     override fun notLeader() {
         // we may become the leader later, but only if the current leader shutdowns or crashes
-        log.info { "This instance is not currently the leader" }
+        log.warn { "This instance is: NOT LEADER" }
         coroutineContext.cancelChildren()
     }
 
@@ -90,12 +90,6 @@ class MarketplaceMonitorDaemon(
         getTip: suspend () -> String?,
         processTransaction: suspend (MonitorAddressResponse) -> Unit
     ) {
-        // TODO: Remove this after the smart contract is up in Mainnet
-        if (cardanoRepository.isMainnet()) {
-            log.info { "Temporarily disabled in Mainnet" }
-            return
-        }
-
         val address = configRepository.getString(addressKey)
         val retryDelay = configRepository.getLong(CONFIG_KEY_MARKETPLACE_MONITORING_RETRY_DELAY)
         var logStart = true
