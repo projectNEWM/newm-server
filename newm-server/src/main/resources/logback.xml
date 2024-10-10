@@ -9,8 +9,6 @@
         <minimumBreadcrumbLevel>DEBUG</minimumBreadcrumbLevel>
     </appender>
 
-    <logger name="io.ktor.server.plugins.cors.CORS" level="TRACE"/>
-
     <root level="INFO">
         <appender-ref ref="STDOUT"/>
         <appender-ref ref="Sentry"/>
