@@ -479,8 +479,8 @@ internal class MarketplaceRepositoryImpl(
             amount = currencyAmount
         }
 
-        // add 1 extra ADA lovelace to ensure we always return change back and avoid a potential minUtxoNotMet error
-        val lovelace = configRepository.getLong(CONFIG_KEY_MARKETPLACE_ORDER_LOVELACE) + 1000000L
+        // add 3 extra ADA lovelace to ensure we always return change back and avoid a potential minUtxoNotMet error
+        val lovelace = configRepository.getLong(CONFIG_KEY_MARKETPLACE_ORDER_LOVELACE) + 3000000L
         val amount = CborArray.create(
             listOf(
                 CborInteger.create(lovelace.toBigInteger()),
