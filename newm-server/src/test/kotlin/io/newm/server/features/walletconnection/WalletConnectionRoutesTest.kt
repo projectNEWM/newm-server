@@ -382,5 +382,6 @@ class WalletConnectionRoutesTest : BaseApplicationTests() {
             Truth.assertThat(actualConnections).isEqualTo(expectedConnections)
         }
 
-    private fun buildChallengeString(challengeId: UUID): String = """{"connectTo":"NEWM Mobile $challengeId","stakeAddress":"$TEST_STAKE_ADDRESS"}"""
+    private fun buildChallengeString(challengeId: UUID): String =
+        """{"connectTo":"NEWM Mobile $challengeId","stakeAddress":"$TEST_STAKE_ADDRESS"}"""
 }

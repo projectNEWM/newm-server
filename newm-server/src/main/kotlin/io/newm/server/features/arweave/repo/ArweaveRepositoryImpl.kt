@@ -152,7 +152,8 @@ class ArweaveRepositoryImpl(
                 .toSeq()
         )
 
-    private suspend fun signTransaction(transaction: Transaction): Signed<Transaction> = signableApi.SignableSyntax(transaction).sign(arweaveWallet().priv())
+    private suspend fun signTransaction(transaction: Transaction): Signed<Transaction> =
+        signableApi.SignableSyntax(transaction).sign(arweaveWallet().priv())
 
     private suspend fun submitTransaction(signedTransaction: Signed<Transaction>): Boolean {
         val submitFuture = txApi.submit(signedTransaction, arweaveConfig, handlerFunction)

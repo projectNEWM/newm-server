@@ -7,6 +7,7 @@ import com.google.iot.cbor.CborMap
 import com.google.iot.cbor.CborTextString
 import com.google.protobuf.ByteString
 import com.google.protobuf.kotlin.toByteString
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.newm.chain.grpc.PlutusData
 import io.newm.chain.grpc.RedeemerTag
 import io.newm.chain.grpc.Signature
@@ -33,7 +34,10 @@ import io.newm.server.features.cardano.model.Key
 import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.collaboration.model.Collaboration
 import io.newm.server.features.collaboration.repo.CollaborationRepository
+import io.newm.server.features.minting.database.MintingStatusHistoryTable
+import io.newm.server.features.minting.database.MintingStatusTransactionEntity
 import io.newm.server.features.minting.model.MintInfo
+import io.newm.server.features.minting.model.MintingStatusTransactionModel
 import io.newm.server.features.song.model.Release
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.repo.SongRepository
@@ -41,6 +45,7 @@ import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.model.User
 import io.newm.server.features.user.repo.UserRepository
 import io.newm.server.ktx.toReferenceUtxo
+import io.newm.server.typealiases.SongId
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.coLazy
 import io.newm.shared.ktx.info
@@ -49,6 +54,7 @@ import io.newm.shared.ktx.toHexString
 import io.newm.txbuilder.ktx.sortByHashAndIx
 import io.newm.txbuilder.ktx.toCborObject
 import io.newm.txbuilder.ktx.toPlutusData
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf
 import org.slf4j.Logger
@@ -67,6 +73,7 @@ class MintingRepositoryImpl(
     private val legacyPolicyIds: List<String> by coLazy {
         configRepository.getStrings(CONFIG_KEY_MINT_LEGACY_POLICY_IDS)
     }
+    private val logger = KotlinLogging.logger {}
 
     override suspend fun mint(song: Song): MintInfo {
         return cardanoRepository.withLock {
@@ -1098,5 +1105,25 @@ class MintingRepositoryImpl(
 
         private const val PREFIX_REF_TOKEN = "000643b0" // (100)
         private const val PREFIX_FRAC_TOKEN = "001bc280" // (444)
+    }
+
+    override suspend fun add(mintingStatusTransactionEntity: MintingStatusTransactionEntity) =
+        transaction {
+            MintingStatusTransactionEntity
+                .new {
+                    mintingStatus = mintingStatusTransactionEntity.mintingStatus
+                    createdAt = mintingStatusTransactionEntity.createdAt
+                    logMessage = mintingStatusTransactionEntity.logMessage
+                    songId = mintingStatusTransactionEntity.songId
+                }.id.value
+        }
+
+    override fun getMintingStatusHistoryEntity(songId: SongId): List<MintingStatusTransactionModel> {
+        logger.debug { "get minting history for : songId = $songId" }
+        return transaction {
+            MintingStatusTransactionEntity
+                .find(MintingStatusHistoryTable.songId eq songId)
+                .map { it.toModel() }
+        }
     }
 }

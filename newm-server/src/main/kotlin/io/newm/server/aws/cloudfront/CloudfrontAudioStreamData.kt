@@ -125,4 +125,5 @@ class CloudfrontAudioStreamData(
         )
 }
 
-fun cloudfrontAudioStreamData(init: CloudfrontAudioStreamArguments.() -> Unit): CloudfrontAudioStreamData = CloudfrontAudioStreamData(CloudfrontAudioStreamArguments("", "", "", "").apply(init))
+fun cloudfrontAudioStreamData(init: CloudfrontAudioStreamArguments.() -> Unit): CloudfrontAudioStreamData =
+    CloudfrontAudioStreamData(CloudfrontAudioStreamArguments("", "", "", "").apply(init))
