@@ -372,7 +372,12 @@ internal class SongRepositoryImpl(
 
             checkRequester(songId, requesterId)
             val config = environment.getConfigChild("aws.s3.audio")
-            val file = data.toTempFile()
+            val file = try {
+                data.toTempFile()
+            } catch (e: Throwable) {
+                logger.error(e) { "Failed to create audio temp file" }
+                throw e
+            }
             try {
                 val size = file.length()
                 val minSize = config.getLong("minFileSize")

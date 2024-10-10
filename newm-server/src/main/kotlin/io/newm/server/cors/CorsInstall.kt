@@ -12,6 +12,7 @@ import io.newm.shared.ktx.getConfigSplitStrings
 fun Application.installCORS() {
     install(CORS) {
         allowMethod(HttpMethod.Put)
+        allowMethod(HttpMethod.Post)
         allowMethod(HttpMethod.Patch)
         allowMethod(HttpMethod.Delete)
         allowHeader(HttpHeaders.Authorization)
