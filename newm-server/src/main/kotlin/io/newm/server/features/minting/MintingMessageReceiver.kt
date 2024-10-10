@@ -10,7 +10,9 @@ import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_OUTLET_S
 import io.newm.server.features.arweave.repo.ArweaveRepository
 import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.daemon.QuartzSchedulerDaemon
+import io.newm.server.features.minting.database.MintingStatusTransactionEntity
 import io.newm.server.features.minting.repo.MintingRepository
+import io.newm.server.features.minting.repo.MintingStatusHistoryRepository
 import io.newm.server.features.scheduler.EvearaReleaseStatusJob
 import io.newm.server.features.scheduler.OutletReleaseStatusJob
 import io.newm.server.features.song.model.MintingStatus
@@ -37,6 +39,7 @@ class MintingMessageReceiver : SqsMessageReceiver {
     private val configRepository: ConfigRepository by inject()
     private val quartzSchedulerDaemon: QuartzSchedulerDaemon by inject()
     private val json: Json by inject()
+    private val mintingStatusHistoryRepository: MintingStatusHistoryRepository by inject()
 
     override suspend fun onMessageReceived(message: Message) {
         log.info { "received: ${message.body()}" }
@@ -123,6 +126,13 @@ class MintingMessageReceiver : SqsMessageReceiver {
                 songRepository.updateSongMintingStatus(
                     songId = mintingStatusSqsMessage.songId,
                     mintingStatus = MintingStatus.AwaitingAudioEncoding,
+                )
+                // TODO : sample
+                mintingStatusHistoryRepository.add(
+                    MintingStatusTransactionEntity.new {
+                        mintingStatus = MintingStatus.AwaitingAudioEncoding
+                        songId = mintingStatusSqsMessage.songId
+                    }
                 )
             }
 
