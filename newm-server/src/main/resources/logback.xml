@@ -5,9 +5,12 @@
         </encoder>
     </appender>
     <appender name="Sentry" class="io.sentry.logback.SentryAppender">
-        <minimumEventLevel>WARN</minimumEventLevel>
+        <minimumEventLevel>ERROR</minimumEventLevel>
         <minimumBreadcrumbLevel>DEBUG</minimumBreadcrumbLevel>
     </appender>
+
+    <!-- Quiet down the warnings from zookeeper -->
+    <logger name="org.apache.zookeeper" level="ERROR" />
 
     <root level="INFO">
         <appender-ref ref="STDOUT"/>
