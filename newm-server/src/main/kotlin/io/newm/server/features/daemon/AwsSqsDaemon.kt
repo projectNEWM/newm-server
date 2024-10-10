@@ -64,12 +64,12 @@ class AwsSqsDaemon :
     }
 
     override fun isLeader() {
-        log.info { "This instance is now the leader" }
+        log.warn { "This instance is: LEADER" }
         startSqsReceivers()
     }
 
     override fun notLeader() {
-        log.info { "This instance is no longer the leader" }
+        log.warn { "This instance is: NOT LEADER" }
         coroutineContext.cancelChildren()
     }
 
