@@ -12,9 +12,12 @@ import io.newm.shared.ktx.getConfigSplitStrings
 fun Application.installCORS() {
     install(CORS) {
         allowMethod(HttpMethod.Put)
-        allowMethod(HttpMethod.Post)
         allowMethod(HttpMethod.Patch)
         allowMethod(HttpMethod.Delete)
+
+        // force POST to be allowed even though it is assumed to be a default
+        this.methods.add(HttpMethod.Post)
+
         allowHeader(HttpHeaders.Authorization)
         allowHeader(RecaptchaHeaders.Platform)
         allowHeader(RecaptchaHeaders.Token)
