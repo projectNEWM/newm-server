@@ -164,8 +164,8 @@ internal class MarketplaceRepositoryImpl(
             }
         )
 
-        // add 1 extra ADA lovelace to ensure we always return change back and avoid a potential minUtxoNotMet error
-        val lovelace = configRepository.getLong(CONFIG_KEY_MARKETPLACE_SALE_LOVELACE) + 1000000L
+        // add 2 extra ADA lovelace to ensure we always return change back and avoid a potential minUtxoNotMet error
+        val lovelace = configRepository.getLong(CONFIG_KEY_MARKETPLACE_SALE_LOVELACE) + 2000000L
         val amount = CborArray.create(
             listOf(
                 CborInteger.create(lovelace.toBigInteger()),
@@ -330,8 +330,8 @@ internal class MarketplaceRepositoryImpl(
             throw HttpNotFoundException("Sale not found: ${request.saleId}")
         }
 
-        // add 1 extra ADA lovelace to ensure we always return change back and avoid a potential minUtxoNotMet error
-        val lovelace = configRepository.getLong(CONFIG_KEY_MARKETPLACE_SALE_LOVELACE) + 1000000L
+        // add 2 extra ADA lovelace to ensure we always return change back and avoid a potential minUtxoNotMet error
+        val lovelace = configRepository.getLong(CONFIG_KEY_MARKETPLACE_SALE_LOVELACE) + 2000000L
         val amount = CborInteger.create(lovelace.toBigInteger())
         return SaleEndAmountResponse(amount.toCborByteArray().toHexString())
     }
