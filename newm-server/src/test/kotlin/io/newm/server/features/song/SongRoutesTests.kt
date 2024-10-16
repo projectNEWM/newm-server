@@ -143,7 +143,7 @@ class SongRoutesTests : BaseApplicationTests() {
     fun testGetSong() =
         runBlocking {
             // Add Song directly into database
-            val song = addSongToDatabase()
+            val song = addSongToDatabase().copy(earnings = null)
 
             // Get it
             val response = client.get("v1/songs/${song.id}") {
@@ -1227,5 +1227,5 @@ fun addSongToDatabase(
                 this.apply { init() }
             }
         }
-    }.toModel(release)
+    }.toModel(release).copy(earnings = 0L)
 }

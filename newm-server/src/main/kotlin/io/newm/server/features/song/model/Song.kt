@@ -76,4 +76,6 @@ data class Song(
     // FIXME: Keep errorMessage for now since the UI/UX expects it. Eventually this will only be on the Release instead of the Song.
     val errorMessage: String? = null,
     val instrumental: Boolean? = null,
+    // Not saved in the database. Used for display purposes in the studio and populated from /getSongs endpoint
+    val earnings: Long? = null,
 )

@@ -1155,6 +1155,31 @@ paths:
       tags:
         - "Song"
       description: ""
+      parameters:
+        - name: "startDate"
+          in: "query"
+          description: "startDate for the song earnings"
+          required: false
+          schema:
+            type: "string"
+            format: "date"
+        - name: "endDate"
+          in: "query"
+          description: "endDate for the song earnings"
+          required: false
+          schema:
+            type: "string"
+            format: "date"
+        - name: "offset"
+          in: "query"
+          required: false
+          schema:
+            type: "integer"
+        - name: "limit"
+          in: "query"
+          required: false
+          schema:
+            type: "integer"
       responses:
         "200":
           description: "OK"
@@ -2008,6 +2033,9 @@ components:
           type: "string"
         instrumental:
           type: "boolean"
+        earnings:
+          type: "integer"
+          format: "int64"
     WalletSong:
       type: "object"
       properties:

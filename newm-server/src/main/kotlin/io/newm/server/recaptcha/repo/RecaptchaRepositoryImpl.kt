@@ -76,7 +76,8 @@ internal class RecaptchaRepositoryImpl(
                 }.checkedBody()
 
         if (!response.tokenProperties.valid) {
-            val message = "Recaptcha failed - reason: ${response.tokenProperties.invalidReason}"
+            val message =
+                "Recaptcha failed (${response.tokenProperties.action}) - reason: ${response.tokenProperties.invalidReason}"
             logger.warn { message }
             throw HttpForbiddenException(message)
         }
