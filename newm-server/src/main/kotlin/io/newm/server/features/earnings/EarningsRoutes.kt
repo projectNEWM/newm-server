@@ -72,7 +72,7 @@ fun Routing.createEarningsRoutes() {
                 val earnings = earningsRepository.getAllByStakeAddress(stakeAddress)
                 val totalClaimed = earnings.filter { it.claimed }.sumOf { it.amount }
                 val paymentAmountLovelace = configRepository.getLong(CONFIG_KEY_EARNINGS_CLAIM_ORDER_FEE)
-                val changeAmountLovelace = 1000000L // 1 ada
+                val changeAmountLovelace = 2000000L // 2 ada
                 val amountCborHex = CborInteger
                     .create(paymentAmountLovelace + changeAmountLovelace)
                     .toCborByteArray()

@@ -8,6 +8,7 @@ import io.ktor.server.routing.Routing
 import io.ktor.server.routing.route
 import io.newm.server.auth.jwt.AUTH_JWT
 import io.newm.server.auth.jwt.AUTH_JWT_ADMIN
+import io.newm.server.features.earnings.repo.EarningsRepository
 import io.newm.server.features.model.CountResponse
 import io.newm.server.features.song.model.*
 import io.newm.server.features.song.repo.SongRepository
@@ -25,6 +26,7 @@ import io.newm.shared.ktx.get
 import io.newm.shared.ktx.patch
 import io.newm.shared.ktx.post
 import io.newm.shared.ktx.put
+import io.newm.shared.ktx.toLocalDateTime
 
 private const val SONGS_PATH = "v1/songs"
 
@@ -32,6 +34,7 @@ private const val SONGS_PATH = "v1/songs"
 fun Routing.createSongRoutes() {
     val songRepository: SongRepository by inject()
     val userRepository: UserRepository by inject()
+    val earningsRepository: EarningsRepository by inject()
 
     authenticate(AUTH_JWT_ADMIN) {
         route(SONGS_PATH) {
@@ -54,7 +57,19 @@ fun Routing.createSongRoutes() {
                 respond(SongIdBody(songRepository.add(receive(), myUserId)))
             }
             get {
-                respond(songRepository.getAll(songFilters, offset, limit))
+                val songs = songRepository.getAll(songFilters, offset, limit)
+                val startDate = parameters["startDate"]?.toLocalDateTime()
+                val endDate = parameters["endDate"]?.toLocalDateTime()
+                val songsAndEarnings = songs.map { song ->
+                    val allEarningsAmount = earningsRepository
+                        .getAllBySongId(song.id!!)
+                        .filter { earning ->
+                            (startDate == null || earning.createdAt >= startDate) &&
+                                (endDate == null || earning.createdAt <= endDate)
+                        }.sumOf { it.amount }
+                    song.copy(earnings = allEarningsAmount)
+                }
+                respond(songsAndEarnings)
             }
             get("count") {
                 respond(CountResponse(songRepository.getAllCount(songFilters)))

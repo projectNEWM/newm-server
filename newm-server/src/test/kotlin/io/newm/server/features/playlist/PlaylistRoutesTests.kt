@@ -491,7 +491,7 @@ class PlaylistRoutesTests : BaseApplicationTests() {
             // Create songs directly into database
             val expectedSongs = mutableListOf<Song>()
             for (offset in 0..30) {
-                expectedSongs += addSongToDatabase(offset, testUserId)
+                expectedSongs += addSongToDatabase(offset, testUserId).copy(earnings = null)
             }
 
             // add songs to playlist directly into database
