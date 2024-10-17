@@ -41,6 +41,7 @@ import kotlin.math.ceil
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
+import org.slf4j.LoggerFactory
 
 /**
  * A builder for cardano conway transactions.
@@ -53,7 +54,7 @@ class TransactionBuilder(
     private val calculateReferenceScriptBytes: (suspend (Set<Utxo>) -> Long)? = null,
     private val calculateReferenceScriptsVersions: (suspend (Set<Utxo>) -> Set<Int>)? = null,
 ) {
-    // private val log by lazy { LoggerFactory.getLogger("TransactionBuilder") }
+    private val log by lazy { LoggerFactory.getLogger("TransactionBuilder") }
     private val secureRandom by lazy { SecureRandom() }
 
     private val txFeeFixed by lazy {
@@ -460,11 +461,13 @@ class TransactionBuilder(
                 }
 
             // Calculate referenceInputs fee
-            val referenceScriptBytes = if (!referenceInputs.isNullOrEmpty() && calculateReferenceScriptBytes != null) {
-                calculateReferenceScriptBytes.invoke(referenceInputs!!)
-            } else {
-                null
-            }
+            val referenceScriptBytes: Long? =
+                referenceInputs?.takeIf { it.isNotEmpty() }?.let { refInputs ->
+                    calculateReferenceScriptBytes?.invoke(refInputs) ?: run {
+                        log.warn("calculateReferenceScriptBytes is not defined, but referenceInputs exist!")
+                        null
+                    }
+                }
 
             updateFeesAndCollateral(
                 cborByteSize = dummyTxCbor.size,
