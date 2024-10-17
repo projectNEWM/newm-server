@@ -460,10 +460,11 @@ class TransactionBuilder(
                 }
 
             // Calculate referenceInputs fee
-            val referenceScriptBytes =
-                referenceInputs?.takeIf { it.isNotEmpty() && calculateReferenceScriptBytes != null }.let {
-                    calculateReferenceScriptBytes!!.invoke(referenceInputs!!)
-                }
+            val referenceScriptBytes = if (!referenceInputs.isNullOrEmpty() && calculateReferenceScriptBytes != null) {
+                calculateReferenceScriptBytes.invoke(referenceInputs!!)
+            } else {
+                null
+            }
 
             updateFeesAndCollateral(
                 cborByteSize = dummyTxCbor.size,
