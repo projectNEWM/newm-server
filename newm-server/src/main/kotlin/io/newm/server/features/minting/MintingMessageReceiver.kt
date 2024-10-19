@@ -242,6 +242,7 @@ class MintingMessageReceiver : SqsMessageReceiver {
                         mintingStatus = MintingStatus.ArweaveUploadException,
                         errorMessage = "$errorMessage: ${e.message}",
                     )
+
                     throw DistributeAndMintException(errorMessage, e).also { it.captureToSentry() }
                 }
             }
