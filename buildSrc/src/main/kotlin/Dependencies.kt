@@ -227,6 +227,7 @@ object Dependencies {
         const val KMS = "software.amazon.awssdk:kms"
         const val SECRETS_MANAGER = "software.amazon.awssdk:secretsmanager"
         const val LAMBDA = "software.amazon.awssdk:lambda"
+        const val EC2 = "software.amazon.awssdk:ec2"
     }
 
     object Zensum {

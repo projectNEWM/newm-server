@@ -5,6 +5,7 @@ import io.newm.shared.ktx.getConfigString
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.ec2.Ec2Client
 import software.amazon.awssdk.services.kms.KmsAsyncClient
 import software.amazon.awssdk.services.lambda.LambdaAsyncClient
 import software.amazon.awssdk.services.s3.S3Client
@@ -53,6 +54,13 @@ val awsKoinModule =
 
         single<LambdaAsyncClient> {
             LambdaAsyncClient
+                .builder()
+                .region(get<Region>(AWS_REGION))
+                .build()
+        }
+
+        single<Ec2Client> {
+            Ec2Client
                 .builder()
                 .region(get<Region>(AWS_REGION))
                 .build()
