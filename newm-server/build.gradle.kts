@@ -104,6 +104,7 @@ dependencies {
     implementation(Dependencies.Aws.SECRETS_MANAGER)
     implementation(Dependencies.Aws.LAMBDA)
     implementation(Dependencies.Aws.CLOUDFRONT)
+    implementation(Dependencies.Aws.EC2)
 
     implementation(Dependencies.Arweave.ARWEAVE4S)
     implementation(Dependencies.Arweave.SCALA_JAVA8_COMPAT)
