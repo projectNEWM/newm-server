@@ -1,5 +1,6 @@
 package io.newm.server.curator.support
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.apache.curator.ensemble.EnsembleProvider
 import software.amazon.awssdk.services.ec2.Ec2Client
 import software.amazon.awssdk.services.ec2.model.DescribeInstancesRequest
@@ -10,6 +11,8 @@ class Ec2EnsembleProvider(
     private val role: String,
     private val port: Int
 ) : EnsembleProvider {
+    private val log = KotlinLogging.logger {}
+
     override fun getConnectionString(): String {
         val request = DescribeInstancesRequest
             .builder()
@@ -26,6 +29,9 @@ class Ec2EnsembleProvider(
             .reservations()
             .flatMap { it.instances() }
             .joinToString(",") { "${it.privateIpAddress()}:$port" }
+            .also {
+                log.info { "connectionString: $it" }
+            }
     }
 
     override fun start() {}
