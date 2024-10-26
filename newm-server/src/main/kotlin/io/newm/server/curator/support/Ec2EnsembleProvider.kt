@@ -30,7 +30,7 @@ class Ec2EnsembleProvider(
             .flatMap { it.instances() }
             .joinToString(",") { "${it.privateIpAddress()}:$port" }
             .also {
-                log.info { "connectionString: $it" }
+                log.trace { "connectionString: $it" }
             }
     }
 
