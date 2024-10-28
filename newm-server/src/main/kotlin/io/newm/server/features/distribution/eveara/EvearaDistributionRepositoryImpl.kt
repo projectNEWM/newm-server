@@ -998,7 +998,7 @@ class EvearaDistributionRepositoryImpl(
                         productFormat = "stereo",
                         coverImage =
                             CoverImage(
-                                url = release.coverArtUrl.asValidUrl().replace("c_limit,w_4000,h_4000/", ""),
+                                url = release.coverArtUrl.asValidUrl(),
                                 extension =
                                     release.coverArtUrl
                                         .asValidUrl()
@@ -1095,7 +1095,7 @@ class EvearaDistributionRepositoryImpl(
                         productFormat = "stereo",
                         coverImage =
                             CoverImage(
-                                url = release.coverArtUrl.asValidUrl().replace("c_limit,w_4000,h_4000/", ""),
+                                url = release.coverArtUrl.asValidUrl(),
                                 extension =
                                     release.coverArtUrl
                                         .asValidUrl()
