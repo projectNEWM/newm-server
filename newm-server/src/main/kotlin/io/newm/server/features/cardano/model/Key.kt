@@ -206,6 +206,5 @@ data class Key(
     /**
      * Prevent skey from being leaked to logs.
      */
-    override fun toString(): String =
-        "Key(id=$id, skey=*******, vkey='${vkey.toHexString()}', address='$address', scriptAddress='$scriptAddress', createdAt=$createdAt)"
+    override fun toString(): String = "Key(id=$id, skey=*******, vkey='${vkey.toHexString()}', address='$address', scriptAddress='$scriptAddress', createdAt=$createdAt)"
 }

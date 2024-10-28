@@ -168,8 +168,7 @@ fun getShelleyTransitionEpoch(): Long {
 
 fun getSlotInEpoch(): Long = shelleyGenesis.epochLength - getTimeUntilNextEpoch()
 
-fun getTimeUntilNextEpoch(): Long =
-    shelleyGenesis.epochLength - (Instant.now().epochSecond - genesisStartTimeSec) + (getCurrentEpoch() * shelleyGenesis.epochLength)
+fun getTimeUntilNextEpoch(): Long = shelleyGenesis.epochLength - (Instant.now().epochSecond - genesisStartTimeSec) + (getCurrentEpoch() * shelleyGenesis.epochLength)
 
 fun getInstantAtSlot(absoluteSlot: Long): Instant = Instant.ofEpochSecond(getEpochSecondAtSlot(absoluteSlot))
 

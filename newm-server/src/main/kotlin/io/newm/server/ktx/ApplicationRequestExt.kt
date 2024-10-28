@@ -5,5 +5,4 @@ import io.newm.shared.exception.HttpBadRequestException
 
 fun ApplicationRequest.requiredHeader(name: String): String = headers[name] ?: throw HttpBadRequestException("Missing header: $name")
 
-fun ApplicationRequest.requiredQueryParam(name: String): String =
-    queryParameters[name] ?: throw HttpBadRequestException("Missing query param: $name")
+fun ApplicationRequest.requiredQueryParam(name: String): String = queryParameters[name] ?: throw HttpBadRequestException("Missing query param: $name")
