@@ -998,7 +998,7 @@ class EvearaDistributionRepositoryImpl(
                         productFormat = "stereo",
                         coverImage =
                             CoverImage(
-                                url = release.coverArtUrl.asValidUrl(),
+                                url = release.coverArtUrl.asValidUrl().replace("c_limit,w_4000,h_4000/", ""),
                                 extension =
                                     release.coverArtUrl
                                         .asValidUrl()
@@ -1095,7 +1095,7 @@ class EvearaDistributionRepositoryImpl(
                         productFormat = "stereo",
                         coverImage =
                             CoverImage(
-                                url = release.coverArtUrl.asValidUrl(),
+                                url = release.coverArtUrl.asValidUrl().replace("c_limit,w_4000,h_4000/", ""),
                                 extension =
                                     release.coverArtUrl
                                         .asValidUrl()
@@ -1807,7 +1807,8 @@ class EvearaDistributionRepositoryImpl(
             require(user.distributionNewmParticipantId == null) {
                 "User.distributionNewmParticipantId: ${user.distributionNewmParticipantId} not found in Eveara!"
             }
-            val response = addParticipant(User(distributionUserId = user.distributionUserId!!, nickname = NEWM_PARTICIPANT_NAME))
+            val response =
+                addParticipant(User(distributionUserId = user.distributionUserId!!, nickname = NEWM_PARTICIPANT_NAME))
             log.info { "Created $NEWM_PARTICIPANT_NAME participant with id ${response.participantId}: ${response.message}" }
             user.distributionNewmParticipantId = response.participantId
             userRepository.updateUserData(user.id, user)
