@@ -354,8 +354,7 @@ internal class UserRepositoryImpl(
         }
     }
 
-    private fun getUserEntityByEmail(email: String): UserEntity =
-        UserEntity.getByEmail(email) ?: throw HttpNotFoundException("Doesn't exist: $email")
+    private fun getUserEntityByEmail(email: String): UserEntity = UserEntity.getByEmail(email) ?: throw HttpNotFoundException("Doesn't exist: $email")
 
     private fun Password?.asValidPassword(confirm: Password?): Password {
         if (this == null || value.isBlank()) throw HttpBadRequestException("Missing password")
