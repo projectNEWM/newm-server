@@ -25,6 +25,7 @@ import io.newm.server.features.user.createUserRoutes
 import io.newm.server.features.walletconnection.createWalletConnectionRoutes
 import io.newm.server.forwarder.installForwarder
 import io.newm.server.health.installHealthCheck
+import io.newm.server.logging.initializeLogging
 import io.newm.server.logging.initializeSentry
 import io.newm.server.logging.installCallLogging
 import io.newm.server.staticcontent.createStaticContentRoutes
@@ -58,11 +59,11 @@ fun main(args: Array<String>) {
 
 @Suppress("unused")
 fun Application.module() {
+    initializeLogging()
     initializeSentry()
     installDependencyInjection()
     initializeDatabase()
     installCurator()
-
     installCallLogging()
     installContentNegotiation()
     installAuthentication()
