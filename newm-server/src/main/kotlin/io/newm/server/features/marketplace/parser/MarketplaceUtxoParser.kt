@@ -46,6 +46,10 @@ private fun PlutusDataList.toToken(): Token =
         amount = listItemList[2].int
     )
 
-private fun PlutusDataList.toPaymentAddress(isMainnet: Boolean): String = (listItemList[0].bytes.toByteArray() + listItemList[1].bytes.toByteArray()).hashToPaymentAddress(isMainnet)
+private fun PlutusDataList.toPaymentAddress(isMainnet: Boolean): String =
+    (
+        listItemList[0].bytes.toByteArray() +
+            listItemList[1].bytes.toByteArray()
+    ).hashToPaymentAddress(isMainnet)
 
 private fun ByteString.toHexString() = toByteArray().toHexString()
