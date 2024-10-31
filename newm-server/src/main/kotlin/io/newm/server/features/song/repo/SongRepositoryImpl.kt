@@ -26,6 +26,8 @@ import io.newm.server.features.collaboration.repo.CollaborationRepository
 import io.newm.server.features.distribution.DistributionRepository
 import io.newm.server.features.email.repo.EmailRepository
 import io.newm.server.features.minting.MintingStatusSqsMessage
+import io.newm.server.features.minting.database.MintingStatusTransactionEntity
+import io.newm.server.features.minting.repo.MintingRepository
 import io.newm.server.features.song.database.ReleaseEntity
 import io.newm.server.features.song.database.ReleaseTable
 import io.newm.server.features.song.database.SongEntity
@@ -107,6 +109,7 @@ internal class SongRepositoryImpl(
     private val mimeTypes: Properties by lazy {
         propertiesFromResource("audio-mime-types.properties")
     }
+    private val mintingRepository: MintingRepository by inject()
 
     override suspend fun add(
         song: Song,
@@ -721,6 +724,15 @@ internal class SongRepositoryImpl(
                 mintingStatus = mintingStatus,
                 errorMessage = errorMessage,
             )
+        )
+
+        mintingRepository.add(
+            MintingStatusTransactionEntity.new {
+                this.mintingStatus = mintingStatus.name
+                this.songId = EntityID(songId, SongTable)
+                this.logMessage = errorMessage
+                this.createdAt = createdAt
+            }
         )
 
         if (errorMessage.isNotBlank()) {
