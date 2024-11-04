@@ -26,7 +26,6 @@ import io.newm.server.features.collaboration.repo.CollaborationRepository
 import io.newm.server.features.distribution.DistributionRepository
 import io.newm.server.features.email.repo.EmailRepository
 import io.newm.server.features.minting.MintingStatusSqsMessage
-import io.newm.server.features.minting.database.MintingStatusTransactionEntity
 import io.newm.server.features.minting.repo.MintingRepository
 import io.newm.server.features.song.database.ReleaseEntity
 import io.newm.server.features.song.database.ReleaseTable
@@ -726,14 +725,15 @@ internal class SongRepositoryImpl(
             )
         )
 
-        mintingRepository.add(
-            MintingStatusTransactionEntity.new {
-                this.mintingStatus = mintingStatus.name
-                this.songId = EntityID(songId, SongTable)
-                this.logMessage = errorMessage
-                this.createdAt = createdAt
-            }
-        )
+// TODO: This code is causing a crash - needs to be tested/fixed before re-enabling
+//        mintingRepository.add(
+//            MintingStatusTransactionEntity.new {
+//                this.mintingStatus = mintingStatus.name
+//                this.songId = EntityID(songId, SongTable)
+//                this.logMessage = errorMessage
+//                this.createdAt = createdAt
+//            }
+//        )
 
         if (errorMessage.isNotBlank()) {
             // We want to record a history of errors so that they are not lost even after a song is reprocessed and
