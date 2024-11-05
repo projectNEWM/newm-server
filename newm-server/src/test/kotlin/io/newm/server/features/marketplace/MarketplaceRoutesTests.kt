@@ -995,8 +995,8 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
                     description = "description$offset"
                     parentalAdvisory = "parentalAdvisory$offset"
                     this.releaseId = EntityID(releaseId, ReleaseTable)
-                    genres = arrayOf("genre${offset}_0", "genre${offset}_1")
-                    moods = arrayOf("mood${offset}_0", "mood${offset}_1")
+                    genres = listOf("genre${offset}_0", "genre${offset}_1")
+                    moods = listOf("mood${offset}_0", "mood${offset}_1")
                     arweaveClipUrl = "ar://clipUrl$offset"
                     arweaveTokenAgreementUrl = "ar://tokenAgreementUrl$offset"
                     nftPolicyId = "nftPolicyId$offset"
@@ -1069,7 +1069,7 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
                     SongEntity.new {
                         ownerId = artist.id
                         title = "title$offset"
-                        genres = arrayOf("genre${offset}_0", "genre${offset}_1")
+                        genres = listOf("genre${offset}_0", "genre${offset}_1")
                         mintingStatus = MintingStatus.Released
                     }
                 MarketplaceSaleEntity.new {

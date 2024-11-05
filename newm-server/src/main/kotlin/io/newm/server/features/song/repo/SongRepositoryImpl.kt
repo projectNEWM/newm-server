@@ -141,8 +141,8 @@ internal class SongRepositoryImpl(
                     archived = song.archived ?: false
                     this.ownerId = EntityID(ownerId, UserTable)
                     this.title = title
-                    this.genres = genres.toTypedArray()
-                    moods = song.moods?.toTypedArray()
+                    this.genres = genres
+                    moods = song.moods
                     description = song.description
                     this.releaseId = EntityID(releaseId, ReleaseTable)
                     track = song.track
@@ -155,7 +155,7 @@ internal class SongRepositoryImpl(
                     parentalAdvisory = song.parentalAdvisory
                     isrc = song.isrc
                     iswc = song.iswc
-                    ipis = song.ipis?.toTypedArray()
+                    ipis = song.ipis
                     lyricsUrl = song.lyricsUrl?.asValidUrl()
                     instrumental = song.instrumental ?: song.genres.contains("Instrumental")
                 }.id.value
@@ -182,8 +182,8 @@ internal class SongRepositoryImpl(
                     }
                     songEntity.title = it
                 }
-                genres?.let { songEntity.genres = it.toTypedArray() }
-                moods?.let { songEntity.moods = it.toTypedArray() }
+                genres?.let { songEntity.genres = it }
+                moods?.let { songEntity.moods = it }
                 coverArtUrl?.let { releaseEntity.coverArtUrl = it.orNull()?.asValidUrl() }
                 description?.let { songEntity.description = it.orNull() }
                 track?.let { songEntity.track = it }
@@ -198,7 +198,7 @@ internal class SongRepositoryImpl(
                 barcodeNumber?.let { releaseEntity.barcodeNumber = it }
                 isrc?.let { songEntity.isrc = it.orNull() }
                 iswc?.let { songEntity.iswc = it.orNull() }
-                ipis?.let { songEntity.ipis = it.toTypedArray() }
+                ipis?.let { songEntity.ipis = it }
                 // only allow updating release date if we have never submitted for distribution
                 if (!releaseEntity.hasSubmittedForDistribution) {
                     releaseDate?.let { releaseEntity.releaseDate = it }
@@ -316,7 +316,8 @@ internal class SongRepositoryImpl(
         return transaction {
             SongEntity
                 .all(filters)
-                .limit(n = limit, offset = offset.toLong())
+                .offset(start = offset.toLong())
+                .limit(count = limit)
                 .map {
                     val release = ReleaseEntity[it.releaseId!!].toModel()
                     it.toModel(release)
@@ -351,7 +352,8 @@ internal class SongRepositoryImpl(
         return transaction {
             SongEntity
                 .genres(filters)
-                .limit(n = limit, offset = offset.toLong())
+                .offset(start = offset.toLong())
+                .limit(count = limit)
                 .toList()
         }
     }

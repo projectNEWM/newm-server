@@ -24,7 +24,7 @@ plugins {
 
 allprojects {
     group = "io.newm.server"
-    version = "0.4.3-SNAPSHOT"
+    version = "0.5.0-SNAPSHOT"
 }
 
 subprojects {

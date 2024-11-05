@@ -47,7 +47,6 @@ dependencies {
     implementation(Dependencies.Ktor.SERVER_CORE)
     implementation(Dependencies.Ktor.SERVER_CIO)
     implementation(Dependencies.Ktor.SERVER_CONTENT_NEGOTIATION)
-    implementation(Dependencies.Ktor.SERVER_LOCATIONS)
     implementation(Dependencies.Ktor.SERVER_CALL_LOGGING)
     implementation(Dependencies.Ktor.SERVER_AUTH)
     implementation(Dependencies.Ktor.SERVER_AUTH_JWT)

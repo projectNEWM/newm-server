@@ -127,7 +127,11 @@ internal class MarketplaceRepositoryImpl(
         val isMainnet = cardanoRepository.isMainnet()
         val isNftCdnEnabled = configRepository.getBoolean(CONFIG_KEY_NFTCDN_ENABLED)
         val sales = transaction {
-            MarketplaceSaleEntity.all(filters).limit(n = limit, offset = offset.toLong()).toList()
+            MarketplaceSaleEntity
+                .all(filters)
+                .offset(start = offset.toLong())
+                .limit(count = limit)
+                .toList()
         }
         val costAmountConversions = sales.associate { it.id.value to it.computeCostAmountConversions() }
         return transaction {
@@ -158,7 +162,8 @@ internal class MarketplaceRepositoryImpl(
         return transaction {
             MarketplaceArtistEntity
                 .all(filters)
-                .limit(n = limit, offset = offset.toLong())
+                .offset(start = offset.toLong())
+                .limit(count = limit)
                 .map(MarketplaceArtistEntity::toModel)
         }
     }

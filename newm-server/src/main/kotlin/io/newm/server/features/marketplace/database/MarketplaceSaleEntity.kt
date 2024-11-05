@@ -202,16 +202,16 @@ class MarketplaceSaleEntity(
                 ops += MarketplaceSaleTable.status notInList it
             }
             genres?.includes?.let {
-                ops += SongTable.genres overlaps it.toTypedArray()
+                ops += SongTable.genres overlaps it
             }
             genres?.excludes?.let {
-                ops += SongTable.genres notOverlaps it.toTypedArray()
+                ops += SongTable.genres notOverlaps it
             }
             moods?.includes?.let {
-                ops += SongTable.moods overlaps it.toTypedArray()
+                ops += SongTable.moods overlaps it
             }
             moods?.excludes?.let {
-                ops += SongTable.moods notOverlaps it.toTypedArray()
+                ops += SongTable.moods notOverlaps it
             }
             phrase?.let {
                 val pattern = "%${it.lowercase()}%"

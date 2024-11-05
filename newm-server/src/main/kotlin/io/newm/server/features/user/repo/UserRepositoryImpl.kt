@@ -193,7 +193,8 @@ internal class UserRepositoryImpl(
         return transaction {
             UserEntity
                 .all(filters)
-                .limit(n = limit, offset = offset.toLong())
+                .offset(start = offset.toLong())
+                .limit(count = limit)
                 .map { it.toModel(includeAll = false) }
         }
     }

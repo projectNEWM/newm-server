@@ -10,6 +10,7 @@ import io.newm.server.ktx.olderThan
 import io.newm.server.ktx.ownerIds
 import io.newm.server.ktx.phrase
 import io.newm.server.ktx.sortOrder
+import io.newm.server.ktx.sortedBy
 import io.newm.server.model.FilterCriteria
 import io.newm.server.model.toFilterCriteria
 import io.newm.server.model.toStringFilterCriteria
@@ -20,6 +21,7 @@ import java.util.UUID
 data class SongFilters(
     val archived: Boolean?,
     val sortOrder: SortOrder?,
+    val sortedBy: String?,
     val olderThan: LocalDateTime?,
     val newerThan: LocalDateTime?,
     val ids: FilterCriteria<UUID>?,
@@ -42,6 +44,7 @@ val ApplicationCall.songFilters: SongFilters
         SongFilters(
             archived,
             sortOrder,
+            sortedBy,
             olderThan,
             newerThan,
             ids,

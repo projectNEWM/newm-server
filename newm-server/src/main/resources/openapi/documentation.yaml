@@ -1180,6 +1180,11 @@ paths:
           required: false
           schema:
             type: "integer"
+        - name: "sortedBy"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
       responses:
         "200":
           description: "OK"
