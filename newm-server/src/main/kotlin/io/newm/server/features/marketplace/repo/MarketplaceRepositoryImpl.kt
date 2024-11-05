@@ -4,11 +4,13 @@ import com.google.iot.cbor.CborArray
 import com.google.iot.cbor.CborInteger
 import com.google.protobuf.kotlin.toByteString
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.ktor.server.application.ApplicationEnvironment
 import io.newm.chain.grpc.MonitorAddressResponse
 import io.newm.chain.grpc.NativeAsset
 import io.newm.chain.grpc.Utxo
 import io.newm.chain.grpc.nativeAsset
 import io.newm.chain.util.Sha3
+import io.newm.chain.util.hexStringToAssetName
 import io.newm.chain.util.hexToByteArray
 import io.newm.chain.util.toHexString
 import io.newm.chain.util.toRequiredSigner
@@ -31,6 +33,7 @@ import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPL
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_NFTCDN_ENABLED
 import io.newm.server.features.cardano.model.Key
 import io.newm.server.features.cardano.repo.CardanoRepository
+import io.newm.server.features.email.repo.EmailRepository
 import io.newm.server.features.marketplace.builders.buildOrderTransaction
 import io.newm.server.features.marketplace.builders.buildQueueDatum
 import io.newm.server.features.marketplace.builders.buildSaleDatum
@@ -42,6 +45,7 @@ import io.newm.server.features.marketplace.database.MarketplacePendingOrderEntit
 import io.newm.server.features.marketplace.database.MarketplacePendingSaleEntity
 import io.newm.server.features.marketplace.database.MarketplacePurchaseEntity
 import io.newm.server.features.marketplace.database.MarketplaceSaleEntity
+import io.newm.server.features.marketplace.database.MarketplaceSaleOwnerEntity
 import io.newm.server.features.marketplace.model.Artist
 import io.newm.server.features.marketplace.model.ArtistFilters
 import io.newm.server.features.marketplace.model.CostAmountConversions
@@ -65,6 +69,7 @@ import io.newm.server.features.marketplace.model.SaleTransaction
 import io.newm.server.features.marketplace.model.Token
 import io.newm.server.features.marketplace.parser.parseQueue
 import io.newm.server.features.marketplace.parser.parseSale
+import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.database.SongTable
 import io.newm.server.ktx.toReferenceUtxo
 import io.newm.server.typealiases.UserId
@@ -73,7 +78,9 @@ import io.newm.shared.exception.HttpPaymentRequiredException
 import io.newm.shared.exception.HttpUnprocessableEntityException
 import io.newm.shared.ktx.epochSecondsToLocalDateTime
 import io.newm.shared.ktx.existsHavingId
+import io.newm.shared.ktx.getConfigString
 import io.newm.shared.ktx.orZero
+import io.newm.shared.ktx.toGroupingString
 import io.newm.txbuilder.ktx.extractFields
 import io.newm.txbuilder.ktx.sortByHashAndIx
 import io.newm.txbuilder.ktx.toNativeAssetCborMap
@@ -86,9 +93,15 @@ import java.util.UUID
 private const val SALE_TIP_KEY = "saleTip"
 private const val QUEUE_TIP_KEY = "queueTip"
 
+private const val SALE_STARTED_EVENT = "saleStarted"
+private const val SALE_ENDED_EVENT = "saleEnded"
+private const val SALE_SOLD_OUT_EVENT = "saleSoldOut"
+
 internal class MarketplaceRepositoryImpl(
+    private val environment: ApplicationEnvironment,
     private val configRepository: ConfigRepository,
-    private val cardanoRepository: CardanoRepository
+    private val cardanoRepository: CardanoRepository,
+    private val emailRepository: EmailRepository
 ) : MarketplaceRepository {
     private val log = KotlinLogging.logger {}
 
@@ -318,6 +331,13 @@ internal class MarketplaceRepositoryImpl(
         )
         transaction {
             sale.delete()
+            request.email?.let {
+                MarketplaceSaleOwnerEntity.new {
+                    pointerPolicyId = pointerAsset.policy
+                    pointerAssetName = pointerAsset.name
+                    email = it
+                }
+            }
         }
         return SaleStartTransactionResponse(transaction.transactionCbor.toByteArray().toHexString())
     }
@@ -601,41 +621,47 @@ internal class MarketplaceRepositoryImpl(
 
             inputPointer == null && outputPointer != null -> {
                 log.info { "Detected SALE START: $output" }
-                val found = transaction {
-                    val songId = output.bundle.getMatchingSongId() ?: return@transaction false
-                    MarketplaceSaleEntity.new {
-                        this.createdAt = response.timestamp.epochSecondsToLocalDateTime()
-                        this.status = SaleStatus.Started
-                        this.songId = songId
-                        this.ownerAddress = output.ownerAddress
-                        this.pointerPolicyId = outputPointer.policyId
-                        this.pointerAssetName = outputPointer.assetName
-                        this.bundlePolicyId = output.bundle.policyId
-                        this.bundleAssetName = output.bundle.assetName
-                        this.bundleAmount = output.bundle.amount
-                        this.costPolicyId = output.cost.policyId
-                        this.costAssetName = output.cost.assetName
-                        this.costAmount = output.cost.amount
-                        this.maxBundleSize = output.maxBundleSize
-                        this.totalBundleQuantity = output.bundleQuantity
-                        this.availableBundleQuantity = output.bundleQuantity
-                    }
-                    true
+                val sale = transaction {
+                    output.bundle
+                        .getMatchingSongId()
+                        ?.let {
+                            MarketplaceSaleEntity.new {
+                                this.createdAt = response.timestamp.epochSecondsToLocalDateTime()
+                                this.status = SaleStatus.Started
+                                this.songId = it
+                                this.ownerAddress = output.ownerAddress
+                                this.pointerPolicyId = outputPointer.policyId
+                                this.pointerAssetName = outputPointer.assetName
+                                this.bundlePolicyId = output.bundle.policyId
+                                this.bundleAssetName = output.bundle.assetName
+                                this.bundleAmount = output.bundle.amount
+                                this.costPolicyId = output.cost.policyId
+                                this.costAssetName = output.cost.assetName
+                                this.costAmount = output.cost.amount
+                                this.maxBundleSize = output.maxBundleSize
+                                this.totalBundleQuantity = output.bundleQuantity
+                                this.availableBundleQuantity = output.bundleQuantity
+                            }
+                        }
                 }
-                if (!found) {
+                if (sale == null) {
                     log.warn { "Detected SALE START, but no matching song in database for bundle: ${output.bundle}" }
+                } else {
+                    notifySaleEvent(SALE_STARTED_EVENT, sale)
                 }
             }
 
             inputPointer != null && outputPointer == null -> {
                 log.info { "Detected SALE END: $input" }
-                val found = transaction {
-                    MarketplaceSaleEntity.getByPointer(inputPointer)?.run {
+                val sale = transaction {
+                    MarketplaceSaleEntity.getByPointer(inputPointer)?.apply {
                         status = SaleStatus.Ended
-                    } != null
+                    }
                 }
-                if (!found) {
+                if (sale == null) {
                     log.warn { "Detected SALE END, but no sale in database for pointer: $inputPointer" }
+                } else {
+                    notifySaleEvent(SALE_ENDED_EVENT, sale)
                 }
             }
 
@@ -644,19 +670,21 @@ internal class MarketplaceRepositoryImpl(
                 val isSoldOut = outputBundleQuantity == 0L
                 val purchaseBundleQuantity = input.bundleQuantity - outputBundleQuantity
                 log.info { "Detected PURCHASE of $purchaseBundleQuantity bundles${if (isSoldOut) " (SOLD-OUT)" else ""}: $input" }
-                val found = transaction {
-                    MarketplaceSaleEntity.getByPointer(inputPointer)?.run {
+                val sale = transaction {
+                    MarketplaceSaleEntity.getByPointer(inputPointer)?.apply {
                         if (isSoldOut) status = SaleStatus.SoldOut
                         availableBundleQuantity = outputBundleQuantity
                         MarketplacePurchaseEntity.new {
                             this.createdAt = response.timestamp.epochSecondsToLocalDateTime()
-                            this.saleId = this@run.id
+                            this.saleId = this@apply.id
                             this.bundleQuantity = purchaseBundleQuantity
                         }
-                    } != null
+                    }
                 }
-                if (!found) {
+                if (sale == null) {
                     log.warn { "Detected PURCHASE, but no sale in database for pointer: $inputPointer" }
+                } else if (isSoldOut) {
+                    notifySaleEvent(SALE_SOLD_OUT_EVENT, sale)
                 }
             }
         }
@@ -769,6 +797,51 @@ internal class MarketplaceRepositoryImpl(
         return CostAmountConversions(
             usd = costAmountUsd.toBigDecimal(12).toPlainString(),
             newm = (costAmountUsd.toBigDecimal(6) / newmUsdPrice.toBigDecimal()).toPlainString()
+        )
+    }
+
+    private suspend fun MarketplaceSaleEntity.computeTotalValue(): String {
+        val value = totalBundleQuantity.toBigInteger() * costAmount.toBigInteger()
+        return when {
+            costPolicyId == configRepository.getString(CONFIG_KEY_MARKETPLACE_USD_POLICY_ID) -> {
+                "${value.toBigDecimal(12).toGroupingString()} USD"
+            }
+
+            cardanoRepository.isNewmToken(costPolicyId, costAssetName) -> {
+                "${value.toBigDecimal(6).toGroupingString()} &#413;"
+            }
+
+            else -> {
+                "${value.toBigDecimal(6).toGroupingString()} ${costAssetName.hexStringToAssetName()}"
+            }
+        }
+    }
+
+    private suspend fun notifySaleEvent(
+        event: String,
+        sale: MarketplaceSaleEntity
+    ) {
+        var title: String? = null
+        val email = transaction {
+            val owner = MarketplaceSaleOwnerEntity.getByPointer(sale.pointerPolicyId, sale.pointerAssetName)
+            owner?.email?.also {
+                title = SongEntity[sale.songId].title
+                if (event == SALE_SOLD_OUT_EVENT || event == SALE_ENDED_EVENT) {
+                    owner.delete()
+                }
+            }
+        } ?: return
+
+        val messageArgs = mutableMapOf("song" to title.orEmpty())
+        if (event == SALE_STARTED_EVENT || event == SALE_SOLD_OUT_EVENT) {
+            messageArgs += "quantity" to sale.totalBundleQuantity.toGroupingString()
+            messageArgs += "value" to sale.computeTotalValue()
+        }
+        emailRepository.send(
+            to = email,
+            subject = environment.getConfigString("marketplace.email.$event.subject"),
+            messageUrl = environment.getConfigString("marketplace.email.$event.messageUrl"),
+            messageArgs = messageArgs
         )
     }
 }

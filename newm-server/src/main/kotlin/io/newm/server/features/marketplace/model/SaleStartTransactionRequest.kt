@@ -11,6 +11,7 @@ data class SaleStartTransactionRequest(
     @Contextual
     val saleId: PendingSaleId,
     val changeAddress: String,
+    val email: String?, // Optional, to get notifications
     val utxoCborHexList: List<String>,
 ) {
     val utxos: List<Utxo> by lazy { utxoCborHexList.cborHexToUtxos() }
