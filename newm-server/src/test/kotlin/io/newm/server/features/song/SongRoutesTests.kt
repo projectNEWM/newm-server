@@ -47,6 +47,9 @@ import io.newm.server.utils.ResourceOutgoingContent
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.existsHavingId
 import io.newm.shared.ktx.getConfigString
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.util.UUID
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.neq
@@ -58,9 +61,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.koin.core.context.GlobalContext.loadKoinModules
 import org.koin.dsl.module
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.util.UUID
 
 class SongRoutesTests : BaseApplicationTests() {
     @BeforeAll
@@ -913,7 +913,7 @@ class SongRoutesTests : BaseApplicationTests() {
                         SongEntity.new {
                             this.ownerId = EntityID(ownerId, UserTable)
                             title = "title_${genre}_$i"
-                            this.genres = arrayOf(genre)
+                            this.genres = listOf(genre)
                         }
                     }
                 }
@@ -967,7 +967,7 @@ class SongRoutesTests : BaseApplicationTests() {
                         SongEntity.new {
                             this.ownerId = EntityID(ownerId1, UserTable)
                             title = "title_${genre}_$i"
-                            this.genres = arrayOf(genre)
+                            this.genres = listOf(genre)
                         }
                     }
                 }
@@ -977,7 +977,7 @@ class SongRoutesTests : BaseApplicationTests() {
                         SongEntity.new {
                             this.ownerId = EntityID(ownerId2, UserTable)
                             title = "title_${genre}_$i"
-                            this.genres = arrayOf(genre)
+                            this.genres = listOf(genre)
                         }
                     }
                 }
@@ -1025,7 +1025,7 @@ class SongRoutesTests : BaseApplicationTests() {
                     SongEntity.new {
                         this.ownerId = EntityID(testUserId, UserTable)
                         title = "song$count"
-                        genres = arrayOf("genre")
+                        genres = listOf("genre")
                     }
                 }
             }
@@ -1049,7 +1049,7 @@ class SongRoutesTests : BaseApplicationTests() {
                     SongEntity.new {
                         this.ownerId = EntityID(testUserId, UserTable)
                         title = "song$count"
-                        genres = arrayOf("genre$count")
+                        genres = listOf("genre$count")
                     }
                 }
             }
@@ -1199,8 +1199,8 @@ fun addSongToDatabase(
             this.releaseId = EntityID(release.id!!, ReleaseTable)
             description = "description$offset ${phraseOrEmpty(4)} blah blah"
             nftName = "nftName$offset ${phraseOrEmpty(6)} blah blah"
-            genres = arrayOf("genre${offset}_0", "genre${offset}_1")
-            moods = arrayOf("mood${offset}_0", "mood${offset}_1")
+            genres = listOf("genre${offset}_0", "genre${offset}_1")
+            moods = listOf("mood${offset}_0", "mood${offset}_1")
             track = offset
             language = "language$offset"
             coverRemixSample = offset % 2 == 0
@@ -1211,7 +1211,7 @@ fun addSongToDatabase(
             parentalAdvisory = "parentalAdvisory$offset"
             isrc = "isrc$offset"
             iswc = "iswc$offset"
-            ipis = arrayOf("ipi${offset}_0", "ipi${offset}_1")
+            ipis = listOf("ipi${offset}_0", "ipi${offset}_1")
             lyricsUrl = "https://newm.io/lyrics$offset"
             tokenAgreementUrl = "https://newm.io/agreement$offset"
             originalAudioUrl = "https://newm.io/audio$offset"

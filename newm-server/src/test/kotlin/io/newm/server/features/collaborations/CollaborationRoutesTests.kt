@@ -61,7 +61,7 @@ class CollaborationRoutesTests : BaseApplicationTests() {
                         .new {
                             ownerId = EntityID(testUserId, UserTable)
                             title = "Song"
-                            genres = arrayOf("Genre")
+                            genres = listOf("Genre")
                         }.id.value
                 }
 
@@ -1201,7 +1201,7 @@ private fun addCollaborationToDatabase(
                 .new {
                     this.ownerId = ownerEntityId
                     title = "Song$offset"
-                    genres = arrayOf("Genre$offset")
+                    genres = listOf("Genre$offset")
                 }.id
         }
     return transaction {

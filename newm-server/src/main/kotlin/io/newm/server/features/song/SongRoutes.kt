@@ -10,7 +10,13 @@ import io.newm.server.auth.jwt.AUTH_JWT
 import io.newm.server.auth.jwt.AUTH_JWT_ADMIN
 import io.newm.server.features.earnings.repo.EarningsRepository
 import io.newm.server.features.model.CountResponse
-import io.newm.server.features.song.model.*
+import io.newm.server.features.song.model.AudioStreamResponse
+import io.newm.server.features.song.model.MintPaymentRequest
+import io.newm.server.features.song.model.MintPaymentResponse
+import io.newm.server.features.song.model.Song
+import io.newm.server.features.song.model.SongIdBody
+import io.newm.server.features.song.model.StreamTokenAgreementRequest
+import io.newm.server.features.song.model.songFilters
 import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.features.user.model.User
 import io.newm.server.features.user.repo.UserRepository
@@ -27,6 +33,7 @@ import io.newm.shared.ktx.patch
 import io.newm.shared.ktx.post
 import io.newm.shared.ktx.put
 import io.newm.shared.ktx.toLocalDateTime
+import org.jetbrains.exposed.sql.SortOrder
 
 private const val SONGS_PATH = "v1/songs"
 
@@ -69,7 +76,18 @@ fun Routing.createSongRoutes() {
                         }.sumOf { it.amount }
                     song.copy(earnings = allEarningsAmount)
                 }
-                respond(songsAndEarnings)
+                if (songFilters.sortedBy == "earnings") {
+                    val sortOrder = songFilters.sortOrder ?: SortOrder.DESC
+                    respond(
+                        if (sortOrder == SortOrder.ASC) {
+                            songsAndEarnings.sortedBy { it.earnings }
+                        } else {
+                            songsAndEarnings.sortedByDescending { it.earnings }
+                        }
+                    )
+                } else {
+                    respond(songsAndEarnings)
+                }
             }
             get("count") {
                 respond(CountResponse(songRepository.getAllCount(songFilters)))

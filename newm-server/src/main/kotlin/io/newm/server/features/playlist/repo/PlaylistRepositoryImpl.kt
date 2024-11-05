@@ -12,9 +12,9 @@ import io.newm.server.typealiases.SongId
 import io.newm.server.typealiases.UserId
 import io.newm.shared.exception.HttpForbiddenException
 import io.newm.shared.exception.HttpUnprocessableEntityException
+import java.util.UUID
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.transactions.transaction
-import java.util.*
 
 internal class PlaylistRepositoryImpl : PlaylistRepository {
     private val logger = KotlinLogging.logger {}
@@ -77,7 +77,8 @@ internal class PlaylistRepositoryImpl : PlaylistRepository {
         return transaction {
             PlaylistEntity
                 .all(filters)
-                .limit(n = limit, offset = offset.toLong())
+                .offset(start = offset.toLong())
+                .limit(count = limit)
                 .map(PlaylistEntity::toModel)
         }
     }
@@ -122,7 +123,7 @@ internal class PlaylistRepositoryImpl : PlaylistRepository {
     ): List<Song> {
         logger.debug { "getSongs: playlistId = $playlistId, offset = $offset, limit = $limit" }
         return transaction {
-            PlaylistEntity[playlistId].songs.limit(n = limit, offset = offset.toLong()).map { songEntity ->
+            PlaylistEntity[playlistId].songs.offset(start = offset.toLong()).limit(count = limit).map { songEntity ->
                 val release = ReleaseEntity[songEntity.releaseId!!].toModel()
                 songEntity.toModel(release)
             }

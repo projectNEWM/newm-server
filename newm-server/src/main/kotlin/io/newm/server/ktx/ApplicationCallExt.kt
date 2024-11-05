@@ -70,6 +70,9 @@ val ApplicationCall.limit: Int
 val ApplicationCall.sortOrder: SortOrder?
     get() = parameters["sortOrder"]?.let { SortOrder.valueOf(it.uppercase()) }
 
+val ApplicationCall.sortedBy: String?
+    get() = parameters["sortedBy"]
+
 val ApplicationCall.ids: FilterCriteria<UUID>?
     get() = parameters["ids"]?.toUUIDFilterCriteria()
 
@@ -156,6 +159,7 @@ suspend fun <T : Any> ApplicationCall.receiveAndVerify(
         Mac.getInstance(key.algorithm).apply {
             init(key)
         }
+
     request.pipeline.intercept(ApplicationReceivePipeline.Before) { data ->
         val channel = data as ByteReadChannel
         val size = channel.availableForRead

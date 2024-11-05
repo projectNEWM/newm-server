@@ -71,7 +71,6 @@ object Dependencies {
         const val SERVER_CIO = "io.ktor:ktor-server-cio:$VERSION"
         const val SERVER_CONTENT_NEGOTIATION = "io.ktor:ktor-server-content-negotiation:$VERSION"
         const val SERVER_HOST_COMMON = "io.ktor:ktor-server-host-common:$VERSION"
-        const val SERVER_LOCATIONS = "io.ktor:ktor-server-locations:$VERSION"
         const val SERVER_CALL_LOGGING = "io.ktor:ktor-server-call-logging:$VERSION"
         const val SERVER_STATUS_PAGES = "io.ktor:ktor-server-status-pages:$VERSION"
         const val SERVER_CORS = "io.ktor:ktor-server-cors:$VERSION"

@@ -1154,7 +1154,8 @@ class LedgerRepositoryImpl : LedgerRepository {
                         (AddressTxLogTable.id greater afterId) and
                         (AddressTxLogTable.blockNumber lessEq maxBlockNumber)
                 }.orderBy(AddressTxLogTable.id)
-                .limit(limit, offset)
+                .offset(offset)
+                .limit(limit)
                 .map { row ->
                     row[AddressTxLogTable.monitorAddressResponseBytes]
                 }
@@ -1190,7 +1191,8 @@ class LedgerRepositoryImpl : LedgerRepository {
                     (NativeAssetMonitorLogTable.id greater afterId) and
                         (NativeAssetMonitorLogTable.blockNumber lessEq maxBlockNumber)
                 }.orderBy(NativeAssetMonitorLogTable.id)
-                .limit(limit, offset)
+                .offset(offset)
+                .limit(limit)
                 .map { row ->
                     row[NativeAssetMonitorLogTable.id].value to row[NativeAssetMonitorLogTable.monitorNativeAssetsResponseBytes]
                 }

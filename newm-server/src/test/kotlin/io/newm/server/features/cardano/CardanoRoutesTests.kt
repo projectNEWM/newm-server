@@ -339,8 +339,8 @@ fun addSongToDatabase(
             this.releaseId = EntityID(release.id!!, ReleaseTable)
             description = "description$offset ${phraseOrBlank(offset, 1)} blah blah"
             this.nftName = nftName
-            genres = arrayOf("genre${offset}_0", "genre${offset}_1")
-            moods = arrayOf("mood${offset}_0", "mood${offset}_1")
+            genres = listOf("genre${offset}_0", "genre${offset}_1")
+            moods = listOf("mood${offset}_0", "mood${offset}_1")
             track = offset
             language = "language$offset"
             compositionCopyrightOwner = "compositionCopyrightOwner$offset"
@@ -350,7 +350,7 @@ fun addSongToDatabase(
             parentalAdvisory = "parentalAdvisory$offset"
             isrc = "isrc$offset"
             iswc = "iswc$offset"
-            ipis = arrayOf("ipi${offset}_0", "ipi${offset}_1")
+            ipis = listOf("ipi${offset}_0", "ipi${offset}_1")
             lyricsUrl = "https://newm.io/lyrics$offset"
             tokenAgreementUrl = "https://newm.io/agreement$offset"
             originalAudioUrl = "https://newm.io/audio$offset"

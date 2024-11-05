@@ -127,7 +127,8 @@ internal class CollaborationRepositoryImpl(
         return transaction {
             CollaborationEntity
                 .all(userId, filters)
-                .limit(n = limit, offset = offset.toLong())
+                .offset(start = offset.toLong())
+                .limit(count = limit)
                 .map(CollaborationEntity::toModel)
         }
     }
@@ -152,7 +153,8 @@ internal class CollaborationRepositoryImpl(
         return transaction {
             CollaborationEntity
                 .collaborators(userId, filters)
-                .limit(n = limit, offset = offset.toLong())
+                .offset(start = offset.toLong())
+                .limit(count = limit)
                 .map { (email, songCount) ->
                     Collaborator(
                         email = email,

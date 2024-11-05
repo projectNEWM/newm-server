@@ -12,13 +12,15 @@ import io.newm.server.typealiases.SongId
 import io.newm.server.typealiases.UserId
 import io.newm.shared.exposed.notOverlaps
 import io.newm.shared.exposed.overlaps
-import io.newm.shared.exposed.unnest
 import io.newm.shared.ktx.exists
+import java.time.LocalDateTime
+import java.util.UUID
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.AndOp
 import org.jetbrains.exposed.sql.Op
+import org.jetbrains.exposed.sql.SizedCollection
 import org.jetbrains.exposed.sql.SizedIterable
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
@@ -28,14 +30,10 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.notInList
 import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.count
 import org.jetbrains.exposed.sql.innerJoin
 import org.jetbrains.exposed.sql.lowerCase
-import org.jetbrains.exposed.sql.mapLazy
 import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.selectAll
-import java.time.LocalDateTime
-import java.util.UUID
 
 class SongEntity(
     id: EntityID<SongId>
@@ -44,8 +42,8 @@ class SongEntity(
     val createdAt: LocalDateTime by SongTable.createdAt
     var ownerId: EntityID<UserId> by SongTable.ownerId
     var title: String by SongTable.title
-    var genres: Array<String> by SongTable.genres
-    var moods: Array<String>? by SongTable.moods
+    var genres: List<String> by SongTable.genres
+    var moods: List<String>? by SongTable.moods
     var description: String? by SongTable.description
     var releaseId: EntityID<ReleaseId>? by SongTable.releaseId
     var track: Int? by SongTable.track
@@ -58,7 +56,7 @@ class SongEntity(
     var parentalAdvisory: String? by SongTable.parentalAdvisory
     var isrc: String? by SongTable.isrc
     var iswc: String? by SongTable.iswc
-    var ipis: Array<String>? by SongTable.ipis
+    var ipis: List<String>? by SongTable.ipis
     var lyricsUrl: String? by SongTable.lyricsUrl
     var tokenAgreementUrl: String? by SongTable.tokenAgreementUrl
     var originalAudioUrl: String? by SongTable.originalAudioUrl
@@ -85,8 +83,8 @@ class SongEntity(
             ownerId = ownerId.value,
             createdAt = createdAt,
             title = title,
-            genres = genres.toList(),
-            moods = moods?.toList(),
+            genres = genres,
+            moods = moods,
             coverArtUrl = release.coverArtUrl,
             description = description,
             releaseId = releaseId?.value,
@@ -102,7 +100,7 @@ class SongEntity(
             barcodeNumber = release.barcodeNumber,
             isrc = isrc,
             iswc = iswc,
-            ipis = ipis?.toList(),
+            ipis = ipis,
             releaseDate = release.releaseDate,
             publicationDate = release.publicationDate,
             lyricsUrl = lyricsUrl,
@@ -149,7 +147,6 @@ class SongEntity(
 
         fun genres(filters: SongFilters): SizedIterable<String> {
             val ops = filters.toOps()
-            val genre = SongTable.genres.unnest()
             val table = if (filters.phrase == null) {
                 SongTable
             } else {
@@ -159,12 +156,23 @@ class SongEntity(
                     otherColumn = { id }
                 )
             }
-            val fields = table.select(SongTable.id.count(), genre)
+            val fields = table.select(SongTable.genres)
             val query = if (ops.isEmpty()) fields else fields.where(AndOp(ops))
-            return query
-                .groupBy(genre)
-                .orderBy(SongTable.id.count(), filters.sortOrder ?: SortOrder.DESC)
-                .mapLazy { it[genre] }
+            val sortOrder = filters.sortOrder ?: SortOrder.DESC
+            return SizedCollection(
+                query
+                    .flatMap { it[SongTable.genres] }
+                    .groupingBy { it }
+                    .eachCount()
+                    .entries
+                    .sortedWith { (_, v1), (_, v2) ->
+                        if (sortOrder == SortOrder.ASC) {
+                            v1.compareTo(v2)
+                        } else {
+                            v2.compareTo(v1)
+                        }
+                    }.map { it.key }
+            )
         }
 
         fun exists(
@@ -199,16 +207,16 @@ class SongEntity(
                 ops += SongTable.ownerId notInList it
             }
             genres?.includes?.let {
-                ops += SongTable.genres overlaps it.toTypedArray()
+                ops += SongTable.genres overlaps it
             }
             genres?.excludes?.let {
-                ops += SongTable.genres notOverlaps it.toTypedArray()
+                ops += SongTable.genres notOverlaps it
             }
             moods?.includes?.let {
-                ops += SongTable.moods overlaps it.toTypedArray()
+                ops += SongTable.moods overlaps it
             }
             moods?.excludes?.let {
-                ops += SongTable.moods notOverlaps it.toTypedArray()
+                ops += SongTable.moods notOverlaps it
             }
             mintingStatuses?.includes?.let {
                 ops += SongTable.mintingStatus inList it

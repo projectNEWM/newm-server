@@ -161,8 +161,8 @@ class EarningsRepositoryImpl(
                     this.paymentAddress = claimOrder.paymentAddress
                     this.paymentAmount = claimOrder.paymentAmount
                     this.status = claimOrder.status.name
-                    this.earningsIds = claimOrder.earningsIds.toTypedArray()
-                    this.failedEarningsIds = claimOrder.failedEarningsIds?.toTypedArray()
+                    this.earningsIds = claimOrder.earningsIds
+                    this.failedEarningsIds = claimOrder.failedEarningsIds
                     this.transactionId = claimOrder.transactionId
                     this.createdAt = claimOrder.createdAt
                     this.errorMessage = claimOrder.errorMessage
@@ -177,8 +177,8 @@ class EarningsRepositoryImpl(
             entity.paymentAddress = claimOrder.paymentAddress
             entity.paymentAmount = claimOrder.paymentAmount
             entity.status = claimOrder.status.name
-            entity.earningsIds = claimOrder.earningsIds.toTypedArray()
-            entity.failedEarningsIds = claimOrder.failedEarningsIds?.toTypedArray()
+            entity.earningsIds = claimOrder.earningsIds
+            entity.failedEarningsIds = claimOrder.failedEarningsIds
             entity.transactionId = claimOrder.transactionId
             entity.errorMessage = claimOrder.errorMessage
         }
