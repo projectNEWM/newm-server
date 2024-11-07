@@ -28,8 +28,9 @@ import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPL
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_SALE_CONTRACT_ADDRESS
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_SALE_LOVELACE
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_SALE_REFERENCE_INPUT_UTXOS
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_SERVICE_FEE_PERCENTAGE
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_USD_POLICY_ID
-import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_USD_PRICE_ADJUSTMENT_FACTOR
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MARKETPLACE_USD_PRICE_ADJUSTMENT_PERCENTAGE
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_NFTCDN_ENABLED
 import io.newm.server.features.cardano.model.Key
 import io.newm.server.features.cardano.repo.CardanoRepository
@@ -92,6 +93,9 @@ import java.util.UUID
 
 private const val SALE_TIP_KEY = "saleTip"
 private const val QUEUE_TIP_KEY = "queueTip"
+
+private const val CASH_REGISTER_KEY_NAME = "cashRegister"
+private const val COLLATERAL_KEY_NAME = "collateral"
 
 private const val SALE_STARTED_EVENT = "saleStarted"
 private const val SALE_ENDED_EVENT = "saleEnded"
@@ -266,8 +270,8 @@ internal class MarketplaceRepositoryImpl(
         val contractAddress = configRepository.getString(CONFIG_KEY_MARKETPLACE_SALE_CONTRACT_ADDRESS)
         val lovelace = configRepository.getLong(CONFIG_KEY_MARKETPLACE_SALE_LOVELACE)
 
-        val cashRegisterKey = getKey("cashRegister")
-        val collateralKey = getKey("collateral")
+        val cashRegisterKey = getKey(CASH_REGISTER_KEY_NAME)
+        val collateralKey = getKey(COLLATERAL_KEY_NAME)
         val signingKeys = listOf(cashRegisterKey, collateralKey)
         val dummyKeys = request.utxos
             .map { it.address }
@@ -386,8 +390,8 @@ internal class MarketplaceRepositoryImpl(
             .getStrings(CONFIG_KEY_MARKETPLACE_SALE_REFERENCE_INPUT_UTXOS)
             .map(String::toReferenceUtxo)
 
-        val cashRegisterKey = getKey("cashRegister")
-        val collateralKey = getKey("collateral")
+        val cashRegisterKey = getKey(CASH_REGISTER_KEY_NAME)
+        val collateralKey = getKey(COLLATERAL_KEY_NAME)
         val signingKeys = listOf(cashRegisterKey, collateralKey)
         val dummyKeys = request.utxos
             .map { it.address }
@@ -474,24 +478,26 @@ internal class MarketplaceRepositoryImpl(
         val usdPolicyId = configRepository.getString(CONFIG_KEY_MARKETPLACE_USD_POLICY_ID)
         val profitAmountUsd = configRepository.getLong(CONFIG_KEY_MARKETPLACE_PROFIT_AMOUNT_USD).toBigInteger()
 
-        // USD price fluctuation adjustment percentage = 100 / usdPriceAdjustmentFactor (e.g. 100 / 40 = 2.5%)
-        val usdPriceAdjustmentFactor =
-            configRepository.getLong(CONFIG_KEY_MARKETPLACE_USD_PRICE_ADJUSTMENT_FACTOR).toBigInteger()
+        val usdPriceAdjustmentFraction =
+            configRepository.getDouble(CONFIG_KEY_MARKETPLACE_USD_PRICE_ADJUSTMENT_PERCENTAGE) / 100.0
+        val serviceFeeFraction = configRepository.getDouble(CONFIG_KEY_MARKETPLACE_SERVICE_FEE_PERCENTAGE) / 100.0
 
         val nativeAssets = mutableListOf<NativeAsset>()
         val orderCostAmount = sale.costAmount.toBigInteger() * request.bundleQuantity.toBigInteger()
-        val subtotalAmountUsd = if (sale.costPolicyId == usdPolicyId) {
-            orderCostAmount + profitAmountUsd
-        } else {
-            nativeAssets += nativeAsset {
-                policy = sale.costPolicyId
-                name = sale.costAssetName
-                amount = orderCostAmount.toString()
+        val serviceFeeAmount = (orderCostAmount.toBigDecimal() * serviceFeeFraction.toBigDecimal()).toBigInteger()
+        val subtotalAmountUsd = when (sale.costPolicyId) {
+            usdPolicyId -> orderCostAmount + serviceFeeAmount + profitAmountUsd
+            else -> {
+                nativeAssets += nativeAsset {
+                    policy = sale.costPolicyId
+                    name = sale.costAssetName
+                    amount = (orderCostAmount + serviceFeeAmount).toString()
+                }
+                profitAmountUsd
             }
-            profitAmountUsd
         }
-
-        val extraAmountUsd = subtotalAmountUsd / usdPriceAdjustmentFactor
+        val extraAmountUsd =
+            (subtotalAmountUsd.toBigDecimal() * usdPriceAdjustmentFraction.toBigDecimal()).toBigInteger()
         val currencyAmount = ((subtotalAmountUsd + extraAmountUsd) / currencyUsdPrice + totalIncentiveAmount).toString()
         nativeAssets += nativeAsset {
             policy = currencyPolicyId
@@ -515,6 +521,10 @@ internal class MarketplaceRepositoryImpl(
                 this.saleId = sale.id
                 this.bundleQuantity = request.bundleQuantity
                 this.incentiveAmount = incentiveAmount
+                this.serviceFeeAmount = when (sale.costPolicyId) {
+                    usdPolicyId -> serviceFeeAmount / currencyUsdPrice
+                    else -> serviceFeeAmount
+                }.toString()
                 this.currencyAmount = currencyAmount
             }
         }
@@ -544,26 +554,39 @@ internal class MarketplaceRepositoryImpl(
         val currencyAssetName = configRepository.getString(CONFIG_KEY_MARKETPLACE_CURRENCY_ASSET_NAME)
         val usdPolicyId = configRepository.getString(CONFIG_KEY_MARKETPLACE_USD_POLICY_ID)
 
-        val nativeAssets = mutableListOf<NativeAsset>()
-        nativeAssets += nativeAsset {
-            policy = currencyPolicyId
-            name = currencyAssetName
-            amount = order.currencyAmount
-        }
-        if (sale.costPolicyId != usdPolicyId) {
-            nativeAssets += nativeAsset {
-                policy = sale.costPolicyId
-                name = sale.costAssetName
-                amount = computeAmount(sale.costAmount, order.bundleQuantity)
+        val contractNativeAssets = mutableListOf<NativeAsset>()
+        val contractCurrencyAmount = when (sale.costPolicyId) {
+            usdPolicyId -> (order.currencyAmount.toBigInteger() - order.serviceFeeAmount.toBigInteger()).toString()
+            else -> {
+                contractNativeAssets += nativeAsset {
+                    policy = sale.costPolicyId
+                    name = sale.costAssetName
+                    amount = computeAmount(sale.costAmount, order.bundleQuantity)
+                }
+                order.currencyAmount
             }
         }
+        contractNativeAssets += nativeAsset {
+            policy = currencyPolicyId
+            name = currencyAssetName
+            amount = contractCurrencyAmount
+        }
+        val cashRegisterNativeAssets = listOf(
+            nativeAsset {
+                policy = currencyPolicyId
+                name = currencyAssetName
+                amount = order.serviceFeeAmount
+            }
+        )
 
         val transaction = cardanoRepository.buildOrderTransaction(
             sourceUtxos = request.utxos,
             contractAddress = contractAddress,
             changeAddress = request.changeAddress,
+            cashRegisterAddress = getKey(CASH_REGISTER_KEY_NAME).address,
             lovelace = lovelace,
-            nativeAssets = nativeAssets,
+            contractNativeAssets = contractNativeAssets,
+            cashRegisterNativeAssets = cashRegisterNativeAssets,
             queueDatum = buildQueueDatum(
                 ownerAddress = request.changeAddress,
                 numberOfBundles = order.bundleQuantity,
