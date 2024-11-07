@@ -154,8 +154,10 @@ suspend fun CardanoRepository.buildOrderTransaction(
     sourceUtxos: List<Utxo>,
     contractAddress: String,
     changeAddress: String,
+    cashRegisterAddress: String,
     lovelace: Long,
-    nativeAssets: List<NativeAsset>,
+    contractNativeAssets: List<NativeAsset>,
+    cashRegisterNativeAssets: List<NativeAsset>,
     queueDatum: PlutusData
 ): TransactionBuilderResponse =
     buildTransaction {
@@ -164,8 +166,14 @@ suspend fun CardanoRepository.buildOrderTransaction(
             outputUtxo {
                 this.address = contractAddress
                 this.lovelace = lovelace.toString()
-                this.nativeAssets.addAll(nativeAssets.mergeAmounts())
+                this.nativeAssets.addAll(contractNativeAssets.mergeAmounts())
                 this.datum = queueDatum.toCborObject().toCborByteArray().toHexString()
+            }
+        )
+        this.outputUtxos.add(
+            outputUtxo {
+                this.address = cashRegisterAddress
+                this.nativeAssets.addAll(cashRegisterNativeAssets.mergeAmounts())
             }
         )
         this.changeAddress = changeAddress

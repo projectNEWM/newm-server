@@ -14,5 +14,6 @@ object MarketplacePendingOrderTable : UUIDTable(name = "marketplace_pending_orde
     val saleId: Column<EntityID<SaleId>> = reference("sale_id", MarketplaceSaleTable, ReferenceOption.RESTRICT, ReferenceOption.RESTRICT)
     val bundleQuantity: Column<Long> = long("bundle_quantity")
     val incentiveAmount: Column<Long> = long("incentive_amount")
+    val serviceFeeAmount: Column<String> = text("service_fee_amount")
     val currencyAmount: Column<String> = text("currency_amount")
 }
