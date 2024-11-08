@@ -64,7 +64,7 @@ fun Routing.createSongRoutes() {
                 respond(SongIdBody(songRepository.add(receive(), myUserId)))
             }
             get {
-                val songs = songRepository.getAll(songFilters, offset, limit)
+                val songs = songRepository.getAll(songFilters, 0, Int.MAX_VALUE)
                 val startDate = parameters["startDate"]?.toLocalDateTime()
                 val endDate = parameters["endDate"]?.toLocalDateTime()
                 val songsAndEarnings = songs.map { song ->
@@ -76,6 +76,8 @@ fun Routing.createSongRoutes() {
                         }.sumOf { it.amount }
                     song.copy(earnings = allEarningsAmount)
                 }
+                val startIndex = offset.coerceAtLeast(0)
+                val endIndex = (offset + limit).coerceAtMost(songsAndEarnings.size)
                 if (songFilters.sortedBy == "earnings") {
                     val sortOrder = songFilters.sortOrder ?: SortOrder.DESC
                     respond(
@@ -83,10 +85,10 @@ fun Routing.createSongRoutes() {
                             songsAndEarnings.sortedBy { it.earnings }
                         } else {
                             songsAndEarnings.sortedByDescending { it.earnings }
-                        }
+                        }.slice(startIndex until endIndex)
                     )
                 } else {
-                    respond(songsAndEarnings)
+                    respond(songsAndEarnings.slice(startIndex until endIndex))
                 }
             }
             get("count") {
