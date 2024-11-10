@@ -15,6 +15,7 @@ import io.newm.server.features.marketplace.model.SaleEndTransactionResponse
 import io.newm.server.features.marketplace.model.SaleFilters
 import io.newm.server.features.marketplace.model.SaleStartAmountRequest
 import io.newm.server.features.marketplace.model.SaleStartAmountResponse
+import io.newm.server.features.marketplace.model.OrderFees
 import io.newm.server.features.marketplace.model.SaleStartTransactionRequest
 import io.newm.server.features.marketplace.model.SaleStartTransactionResponse
 import io.newm.server.typealiases.UserId
@@ -48,6 +49,8 @@ interface MarketplaceRepository {
     suspend fun generateSaleEndAmount(request: SaleEndAmountRequest): SaleEndAmountResponse
 
     suspend fun generateSaleEndTransaction(request: SaleEndTransactionRequest): SaleEndTransactionResponse
+
+    suspend fun getOrderFees(): OrderFees
 
     suspend fun generateOrderAmount(request: OrderAmountRequest): OrderAmountResponse
 

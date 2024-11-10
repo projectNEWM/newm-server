@@ -74,6 +74,10 @@ fun Routing.createMarketplaceRoutes() {
             }
         }
         route("orders") {
+            get("fees") {
+                recaptchaRepository.verify("get_order_fees", request)
+                respond(marketplaceRepository.getOrderFees())
+            }
             post("amount") {
                 recaptchaRepository.verify("generate_order_amount", request)
                 respond(marketplaceRepository.generateOrderAmount(receive()))
