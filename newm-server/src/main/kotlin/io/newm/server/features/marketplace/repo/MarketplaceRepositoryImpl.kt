@@ -52,6 +52,7 @@ import io.newm.server.features.marketplace.model.ArtistFilters
 import io.newm.server.features.marketplace.model.CostAmountConversions
 import io.newm.server.features.marketplace.model.OrderAmountRequest
 import io.newm.server.features.marketplace.model.OrderAmountResponse
+import io.newm.server.features.marketplace.model.OrderFees
 import io.newm.server.features.marketplace.model.OrderTransactionRequest
 import io.newm.server.features.marketplace.model.OrderTransactionResponse
 import io.newm.server.features.marketplace.model.QueueTransaction
@@ -455,6 +456,15 @@ internal class MarketplaceRepositoryImpl(
             redeemers = calculatedFields.redeemers
         )
         return SaleEndTransactionResponse(transaction.transactionCbor.toByteArray().toHexString())
+    }
+
+    override suspend fun getOrderFees(): OrderFees {
+        log.debug { "getOrderFees" }
+
+        return OrderFees(
+            profitAmountUsd = configRepository.getLong(CONFIG_KEY_MARKETPLACE_PROFIT_AMOUNT_USD) * 1E-12,
+            serviceFeePercentage = configRepository.getDouble(CONFIG_KEY_MARKETPLACE_SERVICE_FEE_PERCENTAGE)
+        )
     }
 
     override suspend fun generateOrderAmount(request: OrderAmountRequest): OrderAmountResponse {
