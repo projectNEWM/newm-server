@@ -11,7 +11,7 @@ class V66__MarketplaceUpdates : BaseJavaMigration() {
             execInBatch(
                 listOf(
                     "DELETE FROM marketplace_pending_orders",
-                    "ALTER TABLE marketplace_pending_orders ADD COLUMN IF NOT EXISTS service_fee_amount TEXT NOT NULL",
+                    "ALTER TABLE marketplace_pending_orders ADD COLUMN IF NOT EXISTS currency_amount TEXT NOT NULL",
                     "INSERT INTO config VALUES ('marketplace.usdPolicyId','555344') ON CONFLICT(id) DO NOTHING",
                     "INSERT INTO config VALUES ('marketplace.usdPriceAdjustmentFactor','40') ON CONFLICT(id) DO NOTHING",
                     "INSERT INTO config VALUES ('marketplace.profitAmountUsd','500000000000') ON CONFLICT(id) DO NOTHING"

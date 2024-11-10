@@ -29,7 +29,7 @@
           Track Name: "{song}"<br>
           Total Stream Tokens Listed: {quantity}<br>
           Sale Value: {value}<br><br>
-          Now it’s time to connect with your fans, share the good news, and let them know that they can now support you through token ownership!<br><br>
+          Now it's time to connect with your fans, share the good news, and let them know that they can now support you through token ownership!<br><br>
           For any questions or further assistance please reach out to us at <a href="mailto:support@newm.io" style="color: #FFF">support@newm.io</a>.
         </mj-text>
         <mj-text padding="40px 0 60px 0" color="#636366" align="center" font-family="Inter,sans-serif" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
