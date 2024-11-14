@@ -3,7 +3,10 @@ package io.newm.server.features.distribution.eveara
 import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.Logger
 import com.google.common.truth.Truth.assertThat
-import io.ktor.server.application.*
+import io.ktor.server.application.ApplicationEnvironment
+import io.ktor.util.cio.readChannel
+import io.ktor.util.cio.writeChannel
+import io.ktor.utils.io.copyAndClose
 import io.mockk.mockk
 import io.newm.server.BaseApplicationTests
 import io.newm.server.config.repo.ConfigRepository
@@ -29,6 +32,10 @@ import io.newm.server.ktx.toBucketAndKey
 import io.newm.server.typealiases.SongId
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.info
+import java.io.File
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.util.UUID
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.sql.deleteAll
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -36,9 +43,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.slf4j.LoggerFactory
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.util.*
 
 class EvearaDistributionRepositoryTest : BaseApplicationTests() {
     @BeforeEach
@@ -346,4 +350,17 @@ class EvearaDistributionRepositoryTest : BaseApplicationTests() {
         assertThat(key).isEqualTo("cabb57b8-89f0-476f-8e95-e5c7a7d992c6/Vibrate.flac")
         assertThat(s3Url.toAudioContentType()).isEqualTo("audio/x-flac")
     }
+
+    @Test
+    @Disabled
+    fun `test large file download`() =
+        runBlocking {
+            val inputFile = File("/home/westbam/Downloads/sparkman.wav")
+            val outputFile = File("/home/westbam/Downloads/sparkman2.wav")
+            val channel = inputFile.readChannel()
+
+            channel.copyAndClose(outputFile.writeChannel())
+
+            assertThat(outputFile.length()).isEqualTo(inputFile.length())
+        }
 }

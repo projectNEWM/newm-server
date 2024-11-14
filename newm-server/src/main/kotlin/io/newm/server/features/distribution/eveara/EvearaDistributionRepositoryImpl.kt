@@ -18,7 +18,6 @@ import io.ktor.client.request.patch
 import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
-import io.ktor.client.statement.bodyAsChannel
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.Headers
@@ -27,11 +26,12 @@ import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.http.quote
 import io.ktor.server.application.ApplicationEnvironment
+import io.ktor.util.InternalAPI
+import io.ktor.util.cio.writeChannel
+import io.ktor.utils.io.copyAndClose
 import io.ktor.utils.io.core.isNotEmpty
 import io.ktor.utils.io.core.toByteArray
-import io.ktor.utils.io.core.use
 import io.ktor.utils.io.streams.asInput
-import io.ktor.utils.io.streams.writePacket
 import io.newm.chain.util.toB64String
 import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_EVEARA_CLIENT_ID
@@ -1961,6 +1961,7 @@ class EvearaDistributionRepositoryImpl(
     /**
      * Upload and add metadata to the distribution track
      */
+    @OptIn(InternalAPI::class)
     private suspend fun createDistributionTrack(
         user: User,
         song: Song
@@ -1993,17 +1994,12 @@ class EvearaDistributionRepositoryImpl(
 
             val trackFile = withContext(Dispatchers.IO) {
                 val tempTrackFile = File.createTempFile("newm_track_", url.getFileNameWithExtensionFromUrl())
-                tempTrackFile.outputStream().use { trackFileStream ->
-                    val channel = audioFileResponse.bodyAsChannel()
-                    while (!channel.isClosedForRead) {
-                        val packet = channel.readRemaining(DEFAULT_BUFFER_SIZE.toLong())
-                        if (packet.isNotEmpty) {
-                            trackFileStream.writePacket(packet)
-                        }
-                    }
-                }
+                log.info { "Save track to temp file: ${tempTrackFile.absolutePath}" }
+                // Use internal api .content to avoid using any potential interceptors on the http call.
+                audioFileResponse.content.copyAndClose(tempTrackFile.writeChannel())
                 tempTrackFile
             }
+
             log.info { "Downloaded track ${mutableSong.title} to ${trackFile.absolutePath} having size ${trackFile.length()}" }
             val response = addTrack(user, trackFile)
             log.info { "Created distribution track ${mutableSong.title} with track_id ${response.trackId}: ${response.message}" }
