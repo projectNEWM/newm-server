@@ -28,9 +28,10 @@ import io.ktor.http.isSuccess
 import io.ktor.http.quote
 import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.utils.io.core.isNotEmpty
-import io.ktor.utils.io.core.readBytes
 import io.ktor.utils.io.core.toByteArray
+import io.ktor.utils.io.core.use
 import io.ktor.utils.io.streams.asInput
+import io.ktor.utils.io.streams.writePacket
 import io.newm.chain.util.toB64String
 import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_EVEARA_CLIENT_ID
@@ -1990,17 +1991,18 @@ class EvearaDistributionRepositoryImpl(
                 throw audioFileResponse.status.toException("Error downloading url: $url")
             }
 
-            val trackFile =
-                withContext(Dispatchers.IO) {
-                    File.createTempFile("newm_track_", url.getFileNameWithExtensionFromUrl())
+            val trackFile = withContext(Dispatchers.IO) {
+                val tempTrackFile = File.createTempFile("newm_track_", url.getFileNameWithExtensionFromUrl())
+                tempTrackFile.outputStream().use { trackFileStream ->
+                    val channel = audioFileResponse.bodyAsChannel()
+                    while (!channel.isClosedForRead) {
+                        val packet = channel.readRemaining(DEFAULT_BUFFER_SIZE.toLong())
+                        if (packet.isNotEmpty) {
+                            trackFileStream.writePacket(packet)
+                        }
+                    }
                 }
-            val channel = audioFileResponse.bodyAsChannel()
-            while (!channel.isClosedForRead) {
-                val packet = channel.readRemaining(DEFAULT_BUFFER_SIZE.toLong())
-                while (packet.isNotEmpty) {
-                    val bytes = packet.readBytes()
-                    trackFile.appendBytes(bytes)
-                }
+                tempTrackFile
             }
             log.info { "Downloaded track ${mutableSong.title} to ${trackFile.absolutePath} having size ${trackFile.length()}" }
             val response = addTrack(user, trackFile)
