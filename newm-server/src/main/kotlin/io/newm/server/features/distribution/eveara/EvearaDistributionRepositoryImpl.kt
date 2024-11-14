@@ -18,6 +18,7 @@ import io.ktor.client.request.patch
 import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsChannel
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.Headers
@@ -26,10 +27,8 @@ import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.http.quote
 import io.ktor.server.application.ApplicationEnvironment
-import io.ktor.util.InternalAPI
 import io.ktor.util.cio.writeChannel
 import io.ktor.utils.io.copyAndClose
-import io.ktor.utils.io.core.isNotEmpty
 import io.ktor.utils.io.core.toByteArray
 import io.ktor.utils.io.streams.asInput
 import io.newm.chain.util.toB64String
@@ -1961,7 +1960,6 @@ class EvearaDistributionRepositoryImpl(
     /**
      * Upload and add metadata to the distribution track
      */
-    @OptIn(InternalAPI::class)
     private suspend fun createDistributionTrack(
         user: User,
         song: Song
@@ -1996,7 +1994,7 @@ class EvearaDistributionRepositoryImpl(
                 val tempTrackFile = File.createTempFile("newm_track_", url.getFileNameWithExtensionFromUrl())
                 log.info { "Save track to temp file: ${tempTrackFile.absolutePath}" }
                 // Use internal api .content to avoid using any potential interceptors on the http call.
-                audioFileResponse.content.copyAndClose(tempTrackFile.writeChannel())
+                audioFileResponse.bodyAsChannel().copyAndClose(tempTrackFile.writeChannel())
                 tempTrackFile
             }
 
