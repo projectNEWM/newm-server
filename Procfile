@@ -1,1 +1,0 @@
-web: ./newm-server/build/install/newm-server/bin/newm-server
