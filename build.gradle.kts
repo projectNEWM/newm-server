@@ -108,8 +108,3 @@ fun isNonStable(version: String): Boolean {
     val isStable = stableKeyword || regex.matches(version)
     return isStable.not()
 }
-
-// staging task for heroku
-tasks.create("stage") {
-    dependsOn(":newm-server:installDist")
-}
