@@ -1,3 +1,6 @@
+import java.text.SimpleDateFormat
+import java.util.Date
+
 plugins {
     application
     id(Dependencies.VersionsPlugin.ID)
@@ -97,5 +100,13 @@ tasks {
 
         // defaults to all, so removing this overrides the normal, non-fat jar
         archiveClassifier.set("")
+    }
+}
+
+tasks.withType<Jar> {
+    manifest {
+        attributes(
+            "Build-Time" to SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ").format(Date())
+        )
     }
 }
