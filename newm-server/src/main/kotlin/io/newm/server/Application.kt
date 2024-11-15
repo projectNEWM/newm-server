@@ -1,5 +1,6 @@
 package io.newm.server
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.server.application.Application
 import io.ktor.server.routing.routing
 import io.newm.server.auth.createAuthenticationRoutes
@@ -29,10 +30,23 @@ import io.newm.server.logging.installCallLogging
 import io.newm.server.staticcontent.createStaticContentRoutes
 import io.newm.server.statuspages.installStatusPages
 import io.newm.shared.daemon.initializeDaemons
+import java.lang.management.ManagementFactory
 
-fun main(args: Array<String>) =
+private val log = KotlinLogging.logger {}
+
+private fun printJvmCommandLine() {
+    val runtimeMxBean = ManagementFactory.getRuntimeMXBean()
+    val jvmArgs = runtimeMxBean.inputArguments.joinToString(" ")
+    log.info { "******************************************************" }
+    log.info { "JVM command line arguments: $jvmArgs" }
+    log.info { "******************************************************" }
+}
+
+fun main(args: Array<String>) {
+    printJvmCommandLine()
     io.ktor.server.cio.EngineMain
         .main(args)
+}
 
 @Suppress("unused")
 fun Application.module() {
