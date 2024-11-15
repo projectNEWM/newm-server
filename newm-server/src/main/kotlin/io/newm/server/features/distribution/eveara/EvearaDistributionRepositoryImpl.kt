@@ -19,17 +19,20 @@ import io.ktor.client.request.post
 import io.ktor.client.request.prepareGet
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
-import io.ktor.client.statement.bodyAsChannel
 import io.ktor.client.statement.bodyAsText
+import io.ktor.client.utils.DEFAULT_HTTP_BUFFER_SIZE
 import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
+import io.ktor.http.contentLength
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.http.quote
 import io.ktor.server.application.ApplicationEnvironment
+import io.ktor.util.InternalAPI
+import io.ktor.util.cio.use
 import io.ktor.util.cio.writeChannel
-import io.ktor.utils.io.copyAndClose
+import io.ktor.utils.io.copyTo
 import io.ktor.utils.io.core.toByteArray
 import io.ktor.utils.io.streams.asInput
 import io.newm.chain.util.toB64String
@@ -120,8 +123,10 @@ import java.math.BigDecimal
 import java.time.Duration
 import java.time.LocalDate
 import kotlin.collections.set
+import kotlin.math.floor
 import kotlin.random.Random.Default.nextLong
 import kotlin.time.Duration.Companion.minutes
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -1959,6 +1964,7 @@ class EvearaDistributionRepositoryImpl(
     /**
      * Upload and add metadata to the distribution track
      */
+    @OptIn(InternalAPI::class)
     private suspend fun createDistributionTrack(
         user: User,
         song: Song
@@ -1987,9 +1993,26 @@ class EvearaDistributionRepositoryImpl(
                     if (!audioFileResponse.status.isSuccess()) {
                         throw audioFileResponse.status.toException("Error downloading url: $url")
                     }
+                    // contentLength() is always defined when downloading from s3
+                    val totalLength = audioFileResponse.contentLength()!!
                     val tempTrackFile = File.createTempFile("newm_track_", url.getFileNameWithExtensionFromUrl())
-                    log.info { "Save track to temp file: ${tempTrackFile.absolutePath}" }
-                    audioFileResponse.bodyAsChannel().copyAndClose(tempTrackFile.writeChannel())
+                    log.info { "Saving track to temp file: ${tempTrackFile.absolutePath}" }
+                    val byteWriteChannel = tempTrackFile.writeChannel(Dispatchers.IO)
+                    // Use .content instead of bodyAsChannel() to avoid using any interceptors
+                    val byteReadChannel = audioFileResponse.content
+                    var lastLogged = 0L
+                    var bytesWritten = 0L
+                    byteWriteChannel.use {
+                        while (!byteReadChannel.isClosedForRead) {
+                            bytesWritten += byteReadChannel.copyTo(byteWriteChannel, DEFAULT_HTTP_BUFFER_SIZE.toLong())
+                            val now = System.currentTimeMillis()
+                            if (now - lastLogged > 5000L) {
+                                val percent = floor(bytesWritten.toDouble() / totalLength.toDouble() * 10000.0) / 100.0
+                                log.info { "Downloaded $bytesWritten bytes of $totalLength: %.2f%%".format(percent) }
+                                lastLogged = now
+                            }
+                        }
+                    }
                     tempTrackFile
                 }
 
