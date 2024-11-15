@@ -32,7 +32,10 @@ fun CborArray.elementToByteArray(index: Int): ByteArray = (elementAt(index) as C
 
 fun CborArray.elementToHexString(index: Int): String = elementToByteArray(index).toHexString()
 
-fun ByteArray.toHexString(): String = HexFormat.of().formatHex(this)
+fun ByteArray.toHexString(
+    fromIndex: Int = 0,
+    toIndex: Int = size
+): String = HexFormat.of().formatHex(this, fromIndex, toIndex)
 
 fun Array<ByteArray>.toHexString(): String {
     val builder = StringBuilder()
@@ -205,6 +208,17 @@ fun ByteArray.hashToPaymentAddress(isMainnet: Boolean): String {
 fun String.paymentAddressToHash(): ByteArray {
     require(startsWith("addr")) { "Invalid payment address: $this" }
     return Bech32.decode(this).bytes.run { copyOfRange(1, size) }
+}
+
+fun String.extractStakeKeyHex(): String? {
+    val bytes = Bech32.decode(this).bytes
+    return when {
+        startsWith("stake") && bytes.size == 29 -> bytes.toHexString(fromIndex = 1)
+
+        startsWith("addr") && bytes.size == 57 -> bytes.toHexString(fromIndex = 29)
+
+        else -> null
+    }
 }
 
 /**

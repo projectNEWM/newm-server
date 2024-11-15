@@ -15,6 +15,7 @@ object MarketplaceSaleTable : UUIDTable(name = "marketplace_sales") {
     val status: Column<SaleStatus> = enumeration("status", SaleStatus::class)
     val songId: Column<EntityID<SongId>> = reference("song_id", SongTable, ReferenceOption.RESTRICT, ReferenceOption.RESTRICT)
     val ownerAddress: Column<String> = text("owner_address")
+    val ownerAddressStakeKey: Column<String?> = text("owner_address_stake_key").nullable()
     val pointerPolicyId: Column<String> = text("pointer_policy_id")
     val pointerAssetName: Column<String> = text("pointer_asset_name")
     val bundlePolicyId: Column<String> = text("bundle_policy_id")
