@@ -39,6 +39,7 @@ private fun printJvmCommandLine() {
     val jvmArgs = runtimeMxBean.inputArguments.joinToString(" ")
     log.info { "******************************************************" }
     log.info { "JVM command line arguments: $jvmArgs" }
+    log.info { "Max Heap Size: ${Runtime.getRuntime().maxMemory() / (1024 * 1024)} MB" }
     log.info { "******************************************************" }
 }
 
