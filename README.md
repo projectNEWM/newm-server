@@ -14,6 +14,10 @@ install Ktlint and then run the following command:
 
 `git config core.hooksPath .githooks`
 
+You can also just run
+
+`./gradlew ktlF`
+
 ## Documentation
 
 [REST API Wiki](https://github.com/projectNEWM/newm-server/wiki)
