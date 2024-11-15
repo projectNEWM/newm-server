@@ -20,7 +20,7 @@ You can also just run
 
 ## Documentation
 
-[REST API Wiki](https://github.com/projectNEWM/newm-server/wiki)
+[REST API Wiki](https://garage.newm.io/openapi)
 
 [Ktor Server Documentation](https://ktor.io/docs/ktor-server.html)
 
