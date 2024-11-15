@@ -1,4 +1,6 @@
+import java.text.SimpleDateFormat
 import java.time.Instant
+import java.util.Date
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.util.capitalizeDecapitalize.toLowerCaseAsciiOnly
@@ -130,6 +132,14 @@ dependencies {
     "integTestImplementation"(Dependencies.JUnit.JUPITER)
     "integTestRuntimeOnly"("org.junit.platform:junit-platform-launcher")
     "integTestImplementation"(Dependencies.Typesafe.CONFIG)
+}
+
+tasks.withType<Jar> {
+    manifest {
+        attributes(
+            "Build-Time" to SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ").format(Date())
+        )
+    }
 }
 
 tasks {

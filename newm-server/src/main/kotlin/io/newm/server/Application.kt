@@ -31,15 +31,22 @@ import io.newm.server.staticcontent.createStaticContentRoutes
 import io.newm.server.statuspages.installStatusPages
 import io.newm.shared.daemon.initializeDaemons
 import java.lang.management.ManagementFactory
+import java.util.jar.JarFile
 
-private val log = KotlinLogging.logger {}
+private val log by lazy { KotlinLogging.logger {} }
 
 private fun printJvmCommandLine() {
     val runtimeMxBean = ManagementFactory.getRuntimeMXBean()
     val jvmArgs = runtimeMxBean.inputArguments.joinToString(" ")
+    val jarPath = Application::class.java.protectionDomain.codeSource.location.path
+    val jarFile = JarFile(jarPath)
+    val manifest = jarFile.manifest
+    val buildTime = manifest.mainAttributes.getValue("Build-Time")
+
     log.info { "******************************************************" }
     log.info { "JVM command line arguments: $jvmArgs" }
     log.info { "Max Heap Size: ${Runtime.getRuntime().maxMemory() / (1024 * 1024)} MB" }
+    log.info { "Build Time: $buildTime" }
     log.info { "******************************************************" }
 }
 
