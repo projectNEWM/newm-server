@@ -10,6 +10,7 @@ import io.newm.chain.grpc.NativeAsset
 import io.newm.chain.grpc.Utxo
 import io.newm.chain.grpc.nativeAsset
 import io.newm.chain.util.Sha3
+import io.newm.chain.util.extractStakeKeyHex
 import io.newm.chain.util.hexStringToAssetName
 import io.newm.chain.util.hexToByteArray
 import io.newm.chain.util.toHexString
@@ -668,6 +669,7 @@ internal class MarketplaceRepositoryImpl(
                                 this.status = SaleStatus.Started
                                 this.songId = it
                                 this.ownerAddress = output.ownerAddress
+                                this.ownerAddressStakeKey = output.ownerAddress.extractStakeKeyHex()
                                 this.pointerPolicyId = outputPointer.policyId
                                 this.pointerAssetName = outputPointer.assetName
                                 this.bundlePolicyId = output.bundle.policyId

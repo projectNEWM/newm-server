@@ -2,6 +2,7 @@ package io.newm.server.features.marketplace.database
 
 import io.newm.chain.util.assetFingerprintOf
 import io.newm.chain.util.assetUrlOf
+import io.newm.chain.util.extractStakeKeyHex
 import io.newm.server.features.collaboration.database.CollaborationEntity
 import io.newm.server.features.marketplace.model.CostAmountConversions
 import io.newm.server.features.marketplace.model.Sale
@@ -51,6 +52,7 @@ class MarketplaceSaleEntity(
     var status: SaleStatus by MarketplaceSaleTable.status
     var songId: EntityID<UUID> by MarketplaceSaleTable.songId
     var ownerAddress: String by MarketplaceSaleTable.ownerAddress
+    var ownerAddressStakeKey: String? by MarketplaceSaleTable.ownerAddressStakeKey
     var pointerPolicyId: String by MarketplaceSaleTable.pointerPolicyId
     var pointerAssetName: String by MarketplaceSaleTable.pointerAssetName
     var bundlePolicyId: String by MarketplaceSaleTable.bundlePolicyId
@@ -194,6 +196,12 @@ class MarketplaceSaleEntity(
             }
             artistIds?.excludes?.let {
                 ops += UserTable.id notInList it
+            }
+            addresses?.includes?.mapNotNull(String::extractStakeKeyHex)?.let {
+                ops += MarketplaceSaleTable.ownerAddressStakeKey inList it
+            }
+            addresses?.excludes?.mapNotNull(String::extractStakeKeyHex)?.let {
+                ops += MarketplaceSaleTable.ownerAddressStakeKey notInList it
             }
             statuses?.includes?.let {
                 ops += MarketplaceSaleTable.status inList it

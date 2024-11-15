@@ -1,6 +1,7 @@
 package io.newm.server.features.marketplace.model
 
 import io.ktor.server.application.ApplicationCall
+import io.newm.server.ktx.addresses
 import io.newm.server.ktx.artistIds
 import io.newm.server.ktx.genres
 import io.newm.server.ktx.ids
@@ -25,6 +26,7 @@ data class SaleFilters(
     val ids: FilterCriteria<SaleId>?,
     val songIds: FilterCriteria<SongId>?,
     val artistIds: FilterCriteria<UserId>?,
+    val addresses: FilterCriteria<String>?,
     val statuses: FilterCriteria<SaleStatus>?,
     val genres: FilterCriteria<String>?,
     val moods: FilterCriteria<String>?,
@@ -35,4 +37,16 @@ val ApplicationCall.saleStatuses: FilterCriteria<SaleStatus>?
     get() = parameters["saleStatuses"]?.toFilterCriteria(SaleStatus::valueOf)
 
 val ApplicationCall.saleFilters: SaleFilters
-    get() = SaleFilters(sortOrder, olderThan, newerThan, ids, songIds, artistIds, saleStatuses, genres, moods, phrase)
+    get() = SaleFilters(
+        sortOrder,
+        olderThan,
+        newerThan,
+        ids,
+        songIds,
+        artistIds,
+        addresses,
+        saleStatuses,
+        genres,
+        moods,
+        phrase
+    )
