@@ -1986,42 +1986,50 @@ class EvearaDistributionRepositoryImpl(
             val url = s3Presigner.presignGetObject(getObjectPresignRequest).url().toExternalForm()
             log.info { "Generated pre-signed url for $s3Url: $url" }
 
-            val trackFile = httpClient
-                .prepareGet(url) {
-                    accept(ContentType.Application.OctetStream)
-                }.execute { audioFileResponse ->
-                    if (!audioFileResponse.status.isSuccess()) {
-                        throw audioFileResponse.status.toException("Error downloading url: $url")
-                    }
-                    // contentLength() is always defined when downloading from s3
-                    val totalLength = audioFileResponse.contentLength()!!
-                    val tempTrackFile = File.createTempFile("newm_track_", url.getFileNameWithExtensionFromUrl())
-                    log.info { "Saving track to temp file: ${tempTrackFile.absolutePath}" }
-                    val byteWriteChannel = tempTrackFile.writeChannel(Dispatchers.IO)
-                    // Use .content instead of bodyAsChannel() to avoid using any interceptors
-                    val byteReadChannel = audioFileResponse.content
-                    var lastLogged = 0L
-                    var bytesWritten = 0L
-                    byteWriteChannel.use {
-                        while (!byteReadChannel.isClosedForRead) {
-                            bytesWritten += byteReadChannel.copyTo(byteWriteChannel, DEFAULT_HTTP_BUFFER_SIZE.toLong())
-                            val now = System.currentTimeMillis()
-                            if (now - lastLogged > 5000L) {
-                                val percent = floor(bytesWritten.toDouble() / totalLength.toDouble() * 10000.0) / 100.0
-                                log.info { "Downloaded $bytesWritten bytes of $totalLength: %.2f%%".format(percent) }
-                                lastLogged = now
+            var trackFile: File? = null
+            try {
+                httpClient
+                    .prepareGet(url) {
+                        accept(ContentType.Application.OctetStream)
+                    }.execute { audioFileResponse ->
+                        if (!audioFileResponse.status.isSuccess()) {
+                            throw audioFileResponse.status.toException("Error downloading url: $url")
+                        }
+                        // contentLength() is always defined when downloading from s3
+                        val totalLength = audioFileResponse.contentLength()!!
+                        trackFile = File.createTempFile("newm_track_", url.getFileNameWithExtensionFromUrl())
+                        log.info { "Saving track to temp file: ${trackFile!!.absolutePath}" }
+                        val byteWriteChannel = trackFile!!.writeChannel(Dispatchers.IO)
+                        // Use .content instead of bodyAsChannel() to avoid using any interceptors
+                        val byteReadChannel = audioFileResponse.content
+                        var lastLogged = 0L
+                        var bytesWritten = 0L
+                        byteWriteChannel.use {
+                            while (!byteReadChannel.isClosedForRead) {
+                                bytesWritten += byteReadChannel.copyTo(
+                                    byteWriteChannel,
+                                    DEFAULT_HTTP_BUFFER_SIZE.toLong()
+                                )
+                                val now = System.currentTimeMillis()
+                                if (now - lastLogged > 1000L || bytesWritten == totalLength) {
+                                    val percent =
+                                        floor(bytesWritten.toDouble() / totalLength.toDouble() * 10000.0) / 100.0
+                                    log.info { "Downloaded $bytesWritten bytes of $totalLength: %.2f%%".format(percent) }
+                                    lastLogged = now
+                                }
                             }
                         }
                     }
-                    tempTrackFile
-                }
 
-            log.info { "Downloaded track ${mutableSong.title} to ${trackFile.absolutePath} having size ${trackFile.length()}" }
-            val response = addTrack(user, trackFile)
-            log.info { "Created distribution track ${mutableSong.title} with track_id ${response.trackId}: ${response.message}" }
-            mutableSong = mutableSong.copy(distributionTrackId = response.trackId)
-            songRepository.update(mutableSong.id!!, Song(distributionTrackId = response.trackId))
-            trackFile.delete()
+                log.info { "Downloaded track ${mutableSong.title} to ${trackFile!!.absolutePath} having size ${trackFile!!.length()}" }
+                val response = addTrack(user, trackFile!!)
+                log.info { "Created distribution track ${mutableSong.title} with track_id ${response.trackId}: ${response.message}" }
+                mutableSong = mutableSong.copy(distributionTrackId = response.trackId)
+                songRepository.update(mutableSong.id!!, Song(distributionTrackId = response.trackId))
+            } finally {
+                trackFile?.delete()
+                log.info { "Deleted temp track file: ${trackFile?.absolutePath}" }
+            }
         }
 
         // update track with collaborators and other metadata
