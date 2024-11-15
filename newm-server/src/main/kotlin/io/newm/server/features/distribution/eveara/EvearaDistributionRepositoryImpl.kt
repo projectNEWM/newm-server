@@ -1994,7 +1994,7 @@ class EvearaDistributionRepositoryImpl(
                 val tempTrackFile = File.createTempFile("newm_track_", url.getFileNameWithExtensionFromUrl())
                 log.info { "Save track to temp file: ${tempTrackFile.absolutePath}" }
                 // Use internal api .content to avoid using any potential interceptors on the http call.
-                audioFileResponse.bodyAsChannel().copyAndClose(tempTrackFile.writeChannel())
+                audioFileResponse.content.copyAndClose(tempTrackFile.writeChannel())
                 tempTrackFile
             }
 
