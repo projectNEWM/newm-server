@@ -16,6 +16,7 @@ import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.patch
 import io.ktor.client.request.post
+import io.ktor.client.request.prepareGet
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsChannel
@@ -121,11 +122,9 @@ import java.time.LocalDate
 import kotlin.collections.set
 import kotlin.random.Random.Default.nextLong
 import kotlin.time.Duration.Companion.minutes
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -1981,22 +1980,18 @@ class EvearaDistributionRepositoryImpl(
             val url = s3Presigner.presignGetObject(getObjectPresignRequest).url().toExternalForm()
             log.info { "Generated pre-signed url for $s3Url: $url" }
 
-            val audioFileResponse =
-                httpClient.get(url) {
+            val trackFile = httpClient
+                .prepareGet(url) {
                     accept(ContentType.Application.OctetStream)
+                }.execute { audioFileResponse ->
+                    if (!audioFileResponse.status.isSuccess()) {
+                        throw audioFileResponse.status.toException("Error downloading url: $url")
+                    }
+                    val tempTrackFile = File.createTempFile("newm_track_", url.getFileNameWithExtensionFromUrl())
+                    log.info { "Save track to temp file: ${tempTrackFile.absolutePath}" }
+                    audioFileResponse.bodyAsChannel().copyAndClose(tempTrackFile.writeChannel())
+                    tempTrackFile
                 }
-
-            if (!audioFileResponse.status.isSuccess()) {
-                throw audioFileResponse.status.toException("Error downloading url: $url")
-            }
-
-            val trackFile = withContext(Dispatchers.IO) {
-                val tempTrackFile = File.createTempFile("newm_track_", url.getFileNameWithExtensionFromUrl())
-                log.info { "Save track to temp file: ${tempTrackFile.absolutePath}" }
-                // Use internal api .content to avoid using any potential interceptors on the http call.
-                audioFileResponse.bodyAsChannel().copyAndClose(tempTrackFile.writeChannel())
-                tempTrackFile
-            }
 
             log.info { "Downloaded track ${mutableSong.title} to ${trackFile.absolutePath} having size ${trackFile.length()}" }
             val response = addTrack(user, trackFile)
