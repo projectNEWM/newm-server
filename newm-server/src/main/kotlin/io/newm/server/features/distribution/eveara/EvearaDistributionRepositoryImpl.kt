@@ -16,23 +16,16 @@ import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.patch
 import io.ktor.client.request.post
-import io.ktor.client.request.prepareGet
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
-import io.ktor.client.utils.DEFAULT_HTTP_BUFFER_SIZE
 import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
-import io.ktor.http.contentLength
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.http.quote
 import io.ktor.server.application.ApplicationEnvironment
-import io.ktor.util.InternalAPI
-import io.ktor.util.cio.use
-import io.ktor.util.cio.writeChannel
-import io.ktor.utils.io.copyTo
 import io.ktor.utils.io.core.toByteArray
 import io.ktor.utils.io.streams.asInput
 import io.newm.chain.util.toB64String
@@ -112,7 +105,6 @@ import io.newm.server.ktx.toBucketAndKey
 import io.newm.server.logging.logRequestJson
 import io.newm.server.typealiases.UserId
 import io.newm.shared.exception.HttpServiceUnavailableException
-import io.newm.shared.exception.HttpStatusException.Companion.toException
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.getConfigString
 import io.newm.shared.ktx.info
@@ -123,22 +115,22 @@ import java.math.BigDecimal
 import java.time.Duration
 import java.time.LocalDate
 import kotlin.collections.set
-import kotlin.math.floor
 import kotlin.random.Random.Default.nextLong
 import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.future.await
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.koin.core.parameter.parametersOf
 import org.slf4j.Logger
+import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model.GetObjectRequest
-import software.amazon.awssdk.services.s3.presigner.S3Presigner
-import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest
 
 class EvearaDistributionRepositoryImpl(
     private val collabRepository: CollaborationRepository,
@@ -149,7 +141,7 @@ class EvearaDistributionRepositoryImpl(
     private val userRepository: UserRepository by inject()
     private val songRepository: SongRepository by inject()
     private val httpClient: HttpClient by inject()
-    private val s3Presigner: S3Presigner by inject()
+    private val s3AsyncClient: S3AsyncClient by inject()
     private val applicationEnvironment: ApplicationEnvironment by inject()
     private val evearaServer by lazy { applicationEnvironment.getConfigString(CONFIG_KEY_EVEARA_SERVER) }
     private val evearaApiBaseUrl by lazy {
@@ -1964,7 +1956,6 @@ class EvearaDistributionRepositoryImpl(
     /**
      * Upload and add metadata to the distribution track
      */
-    @OptIn(InternalAPI::class)
     private suspend fun createDistributionTrack(
         user: User,
         song: Song
@@ -1978,57 +1969,25 @@ class EvearaDistributionRepositoryImpl(
                 .bucket(bucket)
                 .key(key)
                 .build()
-            val getObjectPresignRequest = GetObjectPresignRequest
-                .builder()
-                .signatureDuration(Duration.ofMinutes(30))
-                .getObjectRequest(getObjectRequest)
-                .build()
-            val url = s3Presigner.presignGetObject(getObjectPresignRequest).url().toExternalForm()
-            log.info { "Generated pre-signed url for $s3Url: $url" }
 
             var trackFile: File? = null
             try {
-                httpClient
-                    .prepareGet(url) {
-                        accept(ContentType.Application.OctetStream)
-                    }.execute { audioFileResponse ->
-                        if (!audioFileResponse.status.isSuccess()) {
-                            throw audioFileResponse.status.toException("Error downloading url: $url")
-                        }
-                        // contentLength() is always defined when downloading from s3
-                        val totalLength = audioFileResponse.contentLength()!!
-                        trackFile = File.createTempFile("newm_track_", url.getFileNameWithExtensionFromUrl())
-                        log.info { "Saving track to temp file: ${trackFile!!.absolutePath}" }
-                        val byteWriteChannel = trackFile!!.writeChannel(Dispatchers.IO)
-                        // Use .content instead of bodyAsChannel() to avoid using any interceptors
-                        val byteReadChannel = audioFileResponse.content
-                        var lastLogged = 0L
-                        var bytesWritten = 0L
-                        byteWriteChannel.use {
-                            while (!byteReadChannel.isClosedForRead) {
-                                bytesWritten += byteReadChannel.copyTo(
-                                    byteWriteChannel,
-                                    DEFAULT_HTTP_BUFFER_SIZE.toLong()
-                                )
-                                val now = System.currentTimeMillis()
-                                if (now - lastLogged > 1000L || bytesWritten == totalLength) {
-                                    val percent =
-                                        floor(bytesWritten.toDouble() / totalLength.toDouble() * 10000.0) / 100.0
-                                    log.info { "Downloaded $bytesWritten bytes of $totalLength: %.2f%%".format(percent) }
-                                    lastLogged = now
-                                }
-                            }
-                        }
-                    }
+                trackFile = withContext(Dispatchers.IO) {
+                    File.createTempFile("newm_track_", s3Url.getFileNameWithExtensionFromUrl())
+                }
+                val trackFilePath = trackFile.toPath()
+                log.info { "Downloading track from $s3Url to ${trackFile.absolutePath} ..." }
+                s3AsyncClient.getObject(getObjectRequest, trackFilePath).await()
+                log.info { "Downloaded track ${mutableSong.title} to ${trackFile.absolutePath} having size ${trackFile.length()}" }
 
-                log.info { "Downloaded track ${mutableSong.title} to ${trackFile!!.absolutePath} having size ${trackFile!!.length()}" }
-                val response = addTrack(user, trackFile!!)
+                val response = addTrack(user, trackFile)
                 log.info { "Created distribution track ${mutableSong.title} with track_id ${response.trackId}: ${response.message}" }
                 mutableSong = mutableSong.copy(distributionTrackId = response.trackId)
                 songRepository.update(mutableSong.id!!, Song(distributionTrackId = response.trackId))
             } finally {
-                trackFile?.delete()
-                log.info { "Deleted temp track file: ${trackFile?.absolutePath}" }
+                if (trackFile?.delete() == true) {
+                    log.info { "Deleted temp track file: ${trackFile.absolutePath}" }
+                }
             }
         }
 
