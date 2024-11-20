@@ -246,7 +246,7 @@ class EarningsRepositoryImpl(
                 // check for existing open claim record first
                 getActiveClaimOrderByStakeAddress(stakeAddress) ?: run {
                     // create a new claim record
-                    val unclaimedEarnings = getAllUnclaimedByStakeAddress(stakeAddress)
+                    val unclaimedEarnings = getAllUnclaimedByStakeAddress(stakeAddress).filter { it.isActive }
                     if (unclaimedEarnings.isEmpty()) {
                         return@run null
                     }

@@ -69,7 +69,7 @@ fun Routing.createEarningsRoutes() {
             get("{walletAddress}") {
                 val stakeAddress = parameters["walletAddress"]!!.extractStakeAddress(cardanoRepository.isMainnet())
                 recaptchaRepository.verify("get_earnings", request)
-                val earnings = earningsRepository.getAllByStakeAddress(stakeAddress)
+                val earnings = earningsRepository.getAllByStakeAddress(stakeAddress).filter { it.isActive }
                 val totalClaimed = earnings.filter { it.claimed }.sumOf { it.amount }
                 val paymentAmountLovelace = configRepository.getLong(CONFIG_KEY_EARNINGS_CLAIM_ORDER_FEE)
                 val changeAmountLovelace = 2000000L // 2 ada
