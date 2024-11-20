@@ -37,6 +37,8 @@ stopServer.sh
 *_localhost.sh
 *_garage.sh
 *_studio.sh
+*_studio_usd.sh
+*_studio_newmies.sh
 
 .elasticbeanstalk
 

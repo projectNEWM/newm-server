@@ -28,6 +28,7 @@ import io.newm.server.typealiases.SongId
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.toDate
 import io.newm.shared.ktx.toHexString
+import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDateTime
 import java.util.UUID
@@ -112,9 +113,7 @@ class EarningsRepositoryImpl(
 
         // should be 100m stream tokens
         val totalSupply = snapshotMap["total_supply"] ?: error("No total supply found in snapshot.")
-        require(totalSupply == 100_000_000.toBigDecimal()) {
-            "Total supply of stream tokens must be 100m."
-        }
+        val unstakedSupply = 100_000_000.toBigDecimal() - totalSupply
 
         val now = LocalDateTime.now()
         var exchangeRate = ""
@@ -137,7 +136,13 @@ class EarningsRepositoryImpl(
                 Earning(
                     songId = songId,
                     stakeAddress = stakeAddress,
-                    amount = (totalNewmAmount * (streamTokenAmount.setScale(6) / totalSupply.setScale(6))).toLong(),
+                    amount = (
+                        totalNewmAmount * (
+                            streamTokenAmount.setScale(6) / 100_000_000
+                                .toBigDecimal()
+                                .setScale(6)
+                        )
+                    ).toLong(),
                     memo = "Royalty for: ${song.title} - ${user.stageOrFullName}$exchangeRate",
                     createdAt = now,
                     startDate = if (cardanoRepository.isMainnet()) {
@@ -150,6 +155,35 @@ class EarningsRepositoryImpl(
                 )
             }
         addAll(earnings)
+        if (unstakedSupply > BigDecimal.ZERO) {
+            log.warn { "Unstaked supply found for song: $songId of $unstakedSupply. Earnings will go to NEWM Foundation." }
+            val foundationEarning =
+                Earning(
+                    songId = songId,
+                    stakeAddress = if (cardanoRepository.isMainnet()) {
+                        "stake1ux6aw8p753m60pf439242l9smrfa90tl998pavpzv67vk6qw6nz9x"
+                    } else {
+                        "foundation"
+                    },
+                    amount = (
+                        totalNewmAmount * (
+                            unstakedSupply.setScale(6) / 100_000_000
+                                .toBigDecimal()
+                                .setScale(6)
+                        )
+                    ).toLong(),
+                    memo = "Royalty for: ${song.title} - ${user.stageOrFullName}$exchangeRate",
+                    createdAt = now,
+                    startDate = if (cardanoRepository.isMainnet()) {
+                        // wait 24 hours before starting the royalties
+                        now.plusHours(24)
+                    } else {
+                        // on testnet, start immediately
+                        now
+                    },
+                )
+            add(foundationEarning)
+        }
     }
 
     override suspend fun add(claimOrder: ClaimOrder): UUID =
