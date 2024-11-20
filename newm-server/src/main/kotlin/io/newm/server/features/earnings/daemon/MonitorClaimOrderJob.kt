@@ -6,6 +6,8 @@ import com.google.iot.cbor.CborMap
 import com.google.iot.cbor.CborTextString
 import com.google.protobuf.ByteString
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.grpc.Status
+import io.grpc.StatusException
 import io.newm.chain.grpc.Signature
 import io.newm.chain.grpc.Utxo
 import io.newm.chain.grpc.monitorPaymentAddressRequest
@@ -58,8 +60,9 @@ class MonitorClaimOrderJob : Job {
             val isMainnet = cardanoRepository.isMainnet()
             val newmTokenPolicy = if (isMainnet) NEWM_TOKEN_POLICY else NEWM_TOKEN_POLICY_TEST
             val newmTokenName = if (isMainnet) NEWM_TOKEN_NAME else NEWM_TOKEN_NAME_TEST
+            val claimOrder = earningsRepository.getByClaimOrderId(claimOrderId)
             try {
-                earningsRepository.getByClaimOrderId(claimOrderId)?.let { claimOrder ->
+                if (claimOrder != null) {
                     val response =
                         cardanoRepository.awaitPayment(
                             monitorPaymentAddressRequest {
@@ -78,8 +81,13 @@ class MonitorClaimOrderJob : Job {
                         if (receiveAddress == null) {
                             val errorMessage = "Receive address not found for stake address ${claimOrder.stakeAddress}"
                             log.error { errorMessage }
-                            earningsRepository.update(claimOrder.copy(status = ClaimOrderStatus.Failed, errorMessage = errorMessage))
-                            return@let
+                            earningsRepository.update(
+                                claimOrder.copy(
+                                    status = ClaimOrderStatus.Failed,
+                                    errorMessage = errorMessage
+                                )
+                            )
+                            return@runBlocking
                         }
 
                         val cashRegisterKey =
@@ -145,9 +153,15 @@ class MonitorClaimOrderJob : Job {
 
                             // check for errors in tx building
                             if (transactionBuilderResponse.hasErrorMessage()) {
-                                val errorMessage = "TransactionBuilder Error!: ${transactionBuilderResponse.errorMessage}"
+                                val errorMessage =
+                                    "TransactionBuilder Error!: ${transactionBuilderResponse.errorMessage}"
                                 log.error { errorMessage }
-                                earningsRepository.update(claimOrder.copy(status = ClaimOrderStatus.Failed, errorMessage = errorMessage))
+                                earningsRepository.update(
+                                    claimOrder.copy(
+                                        status = ClaimOrderStatus.Failed,
+                                        errorMessage = errorMessage
+                                    )
+                                )
                                 return@withLock
                             }
 
@@ -174,9 +188,15 @@ class MonitorClaimOrderJob : Job {
 
                             // check for errors in tx building
                             if (transactionBuilderResponse.hasErrorMessage()) {
-                                val errorMessage = "TransactionBuilder Error!: ${transactionBuilderResponse.errorMessage}"
+                                val errorMessage =
+                                    "TransactionBuilder Error!: ${transactionBuilderResponse.errorMessage}"
                                 log.error { errorMessage }
-                                earningsRepository.update(claimOrder.copy(status = ClaimOrderStatus.Failed, errorMessage = errorMessage))
+                                earningsRepository.update(
+                                    claimOrder.copy(
+                                        status = ClaimOrderStatus.Failed,
+                                        errorMessage = errorMessage
+                                    )
+                                )
                                 return@withLock
                             }
 
@@ -203,9 +223,15 @@ class MonitorClaimOrderJob : Job {
 
                             // check for errors in tx building
                             if (transactionBuilderResponse.hasErrorMessage()) {
-                                val errorMessage = "TransactionBuilder Error!: ${transactionBuilderResponse.errorMessage}"
+                                val errorMessage =
+                                    "TransactionBuilder Error!: ${transactionBuilderResponse.errorMessage}"
                                 log.error { errorMessage }
-                                earningsRepository.update(claimOrder.copy(status = ClaimOrderStatus.Failed, errorMessage = errorMessage))
+                                earningsRepository.update(
+                                    claimOrder.copy(
+                                        status = ClaimOrderStatus.Failed,
+                                        errorMessage = errorMessage
+                                    )
+                                )
                                 return@withLock
                             }
 
@@ -226,26 +252,43 @@ class MonitorClaimOrderJob : Job {
                                     )
                                 }
                                 log.info {
-                                    "Claim order ${claimOrder.id} completed successfully -> ${newmAmountToClaim.toBigDecimal(
-                                        scale = 6
-                                    )} NEWM, txid: ${transactionBuilderResponse.transactionId}"
+                                    "Claim order ${claimOrder.id} completed successfully -> ${
+                                        newmAmountToClaim.toBigDecimal(
+                                            scale = 6
+                                        )
+                                    } NEWM, txid: ${transactionBuilderResponse.transactionId}"
                                 }
                             } else {
-                                val errorMessage = "Transaction submit failed with error: ${submitTransactionResponse.result}"
+                                val errorMessage =
+                                    "Transaction submit failed with error: ${submitTransactionResponse.result}"
                                 log.error { errorMessage }
-                                earningsRepository.update(claimOrder.copy(status = ClaimOrderStatus.Failed, errorMessage = errorMessage))
+                                earningsRepository.update(
+                                    claimOrder.copy(
+                                        status = ClaimOrderStatus.Failed,
+                                        errorMessage = errorMessage
+                                    )
+                                )
                             }
                         }
                     } else {
                         log.info { "Payment timed out for claim order ${claimOrder.id}" }
                         earningsRepository.update(claimOrder.copy(status = ClaimOrderStatus.Timeout))
                     }
-                } ?: log.error { "Claim order not found for id $claimOrderId" }
+                } else {
+                    log.error { "Claim order not found for id $claimOrderId" }
+                }
             } catch (e: Throwable) {
-                log.error(e) { "Error in MonitorClaimOrderJob" }
-                // re-schedule this job by throwing since requestRecovery is true
-                delay(60_000L)
-                throw JobExecutionException(e, true)
+                if (e is StatusException && e.status == Status.UNAVAILABLE) {
+                    log.warn { "Claim order for id: $claimOrderId - ${e.message}" }
+                    claimOrder?.let {
+                        earningsRepository.update(claimOrder.copy(status = ClaimOrderStatus.Timeout))
+                    }
+                } else {
+                    log.error(e) { "Error in MonitorClaimOrderJob" }
+                    // re-schedule this job by throwing since requestRecovery is true
+                    delay(60_000L)
+                    throw JobExecutionException(e, true)
+                }
             }
         }
     }
