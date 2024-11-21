@@ -20,4 +20,22 @@ class CborParseTest {
         val utxo = cborHex.cborHexToUtxo()
         assertThat(utxo).isNotNull()
     }
+
+    @Test
+    fun testCborUtxoParse3() {
+        val cborHex =
+            "82825820de03dc84fd819ac5fc1dba2e48fa18d1390b71dd022bed02eb26e276b92cece600825839002b5a4101c329c6613cd51091509a4f50b6028a8f20c1a161ecbb5dda55e80300b56dd9f4dc643fe0d10d099598c647ea4588c54699e8548a821a0011f436a1581c769c4c6e9bc3ba5406b9b89fb7beb6819e638ff2e2de63f008d5bcffa145744e45574d1b00000002540be400"
+        val utxo = cborHex.cborHexToUtxo()
+        assertThat(utxo).isNotNull()
+        assertThat(utxo.hash).isEqualTo("de03dc84fd819ac5fc1dba2e48fa18d1390b71dd022bed02eb26e276b92cece6")
+        assertThat(utxo.ix).isEqualTo(0)
+        assertThat(utxo.address).isEqualTo("addr_test1qq445sgpcv5uvcfu65gfz5y6fagtvq523usvrgtpaja4mkj4aqpspdtdm86dceplurgs6zv4nrry06j93rz5dx0g2j9qe6k94e")
+        assertThat(utxo.lovelace).isEqualTo("1176630")
+        assertThat(utxo.hasDatum()).isFalse()
+        assertThat(utxo.nativeAssetsCount).isEqualTo(1)
+        val nativeAsset = utxo.nativeAssetsList[0]
+        assertThat(nativeAsset.policy).isEqualTo("769c4c6e9bc3ba5406b9b89fb7beb6819e638ff2e2de63f008d5bcff")
+        assertThat(nativeAsset.name).isEqualTo("744e45574d")
+        assertThat(nativeAsset.amount).isEqualTo("10000000000")
+    }
 }
