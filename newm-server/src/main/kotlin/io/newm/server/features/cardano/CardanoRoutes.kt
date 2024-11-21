@@ -17,6 +17,7 @@ import io.newm.server.features.cardano.model.QueryPriceResponse
 import io.newm.server.features.cardano.model.ScriptAddressWhitelistRequest
 import io.newm.server.features.cardano.model.SubmitTransactionRequest
 import io.newm.server.features.cardano.model.SubmitTransactionResponse
+import io.newm.server.features.cardano.model.SubmitTxRequest
 import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.songFilters
@@ -118,6 +119,17 @@ fun Routing.createCardanoRoutes() {
         }
 
         authenticate(AUTH_JWT) {
+            post("submitTx") {
+                try {
+                    val request = receive<SubmitTxRequest>()
+                    val response = cardanoRepository.submitTransaction(request.cborHex.hexToByteArray().toByteString())
+                    respond(HttpStatusCode.Accepted, SubmitTransactionResponse(response.txId, response.result))
+                } catch (e: Exception) {
+                    log.error("Failed to submit transaction: ${e.message}")
+                    throw e
+                }
+            }
+
             post("submitTransaction") {
                 try {
                     val request = receive<SubmitTransactionRequest>()

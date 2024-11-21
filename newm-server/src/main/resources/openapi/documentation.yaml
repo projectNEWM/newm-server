@@ -242,12 +242,30 @@ paths:
     post:
       tags:
         - "Cardano"
-      description: ""
+      description: "Submit a Transaction specifically for minting a song"
       requestBody:
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/SubmitTransactionRequest"
+        required: true
+      responses:
+        "202":
+          description: "Accepted"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/SubmitTransactionResponse"
+  /v1/cardano/submitTx:
+    post:
+      tags:
+        - "Cardano"
+      description: "Submit a Transaction to the cardano blockchain"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitTxRequest"
         required: true
       responses:
         "202":
@@ -2079,6 +2097,13 @@ components:
           type: "string"
       required:
         - "songId"
+        - "cborHex"
+    SubmitTxRequest:
+      type: "object"
+      properties:
+        cborHex:
+          type: "string"
+      required:
         - "cborHex"
     SubmitTransactionResponse:
       type: "object"

@@ -149,6 +149,23 @@ fun List<String>?.cborHexToUtxos(): List<Utxo> = this?.map { it.cborHexToUtxo() 
  *         ],
  *     },
  * ]
+ *
+ * Example where NativeAssets use an array internally instead of map
+ * [
+ *     [
+ *         h'de03dc84fd819ac5fc1dba2e48fa18d1390b71dd022bed02eb26e276b92cece6',
+ *         0,
+ *     ],
+ *     [
+ *         h'002b5a4101c329c6613cd51091509a4f50b6028a8f20c1a161ecbb5dda55e80300b56dd9f4dc643fe0d10d099598c647ea4588c54699e8548a',
+ *         [
+ *             1176630_2,
+ *             {
+ *                 h'769c4c6e9bc3ba5406b9b89fb7beb6819e638ff2e2de63f008d5bcff': {h'744e45574d': 10000000000_3},
+ *             },
+ *         ],
+ *     ],
+ * ]
  */
 fun String.cborHexToUtxo(): Utxo {
     try {
