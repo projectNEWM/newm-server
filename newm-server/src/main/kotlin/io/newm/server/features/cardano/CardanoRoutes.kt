@@ -119,17 +119,6 @@ fun Routing.createCardanoRoutes() {
         }
 
         authenticate(AUTH_JWT) {
-            post("submitTx") {
-                try {
-                    val request = receive<SubmitTxRequest>()
-                    val response = cardanoRepository.submitTransaction(request.cborHex.hexToByteArray().toByteString())
-                    respond(HttpStatusCode.Accepted, SubmitTransactionResponse(response.txId, response.result))
-                } catch (e: Exception) {
-                    log.error("Failed to submit transaction: ${e.message}")
-                    throw e
-                }
-            }
-
             post("submitTransaction") {
                 try {
                     val request = receive<SubmitTransactionRequest>()
@@ -184,6 +173,18 @@ fun Routing.createCardanoRoutes() {
         get("prices/newm") {
             recaptchaRepository.verify("get_newm_price", request)
             respond(QueryPriceResponse(cardanoRepository.queryNEWMUSDPrice()))
+        }
+
+        post("submitTx") {
+            recaptchaRepository.verify("submit_tx", request)
+            try {
+                val request = receive<SubmitTxRequest>()
+                val response = cardanoRepository.submitTransaction(request.cborHex.hexToByteArray().toByteString())
+                respond(HttpStatusCode.Accepted, SubmitTransactionResponse(response.txId, response.result))
+            } catch (e: Exception) {
+                log.error { "Failed to submit transaction: ${e.message}" }
+                throw e
+            }
         }
     }
 }
