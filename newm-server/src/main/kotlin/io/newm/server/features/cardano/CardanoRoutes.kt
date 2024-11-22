@@ -123,8 +123,17 @@ fun Routing.createCardanoRoutes() {
                 try {
                     val request = receive<SubmitTransactionRequest>()
                     val response = cardanoRepository.submitTransaction(request.cborHex.hexToByteArray().toByteString())
-                    songRepository.updateSongMintingStatus(request.songId, MintingStatus.MintingPaymentSubmitted)
-                    respond(HttpStatusCode.Accepted, SubmitTransactionResponse(response.txId, response.result))
+                    if (!response.txId.isNullOrBlank()) {
+                        songRepository.updateSongMintingStatus(request.songId, MintingStatus.MintingPaymentSubmitted)
+                        respond(HttpStatusCode.Accepted, SubmitTransactionResponse(response.txId, response.result))
+                    } else {
+                        songRepository.updateSongMintingStatus(
+                            request.songId,
+                            MintingStatus.MintingPaymentException,
+                            "error submitting minting payment: ${response.result}"
+                        )
+                        respond(HttpStatusCode.BadRequest, SubmitTransactionResponse(response.txId, response.result))
+                    }
                 } catch (e: Exception) {
                     log.error("Failed to submit transaction: ${e.message}")
                     throw e
@@ -180,7 +189,11 @@ fun Routing.createCardanoRoutes() {
             try {
                 val request = receive<SubmitTxRequest>()
                 val response = cardanoRepository.submitTransaction(request.cborHex.hexToByteArray().toByteString())
-                respond(HttpStatusCode.Accepted, SubmitTransactionResponse(response.txId, response.result))
+                if (!response.txId.isNullOrBlank()) {
+                    respond(HttpStatusCode.Accepted, SubmitTransactionResponse(response.txId, response.result))
+                } else {
+                    respond(HttpStatusCode.BadRequest, SubmitTransactionResponse(response.txId, response.result))
+                }
             } catch (e: Exception) {
                 log.error { "Failed to submit transaction: ${e.message}" }
                 throw e
