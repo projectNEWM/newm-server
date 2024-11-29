@@ -114,7 +114,6 @@ import java.io.File
 import java.math.BigDecimal
 import java.time.Duration
 import java.time.LocalDate
-import kotlin.collections.set
 import kotlin.random.Random.Default.nextLong
 import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.Dispatchers
@@ -192,13 +191,6 @@ class EvearaDistributionRepositoryImpl(
             .newBuilder()
             .expireAfterWrite(Duration.ofDays(1L))
             .build<Int, GetCountriesResponse>()
-
-    private val outletsMutex = Mutex()
-    private val outletsCache =
-        Caffeine
-            .newBuilder()
-            .expireAfterWrite(Duration.ofDays(1L))
-            .build<Int, GetOutletsResponse>()
 
     private suspend fun getEvearaApiToken(): String {
         getTokenMutex.withLock {
@@ -329,26 +321,22 @@ class EvearaDistributionRepositoryImpl(
             }
         }
 
-    override suspend fun getOutlets(user: User): GetOutletsResponse =
-        outletsMutex.withLock {
-            outletsCache.getIfPresent(-1) ?: run {
-                val response =
-                    httpClient.get("$evearaApiBaseUrl/outlets") {
-                        accept(ContentType.Application.Json)
-                        bearerAuth(getEvearaApiToken())
-                        parameter("uuid", user.distributionUserId!!)
-                    }
-                if (!response.status.isSuccess()) {
-                    throw ServerResponseException(response, "Error getting outlets!: ${response.bodyAsText()}")
-                }
-                val getOutletsResponse: GetOutletsResponse = response.body()
-                if (!getOutletsResponse.success) {
-                    throw ServerResponseException(response, "Error getting outlets! success==false")
-                }
-
-                getOutletsResponse.also { outletsCache.put(-1, it) }
+    override suspend fun getOutlets(user: User): GetOutletsResponse {
+        val response =
+            httpClient.get("$evearaApiBaseUrl/outlets") {
+                accept(ContentType.Application.Json)
+                bearerAuth(getEvearaApiToken())
+                parameter("uuid", user.distributionUserId!!)
             }
+        if (!response.status.isSuccess()) {
+            throw ServerResponseException(response, "Error getting outlets!: ${response.bodyAsText()}")
         }
+        val getOutletsResponse: GetOutletsResponse = response.body()
+        if (!getOutletsResponse.success) {
+            throw ServerResponseException(response, "Error getting outlets! success==false")
+        }
+        return getOutletsResponse
+    }
 
     override suspend fun addUser(user: User): AddUserResponse {
         requireNotNull(user.firstName) { "User.firstName must not be null!" }
