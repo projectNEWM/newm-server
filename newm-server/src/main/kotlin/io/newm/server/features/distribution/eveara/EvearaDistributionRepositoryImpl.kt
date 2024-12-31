@@ -1986,9 +1986,9 @@ class EvearaDistributionRepositoryImpl(
         }
 
         // update the isrc from eveara
-        val getTrackResponse = getTracks(user, mutableSong.distributionTrackId!!)
+        val getTrackResponse = getTracks(user, mutableSong.distributionTrackId)
         val stereoIsrc = getTrackResponse.trackData!!.first().stereoIsrc
-        require(stereoIsrc.length == 12) { "Invalid stereo isrc: $stereoIsrc" }
+        require(stereoIsrc.length == 12) { "Invalid stereo isrc: \"$stereoIsrc\"" }
         if (mutableSong.isrc != stereoIsrc) {
             // Save the isrc to the song
             val isrcCountry = stereoIsrc.substring(0, 2)

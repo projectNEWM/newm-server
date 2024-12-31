@@ -8,7 +8,7 @@ object Versions {
     const val AWS = "2.29.16"
     const val BOUNCY_CASTLE = "1.70"
     const val CAFFEINE = "3.1.8"
-    const val CBOR = "0.2.2-NEWM"
+    const val CBOR = "0.4.1-NEWM"
     const val CLOUDINARY = "1.39.0"
     const val COROUTINES = "1.9.0"
     const val EXPOSED = "0.56.0"

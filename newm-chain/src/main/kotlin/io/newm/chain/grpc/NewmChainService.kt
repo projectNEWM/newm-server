@@ -422,7 +422,8 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                 val calculateReferenceScriptsVersions: suspend (Set<Utxo>) -> Set<Int> = { utxos ->
                     utxos
                         .mapNotNull { utxo ->
-                            val firstUtxo = ledgerRepository.queryUtxosByOutputRef(utxo.hash, utxo.ix.toInt()).firstOrNull()
+                            val firstUtxo =
+                                ledgerRepository.queryUtxosByOutputRef(utxo.hash, utxo.ix.toInt()).firstOrNull()
                             firstUtxo?.scriptRefVersion ?: firstUtxo?.scriptRef?.let { scriptRef ->
                                 if (scriptRef.startsWith("010100")) {
                                     3
@@ -698,6 +699,7 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
         try {
             return ledgerRepository.queryUtxoByNativeAsset(request.name, request.policy)?.let { utxo ->
                 utxo {
+                    address = utxo.address
                     hash = utxo.hash
                     ix = utxo.ix
                     lovelace = utxo.lovelace.toString()
