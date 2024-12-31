@@ -106,6 +106,7 @@ dependencies {
     implementation(Dependencies.Aws.LAMBDA)
     implementation(Dependencies.Aws.CLOUDFRONT)
     implementation(Dependencies.Aws.EC2)
+    implementation(Dependencies.Aws.IMDS)
 
     implementation(Dependencies.Arweave.ARWEAVE4S)
     implementation(Dependencies.Arweave.SCALA_JAVA8_COMPAT)

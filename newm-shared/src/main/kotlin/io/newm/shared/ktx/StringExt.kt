@@ -1,6 +1,7 @@
 package io.newm.shared.ktx
 
 import at.favre.lib.crypto.bcrypt.BCrypt
+import io.github.oshai.kotlinlogging.KotlinLogging
 import java.net.URI
 import java.net.URL
 import java.net.URLConnection
@@ -9,6 +10,8 @@ import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeParseException
 import java.util.UUID
+
+private val log by lazy { KotlinLogging.logger {} }
 
 /**
  * Based on android.util.Patterns.EMAIL_ADDRESS
@@ -51,7 +54,13 @@ private object DummyURLHandler : URLStreamHandler() {
  */
 fun String.orNull(): String? = takeIf { isNotBlank() }?.trim()
 
-fun String.toUUID(): UUID = UUID.fromString(this)
+fun String.toUUID(): UUID =
+    try {
+        UUID.fromString(this)
+    } catch (e: Throwable) {
+        log.error { "Error converting string to UUID: \"$this\"" }
+        throw e
+    }
 
 fun String.isValidName(): Boolean = !contains(INVALID_NAME_CHARS_REGEX)
 

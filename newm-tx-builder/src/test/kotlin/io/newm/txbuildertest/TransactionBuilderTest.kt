@@ -33,13 +33,13 @@ import io.newm.kogmios.protocols.model.result.UtxoResultItem
 import io.newm.txbuilder.TransactionBuilder
 import io.newm.txbuilder.TransactionBuilder.Companion.transactionBuilder
 import io.newm.txbuilder.ktx.toCborObject
+import java.util.UUID
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
-import java.util.UUID
 
 @Disabled("Disabled until we get demeter working again.")
 class TransactionBuilderTest {
@@ -150,7 +150,8 @@ class TransactionBuilderTest {
                     fundsVkeyJsonElement.jsonObject["cborHex"]!!
                         .jsonPrimitive.content
                         .hexToByteArray()
-                val fundsVkeyBytes = (CborReader.createFromByteArray(fundsVkeyCbor).readDataItem() as CborByteString).byteArrayValue()[0]
+                val fundsVkeyBytes =
+                    (CborReader.createFromByteArray(fundsVkeyCbor).readDataItem() as CborByteString).byteArrayValue()[0]
 
                 // get the skey for funds address
                 val fundsSkey = javaClass.getResource("/contract_chaining_preprod_test.skey")!!.readText()
@@ -159,7 +160,8 @@ class TransactionBuilderTest {
                     fundsSkeyJsonElement.jsonObject["cborHex"]!!
                         .jsonPrimitive.content
                         .hexToByteArray()
-                val fundsSkeyBytes = (CborReader.createFromByteArray(fundsSkeyCbor).readDataItem() as CborByteString).byteArrayValue()[0]
+                val fundsSkeyBytes =
+                    (CborReader.createFromByteArray(fundsSkeyCbor).readDataItem() as CborByteString).byteArrayValue()[0]
 
                 val utxosResponse =
                     (client as StateQueryClient).utxo(
@@ -484,6 +486,54 @@ class TransactionBuilderTest {
         }
 
     @Test
+    fun `test non-inline datum`() =
+        runBlocking {
+            val datum = plutusData {
+                cborHex = "d8799f00d87980ff"
+                constr = 0
+                list = plutusDataList {
+                    listItem.add(
+                        plutusData {
+                            int = 0
+                        }
+                    )
+                    listItem.add(
+                        plutusData {
+                            constr = 0
+                            list = plutusDataList { }
+                        }
+                    )
+                }
+            }
+
+            val datumHex = datum.toCborObject().toCborByteArray().toHexString()
+            assertThat(datumHex).isEqualTo("d8799f00d87980ff")
+
+            val datumWitnesses = CborArray.create(
+                listOf(datum.toCborObject()),
+                258,
+            )
+
+            // check to make sure we kept the indeterminate array value
+            assertThat(datumWitnesses.toCborByteArray().toHexString()).isEqualTo("d9010281d8799f00d87980ff")
+
+            // datum {
+            //  cborHex: "d8799f00d87980ff"
+            //  constr: 0
+            //  list {
+            //    list_item {
+            //      int: 0
+            //    }
+            //    list_item {
+            //      constr: 0
+            //      list {
+            //      }
+            //    }
+            //  }
+            // }
+        }
+
+    @Test
     @Disabled("Disabled until fixing Unknown transaction input failure")
     fun `test Mint NFT`() =
         runBlocking {
@@ -608,7 +658,8 @@ class TransactionBuilderTest {
                             add(
                                 outputUtxo {
                                     address = "addr_test1wpp50tptek3lv5tqst9609npw99cxmngawjfmx2zn4e7ajqvqrt3u"
-                                    lovelace = "1387820" // back to the contract. must match exactly what we started with
+                                    lovelace =
+                                        "1387820" // back to the contract. must match exactly what we started with
                                     nativeAssets.add(
                                         nativeAsset {
                                             policy = "fd3a69817fe5b9ff39fb2fac2be2c7f2007746e827ee31868fe667cd"
@@ -1108,20 +1159,30 @@ class TransactionBuilderTest {
                                         CborTextString.create(tokenName) to
                                             CborMap.create(
                                                 mapOf(
-                                                    CborTextString.create("album_title") to CborTextString.create("Indiclouds"),
+                                                    CborTextString.create("album_title") to CborTextString.create(
+                                                        "Indiclouds"
+                                                    ),
                                                     CborTextString.create("artists") to
                                                         CborArray.create(
                                                             listOf(
                                                                 CborMap.create(
                                                                     mapOf(
-                                                                        CborTextString.create("name") to CborTextString.create("CÜSI")
+                                                                        CborTextString.create("name") to CborTextString.create(
+                                                                            "CÜSI"
+                                                                        )
                                                                     )
                                                                 )
                                                             )
                                                         ),
-                                                    CborTextString.create("copyright") to CborTextString.create("℗ CÜSI"),
-                                                    CborTextString.create("distributor") to CborTextString.create("https://newm.io"),
-                                                    CborTextString.create("explicit") to CborTextString.create("true"),
+                                                    CborTextString.create("copyright") to CborTextString.create(
+                                                        "℗ CÜSI"
+                                                    ),
+                                                    CborTextString.create("distributor") to CborTextString.create(
+                                                        "https://newm.io"
+                                                    ),
+                                                    CborTextString.create("explicit") to CborTextString.create(
+                                                        "true"
+                                                    ),
                                                     CborTextString.create("files") to
                                                         CborArray.create(
                                                             listOf(
@@ -1170,7 +1231,9 @@ class TransactionBuilderTest {
                                                         "image"
                                                     ) to CborTextString.create("ar://M5oVJOOoxlBlHCzlwHYHAhKwxrnd1jyrnsAWI7jw6XA"),
                                                     CborTextString.create("isrc") to CborTextString.create("QZ-NW7-23-46503"),
-                                                    CborTextString.create("language") to CborTextString.create("en-US"),
+                                                    CborTextString.create("language") to CborTextString.create(
+                                                        "en-US"
+                                                    ),
                                                     CborTextString.create("links") to
                                                         CborMap.create(
                                                             mapOf(
@@ -1209,21 +1272,47 @@ class TransactionBuilderTest {
                                                     CborTextString.create(
                                                         "lyrics"
                                                     ) to CborTextString.create("ar://TNHN0v2wTsUhNprgWvEHC_CZvGi5xgb_oU8MAWvqV0Y"),
-                                                    CborTextString.create("mediaType") to CborTextString.create("image/webp"),
-                                                    CborTextString.create("metadata_language") to CborTextString.create("en-US"),
-                                                    CborTextString.create("mix_engineer") to CborTextString.create("Nathan Cusumano"),
+                                                    CborTextString.create("mediaType") to CborTextString.create(
+                                                        "image/webp"
+                                                    ),
+                                                    CborTextString.create("metadata_language") to CborTextString.create(
+                                                        "en-US"
+                                                    ),
+                                                    CborTextString.create("mix_engineer") to CborTextString.create(
+                                                        "Nathan Cusumano"
+                                                    ),
                                                     CborTextString.create("mood") to CborTextString.create("Inspiring"),
-                                                    CborTextString.create("music_metadata_version") to CborInteger.create(1),
+                                                    CborTextString.create("music_metadata_version") to CborInteger.create(
+                                                        1
+                                                    ),
                                                     CborTextString.create("name") to CborTextString.create("CÜSI - Indiclouds"),
-                                                    CborTextString.create("parental_advisory") to CborTextString.create("Explicit"),
-                                                    CborTextString.create("producer") to CborTextString.create("Mchale Beats"),
-                                                    CborTextString.create("recording_engineer") to CborTextString.create("Nathan Cusumano"),
-                                                    CborTextString.create("release_date") to CborTextString.create("2022-03-17"),
-                                                    CborTextString.create("release_type") to CborTextString.create("Single"),
-                                                    CborTextString.create("series") to CborTextString.create("CÜSI WORLD"),
-                                                    CborTextString.create("song_duration") to CborTextString.create("PT3M7S"),
-                                                    CborTextString.create("song_title") to CborTextString.create("Indiclouds"),
-                                                    CborTextString.create("track_number") to CborInteger.create(1),
+                                                    CborTextString.create("parental_advisory") to CborTextString.create(
+                                                        "Explicit"
+                                                    ),
+                                                    CborTextString.create("producer") to CborTextString.create(
+                                                        "Mchale Beats"
+                                                    ),
+                                                    CborTextString.create("recording_engineer") to CborTextString.create(
+                                                        "Nathan Cusumano"
+                                                    ),
+                                                    CborTextString.create("release_date") to CborTextString.create(
+                                                        "2022-03-17"
+                                                    ),
+                                                    CborTextString.create("release_type") to CborTextString.create(
+                                                        "Single"
+                                                    ),
+                                                    CborTextString.create("series") to CborTextString.create(
+                                                        "CÜSI WORLD"
+                                                    ),
+                                                    CborTextString.create("song_duration") to CborTextString.create(
+                                                        "PT3M7S"
+                                                    ),
+                                                    CborTextString.create("song_title") to CborTextString.create(
+                                                        "Indiclouds"
+                                                    ),
+                                                    CborTextString.create("track_number") to CborInteger.create(
+                                                        1
+                                                    ),
                                                 )
                                             )
                                     )
