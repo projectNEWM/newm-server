@@ -3,7 +3,6 @@ import java.time.Instant
 import java.util.Date
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.util.capitalizeDecapitalize.toLowerCaseAsciiOnly
 
 plugins {
     application
@@ -202,7 +201,7 @@ fun Test.configTest(instance: String) {
     }
     val propertiesMap: Map<String, *> = System.getProperties().entries.associate { it.key.toString() to it.value }
     systemProperties(propertiesMap)
-    systemProperty("newm.env", instance.toLowerCaseAsciiOnly())
+    systemProperty("newm.env", instance.lowercase())
 }
 tasks.register<Test>("integTestGarage") {
     configTest("Garage")

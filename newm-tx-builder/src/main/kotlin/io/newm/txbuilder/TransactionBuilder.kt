@@ -594,6 +594,30 @@ class TransactionBuilder(
 
         val changeNativeAssetMap = changeNativeAssets.toNativeAssetMap()
 
+        // minting or burning tokens can change the amount available for change
+        mintTokens.orEmpty().forEach { mintToken ->
+            val changePolicyNativeAssets = changeNativeAssetMap[mintToken.policy]?.toMutableList()
+            changePolicyNativeAssets?.find { it.name == mintToken.name }?.let { changeNativeAsset ->
+                val amountRemaining = changeNativeAsset.amount.toBigInteger() + mintToken.amount.toBigInteger()
+                if (amountRemaining < BigInteger.ZERO) {
+                    throw IllegalStateException("amountRemaining for ${mintToken.policy}.${mintToken.name} == $amountRemaining")
+                } else if (amountRemaining == BigInteger.ZERO) {
+                    changePolicyNativeAssets.remove(changeNativeAsset)
+                    if (changePolicyNativeAssets.isEmpty()) {
+                        changeNativeAssetMap.remove(mintToken.policy)
+                    } else {
+                        changeNativeAssetMap[mintToken.policy] = changePolicyNativeAssets
+                    }
+                } else {
+                    val index = changePolicyNativeAssets.indexOf(changeNativeAsset)
+                    changePolicyNativeAssets[index] =
+                        changeNativeAsset.toBuilder().setAmount(amountRemaining.toString()).build()
+                    changeNativeAssetMap[mintToken.policy] = changePolicyNativeAssets
+                }
+            }
+        }
+
+        // output utxos can change the amount available for change
         outputUtxos.orEmpty().forEach { outputUtxo ->
             changeLovelace -= outputUtxo.withMinUtxo(utxoCostPerByte).lovelace.toLong()
             outputUtxo.nativeAssetsList.forEach { nativeAsset ->
