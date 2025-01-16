@@ -81,5 +81,6 @@ interface ConfigRepository {
         const val CONFIG_KEY_CLIENT_CONFIG_STUDIO = "clientConfig.studio"
         const val CONFIG_KEY_CLIENT_CONFIG_MARKETPLACE = "clientConfig.marketplace"
         const val CONFIG_KEY_CLIENT_CONFIG_MOBILE = "clientConfig.mobile"
+        const val CONFIG_KEY_SONG_SMART_LINKS_CACHE_TTL = "songSmartLinks.cacheTimeToLive"
     }
 }
