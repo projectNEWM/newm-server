@@ -70,6 +70,7 @@ import io.newm.server.features.distribution.model.GetParticipantsResponse
 import io.newm.server.features.distribution.model.GetPayoutBalanceResponse
 import io.newm.server.features.distribution.model.GetPayoutHistoryResponse
 import io.newm.server.features.distribution.model.GetRolesResponse
+import io.newm.server.features.distribution.model.GetSmartLinksResponse
 import io.newm.server.features.distribution.model.GetTrackStatusResponse
 import io.newm.server.features.distribution.model.GetTracksResponse
 import io.newm.server.features.distribution.model.GetUserLabelResponse
@@ -81,6 +82,7 @@ import io.newm.server.features.distribution.model.OutletStatusCode
 import io.newm.server.features.distribution.model.OutletsDetail
 import io.newm.server.features.distribution.model.Participant
 import io.newm.server.features.distribution.model.Preview
+import io.newm.server.features.distribution.model.SmartLink
 import io.newm.server.features.distribution.model.Subscription
 import io.newm.server.features.distribution.model.Track
 import io.newm.server.features.distribution.model.UpdateArtistRequest
@@ -1759,6 +1761,26 @@ class EvearaDistributionRepositoryImpl(
             user.distributionSubscriptionId = response.subscriptions[0].userSubscriptionId
             userRepository.updateUserData(user.id!!, user)
         }
+    }
+
+    override suspend fun getSmartLinks(
+        distributionUserId: String,
+        distributionReleaseId: Long
+    ): List<SmartLink> {
+        val httpResponse = httpClient.get("$evearaApiBaseUrl/smartlinks/$distributionReleaseId") {
+            contentType(ContentType.Application.Json)
+            accept(ContentType.Application.Json)
+            bearerAuth(getEvearaApiToken())
+            parameter("uuid", distributionUserId)
+        }
+        if (!httpResponse.status.isSuccess()) {
+            throw ServerResponseException(httpResponse, "Error getting smart-links: ${httpResponse.bodyAsText()}")
+        }
+        val response: GetSmartLinksResponse = httpResponse.body()
+        if (!response.success) {
+            throw ServerResponseException(httpResponse, "Error getting smart-links: success==false")
+        }
+        return response.data.orEmpty()
     }
 
     private suspend fun createDistributionParticipants(

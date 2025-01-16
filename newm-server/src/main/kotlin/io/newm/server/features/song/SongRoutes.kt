@@ -189,6 +189,9 @@ fun Routing.createSongRoutes() {
                     )
                     respond(HttpStatusCode.NoContent)
                 }
+                get("smartlinks") {
+                    respond(songRepository.getSmartLinks(songId))
+                }
             }
         }
     }

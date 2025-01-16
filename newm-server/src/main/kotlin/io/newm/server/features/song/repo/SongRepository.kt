@@ -8,9 +8,10 @@ import io.newm.server.features.song.model.AudioUploadReport
 import io.newm.server.features.song.model.MintPaymentResponse
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.RefundPaymentResponse
+import io.newm.server.features.song.model.Release
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongFilters
-import io.newm.server.features.song.model.Release
+import io.newm.server.features.song.model.SongSmartLink
 import io.newm.server.typealiases.ReleaseId
 import io.newm.server.typealiases.SongId
 import io.newm.server.typealiases.UserId
@@ -116,4 +117,6 @@ interface SongRepository {
         songId: SongId,
         mintPaymentResponse: MintPaymentResponse
     )
+
+    suspend fun getSmartLinks(songId: SongId): List<SongSmartLink>
 }
