@@ -13,6 +13,8 @@ data class Sale(
     @Contextual
     val createdAt: LocalDateTime,
     val status: SaleStatus,
+    val pointerPolicyId: String,
+    val pointerAssetName: String,
     val bundlePolicyId: String,
     val bundleAssetName: String,
     val bundleAmount: Long,
