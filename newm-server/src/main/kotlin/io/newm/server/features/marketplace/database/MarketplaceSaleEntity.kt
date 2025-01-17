@@ -96,6 +96,8 @@ class MarketplaceSaleEntity(
             id = id.value,
             createdAt = createdAt,
             status = status,
+            pointerPolicyId = pointerPolicyId,
+            pointerAssetName = pointerAssetName,
             bundlePolicyId = bundlePolicyId,
             bundleAssetName = bundleAssetName,
             costPolicyId = costPolicyId,
