@@ -14,6 +14,7 @@ import io.newm.server.features.nftcdn.repo.NftCdnRepository
 import io.newm.server.features.song.database.ReleaseEntity
 import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.database.SongTable
+import io.newm.server.features.song.model.SongSmartLink
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
 import io.newm.server.ktx.arweaveToWebUrl
@@ -68,7 +69,8 @@ class MarketplaceSaleEntity(
     fun toModel(
         isMainnet: Boolean,
         isNftCdnEnabled: Boolean,
-        costAmountConversions: CostAmountConversions
+        costAmountConversions: CostAmountConversions,
+        smartLinks: List<SongSmartLink>
     ): Sale {
         val song = SongEntity[songId]
         val artist = UserEntity[song.ownerId]
@@ -135,6 +137,7 @@ class MarketplaceSaleEntity(
                             )
                         }
                     }.sortedBy { it.name },
+                smartLinks = smartLinks
             )
         )
     }

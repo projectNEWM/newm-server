@@ -12,6 +12,7 @@ import io.mockk.mockk
 import io.newm.server.BaseApplicationTests
 import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_NFTCDN_ENABLED
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_SONG_SMART_LINKS_CACHE_TTL
 import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.collaboration.database.CollaborationEntity
 import io.newm.server.features.collaboration.database.CollaborationTable
@@ -26,9 +27,12 @@ import io.newm.server.features.model.CountResponse
 import io.newm.server.features.song.database.ReleaseEntity
 import io.newm.server.features.song.database.ReleaseTable
 import io.newm.server.features.song.database.SongEntity
+import io.newm.server.features.song.database.SongSmartLinkEntity
+import io.newm.server.features.song.database.SongSmartLinkTable
 import io.newm.server.features.song.database.SongTable
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.ReleaseType
+import io.newm.server.features.song.model.SongSmartLink
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
 import kotlinx.coroutines.runBlocking
@@ -64,6 +68,7 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
                 single {
                     mockk<ConfigRepository>(relaxed = true) {
                         coEvery { getBoolean(CONFIG_KEY_NFTCDN_ENABLED) } returns false
+                        coEvery { getLong(CONFIG_KEY_SONG_SMART_LINKS_CACHE_TTL) } returns 60
                     }
                 }
             }
@@ -75,6 +80,7 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
         transaction {
             MarketplaceSaleTable.deleteAll()
             CollaborationTable.deleteAll()
+            SongSmartLinkTable.deleteAll()
             SongTable.deleteAll()
             ReleaseTable.deleteAll()
             UserTable.deleteWhere { email neq testUserEmail }
@@ -85,10 +91,9 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
     fun testGetSale() =
         runBlocking {
             val sale = addSaleToDatabase()
-            val response =
-                client.get("v1/marketplace/sales/${sale.id}") {
-                    accept(ContentType.Application.Json)
-                }
+            val response = client.get("v1/marketplace/sales/${sale.id}") {
+                accept(ContentType.Application.Json)
+            }
             assertThat(response.status).isEqualTo(HttpStatusCode.OK)
             assertThat(response.body<Sale>()).isEqualTo(sale)
         }
@@ -106,12 +111,11 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
             val limit = 5
             val actualSales = mutableListOf<Sale>()
             while (true) {
-                val response =
-                    client.get("v1/marketplace/sales") {
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                    }
+                val response = client.get("v1/marketplace/sales") {
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val sales = response.body<List<Sale>>()
                 if (sales.isEmpty()) break
@@ -135,13 +139,12 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
             val limit = 5
             val actualSales = mutableListOf<Sale>()
             while (true) {
-                val response =
-                    client.get("v1/marketplace/sales") {
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("sortOrder", "desc")
-                    }
+                val response = client.get("v1/marketplace/sales") {
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("sortOrder", "desc")
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val sales = response.body<List<Sale>>()
                 if (sales.isEmpty()) break
@@ -168,13 +171,12 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
             val limit = 5
             val actualSales = mutableListOf<Sale>()
             while (true) {
-                val response =
-                    client.get("v1/marketplace/sales") {
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("ids", ids)
-                    }
+                val response = client.get("v1/marketplace/sales") {
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("ids", ids)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val sales = response.body<List<Sale>>()
                 if (sales.isEmpty()) break
@@ -201,13 +203,12 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
             val limit = 5
             val actualSales = mutableListOf<Sale>()
             while (true) {
-                val response =
-                    client.get("v1/marketplace/sales") {
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("ids", ids)
-                    }
+                val response = client.get("v1/marketplace/sales") {
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("ids", ids)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val sales = response.body<List<Sale>>()
                 if (sales.isEmpty()) break
@@ -234,13 +235,12 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
             val limit = 5
             val actualSales = mutableListOf<Sale>()
             while (true) {
-                val response =
-                    client.get("v1/marketplace/sales") {
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("songIds", songIds)
-                    }
+                val response = client.get("v1/marketplace/sales") {
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("songIds", songIds)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val sales = response.body<List<Sale>>()
                 if (sales.isEmpty()) break
@@ -267,13 +267,12 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
             val limit = 5
             val actualSales = mutableListOf<Sale>()
             while (true) {
-                val response =
-                    client.get("v1/marketplace/sales") {
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("songIds", songIds)
-                    }
+                val response = client.get("v1/marketplace/sales") {
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("songIds", songIds)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val sales = response.body<List<Sale>>()
                 if (sales.isEmpty()) break
@@ -300,13 +299,12 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
             val limit = 5
             val actualSales = mutableListOf<Sale>()
             while (true) {
-                val response =
-                    client.get("v1/marketplace/sales") {
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("artistIds", artistIds)
-                    }
+                val response = client.get("v1/marketplace/sales") {
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("artistIds", artistIds)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val sales = response.body<List<Sale>>()
                 if (sales.isEmpty()) break
@@ -333,13 +331,12 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
             val limit = 5
             val actualSales = mutableListOf<Sale>()
             while (true) {
-                val response =
-                    client.get("v1/marketplace/sales") {
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("artistIds", artistIds)
-                    }
+                val response = client.get("v1/marketplace/sales") {
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("artistIds", artistIds)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val sales = response.body<List<Sale>>()
                 if (sales.isEmpty()) break
@@ -366,13 +363,12 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
                 val limit = 5
                 val actualSales = mutableListOf<Sale>()
                 while (true) {
-                    val response =
-                        client.get("v1/marketplace/sales") {
-                            accept(ContentType.Application.Json)
-                            parameter("offset", offset)
-                            parameter("limit", limit)
-                            parameter("saleStatuses", expectedSaleStatus)
-                        }
+                    val response = client.get("v1/marketplace/sales") {
+                        accept(ContentType.Application.Json)
+                        parameter("offset", offset)
+                        parameter("limit", limit)
+                        parameter("saleStatuses", expectedSaleStatus)
+                    }
                     assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                     val sales = response.body<List<Sale>>()
                     if (sales.isEmpty()) break
@@ -400,13 +396,12 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
                 val limit = 5
                 val actualSales = mutableListOf<Sale>()
                 while (true) {
-                    val response =
-                        client.get("v1/marketplace/sales") {
-                            accept(ContentType.Application.Json)
-                            parameter("offset", offset)
-                            parameter("limit", limit)
-                            parameter("saleStatuses", "-$expectedSaleStatus")
-                        }
+                    val response = client.get("v1/marketplace/sales") {
+                        accept(ContentType.Application.Json)
+                        parameter("offset", offset)
+                        parameter("limit", limit)
+                        parameter("saleStatuses", "-$expectedSaleStatus")
+                    }
                     assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                     val sales = response.body<List<Sale>>()
                     if (sales.isEmpty()) break
@@ -434,13 +429,12 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
             val limit = 5
             val actualSales = mutableListOf<Sale>()
             while (true) {
-                val response =
-                    client.get("v1/marketplace/sales") {
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("genres", genres)
-                    }
+                val response = client.get("v1/marketplace/sales") {
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("genres", genres)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val sales = response.body<List<Sale>>()
                 if (sales.isEmpty()) break
@@ -467,13 +461,12 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
             val limit = 5
             val actualSales = mutableListOf<Sale>()
             while (true) {
-                val response =
-                    client.get("v1/marketplace/sales") {
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("genres", genres)
-                    }
+                val response = client.get("v1/marketplace/sales") {
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("genres", genres)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val sales = response.body<List<Sale>>()
                 if (sales.isEmpty()) break
@@ -500,13 +493,12 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
             val limit = 5
             val actualSales = mutableListOf<Sale>()
             while (true) {
-                val response =
-                    client.get("v1/marketplace/sales") {
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("moods", moods)
-                    }
+                val response = client.get("v1/marketplace/sales") {
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("moods", moods)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val sales = response.body<List<Sale>>()
                 if (sales.isEmpty()) break
@@ -533,13 +525,12 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
             val limit = 5
             val actualSales = mutableListOf<Sale>()
             while (true) {
-                val response =
-                    client.get("v1/marketplace/sales") {
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("moods", moods)
-                    }
+                val response = client.get("v1/marketplace/sales") {
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("moods", moods)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val sales = response.body<List<Sale>>()
                 if (sales.isEmpty()) break
@@ -566,13 +557,12 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
             val limit = 5
             val actualSales = mutableListOf<Sale>()
             while (true) {
-                val response =
-                    client.get("v1/marketplace/sales") {
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("olderThan", olderThan)
-                    }
+                val response = client.get("v1/marketplace/sales") {
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("olderThan", olderThan)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val sales = response.body<List<Sale>>()
                 if (sales.isEmpty()) break
@@ -599,13 +589,12 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
             val limit = 5
             val actualSales = mutableListOf<Sale>()
             while (true) {
-                val response =
-                    client.get("v1/marketplace/sales") {
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("newerThan", newerThan)
-                    }
+                val response = client.get("v1/marketplace/sales") {
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("newerThan", newerThan)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val sales = response.body<List<Sale>>()
                 if (sales.isEmpty()) break
@@ -636,13 +625,12 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
             val limit = 5
             val actualSales = mutableListOf<Sale>()
             while (true) {
-                val response =
-                    client.get("v1/marketplace/sales") {
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("phrase", phrase)
-                    }
+                val response = client.get("v1/marketplace/sales") {
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("phrase", phrase)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val sales = response.body<List<Sale>>()
                 if (sales.isEmpty()) break
@@ -657,10 +645,9 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
         runBlocking {
             var count = 0L
             while (true) {
-                val response =
-                    client.get("v1/marketplace/sales/count") {
-                        accept(ContentType.Application.Json)
-                    }
+                val response = client.get("v1/marketplace/sales/count") {
+                    accept(ContentType.Application.Json)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val actualCount = response.body<CountResponse>().count
                 assertThat(actualCount).isEqualTo(count)
@@ -675,10 +662,9 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
     fun testGetArtist() =
         runBlocking {
             val artist = addArtistToDatabase()
-            val response =
-                client.get("v1/marketplace/artists/${artist.id}") {
-                    accept(ContentType.Application.Json)
-                }
+            val response = client.get("v1/marketplace/artists/${artist.id}") {
+                accept(ContentType.Application.Json)
+            }
             assertThat(response.status).isEqualTo(HttpStatusCode.OK)
             assertThat(response.body<Artist>()).isEqualTo(artist)
         }
@@ -696,12 +682,11 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
             val limit = 5
             val actualArtists = mutableListOf<Artist>()
             while (true) {
-                val response =
-                    client.get("v1/marketplace/artists") {
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                    }
+                val response = client.get("v1/marketplace/artists") {
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val artists = response.body<List<Artist>>()
                 if (artists.isEmpty()) break
@@ -726,13 +711,12 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
             val limit = 5
             val actualArtists = mutableListOf<Artist>()
             while (true) {
-                val response =
-                    client.get("v1/marketplace/artists") {
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("sortOrder", "desc")
-                    }
+                val response = client.get("v1/marketplace/artists") {
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("sortOrder", "desc")
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val artists = response.body<List<Artist>>()
                 if (artists.isEmpty()) break
@@ -759,13 +743,12 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
             val limit = 5
             val actualArtists = mutableListOf<Artist>()
             while (true) {
-                val response =
-                    client.get("v1/marketplace/artists") {
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("ids", ids)
-                    }
+                val response = client.get("v1/marketplace/artists") {
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("ids", ids)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val artists = response.body<List<Artist>>()
                 if (artists.isEmpty()) break
@@ -792,13 +775,12 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
             val limit = 5
             val actualArtists = mutableListOf<Artist>()
             while (true) {
-                val response =
-                    client.get("v1/marketplace/artists") {
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("ids", ids)
-                    }
+                val response = client.get("v1/marketplace/artists") {
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("ids", ids)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val artists = response.body<List<Artist>>()
                 if (artists.isEmpty()) break
@@ -825,13 +807,12 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
             val limit = 5
             val actualArtists = mutableListOf<Artist>()
             while (true) {
-                val response =
-                    client.get("v1/marketplace/artists") {
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("genres", genres)
-                    }
+                val response = client.get("v1/marketplace/artists") {
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("genres", genres)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val artists = response.body<List<Artist>>()
                 if (artists.isEmpty()) break
@@ -858,13 +839,12 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
             val limit = 5
             val actualArtists = mutableListOf<Artist>()
             while (true) {
-                val response =
-                    client.get("v1/marketplace/artists") {
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("genres", genres)
-                    }
+                val response = client.get("v1/marketplace/artists") {
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("genres", genres)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val artists = response.body<List<Artist>>()
                 if (artists.isEmpty()) break
@@ -891,13 +871,12 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
             val limit = 5
             val actualArtists = mutableListOf<Artist>()
             while (true) {
-                val response =
-                    client.get("v1/marketplace/artists") {
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("olderThan", olderThan)
-                    }
+                val response = client.get("v1/marketplace/artists") {
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("olderThan", olderThan)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val artists = response.body<List<Artist>>()
                 if (artists.isEmpty()) break
@@ -924,13 +903,12 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
             val limit = 5
             val actualArtists = mutableListOf<Artist>()
             while (true) {
-                val response =
-                    client.get("v1/marketplace/artists") {
-                        accept(ContentType.Application.Json)
-                        parameter("offset", offset)
-                        parameter("limit", limit)
-                        parameter("newerThan", newerThan)
-                    }
+                val response = client.get("v1/marketplace/artists") {
+                    accept(ContentType.Application.Json)
+                    parameter("offset", offset)
+                    parameter("limit", limit)
+                    parameter("newerThan", newerThan)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val artists = response.body<List<Artist>>()
                 if (artists.isEmpty()) break
@@ -945,10 +923,9 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
         runBlocking {
             var count = 0L
             while (true) {
-                val response =
-                    client.get("v1/marketplace/artists/count") {
-                        accept(ContentType.Application.Json)
-                    }
+                val response = client.get("v1/marketplace/artists/count") {
+                    accept(ContentType.Application.Json)
+                }
                 assertThat(response.status).isEqualTo(HttpStatusCode.OK)
                 val actualCount = response.body<CountResponse>().count
                 assertThat(actualCount).isEqualTo(count)
@@ -981,14 +958,13 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
         val song =
             transaction {
                 val title = "title$offset ${phraseOrEmpty(3)} blah blah"
-                val releaseId =
-                    ReleaseEntity
-                        .new {
-                            ownerId = artist.id
-                            this.title = title
-                            arweaveCoverArtUrl = "ar://coverArtUrl$offset"
-                            releaseType = ReleaseType.SINGLE
-                        }.id.value
+                val releaseId = ReleaseEntity
+                    .new {
+                        ownerId = artist.id
+                        this.title = title
+                        arweaveCoverArtUrl = "ar://coverArtUrl$offset"
+                        releaseType = ReleaseType.SINGLE
+                    }.id.value
                 SongEntity.new {
                     ownerId = artist.id
                     this.title = title
@@ -1011,6 +987,17 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
                 role = "Artist"
                 royaltyRate = 100f
             }
+        }
+
+        val smartLinks = mutableListOf<SongSmartLink>()
+        for (i in 1..3) {
+            smartLinks += transaction {
+                SongSmartLinkEntity.new {
+                    songId = song.id
+                    storeName = "storeName${offset}_$i"
+                    url = "url${offset}_$i"
+                }
+            }.toModel()
         }
 
         val costAmount = (offset + 1L) * 1234567L
@@ -1039,51 +1026,50 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
                     costAmountConversions = CostAmountConversions(
                         usd = costAmountUsd.toBigDecimal(12).toPlainString(),
                         newm = (costAmountUsd.toBigDecimal(6) / NEWM_USD_PRICE.toBigDecimal()).toPlainString()
-                    )
+                    ),
+                    smartLinks = smartLinks
                 )
         }
     }
 
     private fun addArtistToDatabase(offset: Int = 0): Artist {
-        val artist =
-            transaction {
-                MarketplaceArtistEntity.new {
-                    email = "artist$offset@newm.io"
-                    nickname = "nickname$offset"
-                    genre = "genre$offset"
-                    location = "location$offset"
-                    biography = "biography$offset"
-                    pictureUrl = "pictureUrl$offset"
-                    bannerUrl = "bannerUrl$offset"
-                    websiteUrl = "websiteUrl$offset"
-                    websiteUrl = "websiteUrl$offset"
-                    instagramUrl = "instagramUrl$offset"
-                    spotifyProfile = "spotifyProfile$offset"
-                    soundCloudProfile = "soundCloudProfile$offset"
-                    appleMusicProfile = "appleMusicProfile$offset"
-                }
+        val artist = transaction {
+            MarketplaceArtistEntity.new {
+                email = "artist$offset@newm.io"
+                nickname = "nickname$offset"
+                genre = "genre$offset"
+                location = "location$offset"
+                biography = "biography$offset"
+                pictureUrl = "pictureUrl$offset"
+                bannerUrl = "bannerUrl$offset"
+                websiteUrl = "websiteUrl$offset"
+                websiteUrl = "websiteUrl$offset"
+                instagramUrl = "instagramUrl$offset"
+                spotifyProfile = "spotifyProfile$offset"
+                soundCloudProfile = "soundCloudProfile$offset"
+                appleMusicProfile = "appleMusicProfile$offset"
             }
+        }
         for (i in 0..offset + 3) {
             transaction {
-                val song =
-                    SongEntity.new {
-                        ownerId = artist.id
-                        title = "title$offset"
-                        genres = listOf("genre${offset}_0", "genre${offset}_1")
-                        mintingStatus = MintingStatus.Released
-                    }
+                val song = SongEntity.new {
+                    ownerId = artist.id
+                    title = "title${offset}_$i"
+                    genres = listOf("genre${offset}_0", "genre${offset}_1")
+                    mintingStatus = MintingStatus.Released
+                }
                 MarketplaceSaleEntity.new {
                     createdAt = LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS)
                     status = SaleStatus.entries[offset % SaleStatus.entries.size]
                     songId = song.id
-                    ownerAddress = "ownerAddress$offset"
-                    pointerPolicyId = "pointerPolicyId$offset"
-                    pointerAssetName = "pointerAssetName$offset"
-                    bundlePolicyId = "bundlePolicyId$offset"
-                    bundleAssetName = "bundleAssetName$offset"
+                    ownerAddress = "ownerAddress${offset}_$i"
+                    pointerPolicyId = "pointerPolicyId${offset}_$i"
+                    pointerAssetName = "pointerAssetName${offset}_$i"
+                    bundlePolicyId = "bundlePolicyId${offset}_$i"
+                    bundleAssetName = "bundleAssetName${offset}_$i"
                     bundleAmount = offset + 1L
-                    costPolicyId = "costPolicyId$offset"
-                    costAssetName = "costAssetName$offset"
+                    costPolicyId = "costPolicyId${offset}_$i"
+                    costAssetName = "costAssetName${offset}_$i"
                     costAmount = offset.toLong()
                     maxBundleSize = offset + 100L
                     totalBundleQuantity = offset + 1000L
