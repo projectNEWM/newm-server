@@ -74,6 +74,8 @@ import io.newm.server.features.marketplace.parser.parseQueue
 import io.newm.server.features.marketplace.parser.parseSale
 import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.database.SongTable
+import io.newm.server.features.song.model.SongSmartLink
+import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.ktx.toReferenceUtxo
 import io.newm.server.typealiases.UserId
 import io.newm.shared.exception.HttpNotFoundException
@@ -107,7 +109,8 @@ internal class MarketplaceRepositoryImpl(
     private val environment: ApplicationEnvironment,
     private val configRepository: ConfigRepository,
     private val cardanoRepository: CardanoRepository,
-    private val emailRepository: EmailRepository
+    private val emailRepository: EmailRepository,
+    private val songRepository: SongRepository
 ) : MarketplaceRepository {
     private val log = KotlinLogging.logger {}
 
@@ -117,7 +120,8 @@ internal class MarketplaceRepositoryImpl(
         val isMainnet = cardanoRepository.isMainnet()
         val isNftCdnEnabled = configRepository.getBoolean(CONFIG_KEY_NFTCDN_ENABLED)
         val costAmountConversions = sale.computeCostAmountConversions()
-        return transaction { sale.toModel(isMainnet, isNftCdnEnabled, costAmountConversions) }
+        val smartLinks = sale.getSmartLinks()
+        return transaction { sale.toModel(isMainnet, isNftCdnEnabled, costAmountConversions, smartLinks) }
     }
 
     override suspend fun getSales(
@@ -135,9 +139,10 @@ internal class MarketplaceRepositoryImpl(
                 .limit(count = limit)
                 .toList()
         }
-        val costAmountConversions = sales.associate { it.id.value to it.computeCostAmountConversions() }
+        val conversions = sales.associate { it.id.value to it.computeCostAmountConversions() }
+        val smartLinks = sales.associate { it.id.value to it.getSmartLinks() }
         return transaction {
-            sales.map { it.toModel(isMainnet, isNftCdnEnabled, costAmountConversions[it.id.value]!!) }
+            sales.map { it.toModel(isMainnet, isNftCdnEnabled, conversions[it.id.value]!!, smartLinks[it.id.value]!!) }
         }
     }
 
@@ -884,4 +889,13 @@ internal class MarketplaceRepositoryImpl(
             messageArgs = messageArgs
         )
     }
+
+    private suspend fun MarketplaceSaleEntity.getSmartLinks(): List<SongSmartLink> =
+        try {
+            songRepository.getSmartLinks(songId.value)
+        } catch (e: Throwable) {
+            // in case of Eveara service failure, log and return an empty list rather than failing the whole operation
+            log.warn(e) { "Failed to get smart-links for song: ${songId.value}" }
+            emptyList()
+        }
 }

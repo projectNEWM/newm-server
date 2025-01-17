@@ -27,6 +27,7 @@ import io.newm.server.features.song.database.ReleaseEntity
 import io.newm.server.features.song.database.ReleaseTable
 import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.database.SongReceiptTable
+import io.newm.server.features.song.database.SongSmartLinkTable
 import io.newm.server.features.song.database.SongTable
 import io.newm.server.features.song.model.Release
 import io.newm.server.features.song.model.ReleaseType
@@ -154,6 +155,7 @@ open class BaseApplicationTests {
                 TwoFactorAuthTable,
                 KeyTable,
                 SongTable,
+                SongSmartLinkTable,
                 CollaborationTable,
                 PlaylistTable,
                 SongsInPlaylistsTable,

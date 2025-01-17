@@ -1,5 +1,6 @@
 package io.newm.server.features.marketplace.model
 
+import io.newm.server.features.song.model.SongSmartLink
 import io.newm.server.typealiases.SaleId
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
@@ -44,6 +45,7 @@ data class Sale(
         val tokenAgreementUrl: String?,
         val assetUrl: String?,
         val collaborators: List<SongCollaborator>?,
+        val smartLinks: List<SongSmartLink>?
     )
 
     @Serializable
