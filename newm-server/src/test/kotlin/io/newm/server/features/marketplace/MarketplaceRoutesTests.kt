@@ -13,6 +13,7 @@ import io.newm.server.BaseApplicationTests
 import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_NFTCDN_ENABLED
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_SONG_SMART_LINKS_CACHE_TTL
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_SONG_SMART_LINKS_USE_DISTRIBUTOR
 import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.collaboration.database.CollaborationEntity
 import io.newm.server.features.collaboration.database.CollaborationTable
@@ -68,6 +69,7 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
                 single {
                     mockk<ConfigRepository>(relaxed = true) {
                         coEvery { getBoolean(CONFIG_KEY_NFTCDN_ENABLED) } returns false
+                        coEvery { getBoolean(CONFIG_KEY_SONG_SMART_LINKS_USE_DISTRIBUTOR) } returns true
                         coEvery { getLong(CONFIG_KEY_SONG_SMART_LINKS_CACHE_TTL) } returns 60
                     }
                 }

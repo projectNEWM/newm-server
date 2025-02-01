@@ -4,7 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class SpotifyRequest(
+data class SpotifyPlaylistRequest(
     @SerialName("uris")
     val uris: List<String>,
     @SerialName("position")

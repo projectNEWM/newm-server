@@ -76,7 +76,7 @@ class OutletReleaseRepositoryTest : BaseApplicationTests() {
                 mockk<ConfigRepository>(relaxed = true) {
                     coEvery { getString(CONFIG_KEY_NEWM_PLAYLIST_ID) } returns playlistId
                 }
-            val releaseRepository = OutletReleaseRepositoryImpl(httpClient, songRepository, confRepository)
+            val releaseRepository = OutletReleaseRepositoryImpl(httpClient, confRepository)
             assertThat(releaseRepository.isSongReleased(songId)).isTrue()
         }
 
@@ -97,7 +97,7 @@ class OutletReleaseRepositoryTest : BaseApplicationTests() {
                 mockk<ConfigRepository>(relaxed = true) {
                     coEvery { getString(CONFIG_KEY_NEWM_PLAYLIST_ID) } returns playlistId
                 }
-            val releaseRepository = OutletReleaseRepositoryImpl(httpClient, songRepository, confRepository)
+            val releaseRepository = OutletReleaseRepositoryImpl(httpClient, confRepository)
             assertThat(releaseRepository.isSongReleased(songId)).isFalse()
         }
 }

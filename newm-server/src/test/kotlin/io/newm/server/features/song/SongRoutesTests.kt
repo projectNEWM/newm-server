@@ -47,9 +47,6 @@ import io.newm.server.utils.ResourceOutgoingContent
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.existsHavingId
 import io.newm.shared.ktx.getConfigString
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.util.UUID
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.neq
@@ -61,6 +58,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.koin.core.context.GlobalContext.loadKoinModules
 import org.koin.dsl.module
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.util.UUID
 
 class SongRoutesTests : BaseApplicationTests() {
     @BeforeAll
@@ -75,6 +75,7 @@ class SongRoutesTests : BaseApplicationTests() {
                     mockk<CardanoRepository>(relaxed = true) {
                         coEvery { queryAdaUSDPrice() } returns 253400L // $0.2534 ada price
                     },
+                    get(),
                     get(),
                     get(),
                     get()

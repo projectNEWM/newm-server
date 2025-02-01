@@ -5,12 +5,5 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class SpotifySearchResponse(
-    @SerialName("tracks")
-    val tracks: Tracks
-) {
-    @Serializable
-    data class Tracks(
-        @SerialName("total")
-        val total: Int
-    )
-}
+    @SerialName("tracks") val tracks: Tracks
+)
