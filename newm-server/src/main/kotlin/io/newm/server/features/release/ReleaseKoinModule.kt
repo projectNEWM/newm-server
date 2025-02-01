@@ -7,5 +7,5 @@ import org.koin.dsl.module
 
 val releaseKoinModule =
     module {
-        single<OutletReleaseRepository> { OutletReleaseRepositoryImpl(get(QUALIFIER_SPOTIFY_HTTP_CLIENT), get(), get()) }
+        single<OutletReleaseRepository> { OutletReleaseRepositoryImpl(get(QUALIFIER_SPOTIFY_HTTP_CLIENT), get()) }
     }

@@ -32,10 +32,6 @@ import io.newm.server.ktx.toBucketAndKey
 import io.newm.server.typealiases.SongId
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.info
-import java.io.File
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.util.UUID
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.sql.deleteAll
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -43,6 +39,10 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.slf4j.LoggerFactory
+import java.io.File
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.util.UUID
 
 class EvearaDistributionRepositoryTest : BaseApplicationTests() {
     @BeforeEach
@@ -327,7 +327,7 @@ class EvearaDistributionRepositoryTest : BaseApplicationTests() {
 
             val configRepository: ConfigRepository = ConfigRepositoryImpl()
             val songRepository: SongRepository =
-                SongRepositoryImpl(mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk())
+                SongRepositoryImpl(mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk())
             val applicationEnvironment: ApplicationEnvironment by inject()
             val collabRepository: CollaborationRepository =
                 CollaborationRepositoryImpl(applicationEnvironment, mockk())

@@ -7,5 +7,6 @@ import kotlinx.serialization.Serializable
 data class SpotifyTrackItem(
     @SerialName("id") val id: String,
     @SerialName("track_number") val trackNumber: Int,
-    @SerialName("uri") val uri: String
+    @SerialName("uri") val uri: String,
+    @SerialName("external_urls") val externalUrls: Map<String, String>
 )

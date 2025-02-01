@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test
 class SongRepositoryTest : BaseApplicationTests() {
     @Test
     fun `test calculateMintPaymentResponse`() {
-        val songRepository = SongRepositoryImpl(mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk())
+        val songRepository = SongRepositoryImpl(mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk())
         val response =
             songRepository.calculateMintPaymentResponse(
                 dspPriceUsd = 14990000L,

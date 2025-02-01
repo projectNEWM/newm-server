@@ -18,6 +18,7 @@ import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_DISTRIBUTION_PRICE_USD
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_PRICE
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_SONG_SMART_LINKS_CACHE_TTL
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_SONG_SMART_LINKS_USE_DISTRIBUTOR
 import io.newm.server.features.cardano.database.KeyTable
 import io.newm.server.features.cardano.model.Key
 import io.newm.server.features.cardano.repo.CardanoRepository
@@ -28,6 +29,7 @@ import io.newm.server.features.distribution.DistributionRepository
 import io.newm.server.features.email.repo.EmailRepository
 import io.newm.server.features.minting.MintingStatusSqsMessage
 import io.newm.server.features.minting.repo.MintingRepository
+import io.newm.server.features.release.repo.OutletReleaseRepository
 import io.newm.server.features.song.database.ReleaseEntity
 import io.newm.server.features.song.database.ReleaseTable
 import io.newm.server.features.song.database.SongEntity
@@ -73,7 +75,6 @@ import io.newm.shared.ktx.propertiesFromResource
 import io.newm.shared.ktx.toTempFile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.apache.tika.Tika
 import org.jaudiotagger.audio.AudioFileIO
@@ -104,6 +105,7 @@ internal class SongRepositoryImpl(
     private val distributionRepository: DistributionRepository,
     private val collaborationRepository: CollaborationRepository,
     private val emailRepository: EmailRepository,
+    private val outletReleaseRepository: OutletReleaseRepository
 ) : SongRepository {
     private val logger = KotlinLogging.logger {}
     private val json: Json by inject()
@@ -861,9 +863,15 @@ internal class SongRepositoryImpl(
 
     override suspend fun getSmartLinks(songId: SongId): List<SongSmartLink> {
         logger.debug { "getSmartLinks: songId = $songId" }
-        val minCreatedAt = LocalDateTime
-            .now()
-            .minusSeconds(configRepository.getLong(CONFIG_KEY_SONG_SMART_LINKS_CACHE_TTL))
+        val ttl = configRepository.getLong(CONFIG_KEY_SONG_SMART_LINKS_CACHE_TTL)
+        val minCreatedAt = if (ttl > 0) {
+            LocalDateTime
+                .now()
+                .minusSeconds(ttl)
+        } else {
+            // cache never expires
+            LocalDateTime.MIN
+        }
         val cachedSmartLinks = transaction {
             with(SongSmartLinkEntity.findBySongId(songId)) {
                 takeIf { any { it.createdAt >= minCreatedAt } } ?: run {
@@ -876,18 +884,20 @@ internal class SongRepositoryImpl(
             logger.debug { "Found ${cachedSmartLinks.size} cached smart-links" }
             return cachedSmartLinks.map { it.toModel() }
         }
-        val (distributionUserId, distributionReleaseId) = transaction {
-            SongEntity[songId].run {
-                UserEntity[ownerId].distributionUserId to releaseId?.let { ReleaseEntity[it].distributionReleaseId }
+        val networkSmartLinks = if (configRepository.getBoolean(CONFIG_KEY_SONG_SMART_LINKS_USE_DISTRIBUTOR)) {
+            val (distributionUserId, distributionReleaseId) = transaction {
+                SongEntity[songId].run {
+                    UserEntity[ownerId].distributionUserId to releaseId?.let { ReleaseEntity[it].distributionReleaseId }
+                }
             }
-        }
-        if (distributionUserId == null || distributionReleaseId == null) {
-            logger.debug { "No distribution: userId = $distributionUserId, releaseId = $distributionReleaseId" }
-            return emptyList()
-        }
-        val networkSmartLinks = distributionRepository
-            .getSmartLinks(distributionUserId, distributionReleaseId)
-            .filter { it.url.isNotEmpty() }
+            if (distributionUserId == null || distributionReleaseId == null) {
+                logger.debug { "No distribution: userId = $distributionUserId, releaseId = $distributionReleaseId" }
+                return emptyList()
+            }
+            distributionRepository.getSmartLinks(distributionUserId, distributionReleaseId)
+        } else {
+            outletReleaseRepository.getSmartLinks(songId)
+        }.filter { it.url.isNotEmpty() }
         logger.debug { "Found ${networkSmartLinks.size} network smart-links" }
         return transaction {
             val songEntityId = EntityID(songId, SongTable)
