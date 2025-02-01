@@ -51,6 +51,6 @@ class UsersRepositoryImpl : UsersRepository {
             UsersTable
                 .update({ UsersTable.id eq user.id!! }) { row ->
                     row[name] = user.name
-                }.also { usersByIdCache.invalidate(user.id) }
+                }.also { usersByIdCache.invalidate(user.id!!) }
         }
 }
