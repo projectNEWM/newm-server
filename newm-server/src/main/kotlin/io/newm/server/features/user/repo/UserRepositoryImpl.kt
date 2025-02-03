@@ -162,6 +162,7 @@ internal class UserRepositoryImpl(
                 this.lastName = user.lastName?.asValidName()
                 this.pictureUrl = user.pictureUrl?.asValidUrl()
                 this.email = email
+                this.verificationStatus = UserVerificationStatus.Unverified
             }
             entity.oauthType = oauthType
             entity.oauthId = user.id
