@@ -150,7 +150,11 @@ class BlockDaemon(
                     }
                     break
                 } catch (e: Throwable) {
-                    log.warn(e) { "Error connecting Kogmios!" }
+                    if (e is IOException) {
+                        log.warn { "Error connecting Kogmios!" }
+                    } else {
+                        log.warn(e) { "Error connecting Kogmios!" }
+                    }
                     log.info { "Wait 10 seconds to retry..." }
                     delay(RETRY_DELAY_MILLIS)
                 }
