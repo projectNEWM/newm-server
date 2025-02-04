@@ -163,6 +163,7 @@ internal class SongRepositoryImpl(
                     ipis = song.ipis
                     lyricsUrl = song.lyricsUrl?.asValidUrl()
                     instrumental = song.instrumental ?: song.genres.contains("Instrumental")
+                    this.mintingStatus = MintingStatus.Undistributed
                 }.id.value
         }
     }
