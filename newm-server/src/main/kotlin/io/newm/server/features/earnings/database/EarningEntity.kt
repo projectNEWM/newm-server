@@ -1,6 +1,7 @@
 package io.newm.server.features.earnings.database
 
 import io.newm.server.features.earnings.model.Earning
+import io.newm.server.features.song.database.SongEntity
 import io.newm.server.typealiases.SongId
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
@@ -21,6 +22,7 @@ class EarningEntity(
     var claimedAt: LocalDateTime? by EarningsTable.claimedAt
     var claimOrderId: EntityID<UUID>? by EarningsTable.claimedOrderId
     var createdAt: LocalDateTime by EarningsTable.createdAt
+    var song: SongEntity? by SongEntity optionalReferencedOn EarningsTable.songId
 
     fun toModel(): Earning =
         Earning(
@@ -35,6 +37,8 @@ class EarningEntity(
             claimedAt = claimedAt,
             claimOrderId = claimOrderId?.value,
             createdAt = createdAt,
+            nftPolicyId = song?.nftPolicyId,
+            nftAssetName = song?.nftName
         )
 
     companion object : UUIDEntityClass<EarningEntity>(EarningsTable) {
