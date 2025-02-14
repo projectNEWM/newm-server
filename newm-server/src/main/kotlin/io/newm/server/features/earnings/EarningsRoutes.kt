@@ -7,7 +7,7 @@ import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Routing
 import io.ktor.server.routing.route
-import io.newm.chain.util.extractStakeAddress
+import io.newm.chain.util.asStakeAddress
 import io.newm.chain.util.toHexString
 import io.newm.server.auth.jwt.AUTH_JWT
 import io.newm.server.auth.jwt.AUTH_JWT_ADMIN
@@ -67,7 +67,7 @@ fun Routing.createEarningsRoutes() {
         route(EARNINGS_PATH) {
             // get earnings
             get("{walletAddress}") {
-                val stakeAddress = parameters["walletAddress"]!!.extractStakeAddress(cardanoRepository.isMainnet())
+                val stakeAddress = parameters["walletAddress"]!!.asStakeAddress(cardanoRepository.isMainnet())
                 recaptchaRepository.verify("get_earnings", request)
                 val earnings = earningsRepository.getAllByStakeAddress(stakeAddress).filter { it.isActive }
                 val totalClaimed = earnings.filter { it.claimed }.sumOf { it.amount }

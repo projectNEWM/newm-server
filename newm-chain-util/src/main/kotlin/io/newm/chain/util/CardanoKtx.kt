@@ -120,6 +120,8 @@ fun String.toHexPoolId(): String =
         this
     }
 
+fun String.asStakeAddress(isMainnet: Boolean): String = if (startsWith("stake")) this else extractStakeAddress(isMainnet)
+
 fun String.extractStakeAddress(isMainnet: Boolean): String {
     val decodedReceiveAddress = Bech32.decode(this)
 
