@@ -1,10 +1,10 @@
 package io.newm.server.features.earnings.model
 
 import io.newm.server.typealiases.SongId
-import java.time.LocalDateTime
-import java.util.UUID
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
+import java.time.LocalDateTime
+import java.util.UUID
 
 /**
  * An earning is any type of reward earned by the user. It could be a music royalty from stream tokens. It could also be
@@ -29,7 +29,9 @@ data class Earning(
     @Contextual
     val claimOrderId: UUID? = null,
     @Contextual
-    val createdAt: LocalDateTime
+    val createdAt: LocalDateTime,
+    val nftPolicyId: String? = null,
+    val nftAssetName: String? = null
 ) {
     val isActive: Boolean
         get() {
