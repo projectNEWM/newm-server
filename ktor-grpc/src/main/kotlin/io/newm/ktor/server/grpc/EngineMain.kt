@@ -2,42 +2,32 @@ package io.newm.ktor.server.grpc
 
 import io.grpc.BindableService
 import io.ktor.server.config.ApplicationConfig
-import io.ktor.server.engine.ApplicationEngineEnvironment
-import io.ktor.server.engine.addShutdownHook
-import io.ktor.server.engine.commandLineEnvironment
+import io.ktor.server.engine.CommandLineConfig
+import io.ktor.server.engine.EmbeddedServer
 
 object EngineMain {
     /**
      * GRPC engine entry point
      */
     @JvmStatic
-    fun main(
+    public fun main(
         args: Array<String>,
-        appEnvironment: ApplicationEngineEnvironment? = null,
-        configure: GRPCApplicationEngine.Configuration.(appConfig: ApplicationConfig) -> Unit = {},
+        configure: GRPCApplicationEngine.Configuration.(appConfig: ApplicationConfig) -> Unit = {}
     ) {
-        val applicationEnvironment = appEnvironment ?: commandLineEnvironment(args)
-        val engine =
-            GRPCApplicationEngine(applicationEnvironment) {
-                loadConfiguration(applicationEnvironment.config)
-                configure.invoke(this, applicationEnvironment.config)
-            }
-        val gracePeriod =
-            engine.environment.config
-                .propertyOrNull("ktor.deployment.shutdownGracePeriod")
-                ?.getString()
-                ?.toLong()
-                ?: 50
-        val timeout =
-            engine.environment.config
-                .propertyOrNull("ktor.deployment.shutdownTimeout")
-                ?.getString()
-                ?.toLong()
-                ?: 5000
-        engine.addShutdownHook {
-            engine.stop(gracePeriod, timeout)
+        val server = createServer(args, configure)
+        server.start(true)
+    }
+
+    public fun createServer(
+        args: Array<String>,
+        configure: GRPCApplicationEngine.Configuration.(appConfig: ApplicationConfig) -> Unit = {},
+    ): EmbeddedServer<GRPCApplicationEngine, GRPCApplicationEngine.Configuration> {
+        val config = CommandLineConfig(args)
+        return EmbeddedServer(config.rootConfig, GRPC) {
+            takeFrom(config.engineConfig)
+            loadConfiguration(config.rootConfig.environment.config)
+            configure.invoke(this, config.rootConfig.environment.config)
         }
-        engine.start()
     }
 
     private fun GRPCApplicationEngine.Configuration.loadConfiguration(config: ApplicationConfig) {
@@ -55,7 +45,7 @@ object EngineMain {
                 }
             }
         }
-        wait = config.propertyOrNull("wait")?.getString()?.toBooleanStrictOrNull() ?: true
-        startEnvironment = config.propertyOrNull("startEnvironment")?.getString()?.toBooleanStrictOrNull() ?: true
+        wait = config.propertyOrNull("wait")?.getString()?.toBooleanStrictOrNull() != false
+        startEnvironment = config.propertyOrNull("startEnvironment")?.getString()?.toBooleanStrictOrNull() != false
     }
 }

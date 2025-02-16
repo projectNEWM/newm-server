@@ -62,6 +62,7 @@ import java.time.LocalDateTime
 import java.util.UUID
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import org.jetbrains.exposed.dao.id.EntityID
@@ -168,7 +169,9 @@ open class BaseApplicationTests {
                 EarningsTable
             )
         }
-        application.start()
+        runBlocking {
+            application.start()
+        }
         loadKoinModules(
             module {
                 single { mockk<GoogleUserProvider>(relaxed = true) }

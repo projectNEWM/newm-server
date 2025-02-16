@@ -2,7 +2,7 @@ package io.newm.server.client.auth
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
-import io.ktor.client.plugins.auth.Auth
+import io.ktor.client.plugins.auth.AuthConfig
 import io.ktor.client.plugins.auth.providers.BearerTokens
 import io.ktor.client.plugins.auth.providers.bearer
 import io.ktor.server.application.ApplicationEnvironment
@@ -16,7 +16,7 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.Date
 
-fun Auth.appleMusicBearer() =
+fun AuthConfig.appleMusicBearer() =
     bearer {
         val loader = AppleMusicTokenLoader()
 

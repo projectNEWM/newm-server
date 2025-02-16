@@ -143,7 +143,7 @@ internal class SongRepositoryImpl(
                     }.id.value
             SongEntity
                 .new {
-                    archived = song.archived ?: false
+                    archived = song.archived == true
                     this.ownerId = EntityID(ownerId, UserTable)
                     this.title = title
                     this.genres = genres
@@ -152,7 +152,7 @@ internal class SongRepositoryImpl(
                     this.releaseId = EntityID(releaseId, ReleaseTable)
                     track = song.track
                     language = song.language
-                    coverRemixSample = song.coverRemixSample ?: false
+                    coverRemixSample = song.coverRemixSample == true
                     compositionCopyrightOwner = song.compositionCopyrightOwner
                     compositionCopyrightYear = song.compositionCopyrightYear
                     phonographicCopyrightOwner = song.phonographicCopyrightOwner

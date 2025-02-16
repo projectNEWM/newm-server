@@ -85,7 +85,7 @@ object Dependencies {
         const val CLIENT_SERIALIZATION = "io.ktor:ktor-client-serialization:$VERSION"
         const val SERIALIZATION = "io.ktor:ktor-serialization:$VERSION"
         const val SERIALIZATION_JSON = "io.ktor:ktor-serialization-kotlinx-json:$VERSION"
-        const val SERVER_TESTS = "io.ktor:ktor-server-tests:$VERSION"
+        const val SERVER_TESTS = "io.ktor:ktor-server-test-host:$VERSION"
         const val SERVER_FORWARDED_HEADER = "io.ktor:ktor-server-forwarded-header:$VERSION"
         const val SERVER_SWAGGER = "io.ktor:ktor-server-swagger:$VERSION"
     }
@@ -99,7 +99,7 @@ object Dependencies {
     object Koin {
         private const val VERSION = Versions.KOIN
 
-        const val KTOR = "io.insert-koin:koin-ktor:$VERSION"
+        const val KTOR = "io.insert-koin:koin-ktor3:$VERSION"
         const val TEST = "io.insert-koin:koin-test:$VERSION"
         const val JUNIT = "io.insert-koin:koin-test-junit5:$VERSION"
     }

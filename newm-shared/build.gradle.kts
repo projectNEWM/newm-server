@@ -25,6 +25,7 @@ dependencies {
 
     implementation(Dependencies.KotlinXSerialization.JSON)
 
+    implementation(Dependencies.Ktor.SERVER_CORE)
     implementation(Dependencies.Koin.KTOR)
 
     implementation(Dependencies.Exposed.CORE)

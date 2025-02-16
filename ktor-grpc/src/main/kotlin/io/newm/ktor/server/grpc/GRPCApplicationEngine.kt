@@ -2,13 +2,16 @@ package io.newm.ktor.server.grpc
 
 import io.grpc.Server
 import io.grpc.ServerBuilder
+import io.ktor.events.Events
 import io.ktor.events.raiseCatching
+import io.ktor.server.application.Application
+import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.server.application.ApplicationStopPreparing
 import io.ktor.server.application.ServerReady
 import io.ktor.server.engine.ApplicationEngine
-import io.ktor.server.engine.ApplicationEngineEnvironment
 import io.ktor.server.engine.ApplicationEngineFactory
 import io.ktor.server.engine.BaseApplicationEngine
+import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CompletableJob
 import kotlinx.coroutines.CoroutineScope
@@ -20,19 +23,26 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.slf4j.LoggerFactory
-import java.util.concurrent.atomic.AtomicReference
 
 object GRPC : ApplicationEngineFactory<GRPCApplicationEngine, GRPCApplicationEngine.Configuration> {
+    override fun configuration(configure: GRPCApplicationEngine.Configuration.() -> Unit): GRPCApplicationEngine.Configuration = GRPCApplicationEngine.Configuration().apply(configure)
+
     override fun create(
-        environment: ApplicationEngineEnvironment,
-        configure: GRPCApplicationEngine.Configuration.() -> Unit
-    ): GRPCApplicationEngine = GRPCApplicationEngine(environment, configure)
+        environment: ApplicationEnvironment,
+        monitor: Events,
+        developmentMode: Boolean,
+        configuration: GRPCApplicationEngine.Configuration,
+        applicationProvider: () -> Application,
+    ): GRPCApplicationEngine = GRPCApplicationEngine(environment, monitor, developmentMode, configuration, applicationProvider)
 }
 
 class GRPCApplicationEngine(
-    environment: ApplicationEngineEnvironment,
-    configure: Configuration.() -> Unit = {}
-) : BaseApplicationEngine(environment) {
+    environment: ApplicationEnvironment,
+    monitor: Events,
+    developmentMode: Boolean,
+    private val configuration: Configuration,
+    private val applicationProvider: () -> Application,
+) : BaseApplicationEngine(environment, monitor, developmentMode) {
     private val log by lazy { LoggerFactory.getLogger("GRPCApplicationEngine") }
 
     class Configuration : BaseApplicationEngine.Configuration() {
@@ -42,8 +52,6 @@ class GRPCApplicationEngine(
         internal var configFileServerConfigurer: ServerBuilder<*>.() -> Unit = {}
         var startEnvironment: Boolean = true
     }
-
-    private val configuration = Configuration().apply(configure)
 
     private val engineDispatcher = Dispatchers.IO
     private val userDispatcher = Dispatchers.IO
@@ -60,56 +68,60 @@ class GRPCApplicationEngine(
         serverJob.get().invokeOnCompletion { cause ->
             cause?.let { stopRequest.completeExceptionally(cause) }
             cause?.let { startupJob.completeExceptionally(cause) }
-            environment.stop()
         }
     }
 
-    override fun start(wait: Boolean): ApplicationEngine {
+    override suspend fun startSuspend(wait: Boolean): ApplicationEngine {
         serverJob.get().start()
 
-        runBlocking {
-            startupJob.await()
-            environment.monitor.raiseCatching(ServerReady, environment, environment.log)
+        startupJob.await()
+        monitor.raiseCatching(ServerReady, environment, environment.log)
 
-            if (wait || configuration.wait) {
-                serverJob.get().join()
-            }
+        if (wait) {
+            serverJob.get().join()
         }
 
         return this
     }
 
-    override fun stop(
+    override fun start(wait: Boolean): ApplicationEngine =
+        runBlocking {
+            startSuspend(wait)
+        }
+
+    override suspend fun stopSuspend(
         gracePeriodMillis: Long,
         timeoutMillis: Long
     ) {
         stopRequest.complete()
 
-        runBlocking {
-            val result =
-                withTimeoutOrNull(gracePeriodMillis) {
-                    serverJob.get().join()
-                    true
-                }
+        val result = withTimeoutOrNull(gracePeriodMillis) {
+            serverJob.get().join()
+            true
+        }
 
-            if (result == null) {
-                // timeout
-                serverJob.get().cancel()
+        if (result == null) {
+            // timeout
+            serverJob.get().cancel()
 
-                val forceShutdown =
-                    withTimeoutOrNull(timeoutMillis - gracePeriodMillis) {
-                        serverJob.get().join()
-                        false
-                    } ?: true
+            val forceShutdown = withTimeoutOrNull(timeoutMillis - gracePeriodMillis) {
+                serverJob.get().join()
+                false
+            } != false
 
-                if (forceShutdown) {
-                    environment.stop()
-                    if (::server.isInitialized && !server.isTerminated) {
-                        server.shutdownNow()
-                    }
+            if (forceShutdown) {
+                if (::server.isInitialized && !server.isTerminated) {
+                    server.shutdownNow()
                 }
             }
         }
+    }
+
+    override fun stop(
+        gracePeriodMillis: Long,
+        timeoutMillis: Long
+    ) = runBlocking {
+        stopSuspend(gracePeriodMillis, timeoutMillis)
     }
 
     private fun initServerJob(): Job {
@@ -119,15 +131,9 @@ class GRPCApplicationEngine(
         val startupJob = startupJob
 
         return CoroutineScope(
-            environment.parentCoroutineContext + engineDispatcher
+            applicationProvider().parentCoroutineContext + engineDispatcher
         ).launch(start = CoroutineStart.LAZY) {
             try {
-                if (configuration.startEnvironment) {
-                    withContext(userDispatcher) {
-                        environment.start()
-                    }
-                }
-
                 // Start the GRPC server
                 server =
                     ServerBuilder
@@ -152,7 +158,7 @@ class GRPCApplicationEngine(
             stopRequest.join()
 
             withContext(userDispatcher) {
-                environment.monitor.raise(ApplicationStopPreparing, environment)
+                monitor.raise(ApplicationStopPreparing, environment)
             }
 
             // We've gotten a stopRequest. Shutdown and wait here for termination.

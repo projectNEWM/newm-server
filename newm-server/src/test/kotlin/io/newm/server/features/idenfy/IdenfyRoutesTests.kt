@@ -1,24 +1,29 @@
 package io.newm.server.features.idenfy
 
 import com.google.common.truth.Truth.assertThat
-import io.ktor.client.call.*
-import io.ktor.client.request.*
-import io.ktor.http.*
+import io.ktor.client.call.body
+import io.ktor.client.request.bearerAuth
+import io.ktor.client.request.get
+import io.ktor.client.request.header
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.contentType
 import io.newm.server.BaseApplicationTests
-import io.newm.shared.koin.inject
-import io.newm.shared.ktx.toHexString
 import io.newm.server.features.idenfy.model.IdenfyCreateSessionResponse
 import io.newm.server.features.idenfy.model.IdenfySessionResult
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.model.UserVerificationStatus
+import io.newm.shared.koin.inject
+import io.newm.shared.ktx.toHexString
+import java.lang.System.currentTimeMillis
+import java.security.Key
+import javax.crypto.Mac
 import kotlinx.coroutines.runBlocking
-import kotlinx.html.currentTimeMillis
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.junit.jupiter.api.Test
-import java.security.Key
-import javax.crypto.Mac
 
 class IdenfyRoutesTests : BaseApplicationTests() {
     @Test
