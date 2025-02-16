@@ -1,7 +1,7 @@
 package io.newm.server.client.auth
 
 import io.ktor.client.HttpClient
-import io.ktor.client.plugins.auth.Auth
+import io.ktor.client.plugins.auth.AuthConfig
 import io.ktor.client.plugins.auth.providers.BearerTokens
 import io.ktor.client.plugins.auth.providers.bearer
 import io.ktor.client.request.accept
@@ -16,7 +16,7 @@ import io.newm.server.ktx.getSecureConfigString
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.getConfigString
 
-fun Auth.spotifyBearer() =
+fun AuthConfig.spotifyBearer() =
     bearer {
         val loader = SpotifyTokenLoader()
 

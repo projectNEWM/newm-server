@@ -2,13 +2,16 @@ package io.newm.server.ktx
 
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
+import io.ktor.server.application.PipelineCall
 import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.auth.principal
 import io.ktor.server.request.ApplicationReceivePipeline
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
+import io.ktor.server.routing.RoutingCall
 import io.ktor.utils.io.ByteReadChannel
-import io.ktor.utils.io.bits.Memory
+import io.ktor.utils.io.availableForRead
+import io.ktor.utils.io.lookAhead
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.model.ClientPlatform
 import io.newm.server.model.FilterCriteria
@@ -23,13 +26,13 @@ import io.newm.shared.ktx.orZero
 import io.newm.shared.ktx.toHexString
 import io.newm.shared.ktx.toLocalDateTime
 import io.newm.shared.ktx.toUUID
-import org.jetbrains.exposed.sql.SortOrder
 import java.nio.ByteBuffer
 import java.security.Key
 import java.time.LocalDateTime
 import java.util.UUID
 import javax.crypto.Mac
 import kotlin.reflect.KClass
+import org.jetbrains.exposed.sql.SortOrder
 
 val ApplicationCall.jwtPrincipal: JWTPrincipal
     get() = principal()!!
@@ -163,11 +166,25 @@ suspend fun <T : Any> ApplicationCall.receiveAndVerify(
             init(key)
         }
 
-    request.pipeline.intercept(ApplicationReceivePipeline.Before) { data ->
+    val pipeline = when (this) {
+        is PipelineCall -> this.request.pipeline
+        is RoutingCall -> this.pipelineCall.request.pipeline
+        else -> throw IllegalStateException("ApplicationCall must be a PipelineCall or RoutingCall: ${this::class.java.canonicalName}")
+    }
+
+    pipeline.intercept(ApplicationReceivePipeline.Before) { data ->
         val channel = data as ByteReadChannel
         val size = channel.availableForRead
-        val buffer = ByteBuffer.allocate(size)
-        channel.peekTo(Memory(buffer), 0, 0, size.toLong(), size.toLong())
+        lateinit var buffer: ByteBuffer
+        channel.lookAhead {
+            if (this.awaitAtLeast(size)) {
+                buffer =
+                    this.request(0, size) ?: throw HttpUnauthorizedException("invalid signature. not enough bytes.")
+            } else {
+                throw HttpUnauthorizedException("invalid signature. not enough bytes.")
+            }
+        }
+
         mac.update(buffer)
         if (mac.doFinal().toHexString() != signature) {
             throw HttpUnauthorizedException("invalid signature")

@@ -64,7 +64,7 @@ fun main(args: Array<String>) {
 
     printJvmCommandLine()
     io.newm.ktor.server.grpc.EngineMain
-        .main(args, null, GrpcConfig.init)
+        .main(args, GrpcConfig.init)
 }
 
 @Suppress("unused")
