@@ -10,15 +10,15 @@ object EngineMain {
      * GRPC engine entry point
      */
     @JvmStatic
-    public fun main(
+    fun main(
         args: Array<String>,
         configure: GRPCApplicationEngine.Configuration.(appConfig: ApplicationConfig) -> Unit = {}
     ) {
         val server = createServer(args, configure)
-        server.start(true)
+        server.start(server.engineConfig.wait)
     }
 
-    public fun createServer(
+    fun createServer(
         args: Array<String>,
         configure: GRPCApplicationEngine.Configuration.(appConfig: ApplicationConfig) -> Unit = {},
     ): EmbeddedServer<GRPCApplicationEngine, GRPCApplicationEngine.Configuration> {
@@ -30,12 +30,12 @@ object EngineMain {
         }
     }
 
-    private fun GRPCApplicationEngine.Configuration.loadConfiguration(config: ApplicationConfig) {
+    fun GRPCApplicationEngine.Configuration.loadConfiguration(config: ApplicationConfig) {
         val grpcConfig = config.config("grpc")
         loadGrpcConfiguration(grpcConfig)
     }
 
-    private fun GRPCApplicationEngine.Configuration.loadGrpcConfiguration(config: ApplicationConfig) {
+    fun GRPCApplicationEngine.Configuration.loadGrpcConfiguration(config: ApplicationConfig) {
         port = config.property("port").getString().toInt()
         configFileServerConfigurer = {
             config.propertyOrNull("services")?.getList()?.let { services ->
@@ -46,6 +46,5 @@ object EngineMain {
             }
         }
         wait = config.propertyOrNull("wait")?.getString()?.toBooleanStrictOrNull() != false
-        startEnvironment = config.propertyOrNull("startEnvironment")?.getString()?.toBooleanStrictOrNull() != false
     }
 }

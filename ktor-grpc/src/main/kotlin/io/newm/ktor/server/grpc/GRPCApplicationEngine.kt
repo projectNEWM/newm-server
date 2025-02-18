@@ -50,7 +50,6 @@ class GRPCApplicationEngine(
         var wait: Boolean = false
         var serverConfigurer: ServerBuilder<*>.() -> Unit = {}
         internal var configFileServerConfigurer: ServerBuilder<*>.() -> Unit = {}
-        var startEnvironment: Boolean = true
     }
 
     private val engineDispatcher = Dispatchers.IO
