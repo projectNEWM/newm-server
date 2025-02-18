@@ -8,7 +8,7 @@ fun Application.initializeDaemons() {
     val daemons = getKoin().getAll<Daemon>()
 
     // Add shutdown hook
-    environment.monitor.subscribe(ApplicationStopPreparing) {
+    monitor.subscribe(ApplicationStopPreparing) {
         // Shutdown the Daemons
         daemons.forEach { daemon -> daemon.shutdown() }
     }
