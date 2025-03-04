@@ -27,6 +27,7 @@ service NewmChain {
   rpc QueryWalletControlledLiveUtxos (WalletRequest) returns (QueryWalletControlledUtxosResponse);
   rpc QueryPublicKeyHashByOutputRef (QueryUtxosOutputRefRequest) returns (QueryPublicKeyHashResponse);
   rpc QueryUtxoByNativeAsset (QueryByNativeAssetRequest) returns (Utxo);
+  rpc QueryLiveUtxoByNativeAsset (QueryByNativeAssetRequest) returns (Utxo);
   rpc AcquireMutex (AcquireMutexRequest) returns (MutexResponse);
   rpc ReleaseMutex (ReleaseMutexRequest) returns (MutexResponse);
   rpc Ping (PingRequest) returns (PongResponse);

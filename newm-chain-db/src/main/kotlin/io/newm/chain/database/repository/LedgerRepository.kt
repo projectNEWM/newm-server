@@ -130,6 +130,11 @@ interface LedgerRepository {
         policy: String
     ): Utxo?
 
+    suspend fun queryLiveUtxoByNativeAsset(
+        name: String,
+        policy: String
+    ): Utxo?
+
     fun snapshotNativeAssets(
         policy: String,
         name: String

@@ -77,6 +77,7 @@ object Constants {
     val TX_CERTS_INDEX: CborInteger = CborInteger.create(4)
     val TX_MINTS_INDEX: CborInteger = CborInteger.create(9)
     val TX_COLLAT_UTXOS_INDEX: CborInteger = CborInteger.create(13)
+    val TX_WITNESS_DATUM_INDEX: CborInteger = CborInteger.create(4)
 
     val STAKE_REGISTRATION_CERT_INDEX: BigInteger = BigInteger.valueOf(0L)
     val STAKE_DEREGISTRATION_CERT_INDEX: BigInteger = BigInteger.valueOf(1L)

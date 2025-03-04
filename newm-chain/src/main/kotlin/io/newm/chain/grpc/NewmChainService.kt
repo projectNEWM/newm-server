@@ -130,30 +130,33 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
         }
     }
 
+    private fun io.newm.chain.model.Utxo?.toRpcUtxo(): Utxo =
+        this?.let { utxo ->
+            utxo {
+                address = utxo.address
+                hash = utxo.hash
+                ix = utxo.ix
+                lovelace = utxo.lovelace.toString()
+                utxo.datumHash?.let { datumHash = it }
+                utxo.datum?.let {
+                    datum = it.cborHexToPlutusData()
+                }
+                nativeAssets.addAll(
+                    utxo.nativeAssets.map { nativeAsset ->
+                        nativeAsset {
+                            policy = nativeAsset.policy
+                            name = nativeAsset.name
+                            amount = nativeAsset.amount.toString()
+                        }
+                    }
+                )
+            }
+        } ?: utxo { }
+
     private fun Set<io.newm.chain.model.Utxo>.toQueryUtxosResponse(): QueryUtxosResponse =
         queryUtxosResponse {
             utxos.addAll(
-                this@toQueryUtxosResponse.map { utxo ->
-                    utxo {
-                        address = utxo.address
-                        hash = utxo.hash
-                        ix = utxo.ix
-                        lovelace = utxo.lovelace.toString()
-                        utxo.datumHash?.let { datumHash = it }
-                        utxo.datum?.let {
-                            datum = it.cborHexToPlutusData()
-                        }
-                        nativeAssets.addAll(
-                            utxo.nativeAssets.map { nativeAsset ->
-                                nativeAsset {
-                                    policy = nativeAsset.policy
-                                    name = nativeAsset.name
-                                    amount = nativeAsset.amount.toString()
-                                }
-                            }
-                        )
-                    }
-                }
+                this@toQueryUtxosResponse.map { utxo -> utxo.toRpcUtxo() }
             )
         }
 
@@ -697,30 +700,20 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
 
     override suspend fun queryUtxoByNativeAsset(request: QueryByNativeAssetRequest): Utxo {
         try {
-            return ledgerRepository.queryUtxoByNativeAsset(request.name, request.policy)?.let { utxo ->
-                utxo {
-                    address = utxo.address
-                    hash = utxo.hash
-                    ix = utxo.ix
-                    lovelace = utxo.lovelace.toString()
-                    utxo.datumHash?.let { datumHash = it }
-                    utxo.datum?.let {
-                        datum = it.cborHexToPlutusData()
-                    }
-                    nativeAssets.addAll(
-                        utxo.nativeAssets.map { nativeAsset ->
-                            nativeAsset {
-                                policy = nativeAsset.policy
-                                name = nativeAsset.name
-                                amount = nativeAsset.amount.toString()
-                            }
-                        }
-                    )
-                }
-            } ?: utxo { }
+            return ledgerRepository.queryUtxoByNativeAsset(request.name, request.policy).toRpcUtxo()
         } catch (e: Throwable) {
             Sentry.addBreadcrumb(request.toString(), "NewmChainService")
             log.error(e) { "queryUtxoByNativeAsset error!" }
+            throw e
+        }
+    }
+
+    override suspend fun queryLiveUtxoByNativeAsset(request: QueryByNativeAssetRequest): Utxo {
+        try {
+            return ledgerRepository.queryLiveUtxoByNativeAsset(request.name, request.policy).toRpcUtxo()
+        } catch (e: Throwable) {
+            Sentry.addBreadcrumb(request.toString(), "NewmChainService")
+            log.error(e) { "queryLiveUtxoByNativeAsset error!" }
             throw e
         }
     }
