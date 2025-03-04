@@ -34,6 +34,7 @@ import io.newm.chain.util.Bech32
 import io.newm.chain.util.Blake2b
 import io.newm.chain.util.Constants.TX_DEST_UTXOS_INDEX
 import io.newm.chain.util.Constants.TX_SPENT_UTXOS_INDEX
+import io.newm.chain.util.Constants.TX_WITNESS_DATUM_INDEX
 import io.newm.chain.util.Constants.UTXO_ADDRESS_INDEX
 import io.newm.chain.util.Constants.UTXO_AMOUNT_INDEX
 import io.newm.chain.util.Constants.UTXO_DATUM_INDEX
@@ -261,6 +262,11 @@ class LedgerRepositoryImpl : LedgerRepository {
                 }
         }
 
+    override suspend fun queryLiveUtxoByNativeAsset(
+        name: String,
+        policy: String
+    ): Utxo? = findLiveUtxoByNativeAsset(name, policy) ?: queryUtxoByNativeAsset(name, policy)
+
     override fun queryPublicKeyHashByOutputRef(
         hash: String,
         ix: Int
@@ -357,6 +363,24 @@ class LedgerRepositoryImpl : LedgerRepository {
         }
     }
 
+    /**
+     * Search the liveUtxoMap to see if it contains any utxo with the given name and policy.
+     */
+    private suspend fun findLiveUtxoByNativeAsset(
+        name: String,
+        policy: String,
+    ): Utxo? {
+        utxoMutex.withLock {
+            return liveUtxoMap.firstNotNullOfOrNull { (_, utxos) ->
+                utxos.firstOrNull { utxo ->
+                    utxo.nativeAssets.firstOrNull { nativeAsset ->
+                        nativeAsset.name == name && nativeAsset.policy == policy
+                    } != null
+                }
+            }
+        }
+    }
+
     override suspend fun updateLiveLedgerState(
         transactionId: String,
         cborByteArray: ByteArray
@@ -364,6 +388,7 @@ class LedgerRepositoryImpl : LedgerRepository {
         utxoMutex.withLock {
             val tx = CborReader.createFromByteArray(cborByteArray).readDataItem() as CborArray
             val txBody = tx.elementAt(0) as CborMap
+            val witnessSet = tx.elementAt(1) as CborMap
             val utxosInArray = txBody[TX_SPENT_UTXOS_INDEX] as CborArray
             utxosInArray.forEach { utxo ->
                 var hash = ""
@@ -486,11 +511,19 @@ class LedgerRepositoryImpl : LedgerRepository {
                                 0 -> {
                                     // datum hash
                                     datumHash = datumHashArray.elementToByteArray(1).toHexString()
+                                    datum =
+                                        (witnessSet[TX_WITNESS_DATUM_INDEX] as? CborArray)
+                                            ?.firstOrNull { datumItem ->
+                                                Blake2b.hash256(datumItem.toCborByteArray()).toHexString() == datumHash
+                                            }?.toCborByteArray()
+                                            ?.toHexString()
                                 }
 
                                 1 -> {
                                     // inline datum
-                                    datum = datumHashArray.elementToByteArray(1).toHexString()
+                                    val datumBytes = datumHashArray.elementToByteArray(1)
+                                    datum = datumBytes.toHexString()
+                                    datumHash = Blake2b.hash256(datumBytes).toHexString()
                                 }
 
                                 else -> throw IllegalStateException("datum is not a hash or inline datum!")
