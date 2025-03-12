@@ -73,6 +73,7 @@ import io.newm.server.features.cardano.repo.CardanoRepository.Companion.NEWM_TOK
 import io.newm.server.features.cardano.repo.CardanoRepository.Companion.NEWM_TOKEN_NAME_TEST
 import io.newm.server.features.cardano.repo.CardanoRepository.Companion.NEWM_TOKEN_POLICY
 import io.newm.server.features.cardano.repo.CardanoRepository.Companion.NEWM_TOKEN_POLICY_TEST
+import io.newm.server.features.dripdropz.repo.DripDropzRepository
 import io.newm.server.features.nftcdn.repo.NftCdnRepository
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongFilters
@@ -112,6 +113,7 @@ internal class CardanoRepositoryImpl(
     private val kmsKeyId: String,
     private val configRepository: ConfigRepository,
     private val nftCdnRepository: NftCdnRepository,
+    private val dripDropzRepository: DripDropzRepository
 ) : CardanoRepository {
     private val logger = KotlinLogging.logger {}
 
@@ -570,9 +572,10 @@ internal class CardanoRepositoryImpl(
 
     override suspend fun getWalletNFTSongs(
         userId: UserId,
-        includeLegacy: Boolean
+        includeLegacy: Boolean,
+        useDripDropz: Boolean
     ): List<NFTSong> {
-        val assets = getWalletAssets(userId)
+        val assets = if (useDripDropz) getDripDropzAssets(userId) else getWalletAssets(userId)
         val nftSongs = mutableListOf<NFTSong>()
         val streamTokenPolicyIds = configRepository.getStrings(CONFIG_KEY_MINT_ALL_POLICY_IDS)
         val isNftCdnEnabled = configRepository.getBoolean(CONFIG_KEY_NFTCDN_ENABLED)
@@ -597,19 +600,36 @@ internal class CardanoRepositoryImpl(
         }
     }
 
-    private suspend fun getWalletAssets(userId: UserId): List<NativeAsset> {
-        val nativeAssets = mutableListOf<NativeAsset>()
-        val stakeAddresses = transaction { WalletConnectionEntity.getAllByUserId(userId).map { it.stakeAddress } }
-        for (stakeAddress in stakeAddresses) {
-            val response = client.queryUtxosByStakeAddress(
-                queryUtxosRequest {
-                    address = stakeAddress
-                }
-            )
-            nativeAssets += response.utxosList.flatMap(Utxo::getNativeAssetsList)
+    private fun getStakeAddressesByUserId(userId: UserId): List<String> =
+        transaction {
+            WalletConnectionEntity.getAllByUserId(userId).map { it.stakeAddress }
         }
-        return nativeAssets.mergeAmounts()
-    }
+
+    private suspend fun getWalletAssets(userId: UserId): List<NativeAsset> =
+        getStakeAddressesByUserId(userId)
+            .flatMap {
+                client
+                    .queryUtxosByStakeAddress(
+                        queryUtxosRequest {
+                            address = it
+                        }
+                    ).utxosList
+                    .flatMap { it.nativeAssetsList }
+            }.mergeAmounts()
+
+    private suspend fun getDripDropzAssets(userId: UserId): List<NativeAsset> =
+        getStakeAddressesByUserId(userId)
+            .flatMap { dripDropzRepository.checkAvailableTokens(it) }
+            .map {
+                nativeAsset {
+                    policy = it.tokenPolicy
+                    name = it.tokenAssetId
+                    amount = it.availableQuantity
+                        .movePointRight(6)
+                        .toBigInteger()
+                        .toString()
+                }
+            }.mergeAmounts()
 
     private suspend fun getAssetMetadata(asset: NativeAsset): List<LedgerAssetMetadataItem> =
         client

@@ -19,7 +19,7 @@ class OracleParseTests : BaseApplicationTests() {
         runBlocking {
             val startTimestamp = System.currentTimeMillis() - 1000L
             val endTimestamp = startTimestamp + 3600000L // plus 1 hour
-            val cardanoRepository = CardanoRepositoryImpl(mockk(), mockk(), "kmsKeyId", mockk(), mockk())
+            val cardanoRepository = CardanoRepositoryImpl(mockk(), mockk(), "kmsKeyId", mockk(), mockk(), mockk())
             cardanoRepository.isMainnet = false
             cardanoRepository.oracleUtxoCache.put(
                 "newm",
