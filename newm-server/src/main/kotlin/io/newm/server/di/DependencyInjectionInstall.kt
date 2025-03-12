@@ -14,6 +14,7 @@ import io.newm.server.features.cloudinary.cloudinaryKoinModule
 import io.newm.server.features.collaboration.collaborationKoinModule
 import io.newm.server.features.daemon.daemonsKoinModule
 import io.newm.server.features.distribution.distributionKoinModule
+import io.newm.server.features.dripdropz.dripDropzKoinModule
 import io.newm.server.features.earnings.earningsKoinModule
 import io.newm.server.features.email.emailKoinModule
 import io.newm.server.features.idenfy.idenfyKoinModule
@@ -66,6 +67,7 @@ fun Application.installDependencyInjection() {
             walletConnectionKoinModule,
             marketplaceKoinModule,
             nftCdnKoinModule,
+            dripDropzKoinModule,
         )
     }
 }

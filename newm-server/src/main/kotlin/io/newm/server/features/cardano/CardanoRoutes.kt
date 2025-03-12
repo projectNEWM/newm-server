@@ -156,7 +156,8 @@ fun Routing.createCardanoRoutes() {
                     respond(
                         cardanoRepository.getWalletNFTSongs(
                             userId = myUserId,
-                            includeLegacy = parameters["legacy"]?.toBoolean() ?: false
+                            includeLegacy = parameters["legacy"]?.toBoolean() == true,
+                            useDripDropz = parameters["dripDropz"]?.toBoolean() == true
                         )
                     )
                 } catch (e: Exception) {

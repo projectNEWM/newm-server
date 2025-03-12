@@ -24,6 +24,7 @@ val cardanoKoinModule =
                 runBlocking { get<ApplicationEnvironment>().getSecureConfigString("aws.kms.keyId") },
                 get(),
                 get(),
+                get(),
             )
         }
         single<NewmChainCoroutineStub> {

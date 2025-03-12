@@ -96,7 +96,8 @@ interface CardanoRepository {
 
     suspend fun getWalletNFTSongs(
         userId: UserId,
-        includeLegacy: Boolean
+        includeLegacy: Boolean,
+        useDripDropz: Boolean
     ): List<NFTSong>
 
     suspend fun getWalletImages(userId: UserId): List<String>
