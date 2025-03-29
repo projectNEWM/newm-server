@@ -119,6 +119,8 @@ dependencies {
 
     testImplementation(Dependencies.Ktor.CLIENT_LOGGING)
     testImplementation(Dependencies.JUnit.JUPITER)
+    testRuntimeOnly(Dependencies.JUnit.JUPITER_ENGINE)
+    testRuntimeOnly(Dependencies.JUnit.JUPITER_PLATFORM)
     testImplementation(Dependencies.Mockk.MOCKK)
     testImplementation(Dependencies.GoogleTruth.TRUTH)
     testImplementation(Dependencies.Ktor.SERVER_TESTS)
@@ -126,11 +128,14 @@ dependencies {
     testImplementation(Dependencies.Koin.JUNIT)
     testImplementation(Dependencies.TestContainers.CORE)
     testImplementation(Dependencies.TestContainers.JUINT)
+    testRuntimeOnly(Dependencies.JUnit.JUPITER_ENGINE)
+    testRuntimeOnly(Dependencies.JUnit.JUPITER_PLATFORM)
     testImplementation(Dependencies.TestContainers.POSTGRESQL)
 
     "integTestImplementation"(project)
     "integTestImplementation"(Dependencies.JUnit.JUPITER)
-    "integTestRuntimeOnly"("org.junit.platform:junit-platform-launcher")
+    "integTestRuntimeOnly"(Dependencies.JUnit.JUPITER_ENGINE)
+    "integTestRuntimeOnly"(Dependencies.JUnit.JUPITER_PLATFORM)
     "integTestImplementation"(Dependencies.Typesafe.CONFIG)
 }
 

@@ -27,7 +27,6 @@ import io.newm.server.features.earnings.model.ClaimOrderStatus
 import io.newm.server.features.earnings.repo.EarningsRepository
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.toUUID
-import io.newm.txbuilder.ktx.extractFields
 import java.math.BigInteger
 import java.time.LocalDateTime
 import java.time.ZoneOffset
@@ -97,6 +96,15 @@ class MonitorClaimOrderJob : Job {
                             cardanoRepository.queryLiveUtxos(paymentKey.address).first {
                                 it.lovelace.toLong() == claimOrder.paymentAmount && it.nativeAssetsCount == 0
                             }
+
+                        // get the fee paid for the incoming paymentUtxo transaction. We will want to reimburse it
+                        // to the user in the claim transaction
+                        val txFeeToReimburseLovelace = 200_000L // 0.2 ADA
+                        // TODO: have newm chain record each transaction fee in the DB
+                        // Then reimburse the user the actual fee paid for the transaction or 0.2 ADA if the tx
+                        // fee is larger than that
+                        // cardanoRepository.getTxFee(paymentUtxo.hash)
+
                         val earningsWalletKey =
                             requireNotNull(cardanoRepository.getKeyByName("earningsWallet")) { "earningsWallet key not found" }
 
@@ -132,7 +140,6 @@ class MonitorClaimOrderJob : Job {
 
                             val signingKeys = listOf(paymentKey, earningsWalletKey, cashRegisterKey)
                             var signatures = cardanoRepository.signTransactionDummy(signingKeys)
-                            var txFee = 200_000L // 0.2 ADA
 
                             var transactionBuilderResponse =
                                 buildClaimTransaction(
@@ -141,42 +148,7 @@ class MonitorClaimOrderJob : Job {
                                     cashRegisterUtxos,
                                     receiveAddress,
                                     claimOrder,
-                                    txFee,
-                                    newmTokenPolicy,
-                                    newmTokenName,
-                                    newmAmountToClaim,
-                                    earningsWalletKey,
-                                    sourceNewmTokenAmount,
-                                    cashRegisterKey,
-                                    signatures
-                                )
-
-                            // check for errors in tx building
-                            if (transactionBuilderResponse.hasErrorMessage()) {
-                                val errorMessage =
-                                    "TransactionBuilder Error!: ${transactionBuilderResponse.errorMessage}"
-                                log.error { errorMessage }
-                                earningsRepository.update(
-                                    claimOrder.copy(
-                                        status = ClaimOrderStatus.Failed,
-                                        errorMessage = errorMessage
-                                    )
-                                )
-                                return@withLock
-                            }
-
-                            // Update the calculated txFee
-                            txFee = transactionBuilderResponse.extractFields().fee
-
-                            // Rebuild the transaction with the actual txFee
-                            transactionBuilderResponse =
-                                buildClaimTransaction(
-                                    paymentUtxo,
-                                    earningsUtxos,
-                                    cashRegisterUtxos,
-                                    receiveAddress,
-                                    claimOrder,
-                                    txFee,
+                                    txFeeToReimburseLovelace,
                                     newmTokenPolicy,
                                     newmTokenName,
                                     newmAmountToClaim,
@@ -211,7 +183,7 @@ class MonitorClaimOrderJob : Job {
                                     cashRegisterUtxos,
                                     receiveAddress,
                                     claimOrder,
-                                    txFee,
+                                    txFeeToReimburseLovelace,
                                     newmTokenPolicy,
                                     newmTokenName,
                                     newmAmountToClaim,
@@ -299,7 +271,7 @@ class MonitorClaimOrderJob : Job {
         cashRegisterUtxos: List<Utxo>,
         receiveAddress: String,
         claimOrder: ClaimOrder,
-        txFee: Long,
+        txFeeToReimburseLovelace: Long,
         newmTokenPolicy: String,
         newmTokenName: String,
         newmAmountToClaim: BigInteger,
@@ -319,7 +291,7 @@ class MonitorClaimOrderJob : Job {
             add(
                 outputUtxo {
                     address = receiveAddress
-                    lovelace = (claimOrder.paymentAmount - txFee).toString()
+                    lovelace = (claimOrder.paymentAmount + txFeeToReimburseLovelace).toString()
                     nativeAssets.add(
                         nativeAsset {
                             policy = newmTokenPolicy
