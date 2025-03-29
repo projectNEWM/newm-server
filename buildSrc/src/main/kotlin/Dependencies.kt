@@ -244,8 +244,11 @@ object Dependencies {
 
     object JUnit {
         private const val VERSION = Versions.JUNIT
+        private const val PLATFORM_VERSION = Versions.JUNIT_PLATFORM
 
         const val JUPITER = "org.junit.jupiter:junit-jupiter:$VERSION"
+        const val JUPITER_ENGINE = "org.junit.jupiter:junit-jupiter-engine:$VERSION"
+        const val JUPITER_PLATFORM = "org.junit.platform:junit-platform-launcher:$PLATFORM_VERSION"
     }
 
     object Cbor {

@@ -57,6 +57,8 @@ dependencies {
     api(Dependencies.GrpcKotlin.STUB)
 
     testImplementation(Dependencies.JUnit.JUPITER)
+    testRuntimeOnly(Dependencies.JUnit.JUPITER_ENGINE)
+    testRuntimeOnly(Dependencies.JUnit.JUPITER_PLATFORM)
     testImplementation(Dependencies.Mockk.MOCKK)
     testImplementation(Dependencies.GoogleTruth.TRUTH)
     testImplementation(Dependencies.Coroutines.TEST)
