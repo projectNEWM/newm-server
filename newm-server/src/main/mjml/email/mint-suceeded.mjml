@@ -30,7 +30,7 @@
           <ul style="padding-left:0;list-style-position:inside">{collabs}</ul>
         </mj-text>
         <mj-text padding-top="24px" color="#FFF" align="left" font-family="Inter,sans-serif" font-size="14px" font-style="normal" font-weight="500" line-height="18px">
-          Here's a recap on what this means: Your song's streaming rights have been successfully fractionalized and minted on the blockchain. That means you can officially create a Stream Token listing for your track(s) on the NEWM Marketplace where you can sell a percentage of these rights to your fans – pretty cool, right? <br><br>
+          Here's a recap on what this means: Your song's streaming rights have been successfully fractionalized and minted on the blockchain. That means you can officially create a Stream Token listing for your track(s) on the NEWM Marketplace where you can sell a percentage of these rights to your fans - pretty cool, right? <br><br>
           You can also keep track of and claim any available royalties that your song accrues via the Wallet page in NEWM Studio. Easy peasy.<br><br>
           For full details, please login to your profile at <a href="{webAppUrl}" style="color: #DC3CAA;text-decoration: none;font-weight: 700">newm.studio</a>.<br><br>
           Cheers, The NEWM Team<br><br>
