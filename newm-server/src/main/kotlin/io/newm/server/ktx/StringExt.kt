@@ -5,6 +5,8 @@ import com.google.iot.cbor.CborByteString
 import com.google.iot.cbor.CborInteger
 import com.google.iot.cbor.CborMap
 import com.google.iot.cbor.CborObject
+import io.ktor.client.HttpClient
+import io.ktor.client.request.head
 import io.newm.chain.grpc.Utxo
 import io.newm.chain.grpc.nativeAsset
 import io.newm.chain.grpc.utxo
@@ -21,6 +23,7 @@ import io.newm.shared.ktx.isValidEmail
 import io.newm.shared.ktx.isValidName
 import io.newm.shared.ktx.isValidUrl
 import io.newm.shared.ktx.toHexString
+import io.newm.shared.test.TestUtils
 import io.newm.txbuilder.ktx.toNativeAssetMap
 
 fun String.checkLength(
@@ -45,6 +48,25 @@ fun String?.asValidEmail(): String {
 fun String?.asValidUrl(): String {
     if (isNullOrBlank()) throw HttpBadRequestException("Missing url")
     if (!isValidUrl()) throw HttpUnprocessableEntityException("Invalid url: $this")
+    return this
+}
+
+suspend fun String?.asValidUrlWithMinBytes(
+    httpClient: HttpClient,
+    minBytes: Long
+): String {
+    if (isNullOrBlank()) throw HttpBadRequestException("Missing url")
+    if (!isValidUrl()) throw HttpUnprocessableEntityException("Invalid url: $this")
+
+    if (!TestUtils.isRunningInTest()) {
+        // Get the content length of the URL
+        val response = httpClient.head(this)
+        val contentLength = response.headers["Content-Length"]?.toLongOrNull()
+            ?: throw HttpUnprocessableEntityException("Invalid url: $this, no content length")
+        if (contentLength < minBytes) {
+            throw HttpUnprocessableEntityException("Invalid url: $this, content length is less than $minBytes bytes")
+        }
+    }
     return this
 }
 

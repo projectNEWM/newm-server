@@ -2,6 +2,7 @@ package io.newm.server.features.song.repo
 
 import com.google.iot.cbor.CborInteger
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.ktor.client.HttpClient
 import io.ktor.http.URLBuilder
 import io.ktor.http.URLProtocol
 import io.ktor.http.encodedPath
@@ -53,6 +54,7 @@ import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
 import io.newm.server.features.user.model.UserVerificationStatus
 import io.newm.server.ktx.asValidUrl
+import io.newm.server.ktx.asValidUrlWithMinBytes
 import io.newm.server.ktx.await
 import io.newm.server.ktx.checkLength
 import io.newm.server.ktx.getSecureConfigString
@@ -73,6 +75,15 @@ import io.newm.shared.ktx.orNull
 import io.newm.shared.ktx.orZero
 import io.newm.shared.ktx.propertiesFromResource
 import io.newm.shared.ktx.toTempFile
+import java.math.BigDecimal
+import java.math.BigInteger
+import java.math.RoundingMode
+import java.net.URI
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.util.Properties
+import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -87,15 +98,6 @@ import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
-import java.math.BigDecimal
-import java.math.BigInteger
-import java.math.RoundingMode
-import java.net.URI
-import java.time.Instant
-import java.time.LocalDateTime
-import java.time.ZoneId
-import java.util.Properties
-import java.util.UUID
 
 internal class SongRepositoryImpl(
     private val environment: ApplicationEnvironment,
@@ -105,7 +107,8 @@ internal class SongRepositoryImpl(
     private val distributionRepository: DistributionRepository,
     private val collaborationRepository: CollaborationRepository,
     private val emailRepository: EmailRepository,
-    private val outletReleaseRepository: OutletReleaseRepository
+    private val outletReleaseRepository: OutletReleaseRepository,
+    private val httpClient: HttpClient,
 ) : SongRepository {
     private val logger = KotlinLogging.logger {}
     private val json: Json by inject()
@@ -123,6 +126,11 @@ internal class SongRepositoryImpl(
         val title = song.title ?: throw HttpUnprocessableEntityException("missing title")
         val genres = song.genres ?: throw HttpUnprocessableEntityException("missing genres")
         song.checkFieldLengths()
+
+        // Check coverArtUrl byte size to make sure it's over 100kb after compression
+        // on cloudinary.
+        song.coverArtUrl.asValidUrlWithMinBytes(httpClient, 102400L)
+
         return transaction {
             title.checkTitleUnique(ownerId, song.mintingStatus)
             val releaseId =
