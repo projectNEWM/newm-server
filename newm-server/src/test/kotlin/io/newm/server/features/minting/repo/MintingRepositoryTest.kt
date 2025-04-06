@@ -303,7 +303,7 @@ class MintingRepositoryTest : BaseApplicationTests() {
             setupDatabase()
 
             val songRepository: SongRepository =
-                SongRepositoryImpl(mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk())
+                SongRepositoryImpl(mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk())
             val collabRepository: CollaborationRepository = CollaborationRepositoryImpl(mockk(), mockk())
             val mintingRepository = MintingRepositoryImpl(mockk(), collabRepository, mockk(), mockk())
 
@@ -387,7 +387,7 @@ class MintingRepositoryTest : BaseApplicationTests() {
 
             val cardanoRepository = CardanoRepositoryImpl(client, mockk(), "", mockk(), mockk(), mockk())
             val songRepository: SongRepository =
-                SongRepositoryImpl(mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk())
+                SongRepositoryImpl(mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk())
             val collabRepository: CollaborationRepository = CollaborationRepositoryImpl(mockk(), mockk())
             val mintingRepository = MintingRepositoryImpl(mockk(), collabRepository, cardanoRepository, mockk())
 

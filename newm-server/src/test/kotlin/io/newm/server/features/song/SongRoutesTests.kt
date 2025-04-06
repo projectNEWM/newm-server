@@ -78,7 +78,8 @@ class SongRoutesTests : BaseApplicationTests() {
                     get(),
                     get(),
                     get(),
-                    get()
+                    get(),
+                    get(),
                 )
             }
         }
