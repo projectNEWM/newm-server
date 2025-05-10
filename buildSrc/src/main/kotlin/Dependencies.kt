@@ -98,10 +98,11 @@ object Dependencies {
 
     object Koin {
         private const val VERSION = Versions.KOIN
+        private const val VERSION_TEST = Versions.KOIN_TEST
 
         const val KTOR = "io.insert-koin:koin-ktor3:$VERSION"
-        const val TEST = "io.insert-koin:koin-test:$VERSION"
-        const val JUNIT = "io.insert-koin:koin-test-junit5:$VERSION"
+        const val TEST = "io.insert-koin:koin-test:$VERSION_TEST"
+        const val JUNIT = "io.insert-koin:koin-test-junit5:$VERSION_TEST"
     }
 
     object Exposed {
@@ -244,11 +245,12 @@ object Dependencies {
 
     object JUnit {
         private const val VERSION = Versions.JUNIT
-        private const val PLATFORM_VERSION = Versions.JUNIT_PLATFORM
 
-        const val JUPITER = "org.junit.jupiter:junit-jupiter:$VERSION"
-        const val JUPITER_ENGINE = "org.junit.jupiter:junit-jupiter-engine:$VERSION"
-        const val JUPITER_PLATFORM = "org.junit.platform:junit-platform-launcher:$PLATFORM_VERSION"
+        const val BOM = "org.junit:junit-bom:$VERSION"
+        const val JUPITER_API = "org.junit.jupiter:junit-jupiter-api"
+        const val JUPITER_PARAMS = "org.junit.jupiter:junit-jupiter-params"
+        const val JUPITER_ENGINE = "org.junit.jupiter:junit-jupiter-engine"
+        const val JUPITER_PLATFORM = "org.junit.platform:junit-platform-launcher"
     }
 
     object Cbor {

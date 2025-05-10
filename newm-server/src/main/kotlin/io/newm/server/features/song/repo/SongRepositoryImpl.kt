@@ -57,6 +57,7 @@ import io.newm.server.ktx.asValidUrl
 import io.newm.server.ktx.asValidUrlWithMinBytes
 import io.newm.server.ktx.await
 import io.newm.server.ktx.checkLength
+import io.newm.server.ktx.getFileSize
 import io.newm.server.ktx.getSecureConfigString
 import io.newm.server.model.FilterCriteria
 import io.newm.server.typealiases.ReleaseId
@@ -74,7 +75,9 @@ import io.newm.shared.ktx.getString
 import io.newm.shared.ktx.orNull
 import io.newm.shared.ktx.orZero
 import io.newm.shared.ktx.propertiesFromResource
+import io.newm.shared.ktx.removeCloudinaryResize
 import io.newm.shared.ktx.toTempFile
+import io.newm.shared.test.TestUtils
 import java.math.BigDecimal
 import java.math.BigInteger
 import java.math.RoundingMode
@@ -129,7 +132,11 @@ internal class SongRepositoryImpl(
 
         // Check coverArtUrl byte size to make sure it's over 100kb after compression
         // on cloudinary.
-        song.coverArtUrl.asValidUrlWithMinBytes(httpClient, 102400L)
+        var coverArtUrlFixed = song.coverArtUrl
+            ?.orNull()
+            ?.asValidUrl()
+            ?.fixCoverArtUrlIfTooSmall(102400L)
+        coverArtUrlFixed = coverArtUrlFixed.asValidUrlWithMinBytes(httpClient, 102400L)
 
         return transaction {
             title.checkTitleUnique(ownerId, song.mintingStatus)
@@ -145,7 +152,7 @@ internal class SongRepositoryImpl(
                         barcodeNumber = song.barcodeNumber
                         releaseDate = song.releaseDate
                         publicationDate = song.publicationDate
-                        coverArtUrl = song.coverArtUrl?.asValidUrl()
+                        coverArtUrl = coverArtUrlFixed
                         hasSubmittedForDistribution = false
                         errorMessage = song.errorMessage
                     }.id.value
@@ -183,6 +190,15 @@ internal class SongRepositoryImpl(
     ) {
         logger.debug { "update: songId = $songId, song = $song, requesterId = $requesterId" }
         song.checkFieldLengths()
+
+        // Check coverArtUrl byte size to make sure it's over 100kb after compression
+        // on cloudinary.
+        var coverArtUrlFixed = song.coverArtUrl
+            ?.orNull()
+            ?.asValidUrl()
+            ?.fixCoverArtUrlIfTooSmall(102400L)
+        coverArtUrlFixed = coverArtUrlFixed?.asValidUrlWithMinBytes(httpClient, 102400L)
+
         transaction {
             val songEntity = SongEntity[songId]
             val releaseEntity = ReleaseEntity[songEntity.releaseId!!]
@@ -198,7 +214,7 @@ internal class SongRepositoryImpl(
                 }
                 genres?.let { songEntity.genres = it }
                 moods?.let { songEntity.moods = it }
-                coverArtUrl?.let { releaseEntity.coverArtUrl = it.orNull()?.asValidUrl() }
+                coverArtUrlFixed?.let { releaseEntity.coverArtUrl = it }
                 description?.let { songEntity.description = it.orNull() }
                 track?.let { songEntity.track = it }
                 language?.let { songEntity.language = it.orNull() }
@@ -253,6 +269,15 @@ internal class SongRepositoryImpl(
         requesterId: UserId?
     ) {
         logger.debug { "update: releaseId = $releaseId, release = $release, requesterId = $requesterId" }
+
+        // Check coverArtUrl byte size to make sure it's over 100kb after compression
+        // on cloudinary.
+        var coverArtUrlFixed = release.coverArtUrl
+            ?.orNull()
+            ?.asValidUrl()
+            ?.fixCoverArtUrlIfTooSmall(102400L)
+        coverArtUrlFixed = coverArtUrlFixed?.asValidUrlWithMinBytes(httpClient, 102400L)
+
         transaction {
             val releaseEntity = ReleaseEntity[releaseId]
             requesterId?.let { releaseEntity.checkRequester(it) }
@@ -260,7 +285,7 @@ internal class SongRepositoryImpl(
             with(release) {
                 archived?.let { releaseEntity.archived = it }
                 title?.let { releaseEntity.title = it }
-                coverArtUrl?.let { releaseEntity.coverArtUrl = it.orNull()?.asValidUrl() }
+                coverArtUrlFixed?.let { releaseEntity.coverArtUrl = it }
                 barcodeType?.let { releaseEntity.barcodeType = it }
                 barcodeNumber?.let { releaseEntity.barcodeNumber = it }
                 releaseDate?.let { releaseEntity.releaseDate = it }
@@ -1041,6 +1066,19 @@ internal class SongRepositoryImpl(
         if (SongEntity.exists(ownerId, this) && mintingStatus != MintingStatus.Undistributed) {
             throw HttpConflictException("Title already exists: $this")
         }
+    }
+
+    @VisibleForTesting
+    internal suspend fun String.fixCoverArtUrlIfTooSmall(
+        minBytes: Long
+    ): String {
+        if (!TestUtils.isRunningInTest()) {
+            val size = httpClient.getFileSize(this)
+            if (size < minBytes) {
+                return this.removeCloudinaryResize()
+            }
+        }
+        return this
     }
 
     private fun Song.checkFieldLengths() {
