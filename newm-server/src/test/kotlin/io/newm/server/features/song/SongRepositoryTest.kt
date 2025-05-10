@@ -4,12 +4,14 @@ import com.google.common.truth.Truth.assertThat
 import io.mockk.mockk
 import io.newm.server.BaseApplicationTests
 import io.newm.server.features.song.repo.SongRepositoryImpl
+import io.newm.shared.ktx.removeCloudinaryResize
 import org.junit.jupiter.api.Test
 
 class SongRepositoryTest : BaseApplicationTests() {
     @Test
     fun `test calculateMintPaymentResponse`() {
-        val songRepository = SongRepositoryImpl(mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk())
+        val songRepository =
+            SongRepositoryImpl(mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk())
         val response =
             songRepository.calculateMintPaymentResponse(
                 dspPriceUsd = 14990000L,
@@ -27,5 +29,12 @@ class SongRepositoryTest : BaseApplicationTests() {
         assertThat(response.collabPriceAda).isEqualTo("3.866070")
         assertThat(response.collabPriceUsd).isEqualTo("0.966517")
         assertThat(response.usdAdaExchangeRate).isEqualTo("0.250000")
+    }
+
+    @Test
+    fun `test removeCloudinaryResize`() {
+        val url = "https://res.cloudinary.com/newm/image/upload/c_limit,w_4000,h_4000/v1746555569/1000019463_fg4vow.png"
+        val result = url.removeCloudinaryResize()
+        assertThat(result).isEqualTo("https://res.cloudinary.com/newm/image/upload/v1746555569/1000019463_fg4vow.png")
     }
 }

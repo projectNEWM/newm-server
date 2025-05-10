@@ -45,7 +45,9 @@ dependencies {
 
     implementation(Dependencies.Grpc.API)
 
-    testImplementation(Dependencies.JUnit.JUPITER)
+    testImplementation(platform(Dependencies.JUnit.BOM))
+    testImplementation(Dependencies.JUnit.JUPITER_API)
+    testImplementation(Dependencies.JUnit.JUPITER_PARAMS)
     testRuntimeOnly(Dependencies.JUnit.JUPITER_ENGINE)
     testRuntimeOnly(Dependencies.JUnit.JUPITER_PLATFORM)
     testImplementation(Dependencies.Mockk.MOCKK)

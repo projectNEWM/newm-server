@@ -118,7 +118,9 @@ dependencies {
     implementation(Dependencies.KotlinLogging.ALL)
 
     testImplementation(Dependencies.Ktor.CLIENT_LOGGING)
-    testImplementation(Dependencies.JUnit.JUPITER)
+    testImplementation(platform(Dependencies.JUnit.BOM))
+    testImplementation(Dependencies.JUnit.JUPITER_API)
+    testImplementation(Dependencies.JUnit.JUPITER_PARAMS)
     testRuntimeOnly(Dependencies.JUnit.JUPITER_ENGINE)
     testRuntimeOnly(Dependencies.JUnit.JUPITER_PLATFORM)
     testImplementation(Dependencies.Mockk.MOCKK)
@@ -133,7 +135,9 @@ dependencies {
     testImplementation(Dependencies.TestContainers.POSTGRESQL)
 
     "integTestImplementation"(project)
-    "integTestImplementation"(Dependencies.JUnit.JUPITER)
+    "integTestImplementation"(platform(Dependencies.JUnit.BOM))
+    "integTestImplementation"(Dependencies.JUnit.JUPITER_API)
+    "integTestImplementation"(Dependencies.JUnit.JUPITER_PARAMS)
     "integTestRuntimeOnly"(Dependencies.JUnit.JUPITER_ENGINE)
     "integTestRuntimeOnly"(Dependencies.JUnit.JUPITER_PLATFORM)
     "integTestImplementation"(Dependencies.Typesafe.CONFIG)

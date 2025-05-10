@@ -40,6 +40,8 @@ private val FORMAT_REGEX = Regex("""\{([^}]+)}""")
 
 private val INVALID_NAME_CHARS_REGEX = Regex("[\\\\/]")
 
+private val CLOUDINARY_RESIZE_REGEX = Regex("""/c_limit[^/]+/""")
+
 // Allows validating URL format ignoring the protocol value (e.g., "s3:", "ar:")
 private object DummyURLHandler : URLStreamHandler() {
     override fun openConnection(url: URL): URLConnection =
@@ -79,6 +81,8 @@ fun String.isValidUrl(): Boolean =
     }
 
 fun String.toUrl(): URL = EMAIL_REGEX.javaClass.getResource(this) ?: URI.create(this).toURL()
+
+fun String.removeCloudinaryResize(): String = replace(CLOUDINARY_RESIZE_REGEX, "/")
 
 fun String.toHash(): String = BCrypt.withDefaults().hashToString(12, toCharArray())
 
