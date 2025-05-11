@@ -14,11 +14,11 @@ class SongRepositoryTest : BaseApplicationTests() {
             SongRepositoryImpl(mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk())
         val response =
             songRepository.calculateMintPaymentResponse(
-                dspPriceUsd = 14990000L,
+                dspPriceUsdForAdaPaymentType = 14990000L,
                 usdAdaExchangeRate = "250000".toBigInteger(),
-                minUtxo = 1288690L,
+                minUtxoLovelace = 1288690L,
                 numberOfCollaborators = 3,
-                mintCostBase = 2000000L,
+                mintCostBaseLovelace = 2000000L,
             )
         println(response)
         assertThat(response.cborHex).isEqualTo("1a03fbaf56")

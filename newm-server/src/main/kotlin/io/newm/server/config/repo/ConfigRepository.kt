@@ -53,6 +53,7 @@ interface ConfigRepository {
         const val CONFIG_KEY_EVEARA_STATUS_CHECK_REFIRE = "eveara.statusCheckDeclinedMaxRefire"
         const val CONFIG_KEY_EMAIL_WHITELIST = "email.whitelist"
         const val CONFIG_KEY_DISTRIBUTION_PRICE_USD = "distribution.price.usd"
+        const val CONFIG_KEY_DISTRIBUTION_PRICE_USD_NEWM = "distribution.price.usd.newm"
         const val CONFIG_KEY_OUTLET_STATUS_CHECK_MINUTES = "outlet.statusCheckMinutes"
         const val CONFIG_KEY_RECAPTCHA_ENABLED = "recaptcha.enabled"
         const val CONFIG_KEY_RECAPTCHA_MIN_SCORE = "recaptcha.minScore"
