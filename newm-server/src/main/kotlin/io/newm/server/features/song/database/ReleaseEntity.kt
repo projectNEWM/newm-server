@@ -49,6 +49,8 @@ class ReleaseEntity(
     var forceDistributed: Boolean? by ReleaseTable.forceDistributed
     var preSavePage: String? by ReleaseTable.preSavePage
     var mintCostLovelace: Long? by ReleaseTable.mintCostLovelace
+    var mintPaymentType: String? by ReleaseTable.mintPaymentType
+    var mintCost: Long? by ReleaseTable.mintCost
 
     fun toModel(): Release =
         Release(
@@ -69,7 +71,9 @@ class ReleaseEntity(
             errorMessage = errorMessage,
             forceDistributed = forceDistributed,
             preSavePage = preSavePage,
-            mintCostLovelace = mintCostLovelace
+            mintCostLovelace = mintCostLovelace,
+            mintPaymentType = mintPaymentType,
+            mintCost = mintCost,
         )
 
     companion object : UUIDEntityClass<ReleaseEntity>(ReleaseTable) {

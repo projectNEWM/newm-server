@@ -121,6 +121,8 @@ class SongEntity(
             arweaveClipUrl = arweaveClipUrl,
             distributionTrackId = distributionTrackId,
             mintCostLovelace = release.mintCostLovelace,
+            mintPaymentType = release.mintPaymentType,
+            mintCost = release.mintCost,
             forceDistributed = release.forceDistributed,
             errorMessage = release.errorMessage,
             instrumental = instrumental,

@@ -13,6 +13,7 @@ import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.availableForRead
 import io.ktor.utils.io.lookAhead
 import io.newm.server.features.song.model.MintingStatus
+import io.newm.server.features.song.model.PaymentType
 import io.newm.server.model.ClientPlatform
 import io.newm.server.model.FilterCriteria
 import io.newm.server.model.toFilterCriteria
@@ -128,6 +129,9 @@ val ApplicationCall.addresses: FilterCriteria<String>?
 
 val ApplicationCall.clientPlatform: ClientPlatform?
     get() = parameters["clientPlatform"]?.let(ClientPlatform::valueOf)
+
+val ApplicationCall.requestPaymentType: PaymentType
+    get() = parameters["paymentType"]?.let(PaymentType::valueOf) ?: PaymentType.ADA
 
 val ApplicationCall.referrer: String?
     get() = parameters["referrer"]
