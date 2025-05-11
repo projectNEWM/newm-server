@@ -2,6 +2,8 @@ package io.newm.server.features.minting
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.newm.chain.grpc.monitorPaymentAddressRequest
+import io.newm.chain.grpc.nativeAsset
+import io.newm.chain.grpc.outputUtxo
 import io.newm.server.aws.SqsMessageReceiver
 import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_EVEARA_STATUS_CHECK_MINUTES
@@ -14,11 +16,13 @@ import io.newm.server.features.minting.repo.MintingRepository
 import io.newm.server.features.scheduler.EvearaReleaseStatusJob
 import io.newm.server.features.scheduler.OutletReleaseStatusJob
 import io.newm.server.features.song.model.MintingStatus
+import io.newm.server.features.song.model.PaymentType
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.features.user.repo.UserRepository
 import io.newm.server.logging.captureToSentry
 import io.newm.shared.koin.inject
+import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
@@ -27,7 +31,6 @@ import org.quartz.JobKey
 import org.quartz.SimpleScheduleBuilder.simpleSchedule
 import org.quartz.TriggerBuilder.newTrigger
 import software.amazon.awssdk.services.sqs.model.Message
-import kotlin.time.Duration.Companion.minutes
 
 class MintingMessageReceiver : SqsMessageReceiver {
     private val log = KotlinLogging.logger {}
@@ -75,22 +78,75 @@ class MintingMessageReceiver : SqsMessageReceiver {
                         try {
                             val song = songRepository.get(mintingStatusSqsMessage.songId)
                             val paymentKey = cardanoRepository.getKey(song.paymentKeyId!!)
-                            val response =
-                                cardanoRepository.awaitPayment(
-                                    monitorPaymentAddressRequest {
+                            val paymentType = song.mintPaymentType?.let { songMintPaymentType ->
+                                requireNotNull(PaymentType.entries.firstOrNull { it.name == songMintPaymentType }) {
+                                    "Invalid mint payment type: $songMintPaymentType for song: ${song.id}"
+                                }
+                            } ?: PaymentType.ADA
+
+                            val cost = song.mintCost!!
+
+                            // Hoist suspend calls to be outside the request builder
+                            val isMainnet = cardanoRepository.isMainnet()
+                            val newmPolicyId =
+                                if (isMainnet) CardanoRepository.NEWM_TOKEN_POLICY else CardanoRepository.NEWM_TOKEN_POLICY_PREPROD
+                            val newmTokenName =
+                                if (isMainnet) CardanoRepository.NEWM_TOKEN_NAME else CardanoRepository.NEWM_TOKEN_NAME_PREPROD
+                            // Min ADA is only needed if we expect a native asset
+                            val minAdaForUtxo = if (paymentType == PaymentType.NEWM) {
+                                cardanoRepository.calculateMinUtxoForOutput(
+                                    outputUtxo {
                                         address = paymentKey.address
-                                        lovelace = song.mintCostLovelace!!.toString()
-                                        timeoutMs =
-                                            configRepository
-                                                .getLong(
-                                                    CONFIG_KEY_MINT_MONITOR_PAYMENT_ADDRESS_TIMEOUT_MIN
-                                                ).minutes.inWholeMilliseconds
-                                    }.also {
-                                        log.info {
-                                            "Awaiting payment for song: ${song.id} on address: ${it.address} for ${it.lovelace} lovelace."
-                                        }
+                                        nativeAssets.add(
+                                            nativeAsset {
+                                                this.policy = newmPolicyId
+                                                this.name = newmTokenName
+                                                this.amount = cost.toString() // NEWM token amount
+                                            }
+                                        )
                                     }
                                 )
+                            } else {
+                                -1L
+                            }
+
+                            val monitorRequest = monitorPaymentAddressRequest {
+                                address = paymentKey.address
+                                timeoutMs =
+                                    configRepository
+                                        .getLong(
+                                            CONFIG_KEY_MINT_MONITOR_PAYMENT_ADDRESS_TIMEOUT_MIN
+                                        ).minutes.inWholeMilliseconds
+
+                                when (paymentType) {
+                                    PaymentType.ADA -> {
+                                        lovelace = cost.toString()
+                                    }
+
+                                    PaymentType.NEWM -> {
+                                        lovelace = minAdaForUtxo.toString() // Min ADA for UTXO with NEWM tokens
+                                        nativeAssets.add(
+                                            nativeAsset {
+                                                this.policy = newmPolicyId
+                                                this.name = newmTokenName
+                                                this.amount = cost.toString() // NEWM token amount
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+
+                            when (paymentType) {
+                                PaymentType.ADA -> {
+                                    log.info { "Awaiting ADA payment for song: ${song.id} on address: ${monitorRequest.address} for ${monitorRequest.lovelace} lovelace." }
+                                }
+
+                                PaymentType.NEWM -> {
+                                    log.info { "Awaiting NEWM payment for song: ${song.id} on address: ${monitorRequest.address} for ${monitorRequest.lovelace} lovelace and $cost NEWM." }
+                                }
+                            }
+
+                            val response = cardanoRepository.awaitPayment(monitorRequest)
                             if (response.success) {
                                 log.info { "Payment received for song: ${song.id}" }
                                 // We got paid!!! Move -> MintingPaymentReceived

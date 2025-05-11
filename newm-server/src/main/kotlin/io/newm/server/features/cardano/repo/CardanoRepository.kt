@@ -5,6 +5,7 @@ import io.newm.chain.grpc.CardanoEra
 import io.newm.chain.grpc.MonitorAddressResponse
 import io.newm.chain.grpc.MonitorPaymentAddressRequest
 import io.newm.chain.grpc.MonitorPaymentAddressResponse
+import io.newm.chain.grpc.OutputUtxo
 import io.newm.chain.grpc.Signature
 import io.newm.chain.grpc.SnapshotNativeAssetsResponse
 import io.newm.chain.grpc.SubmitTransactionResponse
@@ -58,6 +59,8 @@ interface CardanoRepository {
     suspend fun saveEncryptionParams(encryptionRequest: EncryptionRequest)
 
     suspend fun queryStreamTokenMinUtxo(): Long
+
+    suspend fun calculateMinUtxoForOutput(outputUtxo: OutputUtxo): Long
 
     suspend fun queryAdaUSDPrice(): Long
 
@@ -126,8 +129,8 @@ interface CardanoRepository {
         const val NEWM_TOKEN_NAME = "4e45574d"
 
         // NEWM token information - testnet
-        const val NEWM_TOKEN_POLICY_TEST = "769c4c6e9bc3ba5406b9b89fb7beb6819e638ff2e2de63f008d5bcff"
-        const val NEWM_TOKEN_NAME_TEST = "744e45574d"
+        const val NEWM_TOKEN_POLICY_PREPROD = "769c4c6e9bc3ba5406b9b89fb7beb6819e638ff2e2de63f008d5bcff"
+        const val NEWM_TOKEN_NAME_PREPROD = "744e45574d"
 
         // Charli3 ADA/USD OracleFeed token
         const val CHARLI3_ADA_USD_POLICY = "08c56c0fa73748a23c3bc1d9e6a60a4187416fc4ff8fe3475506990e"

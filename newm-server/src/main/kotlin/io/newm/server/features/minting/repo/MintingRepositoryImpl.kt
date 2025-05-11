@@ -38,6 +38,7 @@ import io.newm.server.features.minting.database.MintingStatusHistoryTable
 import io.newm.server.features.minting.database.MintingStatusTransactionEntity
 import io.newm.server.features.minting.model.MintInfo
 import io.newm.server.features.minting.model.MintingStatusTransactionModel
+import io.newm.server.features.song.model.PaymentType
 import io.newm.server.features.song.model.Release
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.repo.SongRepository
@@ -55,13 +56,13 @@ import io.newm.shared.ktx.toHexString
 import io.newm.txbuilder.ktx.sortByHashAndIx
 import io.newm.txbuilder.ktx.toCborObject
 import io.newm.txbuilder.ktx.toPlutusData
+import java.math.BigDecimal
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf
 import org.slf4j.Logger
-import java.math.BigDecimal
-import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
 
 class MintingRepositoryImpl(
     private val userRepository: UserRepository,
@@ -105,48 +106,139 @@ class MintingRepositoryImpl(
                 }
             log.info { "Royalty splits for songId: ${song.id} - $streamTokenSplits" }
             val paymentKey = cardanoRepository.getKey(song.paymentKeyId!!)
-            val mintPriceLovelace = song.mintCostLovelace.toString()
+
+            // Convert release.mintPaymentType String to PaymentType enum
+            val paymentTypeEnum = PaymentType.valueOf(release.mintPaymentType ?: PaymentType.ADA.name)
+            val mintCost = release.mintCost // This will be NEWM amount if NEWM, or ADA amount if ADA
+
             val cip68ScriptAddress = configRepository.getString(CONFIG_KEY_MINT_CIP68_SCRIPT_ADDRESS)
             val cip68Policy = configRepository.getString(CONFIG_KEY_MINT_CIP68_POLICY)
             val cashRegisterCollectionAmount = configRepository.getLong(CONFIG_KEY_MINT_CASH_REGISTER_COLLECTION_AMOUNT)
             val cashRegisterMinAmount = configRepository.getLong(CONFIG_KEY_MINT_CASH_REGISTER_MIN_AMOUNT)
-            val paymentUtxo =
-                cardanoRepository
-                    .queryLiveUtxos(paymentKey.address)
-                    .first { it.lovelace == mintPriceLovelace && it.nativeAssetsCount == 0 }
+
+            val isMainnet = cardanoRepository.isMainnet()
+            val newmPolicyId =
+                if (isMainnet) CardanoRepository.NEWM_TOKEN_POLICY else CardanoRepository.NEWM_TOKEN_POLICY_PREPROD
+            val newmTokenName =
+                if (isMainnet) CardanoRepository.NEWM_TOKEN_NAME else CardanoRepository.NEWM_TOKEN_NAME_PREPROD
+
+            val paymentUtxo = when (paymentTypeEnum) {
+                PaymentType.NEWM -> {
+                    requireNotNull(
+                        cardanoRepository.queryLiveUtxos(paymentKey.address).firstOrNull { utxo ->
+                            utxo.nativeAssetsCount == 1 &&
+                                utxo.nativeAssetsList.any { nativeAsset ->
+                                    nativeAsset.policy == newmPolicyId &&
+                                        nativeAsset.name == newmTokenName &&
+                                        nativeAsset.amount == mintCost.toString() // mintCost is release.mintCost, holds NEWM amount
+                                }
+                        }
+                    ) { "NEWM payment UTXO not found or invalid for songId: ${song.id}, looking for $mintCost $newmPolicyId.$newmTokenName" }
+                }
+
+                else -> {
+                    // Handles PaymentType.ADA and legacy cases (where release.mintPaymentType might be null)
+
+                    val costToUse = if (release.mintPaymentType != null && paymentTypeEnum == PaymentType.ADA) {
+                        mintCost // This is release.mintCost, which would be ADA amount
+                    } else {
+                        @Suppress("DEPRECATION")
+                        song.mintCostLovelace // Fallback to legacy song.mintCostLovelace
+                    }
+                    cardanoRepository.queryLiveUtxos(paymentKey.address).first { utxo ->
+                        utxo.lovelace == costToUse.toString() && utxo.nativeAssetsCount == 0
+                    }
+                }
+            }
+
             val cashRegisterKey =
                 requireNotNull(cardanoRepository.getKeyByName("cashRegister")) { "cashRegister key not defined!" }
-            val cashRegisterUtxos =
-                cardanoRepository
-                    .queryLiveUtxos(cashRegisterKey.address)
-                    .filter { it.nativeAssetsCount == 0 }
-                    .sortedByDescending { it.lovelace.toLong() }
-                    .take(5)
-            val cashRegisterAmount = cashRegisterUtxos.sumOf { it.lovelace.toLong() }
+
+            val cashRegisterUtxos = when (paymentTypeEnum) {
+                PaymentType.NEWM -> {
+                    val allCashRegisterUtxos = cardanoRepository.queryLiveUtxos(cashRegisterKey.address)
+                    val topLovelaceUtxos = allCashRegisterUtxos
+                        .filter { it.nativeAssetsCount == 0 }
+                        .sortedByDescending { it.lovelace.toLong() }
+                        .take(5)
+                    val topNewmUtxos = allCashRegisterUtxos
+                        .filter {
+                            it.nativeAssetsCount == 1 &&
+                                it.nativeAssetsList.any { asset ->
+                                    asset.policy == newmPolicyId &&
+                                        asset.name == newmTokenName
+                                }
+                        }.sortedByDescending {
+                            it.nativeAssetsList
+                                .first()
+                                .amount
+                                .toLong()
+                        }.take(5)
+                    topLovelaceUtxos + topNewmUtxos
+                }
+
+                else -> {
+                    cardanoRepository
+                        .queryLiveUtxos(cashRegisterKey.address)
+                        .filter { it.nativeAssetsCount == 0 }
+                        .sortedByDescending { it.lovelace.toLong() }
+                        .take(5)
+                }
+            }
+
             require(cashRegisterUtxos.isNotEmpty()) { "cashRegister has no utxos!" }
+            val cashRegisterAdaAmount = cashRegisterUtxos.sumOf { it.lovelace.toLong() }
             val moneyBoxKey =
-                if (cashRegisterAmount >= cashRegisterCollectionAmount + cashRegisterMinAmount) {
+                if (cashRegisterAdaAmount >= cashRegisterCollectionAmount + cashRegisterMinAmount) {
                     // we should collect to the moneybox
                     cardanoRepository.getKeyByName("moneyBox")
                 } else {
                     null
                 }
-            val moneyBoxUtxos =
+
+            val allMoneyBoxUtxos = moneyBoxKey?.let {
+                cardanoRepository.queryLiveUtxos(moneyBoxKey.address)
+            } ?: emptyList()
+
+            val moneyBoxAdaUtxos =
                 moneyBoxKey?.let {
-                    cardanoRepository
-                        .queryLiveUtxos(moneyBoxKey.address)
+                    allMoneyBoxUtxos
                         .filter { it.nativeAssetsCount == 0 }
                         .sortedByDescending { it.lovelace.toLong() }
                         .take(5)
                 }
+            val moneyBoxNewmUtxos =
+                moneyBoxKey?.let {
+                    allMoneyBoxUtxos
+                        .filter {
+                            it.nativeAssetsCount == 1 &&
+                                it.nativeAssetsList.any { asset ->
+                                    asset.policy == CardanoRepository.NEWM_TOKEN_POLICY &&
+                                        asset.name == CardanoRepository.NEWM_TOKEN_NAME
+                                }
+                        }.sortedByDescending {
+                            it.nativeAssetsList
+                                .first()
+                                .amount
+                                .toLong()
+                        }.take(5)
+                }
 
             // sort utxos lexicographically smallest to largest to find the one we'll use as the reference utxo
-            val refUtxo = (cashRegisterUtxos + listOf(paymentUtxo) + (moneyBoxUtxos ?: emptyList()))
-                .sortByHashAndIx()
-                .first()
-            val (refTokenName, fracTokenName) = calculateTokenNames(refUtxo)
+            val refUtxo =
+                (
+                    cashRegisterUtxos + listOf(paymentUtxo) + (moneyBoxAdaUtxos ?: emptyList()) + (
+                        moneyBoxNewmUtxos
+                            ?: emptyList()
+                    )
+                ).sortByHashAndIx()
+                    .first()
+
+            val (refTokenName, fracTokenName) =
+                calculateTokenNames(refUtxo)
             val collateralKey =
                 requireNotNull(cardanoRepository.getKeyByName("collateral")) { "collateral key not defined!" }
+
             val collateralUtxo =
                 requireNotNull(
                     cardanoRepository
@@ -154,8 +246,10 @@ class MintingRepositoryImpl(
                         .filter { it.nativeAssetsCount == 0 }
                         .maxByOrNull { it.lovelace.toLong() }
                 ) { "collateral utxo not found!" }
+
             val starterTokenUtxoReference =
                 configRepository.getString(CONFIG_KEY_MINT_STARTER_TOKEN_UTXO_REFERENCE).toReferenceUtxo()
+
             val scriptUtxoReference =
                 configRepository.getString(CONFIG_KEY_MINT_SCRIPT_UTXO_REFERENCE).toReferenceUtxo()
 
@@ -166,7 +260,7 @@ class MintingRepositoryImpl(
                     paymentUtxo = paymentUtxo,
                     cashRegisterUtxos = cashRegisterUtxos,
                     changeAddress = cashRegisterKey.address,
-                    moneyBoxUtxos = moneyBoxUtxos,
+                    moneyBoxUtxos = moneyBoxAdaUtxos,
                     moneyBoxAddress = moneyBoxKey?.address,
                     cashRegisterCollectionAmount = cashRegisterCollectionAmount,
                     collateralUtxo = collateralUtxo,
@@ -176,6 +270,8 @@ class MintingRepositoryImpl(
                     cip68Policy = cip68Policy,
                     refTokenName = refTokenName,
                     fracTokenName = fracTokenName,
+                    newmPolicyId = newmPolicyId,
+                    newmTokenName = newmTokenName,
                     streamTokenSplits = streamTokenSplits,
                     requiredSigners = signingKeys,
                     starterTokenUtxoReference = starterTokenUtxoReference,
@@ -196,7 +292,7 @@ class MintingRepositoryImpl(
                     paymentUtxo = paymentUtxo,
                     cashRegisterUtxos = cashRegisterUtxos,
                     changeAddress = cashRegisterKey.address,
-                    moneyBoxUtxos = moneyBoxUtxos,
+                    moneyBoxUtxos = moneyBoxAdaUtxos,
                     moneyBoxAddress = moneyBoxKey?.address,
                     cashRegisterCollectionAmount = cashRegisterCollectionAmount,
                     collateralUtxo = collateralUtxo,
@@ -206,6 +302,8 @@ class MintingRepositoryImpl(
                     cip68Policy = cip68Policy,
                     refTokenName = refTokenName,
                     fracTokenName = fracTokenName,
+                    newmPolicyId = newmPolicyId,
+                    newmTokenName = newmTokenName,
                     streamTokenSplits = streamTokenSplits,
                     requiredSigners = signingKeys,
                     starterTokenUtxoReference = starterTokenUtxoReference,
@@ -220,6 +318,7 @@ class MintingRepositoryImpl(
 
             val submitTransactionResponse =
                 cardanoRepository.submitTransaction(transactionBuilderResponse.transactionCbor)
+
             return@withLock if (submitTransactionResponse.result == "MsgAcceptTx") {
                 MintInfo(
                     transactionId = submitTransactionResponse.txId,
@@ -251,6 +350,8 @@ class MintingRepositoryImpl(
         cip68Policy: String,
         refTokenName: String,
         fracTokenName: String,
+        newmPolicyId: String,
+        newmTokenName: String,
         streamTokenSplits: List<Pair<String, Long>>,
         requiredSigners: List<Key>,
         starterTokenUtxoReference: Utxo,
@@ -279,7 +380,7 @@ class MintingRepositoryImpl(
                 }
             )
 
-            // fraction SFT output to each artist's wallet
+            // fraction RFT output to each artist's wallet
             streamTokenSplits.forEach { (artistWalletAddress, streamTokenAmount) ->
                 add(
                     outputUtxo {
@@ -296,19 +397,95 @@ class MintingRepositoryImpl(
                 )
             }
 
+            val moneyBoxNewmUtxos = moneyBoxUtxos
+                ?.filter {
+                    it.nativeAssetsCount == 1 &&
+                        it.nativeAssetsList.any { asset ->
+                            asset.policy == newmPolicyId &&
+                                asset.name == newmTokenName
+                        }
+                }.orEmpty()
+            val cashRegisterNewmUtxos = cashRegisterUtxos.filter {
+                it.nativeAssetsCount == 1 &&
+                    it.nativeAssetsList.any { asset ->
+                        asset.policy == newmPolicyId &&
+                            asset.name == newmTokenName
+                    }
+            }
+            val paymentNewmUtxos = listOf(paymentUtxo).filter {
+                it.nativeAssetsCount == 1 &&
+                    it.nativeAssetsList.any { asset ->
+                        asset.policy == newmPolicyId &&
+                            asset.name == newmTokenName
+                    }
+            }
+
             // collect some into the moneyBox
-            moneyBoxAddress?.let {
+            moneyBoxAddress?.let { moneyBoxAddress ->
                 add(
+                    // ada-only output to moneyBox address
                     outputUtxo {
-                        address = it
+                        address = moneyBoxAddress
                         lovelace =
                             (
                                 cashRegisterCollectionAmount + (
-                                    moneyBoxUtxos?.sumOf { it.lovelace.toLong() }.orZero()
+                                    moneyBoxUtxos
+                                        ?.filter { it.nativeAssetsCount == 0 }
+                                        ?.sumOf { it.lovelace.toLong() }
+                                        .orZero()
                                 )
                             ).toString()
                     }
                 )
+
+                (moneyBoxNewmUtxos + cashRegisterNewmUtxos + paymentNewmUtxos).takeIf { it.isNotEmpty() }?.let {
+                    add(
+                        outputUtxo {
+                            address = moneyBoxAddress
+                            nativeAssets.add(
+                                nativeAsset {
+                                    policy = newmPolicyId
+                                    name = newmTokenName
+                                    amount =
+                                        it
+                                            .sumOf { utxo ->
+                                                utxo.nativeAssetsList
+                                                    .firstOrNull { nativeAsset ->
+                                                        nativeAsset.policy == newmPolicyId &&
+                                                            nativeAsset.name == newmTokenName
+                                                    }?.amount
+                                                    ?.toLongOrNull() ?: 0L
+                                            }.toString()
+                                }
+                            )
+                        }
+                    )
+                }
+            } ?: run {
+                // if not collecting to moneyBox, roll up any newm tokens to the cash register
+                (cashRegisterNewmUtxos + paymentNewmUtxos).takeIf { it.isNotEmpty() }?.let {
+                    add(
+                        outputUtxo {
+                            address = changeAddress
+                            nativeAssets.add(
+                                nativeAsset {
+                                    policy = newmPolicyId
+                                    name = newmTokenName
+                                    amount =
+                                        it
+                                            .sumOf { utxo ->
+                                                utxo.nativeAssetsList
+                                                    .firstOrNull { nativeAsset ->
+                                                        nativeAsset.policy == newmPolicyId &&
+                                                            nativeAsset.name == newmTokenName
+                                                    }?.amount
+                                                    ?.toLongOrNull() ?: 0L
+                                            }.toString()
+                                }
+                            )
+                        }
+                    )
+                }
             }
         }
 
@@ -555,7 +732,8 @@ class MintingRepositoryImpl(
                                                 add(
                                                     plutusDataMapItem {
                                                         mapItemKey = "name".toPlutusData()
-                                                        mapItemValue = "Streaming Royalty Share Agreement".toPlutusData()
+                                                        mapItemValue =
+                                                            "Streaming Royalty Share Agreement".toPlutusData()
                                                     }
                                                 )
                                                 add(
@@ -567,7 +745,8 @@ class MintingRepositoryImpl(
                                                 add(
                                                     plutusDataMapItem {
                                                         mapItemKey = "src".toPlutusData()
-                                                        mapItemValue = song.arweaveTokenAgreementUrl!!.toPlutusData()
+                                                        mapItemValue =
+                                                            song.arweaveTokenAgreementUrl!!.toPlutusData()
                                                     }
                                                 )
                                             }
@@ -766,7 +945,9 @@ class MintingRepositoryImpl(
                             }
 
                             val contributingArtists =
-                                collabs.filter { it.roles.orEmpty().any { it in contributingArtistRoles } && it.credited == true }
+                                collabs.filter {
+                                    it.roles.orEmpty().any { it in contributingArtistRoles } && it.credited == true
+                                }
                             if (contributingArtists.isNotEmpty()) {
                                 transaction {
                                     add(
@@ -949,7 +1130,10 @@ class MintingRepositoryImpl(
         mapItemValue =
             plutusData {
                 val primaryArtistEmails =
-                    collabs.filter { it.roles?.containsIgnoreCase("Artist") == true && it.credited == true }.map { it.email!! }.toMutableSet()
+                    collabs
+                        .filter { it.roles?.containsIgnoreCase("Artist") == true && it.credited == true }
+                        .map { it.email!! }
+                        .toMutableSet()
                 if (primaryArtistEmails.isEmpty()) {
                     primaryArtistEmails.add(user.email!!)
                 }

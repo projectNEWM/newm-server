@@ -12,6 +12,7 @@ import io.newm.chain.grpc.utxo
 import io.newm.chain.util.hexToByteArray
 import io.newm.server.BaseApplicationTests
 import io.newm.server.features.cardano.model.Key
+import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.cardano.repo.CardanoRepositoryImpl
 import io.newm.server.features.collaboration.model.Collaboration
 import io.newm.server.features.collaboration.model.CollaborationFilters
@@ -504,6 +505,8 @@ class MintingRepositoryTest : BaseApplicationTests() {
                     cip68Policy = "a0488f6ef1b8b5b268583312a94aaebefb36e570b198e02024d321a9",
                     refTokenName = refTokenName,
                     fracTokenName = fracTokenName,
+                    newmPolicyId = CardanoRepository.NEWM_TOKEN_POLICY_PREPROD,
+                    newmTokenName = CardanoRepository.NEWM_TOKEN_NAME_PREPROD,
                     streamTokenSplits =
                         listOf(
                             Pair(
@@ -545,6 +548,8 @@ class MintingRepositoryTest : BaseApplicationTests() {
                     cip68Policy = "a0488f6ef1b8b5b268583312a94aaebefb36e570b198e02024d321a9",
                     refTokenName = refTokenName,
                     fracTokenName = fracTokenName,
+                    newmPolicyId = CardanoRepository.NEWM_TOKEN_POLICY_PREPROD,
+                    newmTokenName = CardanoRepository.NEWM_TOKEN_NAME_PREPROD,
                     streamTokenSplits =
                         listOf(
                             Pair(

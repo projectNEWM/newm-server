@@ -35,7 +35,10 @@ data class Release(
     val forceDistributed: Boolean? = null,
     val errorMessage: String? = null,
     val preSavePage: String? = null,
+    @Deprecated("Use mintPaymentType and mintCost instead")
     val mintCostLovelace: Long? = null,
+    val mintPaymentType: String? = null,
+    val mintCost: Long? = null,
 ) {
     @Transient
     val releaseProductCodeType: String =

@@ -19,9 +19,9 @@ import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_EARNINGS
 import io.newm.server.features.cardano.model.Key
 import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.cardano.repo.CardanoRepository.Companion.NEWM_TOKEN_NAME
-import io.newm.server.features.cardano.repo.CardanoRepository.Companion.NEWM_TOKEN_NAME_TEST
+import io.newm.server.features.cardano.repo.CardanoRepository.Companion.NEWM_TOKEN_NAME_PREPROD
 import io.newm.server.features.cardano.repo.CardanoRepository.Companion.NEWM_TOKEN_POLICY
-import io.newm.server.features.cardano.repo.CardanoRepository.Companion.NEWM_TOKEN_POLICY_TEST
+import io.newm.server.features.cardano.repo.CardanoRepository.Companion.NEWM_TOKEN_POLICY_PREPROD
 import io.newm.server.features.earnings.model.ClaimOrder
 import io.newm.server.features.earnings.model.ClaimOrderStatus
 import io.newm.server.features.earnings.repo.EarningsRepository
@@ -57,8 +57,8 @@ class MonitorClaimOrderJob : Job {
         runBlocking {
             val claimOrderId = context.mergedJobDataMap.getString("claimOrderId").toUUID()
             val isMainnet = cardanoRepository.isMainnet()
-            val newmTokenPolicy = if (isMainnet) NEWM_TOKEN_POLICY else NEWM_TOKEN_POLICY_TEST
-            val newmTokenName = if (isMainnet) NEWM_TOKEN_NAME else NEWM_TOKEN_NAME_TEST
+            val newmTokenPolicy = if (isMainnet) NEWM_TOKEN_POLICY else NEWM_TOKEN_POLICY_PREPROD
+            val newmTokenName = if (isMainnet) NEWM_TOKEN_NAME else NEWM_TOKEN_NAME_PREPROD
             val claimOrder = earningsRepository.getByClaimOrderId(claimOrderId)
             try {
                 if (claimOrder != null) {
