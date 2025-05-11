@@ -7,6 +7,7 @@ import io.newm.server.features.song.model.AudioStreamData
 import io.newm.server.features.song.model.AudioUploadReport
 import io.newm.server.features.song.model.MintPaymentResponse
 import io.newm.server.features.song.model.MintingStatus
+import io.newm.server.features.song.model.PaymentType
 import io.newm.server.features.song.model.RefundPaymentResponse
 import io.newm.server.features.song.model.Release
 import io.newm.server.features.song.model.Song
@@ -79,7 +80,8 @@ interface SongRepository {
 
     suspend fun getMintingPaymentAmount(
         songId: SongId,
-        requesterId: UserId
+        requesterId: UserId,
+        paymentType: PaymentType,
     ): MintPaymentResponse
 
     suspend fun getMintingPaymentEstimate(collaborators: Int): MintPaymentResponse

@@ -1,6 +1,5 @@
 package io.newm.server.database.migration
 
-import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_EVEARA_STATUS_CHECK_REFIRE
 import org.flywaydb.core.api.migration.BaseJavaMigration
 import org.flywaydb.core.api.migration.Context
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -11,7 +10,7 @@ class V55__ConfigUpdates : BaseJavaMigration() {
         transaction {
             exec(
                 // Check album status every 720(minutes) X 30(days) = 21600 minutes
-                "INSERT INTO config VALUES ('$CONFIG_KEY_EVEARA_STATUS_CHECK_REFIRE','21600') ON CONFLICT(id) DO NOTHING",
+                "INSERT INTO config VALUES ('eveara.statusCheckDeclinedMaxRefire','21600') ON CONFLICT(id) DO NOTHING",
             )
         }
     }
