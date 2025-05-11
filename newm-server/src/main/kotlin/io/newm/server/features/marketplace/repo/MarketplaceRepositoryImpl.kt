@@ -10,6 +10,7 @@ import io.newm.chain.grpc.NativeAsset
 import io.newm.chain.grpc.Utxo
 import io.newm.chain.grpc.nativeAsset
 import io.newm.chain.util.Sha3
+import io.newm.chain.util.extractCredentials
 import io.newm.chain.util.extractStakeKeyHex
 import io.newm.chain.util.hexStringToAssetName
 import io.newm.chain.util.hexToByteArray
@@ -89,11 +90,11 @@ import io.newm.shared.ktx.toGroupingString
 import io.newm.txbuilder.ktx.extractFields
 import io.newm.txbuilder.ktx.sortByHashAndIx
 import io.newm.txbuilder.ktx.toNativeAssetCborMap
+import java.math.BigInteger
+import java.util.UUID
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.transactions.transaction
-import java.math.BigInteger
-import java.util.UUID
 
 private const val SALE_TIP_KEY = "saleTip"
 private const val QUEUE_TIP_KEY = "queueTip"
@@ -286,7 +287,7 @@ internal class MarketplaceRepositoryImpl(
         val collateralKey = getKey(COLLATERAL_KEY_NAME)
         val signingKeys = listOf(cashRegisterKey, collateralKey)
         val dummyKeys = request.utxos
-            .map { it.address }
+            .map { it.address.extractCredentials().first }
             .distinct()
             .map { Key.generateNew() }
         val allKeys = signingKeys + dummyKeys
@@ -408,6 +409,7 @@ internal class MarketplaceRepositoryImpl(
         val dummyKeys = request.utxos
             .map { it.address }
             .plus(sale.ownerAddress)
+            .map { it.extractCredentials().first }
             .distinct()
             .map { Key.generateNew() }
         val allKeys = signingKeys + dummyKeys

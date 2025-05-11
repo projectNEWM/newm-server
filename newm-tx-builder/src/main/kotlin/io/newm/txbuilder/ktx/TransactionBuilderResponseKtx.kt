@@ -71,5 +71,7 @@ fun TransactionBuilderResponse.extractFields(): TxFields {
                 else -> throw IllegalStateException("Expected redeemers to be a CborArray or CborMap")
             }
         }
+
+        override fun toString(): String = "TxFields(fee=$fee, totalCollateral=$totalCollateral, redeemers=$redeemers)"
     }
 }
