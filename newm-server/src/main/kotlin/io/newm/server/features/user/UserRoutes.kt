@@ -18,6 +18,7 @@ import io.newm.server.ktx.identifyUser
 import io.newm.server.ktx.jwtId
 import io.newm.server.ktx.limit
 import io.newm.server.ktx.offset
+import io.newm.server.ktx.referrer
 import io.newm.server.ktx.restrictToMe
 import io.newm.server.recaptcha.repo.RecaptchaRepository
 import io.newm.shared.koin.inject
@@ -70,7 +71,7 @@ fun Routing.createUserRoutes() {
         }
         post {
             recaptchaRepository.verify("signup", request)
-            respond(UserIdBody(userRepository.add(receive(), clientPlatform)))
+            respond(UserIdBody(userRepository.add(receive(), clientPlatform, referrer)))
         }
         put("password") {
             recaptchaRepository.verify("password_reset", request)

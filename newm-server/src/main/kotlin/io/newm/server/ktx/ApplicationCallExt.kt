@@ -26,13 +26,13 @@ import io.newm.shared.ktx.orZero
 import io.newm.shared.ktx.toHexString
 import io.newm.shared.ktx.toLocalDateTime
 import io.newm.shared.ktx.toUUID
+import org.jetbrains.exposed.sql.SortOrder
 import java.nio.ByteBuffer
 import java.security.Key
 import java.time.LocalDateTime
 import java.util.UUID
 import javax.crypto.Mac
 import kotlin.reflect.KClass
-import org.jetbrains.exposed.sql.SortOrder
 
 val ApplicationCall.jwtPrincipal: JWTPrincipal
     get() = principal()!!
@@ -128,6 +128,9 @@ val ApplicationCall.addresses: FilterCriteria<String>?
 
 val ApplicationCall.clientPlatform: ClientPlatform?
     get() = parameters["clientPlatform"]?.let(ClientPlatform::valueOf)
+
+val ApplicationCall.referrer: String?
+    get() = parameters["referrer"]
 
 suspend inline fun ApplicationCall.identifyUser(crossinline body: suspend ApplicationCall.(UUID, Boolean) -> Unit) {
     val uid = userId

@@ -5,11 +5,10 @@ import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_SCHEDULER_EVEARA_SYNC
 import io.newm.server.features.scheduler.ArweaveCheckAndFundJob
 import io.newm.server.features.scheduler.EvearaSyncJob
+import io.newm.server.features.scheduler.ReferralHeroSyncJob
 import io.newm.shared.daemon.Daemon
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.propertiesFromResource
-import java.util.Date
-import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.delay
@@ -24,6 +23,8 @@ import org.quartz.Trigger
 import org.quartz.TriggerBuilder.newTrigger
 import org.quartz.TriggerKey
 import org.quartz.impl.StdSchedulerFactory
+import java.util.Date
+import java.util.concurrent.TimeUnit
 
 class QuartzSchedulerDaemon : Daemon {
     override val log = KotlinLogging.logger {}
@@ -42,6 +43,7 @@ class QuartzSchedulerDaemon : Daemon {
             }
         startEvearaSync(scheduler)
         startArweaveCheckAndFund(scheduler)
+        startReferralHeroSync(scheduler)
         log.info { "startup complete." }
     }
 
@@ -145,6 +147,34 @@ class QuartzSchedulerDaemon : Daemon {
         }
     }
 
+    private fun startReferralHeroSync(scheduler: Scheduler) {
+        try {
+            val jobKey = JobKey(REFERRAL_HERO_SYNC_JOB_KEY, REFERRAL_HERO_SYNC_JOB_GROUP)
+            if (scheduler.checkExists(jobKey)) {
+                log.info { "Found existing job for $jobKey" }
+                return
+            }
+            val triggerKey = TriggerKey("${jobKey.name}_trigger", REFERRAL_HERO_SYNC_JOB_GROUP)
+            log.info { "Creating new job for $jobKey" }
+            val jobDetail =
+                newJob(ReferralHeroSyncJob::class.java)
+                    .withIdentity(jobKey)
+                    .build()
+            val trigger =
+                newTrigger()
+                    .withIdentity(triggerKey)
+                    .startAt(Date(System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(30)))
+                    .withSchedule(simpleSchedule().withIntervalInHours(24).repeatForever())
+                    .build()
+            scheduler.scheduleJob(jobDetail, trigger)
+            log.info { "Scheduled job $jobKey with trigger: $trigger" }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            log.error(e) { "Error validating scheduled jobs!" }
+        }
+    }
+
     fun scheduleJob(
         jobDetail: JobDetail,
         trigger: Trigger
@@ -161,5 +191,7 @@ class QuartzSchedulerDaemon : Daemon {
         private const val EVEARA_SYNC_QUARTZ_GROUP = "eveara_sync_group"
         private const val ARWEAVE_CHECK_AND_FUND_JOB_KEY = "arweave_check_and_fund_job"
         private const val ARWEAVE_CHECK_AND_FUND_JOB_GROUP = "arweave_check_and_fund_group"
+        private const val REFERRAL_HERO_SYNC_JOB_KEY = "referral_hero_sync_job_key"
+        private const val REFERRAL_HERO_SYNC_JOB_GROUP = "referral_hero_sync_job_group"
     }
 }
