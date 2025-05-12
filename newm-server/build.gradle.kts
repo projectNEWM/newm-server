@@ -54,6 +54,7 @@ dependencies {
     implementation(Dependencies.Ktor.SERVER_HTML_BUILDER)
     implementation(Dependencies.Ktor.CLIENT_CORE)
     implementation(Dependencies.Ktor.CLIENT_CIO)
+    implementation(Dependencies.Ktor.CLIENT_OKHTTP)
     implementation(Dependencies.Ktor.CLIENT_AUTH)
     implementation(Dependencies.Ktor.CLIENT_CONTENT_NEGOTIATION)
     implementation(Dependencies.Ktor.CLIENT_SERIALIZATION)

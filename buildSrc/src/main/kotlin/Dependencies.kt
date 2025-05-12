@@ -79,6 +79,7 @@ object Dependencies {
         const val SERVER_HTML_BUILDER = "io.ktor:ktor-server-html-builder:$VERSION"
         const val CLIENT_CORE = "io.ktor:ktor-client-core:$VERSION"
         const val CLIENT_CIO = "io.ktor:ktor-client-cio:$VERSION"
+        const val CLIENT_OKHTTP = "io.ktor:ktor-client-okhttp:$VERSION"
         const val CLIENT_AUTH = "io.ktor:ktor-client-auth:$VERSION"
         const val CLIENT_CONTENT_NEGOTIATION = "io.ktor:ktor-client-content-negotiation:$VERSION"
         const val CLIENT_LOGGING = "io.ktor:ktor-client-logging:$VERSION"

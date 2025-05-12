@@ -29,6 +29,7 @@ import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.utils.io.core.toByteArray
 import io.ktor.utils.io.streams.asInput
 import io.newm.chain.util.toB64String
+import io.newm.server.client.QUALIFIER_UPLOAD_TRACK_HTTP_CLIENT
 import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_EVEARA_CLIENT_ID
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_EVEARA_CLIENT_SECRET
@@ -142,6 +143,7 @@ class EvearaDistributionRepositoryImpl(
     private val userRepository: UserRepository by inject()
     private val songRepository: SongRepository by inject()
     private val httpClient: HttpClient by inject()
+    private val trackUploadHttpClient: HttpClient by inject(QUALIFIER_UPLOAD_TRACK_HTTP_CLIENT)
     private val s3AsyncClient: S3AsyncClient by inject()
     private val applicationEnvironment: ApplicationEnvironment by inject()
     private val evearaServer by lazy { applicationEnvironment.getConfigString(CONFIG_KEY_EVEARA_SERVER) }
@@ -773,7 +775,7 @@ class EvearaDistributionRepositoryImpl(
         requireNotNull(user.distributionUserId) { "User.distributionUserId must not be null!" }
 
         val response =
-            httpClient.submitFormWithBinaryData(
+            trackUploadHttpClient.submitFormWithBinaryData(
                 "$evearaApiBaseUrl/tracks",
                 formData {
                     // Eveara API expects values to be quoted
