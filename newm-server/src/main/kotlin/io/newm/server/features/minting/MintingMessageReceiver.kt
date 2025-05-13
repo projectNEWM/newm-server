@@ -16,9 +16,9 @@ import io.newm.server.features.scheduler.OutletReleaseStatusJob
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.repo.SongRepository
+import io.newm.server.features.user.repo.UserRepository
 import io.newm.server.logging.captureToSentry
 import io.newm.shared.koin.inject
-import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
@@ -27,6 +27,7 @@ import org.quartz.JobKey
 import org.quartz.SimpleScheduleBuilder.simpleSchedule
 import org.quartz.TriggerBuilder.newTrigger
 import software.amazon.awssdk.services.sqs.model.Message
+import kotlin.time.Duration.Companion.minutes
 
 class MintingMessageReceiver : SqsMessageReceiver {
     private val log = KotlinLogging.logger {}
@@ -35,6 +36,7 @@ class MintingMessageReceiver : SqsMessageReceiver {
     private val arweaveRepository: ArweaveRepository by inject()
     private val mintingRepository: MintingRepository by inject()
     private val configRepository: ConfigRepository by inject()
+    private val userRepository: UserRepository by inject()
     private val quartzSchedulerDaemon: QuartzSchedulerDaemon by inject()
     private val json: Json by inject()
 
@@ -123,6 +125,10 @@ class MintingMessageReceiver : SqsMessageReceiver {
                 songRepository.updateSongMintingStatus(
                     songId = mintingStatusSqsMessage.songId,
                     mintingStatus = MintingStatus.AwaitingAudioEncoding,
+                )
+                userRepository.updateReferralStatusIfNeeded(
+                    userId = dbSong.ownerId!!,
+                    isConfirmed = false
                 )
             }
 
@@ -245,6 +251,10 @@ class MintingMessageReceiver : SqsMessageReceiver {
 
                     throw DistributeAndMintException(errorMessage, e).also { it.captureToSentry() }
                 }
+                userRepository.updateReferralStatusIfNeeded(
+                    userId = dbSong.ownerId!!,
+                    isConfirmed = true
+                )
             }
 
             MintingStatus.Pending -> {

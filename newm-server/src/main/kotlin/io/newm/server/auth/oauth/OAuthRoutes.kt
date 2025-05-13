@@ -11,6 +11,7 @@ import io.newm.server.auth.oauth.repo.OAuthRepository
 import io.newm.server.auth.password.createLoginResponse
 import io.newm.server.features.user.repo.UserRepository
 import io.newm.server.ktx.clientPlatform
+import io.newm.server.ktx.referrer
 import io.newm.server.recaptcha.repo.RecaptchaRepository
 import io.newm.shared.exception.HttpBadRequestException
 import io.newm.shared.koin.inject
@@ -29,7 +30,7 @@ fun Routing.createOAuthRoutes(type: OAuthType) {
         val oauthTokens = req.oauthTokens ?: req.code?.let { code ->
             oAuthRepository.getTokens(type, code, req.redirectUri)
         } ?: throw HttpBadRequestException("missing code")
-        val userId = userRepository.findOrAdd(type, oauthTokens, clientPlatform)
+        val userId = userRepository.findOrAdd(type, oauthTokens, clientPlatform, referrer)
         val isAdmin = userRepository.isAdmin(userId)
         respond(jwtRepository.createLoginResponse(userId, isAdmin))
     }

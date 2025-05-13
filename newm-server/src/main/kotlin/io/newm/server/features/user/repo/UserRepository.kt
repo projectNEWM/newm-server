@@ -11,7 +11,8 @@ import io.newm.shared.auth.Password
 interface UserRepository {
     suspend fun add(
         user: User,
-        clientPlatform: ClientPlatform?
+        clientPlatform: ClientPlatform?,
+        referrer: String?
     ): UserId
 
     suspend fun find(
@@ -24,7 +25,8 @@ interface UserRepository {
     suspend fun findOrAdd(
         oauthType: OAuthType,
         oauthTokens: OAuthTokens,
-        clientPlatform: ClientPlatform?
+        clientPlatform: ClientPlatform?,
+        referrer: String?
     ): UserId
 
     suspend fun exists(userId: UserId): Boolean
@@ -57,4 +59,9 @@ interface UserRepository {
     suspend fun recover(user: User)
 
     suspend fun delete(userId: UserId)
+
+    suspend fun updateReferralStatusIfNeeded(
+        userId: UserId,
+        isConfirmed: Boolean
+    )
 }

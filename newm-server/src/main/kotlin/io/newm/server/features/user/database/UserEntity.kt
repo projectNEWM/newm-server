@@ -3,6 +3,7 @@ package io.newm.server.features.user.database
 import io.newm.server.auth.oauth.model.OAuthType
 import io.newm.server.features.user.model.User
 import io.newm.server.features.user.model.UserFilters
+import io.newm.server.features.user.model.UserReferralStatus
 import io.newm.server.features.user.model.UserVerificationStatus
 import io.newm.server.model.ClientPlatform
 import io.newm.server.typealiases.UserId
@@ -62,6 +63,8 @@ open class UserEntity(
     var distributionIsni: String? by UserTable.distributionIsni
     var distributionIpn: String? by UserTable.distributionIpn
     var distributionNewmParticipantId: Long? by UserTable.distributionNewmParticipantId
+    var referralStatus: UserReferralStatus by UserTable.referralStatus
+    var referralCode: String? by UserTable.referralCode
 
     fun toModel(includeAll: Boolean = true) =
         User(
@@ -101,7 +104,8 @@ open class UserEntity(
             distributionLabelId = distributionLabelId,
             distributionIsni = distributionIsni,
             distributionIpn = distributionIpn,
-            distributionNewmParticipantId = distributionNewmParticipantId
+            distributionNewmParticipantId = distributionNewmParticipantId,
+            referralCode = referralCode
         )
 
     val stageOrFullName: String
@@ -149,5 +153,7 @@ open class UserEntity(
             exists {
                 UserTable.email.lowerCase() eq email.lowercase()
             }
+
+        fun allWithoutReferralCode(): SizedIterable<UserEntity> = find { UserTable.referralCode.isNullOrEmpty() }
     }
 }

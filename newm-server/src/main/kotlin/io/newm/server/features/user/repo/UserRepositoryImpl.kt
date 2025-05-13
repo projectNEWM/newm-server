@@ -8,9 +8,11 @@ import io.newm.server.auth.twofactor.repo.TwoFactorAuthRepository
 import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_EMAIL_WHITELIST
 import io.newm.server.features.email.repo.EmailRepository
+import io.newm.server.features.referralhero.repo.ReferralHeroRepository
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.model.User
 import io.newm.server.features.user.model.UserFilters
+import io.newm.server.features.user.model.UserReferralStatus
 import io.newm.server.features.user.model.UserVerificationStatus
 import io.newm.server.features.user.oauth.OAuthUser
 import io.newm.server.features.user.oauth.providers.AppleUserProvider
@@ -37,6 +39,8 @@ import io.newm.shared.ktx.existsHavingId
 import io.newm.shared.ktx.getConfigString
 import io.newm.shared.ktx.isValidPassword
 import io.newm.shared.ktx.orNull
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
 
@@ -47,6 +51,7 @@ internal class UserRepositoryImpl(
     private val appleUserProvider: AppleUserProvider,
     private val twoFactorAuthRepository: TwoFactorAuthRepository,
     private val configRepository: ConfigRepository,
+    private val referralHeroRepository: ReferralHeroRepository,
     private val spotifyProfileUrlVerifier: OutletProfileUrlVerifier,
     private val appleMusicProfileUrlVerifier: OutletProfileUrlVerifier,
     private val soundCloudProfileUrlVerifier: OutletProfileUrlVerifier,
@@ -57,7 +62,8 @@ internal class UserRepositoryImpl(
 
     override suspend fun add(
         user: User,
-        clientPlatform: ClientPlatform?
+        clientPlatform: ClientPlatform?,
+        referrer: String?
     ): UserId {
         logger.debug { "add: user = $user, clientPlatform = $clientPlatform" }
 
@@ -80,7 +86,7 @@ internal class UserRepositoryImpl(
             logger.warn { message }
             throw HttpUnprocessableEntityException(message)
         }
-
+        val referralCode = referralHeroRepository.addSubscriber(email, referrer)
         return transaction {
             email.checkEmailUnique()
             UserEntity
@@ -109,7 +115,10 @@ internal class UserRepositoryImpl(
                     this.companyName = user.companyName
                     this.companyLogoUrl = user.companyLogoUrl?.asValidUrl()
                     this.companyIpRights = user.companyIpRights
-                    this.dspPlanSubscribed = user.dspPlanSubscribed ?: false
+                    this.dspPlanSubscribed = user.dspPlanSubscribed == true
+                    this.referralCode = referralCode
+                    this.referralStatus =
+                        if (referrer == null) UserReferralStatus.NotReferred else UserReferralStatus.Pending
                 }.id.value
         }
     }
@@ -138,7 +147,8 @@ internal class UserRepositoryImpl(
     override suspend fun findOrAdd(
         oauthType: OAuthType,
         oauthTokens: OAuthTokens,
-        clientPlatform: ClientPlatform?
+        clientPlatform: ClientPlatform?,
+        referrer: String?
     ): UserId {
         logger.debug { "findOrAdd: oauthType = $oauthType" }
 
@@ -155,14 +165,20 @@ internal class UserRepositoryImpl(
         if (user.isEmailVerified != true) {
             throw HttpUnauthorizedException("Unverified email: $email")
         }
-        return transaction {
-            val entity = UserEntity.getByEmail(email) ?: UserEntity.new {
-                this.signupPlatform = clientPlatform ?: ClientPlatform.Studio
-                this.firstName = user.firstName?.asValidName()
-                this.lastName = user.lastName?.asValidName()
-                this.pictureUrl = user.pictureUrl?.asValidUrl()
-                this.email = email
-                this.verificationStatus = UserVerificationStatus.Unverified
+        return newSuspendedTransaction {
+            val entity = UserEntity.getByEmail(email) ?: let {
+                val referralCode = referralHeroRepository.addSubscriber(email, referrer)
+                UserEntity.new {
+                    this.signupPlatform = clientPlatform ?: ClientPlatform.Studio
+                    this.firstName = user.firstName?.asValidName()
+                    this.lastName = user.lastName?.asValidName()
+                    this.pictureUrl = user.pictureUrl?.asValidUrl()
+                    this.email = email
+                    this.verificationStatus = UserVerificationStatus.Unverified
+                    this.referralCode = referralCode
+                    this.referralStatus =
+                        if (referrer == null) UserReferralStatus.NotReferred else UserReferralStatus.Pending
+                }
             }
             entity.oauthType = oauthType
             entity.oauthId = user.id
@@ -353,6 +369,44 @@ internal class UserRepositoryImpl(
         logger.debug { "delete: userId = $userId" }
         transaction {
             UserEntity[userId].delete()
+        }
+    }
+
+    override suspend fun updateReferralStatusIfNeeded(
+        userId: UserId,
+        isConfirmed: Boolean
+    ) {
+        logger.debug { "updateReferralStatusIfNeeded: userId = $userId, isConfirmed: $isConfirmed" }
+        val email = transaction {
+            UserEntity[userId].run {
+                when {
+                    referralStatus == UserReferralStatus.Pending && !isConfirmed -> {
+                        referralStatus = UserReferralStatus.Unconfirmed
+                        email
+                    }
+
+                    referralStatus == UserReferralStatus.Unconfirmed && isConfirmed -> {
+                        referralStatus = UserReferralStatus.Confirmed
+                        email
+                    }
+
+                    else -> null
+                }
+            }
+        } ?: return
+
+        coroutineScope {
+            launch {
+                try {
+                    if (isConfirmed) {
+                        referralHeroRepository.confirmReferral(email)
+                    } else {
+                        referralHeroRepository.trackReferralConversion(email)
+                    }
+                } catch (exception: Exception) {
+                    logger.error(exception) { "Failed to push referral-status for $email" }
+                }
+            }
         }
     }
 

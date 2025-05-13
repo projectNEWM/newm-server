@@ -23,6 +23,7 @@ import io.newm.server.features.marketplace.database.MarketplacePurchaseTable
 import io.newm.server.features.marketplace.database.MarketplaceSaleTable
 import io.newm.server.features.playlist.database.PlaylistTable
 import io.newm.server.features.playlist.database.SongsInPlaylistsTable
+import io.newm.server.features.referralhero.repo.ReferralHeroRepository
 import io.newm.server.features.song.database.ReleaseEntity
 import io.newm.server.features.song.database.ReleaseTable
 import io.newm.server.features.song.database.SongEntity
@@ -55,13 +56,6 @@ import io.newm.shared.serialization.BigIntegerSerializer
 import io.newm.shared.serialization.LocalDateSerializer
 import io.newm.shared.serialization.LocalDateTimeSerializer
 import io.newm.shared.serialization.UUIDSerializer
-import java.math.BigDecimal
-import java.math.BigInteger
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.util.UUID
-import kotlin.time.Duration.Companion.minutes
-import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
@@ -81,6 +75,13 @@ import org.testcontainers.junit.jupiter.Testcontainers
 import software.amazon.awssdk.services.kms.KmsAsyncClient
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.presigner.S3Presigner
+import java.math.BigDecimal
+import java.math.BigInteger
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.util.UUID
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 @Testcontainers
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -182,6 +183,7 @@ open class BaseApplicationTests {
                 single { mockk<S3Presigner>(relaxed = true) }
                 single { mockk<KmsAsyncClient>(relaxed = true) }
                 single { mockk<RecaptchaRepository>(relaxed = true) }
+                single { mockk<ReferralHeroRepository>(relaxed = true) }
                 single<OutletProfileUrlVerifier>(QUALIFIER_SPOTIFY_PROFILE_URL_VERIFIER) {
                     mockk<OutletProfileUrlVerifier>(relaxed = true)
                 }

@@ -63,6 +63,7 @@ data class User(
     var distributionIpn: String? = null,
     @Transient
     var distributionNewmParticipantId: Long? = null,
+    val referralCode: String? = null,
 ) {
     val stageOrFullName: String by lazy { stageOrFullNameOf(nickname, firstName, lastName) }
 
