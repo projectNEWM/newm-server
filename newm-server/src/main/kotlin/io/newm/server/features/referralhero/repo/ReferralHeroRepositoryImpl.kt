@@ -8,6 +8,11 @@ import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.server.application.ApplicationEnvironment
 import io.newm.server.features.referralhero.model.CommonResponse
+import io.newm.server.features.referralhero.model.ReferralHeroSubscriber
+import io.newm.server.features.referralhero.model.ReferralStatus.Confirmed
+import io.newm.server.features.referralhero.model.ReferralStatus.NotReferred
+import io.newm.server.features.referralhero.model.ReferralStatus.Pending
+import io.newm.server.features.referralhero.model.ReferralStatus.Unconfirmed
 import io.newm.server.ktx.checkedBody
 import io.newm.server.ktx.getSecureConfigString
 import io.newm.shared.ktx.coLazy
@@ -27,10 +32,10 @@ class ReferralHeroRepositoryImpl(
         environment.getSecureConfigString("referralHero.apiToken")
     }
 
-    override suspend fun addSubscriber(
+    override suspend fun getOrCreateSubscriber(
         email: String,
         referrer: String?
-    ): String? {
+    ): ReferralHeroSubscriber? {
         val response: CommonResponse = httpClient
             .post(subscribersUrl) {
                 commonParamsAndOptions(email)
@@ -40,10 +45,20 @@ class ReferralHeroRepositoryImpl(
                 }
             }.checkedBody()
         return if (response.isStatusOk) {
-            logger.debug { "Succeeded add-subscriber for $email" }
-            response.data?.code
+            logger.debug { "Succeeded get-or-create-subscriber for $email" }
+            response.data?.let {
+                ReferralHeroSubscriber(
+                    referralCode = it.code,
+                    referralStatus = when (it.referralStatus) {
+                        "pending" -> Pending
+                        "unconfirmed" -> Unconfirmed
+                        "confirmed" -> Confirmed
+                        else -> NotReferred
+                    }
+                )
+            }
         } else {
-            logger.error { "Failed add-subscriber for $email - response: $response" }
+            logger.error { "Failed get-or-create-subscriber for $email - response: $response" }
             null
         }
     }
