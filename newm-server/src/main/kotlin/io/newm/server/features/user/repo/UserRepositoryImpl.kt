@@ -8,11 +8,11 @@ import io.newm.server.auth.twofactor.repo.TwoFactorAuthRepository
 import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_EMAIL_WHITELIST
 import io.newm.server.features.email.repo.EmailRepository
+import io.newm.server.features.referralhero.model.ReferralStatus
 import io.newm.server.features.referralhero.repo.ReferralHeroRepository
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.model.User
 import io.newm.server.features.user.model.UserFilters
-import io.newm.server.features.user.model.UserReferralStatus
 import io.newm.server.features.user.model.UserVerificationStatus
 import io.newm.server.features.user.oauth.OAuthUser
 import io.newm.server.features.user.oauth.providers.AppleUserProvider
@@ -86,7 +86,7 @@ internal class UserRepositoryImpl(
             logger.warn { message }
             throw HttpUnprocessableEntityException(message)
         }
-        val referralCode = referralHeroRepository.addSubscriber(email, referrer)
+        val referralHeroSubscriber = referralHeroRepository.getOrCreateSubscriber(email, referrer)
         return transaction {
             email.checkEmailUnique()
             UserEntity
@@ -116,9 +116,10 @@ internal class UserRepositoryImpl(
                     this.companyLogoUrl = user.companyLogoUrl?.asValidUrl()
                     this.companyIpRights = user.companyIpRights
                     this.dspPlanSubscribed = user.dspPlanSubscribed == true
-                    this.referralCode = referralCode
-                    this.referralStatus =
-                        if (referrer == null) UserReferralStatus.NotReferred else UserReferralStatus.Pending
+                    referralHeroSubscriber?.let {
+                        this.referralCode = it.referralCode
+                        this.referralStatus = it.referralStatus
+                    }
                 }.id.value
         }
     }
@@ -167,7 +168,7 @@ internal class UserRepositoryImpl(
         }
         return newSuspendedTransaction {
             val entity = UserEntity.getByEmail(email) ?: let {
-                val referralCode = referralHeroRepository.addSubscriber(email, referrer)
+                val referralHeroSubscriber = referralHeroRepository.getOrCreateSubscriber(email, referrer)
                 UserEntity.new {
                     this.signupPlatform = clientPlatform ?: ClientPlatform.Studio
                     this.firstName = user.firstName?.asValidName()
@@ -175,9 +176,10 @@ internal class UserRepositoryImpl(
                     this.pictureUrl = user.pictureUrl?.asValidUrl()
                     this.email = email
                     this.verificationStatus = UserVerificationStatus.Unverified
-                    this.referralCode = referralCode
-                    this.referralStatus =
-                        if (referrer == null) UserReferralStatus.NotReferred else UserReferralStatus.Pending
+                    referralHeroSubscriber?.let {
+                        this.referralCode = it.referralCode
+                        this.referralStatus = it.referralStatus
+                    }
                 }
             }
             entity.oauthType = oauthType
@@ -380,13 +382,13 @@ internal class UserRepositoryImpl(
         val email = transaction {
             UserEntity[userId].run {
                 when {
-                    referralStatus == UserReferralStatus.Pending && !isConfirmed -> {
-                        referralStatus = UserReferralStatus.Unconfirmed
+                    referralStatus == ReferralStatus.Pending && !isConfirmed -> {
+                        referralStatus = ReferralStatus.Unconfirmed
                         email
                     }
 
-                    referralStatus == UserReferralStatus.Unconfirmed && isConfirmed -> {
-                        referralStatus = UserReferralStatus.Confirmed
+                    referralStatus == ReferralStatus.Unconfirmed && isConfirmed -> {
+                        referralStatus = ReferralStatus.Confirmed
                         email
                     }
 

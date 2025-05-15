@@ -3,7 +3,7 @@ package io.newm.server.features.user.database
 import io.newm.server.auth.oauth.model.OAuthType
 import io.newm.server.features.user.model.User
 import io.newm.server.features.user.model.UserFilters
-import io.newm.server.features.user.model.UserReferralStatus
+import io.newm.server.features.referralhero.model.ReferralStatus
 import io.newm.server.features.user.model.UserVerificationStatus
 import io.newm.server.model.ClientPlatform
 import io.newm.server.typealiases.UserId
@@ -63,7 +63,7 @@ open class UserEntity(
     var distributionIsni: String? by UserTable.distributionIsni
     var distributionIpn: String? by UserTable.distributionIpn
     var distributionNewmParticipantId: Long? by UserTable.distributionNewmParticipantId
-    var referralStatus: UserReferralStatus by UserTable.referralStatus
+    var referralStatus: ReferralStatus by UserTable.referralStatus
     var referralCode: String? by UserTable.referralCode
 
     fun toModel(includeAll: Boolean = true) =

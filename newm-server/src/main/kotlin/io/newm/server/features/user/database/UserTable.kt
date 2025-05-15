@@ -1,7 +1,7 @@
 package io.newm.server.features.user.database
 
 import io.newm.server.auth.oauth.model.OAuthType
-import io.newm.server.features.user.model.UserReferralStatus
+import io.newm.server.features.referralhero.model.ReferralStatus
 import io.newm.server.features.user.model.UserVerificationStatus
 import io.newm.server.model.ClientPlatform
 import org.jetbrains.exposed.dao.id.UUIDTable
@@ -51,7 +51,7 @@ object UserTable : UUIDTable(name = "users") {
     val distributionIsni: Column<String?> = text("distribution_isni").nullable()
     val distributionIpn: Column<String?> = text("distribution_ipn").nullable()
     val distributionNewmParticipantId: Column<Long?> = long("distribution_newm_participant_id").nullable()
-    val referralStatus: Column<UserReferralStatus> =
-        enumeration("referral_status", UserReferralStatus::class).default(UserReferralStatus.NotReferred)
+    val referralStatus: Column<ReferralStatus> =
+        enumeration("referral_status", ReferralStatus::class).default(ReferralStatus.NotReferred)
     val referralCode: Column<String?> = text("referral_code").nullable()
 }

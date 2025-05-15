@@ -34,9 +34,14 @@ class ReferralHeroSyncJob : Job {
         log.info { "Found ${users.size} users to sync" }
         for (user in users) {
             try {
-                val referralCode = runBlocking { referralHeroRepository.addSubscriber(user.email) }
-                transaction { user.referralCode = referralCode }
-                log.info { "Successfully synced user `${user.email}`" }
+                val subscriber = runBlocking { referralHeroRepository.getOrCreateSubscriber(user.email) }
+                subscriber?.let {
+                    transaction {
+                        user.referralCode = it.referralCode
+                        user.referralStatus = it.referralStatus
+                    }
+                    log.info { "Successfully synced user `${user.email}`" }
+                }
             } catch (e: Exception) {
                 log.error(e) { "Failed syncing user `${user.email}`" }
             }

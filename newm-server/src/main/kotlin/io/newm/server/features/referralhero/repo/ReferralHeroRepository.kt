@@ -1,10 +1,12 @@
 package io.newm.server.features.referralhero.repo
 
+import io.newm.server.features.referralhero.model.ReferralHeroSubscriber
+
 interface ReferralHeroRepository {
-    suspend fun addSubscriber(
+    suspend fun getOrCreateSubscriber(
         email: String,
         referrer: String? = null,
-    ): String?
+    ): ReferralHeroSubscriber?
 
     suspend fun trackReferralConversion(email: String): Boolean
 
