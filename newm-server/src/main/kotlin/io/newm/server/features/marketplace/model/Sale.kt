@@ -56,6 +56,8 @@ data class Sale(
         val id: UUID,
         val name: String?,
         val pictureUrl: String?,
-        val role: String?,
+        @Deprecated("Use 'roles' instead")
+        val role: String?, // TODO: STUD-460 - remove "role" field after frontend migrates to use "roles"
+        val roles: List<String>?
     )
 }

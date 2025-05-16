@@ -48,6 +48,7 @@ import io.newm.server.ktx.toReferenceUtxo
 import io.newm.server.typealiases.SongId
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.coLazy
+import io.newm.shared.ktx.containsIgnoreCase
 import io.newm.shared.ktx.info
 import io.newm.shared.ktx.orZero
 import io.newm.shared.ktx.toHexString
@@ -497,7 +498,7 @@ class MintingRepositoryImpl(
                                 }
                             )
                             val visualArtists =
-                                collabs.filter { it.role.equals("Artwork", ignoreCase = true) && it.credited == true }
+                                collabs.filter { it.roles?.containsIgnoreCase("Artwork") == true && it.credited == true }
                             if (visualArtists.isNotEmpty()) {
                                 transaction {
                                     add(
@@ -738,7 +739,7 @@ class MintingRepositoryImpl(
                             // TODO: add country_of_origin from idenfy data? - maybe not MVP
 
                             val lyricists =
-                                collabs.filter { it.role.equals("Author (Lyrics)", ignoreCase = true) && it.credited == true }
+                                collabs.filter { it.roles?.containsIgnoreCase("Author (Lyrics)") == true && it.credited == true }
                             if (lyricists.isNotEmpty()) {
                                 transaction {
                                     add(
@@ -765,7 +766,7 @@ class MintingRepositoryImpl(
                             }
 
                             val contributingArtists =
-                                collabs.filter { it.role in contributingArtistRoles && it.credited == true }
+                                collabs.filter { it.roles.orEmpty().any { it in contributingArtistRoles } && it.credited == true }
                             if (contributingArtists.isNotEmpty()) {
                                 transaction {
                                     add(
@@ -780,7 +781,7 @@ class MintingRepositoryImpl(
                                                                     "${
                                                                         UserEntity.getByEmail(collab.email!!)!!
                                                                             .toModel(false).stageOrFullName
-                                                                    }, ${collab.role}".toPlutusData()
+                                                                    }, ${collab.roles?.firstOrNull()}".toPlutusData()
                                                                 }
                                                             )
                                                         }
@@ -791,7 +792,7 @@ class MintingRepositoryImpl(
                             }
 
                             val mixEngineers =
-                                collabs.filter { it.role.equals("Mixing Engineer", ignoreCase = true) && it.credited == true }
+                                collabs.filter { it.roles?.containsIgnoreCase("Mixing Engineer") == true && it.credited == true }
                             if (mixEngineers.isNotEmpty()) {
                                 transaction {
                                     add(
@@ -827,11 +828,7 @@ class MintingRepositoryImpl(
 
                             val masteringEngineers =
                                 collabs.filter {
-                                    it.role.equals(
-                                        "Mastering Engineer",
-                                        ignoreCase = true
-                                    ) &&
-                                        it.credited == true
+                                    it.roles?.containsIgnoreCase("Mastering Engineer") == true && it.credited == true
                                 }
                             if (masteringEngineers.isNotEmpty()) {
                                 transaction {
@@ -868,11 +865,7 @@ class MintingRepositoryImpl(
 
                             val recordingEngineers =
                                 collabs.filter {
-                                    it.role.equals(
-                                        "Recording Engineer",
-                                        ignoreCase = true
-                                    ) &&
-                                        it.credited == true
+                                    it.roles?.containsIgnoreCase("Recording Engineer") == true && it.credited == true
                                 }
                             if (recordingEngineers.isNotEmpty()) {
                                 transaction {
@@ -908,8 +901,8 @@ class MintingRepositoryImpl(
                             }
 
                             val producers =
-                                collabs.filter {
-                                    it.role in producerRoles && it.credited == true
+                                collabs.filter { c ->
+                                    c.roles.orEmpty().any { it in producerRoles } && c.credited == true
                                 }
                             if (producers.isNotEmpty()) {
                                 transaction {
@@ -956,7 +949,7 @@ class MintingRepositoryImpl(
         mapItemValue =
             plutusData {
                 val primaryArtistEmails =
-                    collabs.filter { it.role.equals("Artist", ignoreCase = true) && it.credited == true }.map { it.email!! }.toMutableSet()
+                    collabs.filter { it.roles?.containsIgnoreCase("Artist") == true && it.credited == true }.map { it.email!! }.toMutableSet()
                 if (primaryArtistEmails.isEmpty()) {
                     primaryArtistEmails.add(user.email!!)
                 }

@@ -1,9 +1,13 @@
 package io.newm.server.features.collaboration.repo
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.ktor.server.application.*
+import io.ktor.server.application.ApplicationEnvironment
 import io.newm.server.features.collaboration.database.CollaborationEntity
-import io.newm.server.features.collaboration.model.*
+import io.newm.server.features.collaboration.model.Collaboration
+import io.newm.server.features.collaboration.model.CollaborationFilters
+import io.newm.server.features.collaboration.model.CollaborationStatus
+import io.newm.server.features.collaboration.model.Collaborator
+import io.newm.server.features.collaboration.model.CollaboratorFilters
 import io.newm.server.features.email.repo.EmailRepository
 import io.newm.server.features.song.database.SongEntity
 import io.newm.server.features.song.database.SongTable
@@ -23,7 +27,7 @@ import io.newm.shared.ktx.millisToMinutesSecondsString
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.Transaction
 import org.jetbrains.exposed.sql.transactions.transaction
-import java.util.*
+import java.util.UUID
 
 internal class CollaborationRepositoryImpl(
     private val environment: ApplicationEnvironment,
@@ -48,7 +52,8 @@ internal class CollaborationRepositoryImpl(
                 .new {
                     this.songId = EntityID(songId, SongTable)
                     this.email = email
-                    this.role = collaboration.role
+                    @Suppress("DEPRECATION")
+                    this.roles = collaboration.roles ?: collaboration.role?.let { listOf(it) }.orEmpty()
                     this.royaltyRate = collaboration.royaltyRate?.toFloat()
                     collaboration.credited?.let { this.credited = it }
                     collaboration.featured?.let { this.featured = it }
@@ -78,7 +83,8 @@ internal class CollaborationRepositoryImpl(
                         }
                     }
                     collaboration.email?.let { email = it.asValidUniqueEmail(this) }
-                    collaboration.role?.let { role = it }
+                    @Suppress("DEPRECATION")
+                    collaboration.roles?.let { roles = it } ?: collaboration.role?.let { roles = listOf(it) }
                     collaboration.royaltyRate?.let { royaltyRate = it.toFloat() }
                     collaboration.credited?.let { credited = it }
                     collaboration.featured?.let { featured = it }
@@ -278,7 +284,9 @@ internal class CollaborationRepositoryImpl(
     }
 
     private fun Collaboration.checkFieldLengths() {
+        @Suppress("DEPRECATION")
         role?.checkLength("role")
+        roles?.forEachIndexed { index, role -> role.checkLength("role$index") }
     }
 
     private fun CollaborationEntity.checkStatus(vararg statuses: CollaborationStatus = arrayOf(CollaborationStatus.Editing)) {

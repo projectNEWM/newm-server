@@ -109,6 +109,7 @@ import io.newm.server.logging.logRequestJson
 import io.newm.server.typealiases.UserId
 import io.newm.shared.exception.HttpServiceUnavailableException
 import io.newm.shared.koin.inject
+import io.newm.shared.ktx.containsIgnoreCase
 import io.newm.shared.ktx.getConfigString
 import io.newm.shared.ktx.info
 import io.newm.shared.ktx.orNull
@@ -1481,9 +1482,9 @@ class EvearaDistributionRepositoryImpl(
         ) { "All Collaborations must be accepted!" }
 
         // if genre contains classical, there must be at least one collaborator with a role of "Composer"
-        if (song.genres?.any { it.equals("Classical", ignoreCase = true) } == true) {
+        if (song.genres?.containsIgnoreCase("Classical") == true) {
             require(
-                collabs.any { it.role?.contains("Composer", ignoreCase = true) == true }
+                collabs.any { it.roles?.containsIgnoreCase("Composer") == true }
             ) { "At least one collaborator must have a role of 'Composer' for classical genre!" }
         }
 
@@ -2139,10 +2140,7 @@ class EvearaDistributionRepositoryImpl(
         listOf(user.distributionArtistId!!) +
             collabs
                 .filter {
-                    it.role.equals(
-                        "Artist",
-                        ignoreCase = true
-                    ) &&
+                    it.roles?.containsIgnoreCase("Artist") == true &&
                         it.featured == false &&
                         it.email != user.email
                 }.map { it.distributionArtistId!! }
@@ -2189,10 +2187,7 @@ class EvearaDistributionRepositoryImpl(
                                 getRoles()
                                     .roles
                                     .first {
-                                        it.name.equals(
-                                            collab.role,
-                                            ignoreCase = true
-                                        )
+                                        collab.roles?.containsIgnoreCase(it.name) == true
                                     }.roleId
                             ),
                         payoutSharePercentage = 0,

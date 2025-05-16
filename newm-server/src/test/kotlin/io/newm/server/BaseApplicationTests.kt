@@ -239,7 +239,7 @@ open class BaseApplicationTests {
                 .new {
                     email = collab.email!!
                     songId = EntityID(collab.songId!!, SongTable)
-                    role = collab.role
+                    roles = collab.roles!!
                     credited = collab.credited!!
                     royaltyRate = collab.royaltyRate?.toFloat()
                     status = CollaborationStatus.Accepted

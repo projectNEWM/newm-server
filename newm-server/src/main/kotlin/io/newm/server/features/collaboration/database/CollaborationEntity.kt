@@ -41,7 +41,7 @@ class CollaborationEntity(
     val createdAt: LocalDateTime by CollaborationTable.createdAt
     var songId: EntityID<SongId> by CollaborationTable.songId
     var email: String by CollaborationTable.email
-    var role: String? by CollaborationTable.role
+    var roles: List<String> by CollaborationTable.roles
     var royaltyRate: Float? by CollaborationTable.royaltyRate
     var credited: Boolean by CollaborationTable.credited
     var featured: Boolean by CollaborationTable.featured
@@ -55,7 +55,8 @@ class CollaborationEntity(
             createdAt = createdAt,
             songId = songId.value,
             email = email,
-            role = role,
+            roles = roles,
+            role = roles.firstOrNull(),
             royaltyRate = royaltyRate?.toBigDecimal(),
             credited = credited,
             featured = featured,

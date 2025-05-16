@@ -16,7 +16,9 @@ data class Collaboration(
     @Contextual
     val songId: SongId? = null,
     val email: String? = null,
-    var role: String? = null,
+    @Deprecated("Use 'roles' instead")
+    val role: String? = null, // TODO: STUD-460 - remove "role" field after frontend migrates to use "roles"
+    val roles: List<String>? = null,
     @Contextual
     val royaltyRate: BigDecimal? = null,
     val credited: Boolean? = null,
