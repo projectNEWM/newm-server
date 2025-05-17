@@ -133,7 +133,8 @@ class MarketplaceSaleEntity(
                                 id = id.value,
                                 name = stageOrFullName,
                                 pictureUrl = pictureUrl,
-                                role = collab.role
+                                roles = collab.roles,
+                                role = collab.roles.firstOrNull()
                             )
                         }
                     }.sortedBy { it.name },

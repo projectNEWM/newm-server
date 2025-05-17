@@ -69,7 +69,7 @@ class CollaborationRoutesTests : BaseApplicationTests() {
                 Collaboration(
                     songId = songId,
                     email = "collaborator@email.com",
-                    role = "Role",
+                    roles = listOf("Role1", "Role2", "Role3"),
                     royaltyRate = 0.5f.toBigDecimal(),
                     credited = true,
                     featured = true
@@ -90,7 +90,7 @@ class CollaborationRoutesTests : BaseApplicationTests() {
             assertThat(actualCollaboration.createdAt).isAtLeast(startTime)
             assertThat(actualCollaboration.songId).isEqualTo(expectedCollaboration.songId)
             assertThat(actualCollaboration.email).isEqualTo(expectedCollaboration.email)
-            assertThat(actualCollaboration.role).isEqualTo(expectedCollaboration.role)
+            assertThat(actualCollaboration.roles).isEqualTo(expectedCollaboration.roles)
             assertThat(actualCollaboration.royaltyRate).isEqualTo(expectedCollaboration.royaltyRate)
             assertThat(actualCollaboration.credited).isEqualTo(expectedCollaboration.credited)
             assertThat(actualCollaboration.featured).isEqualTo(expectedCollaboration.featured)
@@ -106,7 +106,7 @@ class CollaborationRoutesTests : BaseApplicationTests() {
             val collaboration2 =
                 Collaboration(
                     email = "collaborator2@email.com",
-                    role = "Role2",
+                    roles = listOf("Role2.1", "Role2.2"),
                     royaltyRate = 2.toBigDecimal() * collaboration1.royaltyRate!!,
                     credited = !collaboration1.credited!!,
                     featured = !collaboration1.featured!!,
@@ -127,7 +127,7 @@ class CollaborationRoutesTests : BaseApplicationTests() {
             assertThat(collaboration.createdAt).isEqualTo(collaboration1.createdAt)
             assertThat(collaboration.songId).isEqualTo(collaboration1.songId)
             assertThat(collaboration.email).isEqualTo(collaboration2.email)
-            assertThat(collaboration.role).isEqualTo(collaboration2.role)
+            assertThat(collaboration.roles).isEqualTo(collaboration2.roles)
             assertThat(collaboration.royaltyRate).isEqualTo(collaboration2.royaltyRate)
             assertThat(collaboration.credited).isEqualTo(collaboration2.credited)
             assertThat(collaboration.featured).isEqualTo(collaboration2.featured)
@@ -1208,7 +1208,7 @@ private fun addCollaborationToDatabase(
         CollaborationEntity.new {
             this.songId = songId
             this.email = email ?: "collaborator$offset@email.com"
-            role = "Role$offset"
+            roles = listOf("Role_${offset}_0", "Role_${offset}_1", "Role_${offset}_2")
             royaltyRate = 1f / (offset + 2)
             credited = (offset % 2) == 1
             featured = (offset % 2) == 0

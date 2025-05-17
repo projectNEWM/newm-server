@@ -986,7 +986,7 @@ class MarketplaceRoutesTests : BaseApplicationTests() {
             CollaborationEntity.new {
                 songId = song.id
                 email = artist.email
-                role = "Artist"
+                roles = listOf("Artist", "Producer")
                 royaltyRate = 100f
             }
         }
