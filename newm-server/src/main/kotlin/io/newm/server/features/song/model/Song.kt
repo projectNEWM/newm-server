@@ -70,7 +70,10 @@ data class Song(
     val arweaveClipUrl: String? = null,
     @Transient
     val distributionTrackId: Long? = null,
+    @Deprecated("Use mintPaymentType and mintCost instead")
     val mintCostLovelace: Long? = null,
+    val mintPaymentType: String? = null,
+    val mintCost: Long? = null,
     @Transient
     val forceDistributed: Boolean? = null,
     // FIXME: Keep errorMessage for now since the UI/UX expects it. Eventually this will only be on the Release instead of the Song.

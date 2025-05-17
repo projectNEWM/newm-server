@@ -25,6 +25,7 @@ import io.newm.server.ktx.limit
 import io.newm.server.ktx.mintingStatus
 import io.newm.server.ktx.myUserId
 import io.newm.server.ktx.offset
+import io.newm.server.ktx.requestPaymentType
 import io.newm.server.ktx.songId
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.delete
@@ -152,7 +153,8 @@ fun Routing.createSongRoutes() {
                         respond(
                             songRepository.getMintingPaymentAmount(
                                 songId = songId,
-                                requesterId = myUserId
+                                requesterId = myUserId,
+                                paymentType = requestPaymentType,
                             )
                         )
                     }

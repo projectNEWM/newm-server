@@ -70,9 +70,9 @@ import io.newm.server.features.cardano.repo.CardanoRepository.Companion.CHARLI3_
 import io.newm.server.features.cardano.repo.CardanoRepository.Companion.CHARLI3_NEWM_USD_POLICY_PREPROD
 import io.newm.server.features.cardano.repo.CardanoRepository.Companion.MUTEX_NAME
 import io.newm.server.features.cardano.repo.CardanoRepository.Companion.NEWM_TOKEN_NAME
-import io.newm.server.features.cardano.repo.CardanoRepository.Companion.NEWM_TOKEN_NAME_TEST
+import io.newm.server.features.cardano.repo.CardanoRepository.Companion.NEWM_TOKEN_NAME_PREPROD
 import io.newm.server.features.cardano.repo.CardanoRepository.Companion.NEWM_TOKEN_POLICY
-import io.newm.server.features.cardano.repo.CardanoRepository.Companion.NEWM_TOKEN_POLICY_TEST
+import io.newm.server.features.cardano.repo.CardanoRepository.Companion.NEWM_TOKEN_POLICY_PREPROD
 import io.newm.server.features.dripdropz.repo.DripDropzRepository
 import io.newm.server.features.nftcdn.repo.NftCdnRepository
 import io.newm.server.features.song.model.Song
@@ -440,7 +440,7 @@ internal class CardanoRepositoryImpl(
         if (isMainnet()) {
             policyId == NEWM_TOKEN_POLICY && assetName == NEWM_TOKEN_NAME
         } else {
-            policyId == NEWM_TOKEN_POLICY_TEST && assetName == NEWM_TOKEN_NAME_TEST
+            policyId == NEWM_TOKEN_POLICY_PREPROD && assetName == NEWM_TOKEN_NAME_PREPROD
         }
 
     override suspend fun snapshotToken(

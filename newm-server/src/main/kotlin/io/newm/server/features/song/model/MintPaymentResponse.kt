@@ -29,4 +29,6 @@ data class MintPaymentResponse(
     val collabPerArtistPriceUsd: String? = null,
     @SerialName("usdAdaExchangeRate")
     val usdAdaExchangeRate: String? = null,
+    @SerialName("mintPaymentOptions")
+    val mintPaymentOptions: List<MintPaymentOption>? = null,
 )
