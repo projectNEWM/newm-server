@@ -1,6 +1,8 @@
 package io.newm.server.features.scheduler
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.newm.server.config.repo.ConfigRepository
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_REFERRAL_HERO_ENABLED
 import io.newm.server.features.referralhero.repo.ReferralHeroRepository
 import io.newm.server.features.user.database.UserEntity
 import io.newm.shared.koin.inject
@@ -16,12 +18,17 @@ import java.time.ZoneOffset
 class ReferralHeroSyncJob : Job {
     private val log = KotlinLogging.logger {}
     private val referralHeroRepository: ReferralHeroRepository by inject()
+    private val configRepository: ConfigRepository by inject()
 
     override fun execute(context: JobExecutionContext) {
         log.info {
             "ReferralHeroSyncJob key: ${context.jobDetail.key.name} executed at ${
                 LocalDateTime.ofInstant(context.fireTime.toInstant(), ZoneOffset.UTC)
             }"
+        }
+        if (!runBlocking { configRepository.getBoolean(CONFIG_KEY_REFERRAL_HERO_ENABLED) }) {
+            log.info { "Syncing currently disabled" }
+            return
         }
 
         val users = try {

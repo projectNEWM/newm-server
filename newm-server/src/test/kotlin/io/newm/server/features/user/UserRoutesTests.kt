@@ -14,7 +14,7 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
-import io.ktor.server.application.*
+import io.ktor.server.application.ApplicationEnvironment
 import io.mockk.coEvery
 import io.mockk.mockk
 import io.newm.server.BaseApplicationTests
@@ -24,6 +24,7 @@ import io.newm.server.config.database.ConfigEntity
 import io.newm.server.config.database.ConfigTable
 import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_EMAIL_WHITELIST
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_REFERRAL_HERO_ENABLED
 import io.newm.server.features.distribution.DistributionRepository
 import io.newm.server.features.email.repo.EmailRepositoryImpl
 import io.newm.server.features.model.CountResponse
@@ -75,6 +76,9 @@ class UserRoutesTests : BaseApplicationTests() {
             ConfigTable.deleteAll()
             UserTable.deleteAll()
             TwoFactorAuthTable.deleteAll()
+            ConfigEntity.new(CONFIG_KEY_REFERRAL_HERO_ENABLED) {
+                value = "false"
+            }
         }
         val configRepository: ConfigRepository by inject()
         configRepository.invalidateCache()
