@@ -73,7 +73,11 @@ class SongRoutesTests : BaseApplicationTests() {
                     get(),
                     // we need to mock the CardanoRepository to have a fixed ada price
                     mockk<CardanoRepository>(relaxed = true) {
-                        coEvery { queryAdaUSDPrice() } returns 253400L // $0.2534 ada price
+                        coEvery { isMainnet() } returns true
+                        coEvery { queryAdaUSDPrice() } returns 753400L // $0.7534 ada price
+                        coEvery { queryNEWMUSDPrice() } returns 800L // $0.0008 newm price
+                        coEvery { calculateMinUtxoForOutput(any()) } returns 1300000L // 1.3 ada min utxo
+                        coEvery { queryStreamTokenMinUtxo() } returns 1400000L // 1.4 ada min utxo
                     },
                     get(),
                     get(),
@@ -1065,6 +1069,7 @@ class SongRoutesTests : BaseApplicationTests() {
             transaction {
                 exec("INSERT INTO config VALUES ('mint.price','$expectedAmount')")
                 exec("INSERT INTO config VALUES ('distribution.price.usd','14990000')")
+                exec("INSERT INTO config VALUES ('distribution.price.usd.newm','11990000')")
             }
 
             // Add Song directly into database
@@ -1077,9 +1082,12 @@ class SongRoutesTests : BaseApplicationTests() {
             assertThat(response.status).isEqualTo(HttpStatusCode.OK)
             val responseBody: MintPaymentResponse = response.body()
             val actualCborHex = responseBody.cborHex
-            val expectedCborHex = "1a03b46ade"
+            val expectedCborHex = "1a015d5f56"
             assertThat(actualCborHex).isEqualTo(expectedCborHex)
-            assertThat(responseBody.usdPrice).isEqualTo("15.496800") // $15.4968
+            assertThat(responseBody.usdPrice).isEqualTo("16.496800") // $16.4968
+            requireNotNull(responseBody.mintPaymentOptions)
+            assertThat(responseBody.mintPaymentOptions[1].price).isEqualTo("16871.000000") // 16871.000000 NEWM
+            assertThat(responseBody.mintPaymentOptions[1].priceUsd).isEqualTo("13.496800") // $13.496800
         }
 
     @Test

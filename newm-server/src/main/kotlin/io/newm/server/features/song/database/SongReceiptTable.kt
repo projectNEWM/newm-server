@@ -21,4 +21,9 @@ object SongReceiptTable : UUIDTable(name = "song_receipts") {
     val adaCollabPrice: Column<Long> = long("ada_collab_price")
     val usdCollabPrice: Column<Long> = long("usd_collab_price")
     val usdAdaExchangeRate: Column<Long> = long("usd_ada_exchange_rate")
+    val newmPrice: Column<Long> = long("newm_price")
+    val newmDspPrice: Column<Long> = long("newm_dsp_price")
+    val newmMintPrice: Column<Long> = long("newm_mint_price")
+    val newmCollabPrice: Column<Long> = long("newm_collab_price")
+    val usdNewmExchangeRate: Column<Long> = long("usd_newm_exchange_rate")
 }
