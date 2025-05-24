@@ -7,7 +7,9 @@ import io.newm.server.auth.oauth.model.OAuthType
 import io.newm.server.auth.twofactor.repo.TwoFactorAuthRepository
 import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_EMAIL_WHITELIST
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_REFERRAL_HERO_ENABLED
 import io.newm.server.features.email.repo.EmailRepository
+import io.newm.server.features.referralhero.model.ReferralHeroSubscriber
 import io.newm.server.features.referralhero.model.ReferralStatus
 import io.newm.server.features.referralhero.repo.ReferralHeroRepository
 import io.newm.server.features.user.database.UserEntity
@@ -86,7 +88,7 @@ internal class UserRepositoryImpl(
             logger.warn { message }
             throw HttpUnprocessableEntityException(message)
         }
-        val referralHeroSubscriber = referralHeroRepository.getOrCreateSubscriber(email, referrer)
+        val referralHeroSubscriber = getOrCreateReferralHeroSubscriber(email, referrer)
         return transaction {
             email.checkEmailUnique()
             UserEntity
@@ -168,7 +170,7 @@ internal class UserRepositoryImpl(
         }
         return newSuspendedTransaction {
             val entity = UserEntity.getByEmail(email) ?: let {
-                val referralHeroSubscriber = referralHeroRepository.getOrCreateSubscriber(email, referrer)
+                val referralHeroSubscriber = getOrCreateReferralHeroSubscriber(email, referrer)
                 UserEntity.new {
                     this.signupPlatform = clientPlatform ?: ClientPlatform.Studio
                     this.firstName = user.firstName?.asValidName()
@@ -378,6 +380,8 @@ internal class UserRepositoryImpl(
         userId: UserId,
         isConfirmed: Boolean
     ) {
+        if (!configRepository.getBoolean(CONFIG_KEY_REFERRAL_HERO_ENABLED)) return
+
         logger.debug { "updateReferralStatusIfNeeded: userId = $userId, isConfirmed: $isConfirmed" }
         val email = transaction {
             UserEntity[userId].run {
@@ -411,6 +415,16 @@ internal class UserRepositoryImpl(
             }
         }
     }
+
+    private suspend fun getOrCreateReferralHeroSubscriber(
+        email: String,
+        referrer: String?
+    ): ReferralHeroSubscriber? =
+        if (configRepository.getBoolean(CONFIG_KEY_REFERRAL_HERO_ENABLED)) {
+            referralHeroRepository.getOrCreateSubscriber(email, referrer)
+        } else {
+            null
+        }
 
     private fun getUserEntityByEmail(email: String): UserEntity = UserEntity.getByEmail(email) ?: throw HttpNotFoundException("Doesn't exist: $email")
 
