@@ -7,6 +7,7 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.Routing
 import io.ktor.server.routing.route
 import io.newm.server.auth.jwt.AUTH_JWT
+import io.newm.server.features.collaboration.model.Collaboration
 import io.newm.server.features.collaboration.model.CollaborationIdBody
 import io.newm.server.features.collaboration.model.CollaborationReply
 import io.newm.server.features.collaboration.model.collaborationFilters
@@ -56,6 +57,17 @@ fun Routing.createCollaborationRoutes() {
                 put("reply") {
                     val collab = collabRepository.reply(collaborationId, myUserId, receive<CollaborationReply>().accepted)
                     songRepository.processCollaborations(collab.songId!!)
+                    respond(HttpStatusCode.NoContent)
+                }
+            }
+            route("batch") {
+                post {
+                    val userId = myUserId
+                    respond(receive<List<Collaboration>>().map { collabRepository.add(it, userId) })
+                }
+                patch {
+                    val userId = myUserId
+                    receive<List<Collaboration>>().forEach { collabRepository.update(it, it.id!!, userId) }
                     respond(HttpStatusCode.NoContent)
                 }
             }
