@@ -1,10 +1,10 @@
 package io.newm.server.features.song.model
 
 import io.newm.server.typealiases.SongId
-import kotlinx.serialization.Contextual
-import kotlinx.serialization.Serializable
 import java.time.LocalDateTime
 import java.util.UUID
+import kotlinx.serialization.Contextual
+import kotlinx.serialization.Serializable
 
 @Serializable
 data class SongReceipt(
@@ -23,4 +23,9 @@ data class SongReceipt(
     val adaCollabPrice: Long,
     val usdCollabPrice: Long,
     val usdAdaExchangeRate: Long,
+    val newmPrice: Long,
+    val newmDspPrice: Long,
+    val newmMintPrice: Long,
+    val newmCollabPrice: Long,
+    val usdNewmExchangeRate: Long,
 )

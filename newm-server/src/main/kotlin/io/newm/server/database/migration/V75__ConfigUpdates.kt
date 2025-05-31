@@ -5,13 +5,13 @@ import org.flywaydb.core.api.migration.Context
 import org.jetbrains.exposed.sql.transactions.transaction
 
 @Suppress("unused")
-class V27__ConfigUpdates : BaseJavaMigration() {
+class V75__ConfigUpdates : BaseJavaMigration() {
     override fun migrate(context: Context?) {
         transaction {
             execInBatch(
                 listOf(
-                    "INSERT INTO config VALUES ('eveara.newmEmail','accounting@newm.io') ON CONFLICT(id) DO NOTHING",
-                    "ALTER TABLE songs ADD COLUMN IF NOT EXISTS distribution_release_id BIGINT",
+                    // default $11.99 which is 20% discounted from $14.99 when the user pays USD value in $NEWM
+                    "INSERT INTO config VALUES ('distribution.price.usd.newm','11990000') ON CONFLICT(id) DO NOTHING"
                 )
             )
         }

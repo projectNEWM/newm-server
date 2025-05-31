@@ -14,6 +14,7 @@ import io.newm.chain.grpc.MonitorAddressResponse
 import io.newm.chain.grpc.MonitorPaymentAddressRequest
 import io.newm.chain.grpc.NativeAsset
 import io.newm.chain.grpc.NewmChainGrpcKt.NewmChainCoroutineStub
+import io.newm.chain.grpc.OutputUtxo
 import io.newm.chain.grpc.Signature
 import io.newm.chain.grpc.SnapshotNativeAssetsResponse
 import io.newm.chain.grpc.SubmitTransactionResponse
@@ -70,9 +71,9 @@ import io.newm.server.features.cardano.repo.CardanoRepository.Companion.CHARLI3_
 import io.newm.server.features.cardano.repo.CardanoRepository.Companion.CHARLI3_NEWM_USD_POLICY_PREPROD
 import io.newm.server.features.cardano.repo.CardanoRepository.Companion.MUTEX_NAME
 import io.newm.server.features.cardano.repo.CardanoRepository.Companion.NEWM_TOKEN_NAME
-import io.newm.server.features.cardano.repo.CardanoRepository.Companion.NEWM_TOKEN_NAME_TEST
+import io.newm.server.features.cardano.repo.CardanoRepository.Companion.NEWM_TOKEN_NAME_PREPROD
 import io.newm.server.features.cardano.repo.CardanoRepository.Companion.NEWM_TOKEN_POLICY
-import io.newm.server.features.cardano.repo.CardanoRepository.Companion.NEWM_TOKEN_POLICY_TEST
+import io.newm.server.features.cardano.repo.CardanoRepository.Companion.NEWM_TOKEN_POLICY_PREPROD
 import io.newm.server.features.dripdropz.repo.DripDropzRepository
 import io.newm.server.features.nftcdn.repo.NftCdnRepository
 import io.newm.server.features.song.model.Song
@@ -90,6 +91,12 @@ import io.newm.txbuilder.ktx.fingerprint
 import io.newm.txbuilder.ktx.mergeAmounts
 import io.newm.txbuilder.ktx.toCborObject
 import io.newm.txbuilder.ktx.toNativeAssetMap
+import java.time.Duration
+import java.util.UUID
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
+import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -100,12 +107,6 @@ import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.kms.KmsAsyncClient
 import software.amazon.awssdk.services.kms.model.DecryptRequest
 import software.amazon.awssdk.services.kms.model.EncryptRequest
-import java.time.Duration
-import java.util.UUID
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
-import kotlin.coroutines.suspendCoroutine
-import kotlin.time.Duration.Companion.minutes
 
 internal class CardanoRepositoryImpl(
     private val client: NewmChainCoroutineStub,
@@ -300,6 +301,11 @@ internal class CardanoRepositoryImpl(
         return outputUtxo.lovelace.toLong()
     }
 
+    override suspend fun calculateMinUtxoForOutput(outputUtxo: OutputUtxo): Long {
+        val response = client.calculateMinUtxoForOutput(outputUtxo)
+        return response.lovelace.toLong()
+    }
+
     /**
      * Read the Charli3 Oracle token datum value and return the price as a Long.
      */
@@ -440,7 +446,7 @@ internal class CardanoRepositoryImpl(
         if (isMainnet()) {
             policyId == NEWM_TOKEN_POLICY && assetName == NEWM_TOKEN_NAME
         } else {
-            policyId == NEWM_TOKEN_POLICY_TEST && assetName == NEWM_TOKEN_NAME_TEST
+            policyId == NEWM_TOKEN_POLICY_PREPROD && assetName == NEWM_TOKEN_NAME_PREPROD
         }
 
     override suspend fun snapshotToken(

@@ -1,7 +1,5 @@
 package io.newm.server.database.migration
 
-import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_EARNINGS_CLAIM_ORDER_FEE
-import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_EARNINGS_MONITOR_PAYMENT_ADDRESS_TIMEOUT_MIN
 import org.flywaydb.core.api.migration.BaseJavaMigration
 import org.flywaydb.core.api.migration.Context
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -13,9 +11,9 @@ class V57__ConfigUpdates : BaseJavaMigration() {
             execInBatch(
                 listOf(
                     // Expire a ClaimOrder after 30 minutes by default
-                    "INSERT INTO config VALUES ('$CONFIG_KEY_EARNINGS_MONITOR_PAYMENT_ADDRESS_TIMEOUT_MIN','30') ON CONFLICT(id) DO NOTHING",
+                    "INSERT INTO config VALUES ('earnings.monitorPaymentAddressTimeoutMin','30') ON CONFLICT(id) DO NOTHING",
                     // ClaimOrder takes 2 ada by default
-                    "INSERT INTO config VALUES ('$CONFIG_KEY_EARNINGS_CLAIM_ORDER_FEE','2000000') ON CONFLICT(id) DO NOTHING",
+                    "INSERT INTO config VALUES ('earnings.claimOrderFee','2000000') ON CONFLICT(id) DO NOTHING",
                     // update claim_orders table to add a new column
                     """ALTER TABLE claim_orders ADD COLUMN IF NOT EXISTS payment_address TEXT NOT NULL""",
                     """ALTER TABLE claim_orders ADD COLUMN IF NOT EXISTS payment_amount BIGINT NOT NULL""",
