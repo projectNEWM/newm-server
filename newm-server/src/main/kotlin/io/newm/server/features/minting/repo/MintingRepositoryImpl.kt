@@ -40,6 +40,7 @@ import io.newm.server.features.minting.model.MintInfo
 import io.newm.server.features.minting.model.MintingStatusTransactionModel
 import io.newm.server.features.song.model.Release
 import io.newm.server.features.song.model.Song
+import io.newm.server.features.song.model.PaymentType
 import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.model.User
@@ -105,15 +106,39 @@ class MintingRepositoryImpl(
                 }
             log.info { "Royalty splits for songId: ${song.id} - $streamTokenSplits" }
             val paymentKey = cardanoRepository.getKey(song.paymentKeyId!!)
-            val mintPriceLovelace = song.mintCostLovelace.toString()
+
+            // Convert release.mintPaymentType String to PaymentType enum
+            val paymentTypeEnum = PaymentType.valueOf(release.mintPaymentType ?: PaymentType.ADA.name)
+            val mintCost = release.mintCost // This will be NEWM amount if NEWM, or ADA amount if ADA
+
             val cip68ScriptAddress = configRepository.getString(CONFIG_KEY_MINT_CIP68_SCRIPT_ADDRESS)
             val cip68Policy = configRepository.getString(CONFIG_KEY_MINT_CIP68_POLICY)
             val cashRegisterCollectionAmount = configRepository.getLong(CONFIG_KEY_MINT_CASH_REGISTER_COLLECTION_AMOUNT)
             val cashRegisterMinAmount = configRepository.getLong(CONFIG_KEY_MINT_CASH_REGISTER_MIN_AMOUNT)
-            val paymentUtxo =
-                cardanoRepository
-                    .queryLiveUtxos(paymentKey.address)
-                    .first { it.lovelace == mintPriceLovelace && it.nativeAssetsCount == 0 }
+
+            val paymentUtxo = if (paymentTypeEnum == PaymentType.NEWM) {
+                val isMainnet = cardanoRepository.isMainnet()
+                val newmPolicyId = if (isMainnet) CardanoRepository.NEWM_TOKEN_POLICY else CardanoRepository.NEWM_TOKEN_POLICY_PREPROD
+                val newmTokenName = if (isMainnet) CardanoRepository.NEWM_TOKEN_NAME else CardanoRepository.NEWM_TOKEN_NAME_PREPROD
+                cardanoRepository.queryLiveUtxos(paymentKey.address).firstOrNull { utxo ->
+                    utxo.lovelace.toLong() >= 1000000L && // Ensure minimum ADA
+                        utxo.nativeAssetsList.any { nativeAsset ->
+                            nativeAsset.policy == newmPolicyId &&
+                                nativeAsset.name == newmTokenName &&
+                                nativeAsset.amount == mintCost.toString() // mintCost is release.mintCost, holds NEWM amount
+                        }
+                } ?: throw IllegalStateException("NEWM payment UTXO not found or invalid for songId: ${song.id}, looking for ${mintCost.toString()} $newmPolicyId.$newmTokenName")
+            } else { // Handles PaymentType.ADA and legacy cases (where release.mintPaymentType might be null)
+                val costToUse = if (release.mintPaymentType != null && paymentTypeEnum == PaymentType.ADA) {
+                    mintCost // This is release.mintCost, which would be ADA amount
+                } else {
+                    song.mintCostLovelace // Fallback to legacy song.mintCostLovelace
+                }
+                cardanoRepository.queryLiveUtxos(paymentKey.address).first { utxo ->
+                    utxo.lovelace == costToUse.toString() && utxo.nativeAssetsCount == 0
+                }
+            }
+
             val cashRegisterKey =
                 requireNotNull(cardanoRepository.getKeyByName("cashRegister")) { "cashRegister key not defined!" }
             val cashRegisterUtxos =

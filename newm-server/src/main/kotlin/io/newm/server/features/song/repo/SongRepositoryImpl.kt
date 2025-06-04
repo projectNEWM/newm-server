@@ -827,9 +827,11 @@ internal class SongRepositoryImpl(
         val newmPolicyId = if (isMainnet) NEWM_TOKEN_POLICY else NEWM_TOKEN_POLICY_PREPROD
         val newmTokenName = if (isMainnet) NEWM_TOKEN_NAME else NEWM_TOKEN_NAME_PREPROD
 
-        val outputUtxo = outputUtxo {
+        val paymentType = PaymentType.valueOf(song.mintPaymentType ?: PaymentType.ADA.name)
+
+        val outputUtxoBuilder = outputUtxo {
             address = key.address
-            when (PaymentType.valueOf(song.mintPaymentType ?: PaymentType.ADA.name)) {
+            when (paymentType) {
                 PaymentType.ADA -> {
                     lovelace = song.mintCost.toString()
                 }
@@ -842,23 +844,19 @@ internal class SongRepositoryImpl(
                             this.amount = song.mintCost.toString()
                         }
                     )
+                    // Min ADA will be calculated and added below
                 }
             }
-        }
+        }.toBuilder()
 
-        val minAdaForUtxo = cardanoRepository.calculateMinUtxoForOutput(outputUtxo)
+        // Calculate min ADA required for the output and set it
+        val minAdaForUtxo = cardanoRepository.calculateMinUtxoForOutput(outputUtxoBuilder.build())
+        outputUtxoBuilder.lovelace = minAdaForUtxo.toString()
 
         val transaction =
             cardanoRepository.buildTransaction {
                 this.sourceUtxos.addAll(sourceUtxos)
-                this.outputUtxos.add(
-                    outputUtxo
-                        .toBuilder()
-                        .apply {
-                            // add the min ada amount to the output
-                            lovelace = minAdaForUtxo.toString()
-                        }.build()
-                )
+                this.outputUtxos.add(outputUtxoBuilder.build())
                 this.changeAddress = changeAddress
             }
 
@@ -907,27 +905,30 @@ internal class SongRepositoryImpl(
                 }
 
                 with(outputUtxos) {
-                    add(
-                        outputUtxo {
-                            address = walletAddress
-                            when (paymentType) {
-                                PaymentType.ADA -> {
-                                    lovelace = amountToRefund.toString()
-                                }
-
-                                PaymentType.NEWM -> {
-                                    // lovelace = min ada calculated automatically
-                                    nativeAssets.add(
-                                        nativeAsset {
-                                            this.policy = newmPolicyId
-                                            this.name = newmTokenName
-                                            this.amount = amountToRefund.toString()
-                                        }
-                                    )
-                                }
+                    val refundOutputUtxoBuilder = outputUtxo {
+                        address = walletAddress
+                        when (paymentType) {
+                            PaymentType.ADA -> {
+                                lovelace = amountToRefund.toString()
+                            }
+                            PaymentType.NEWM -> {
+                                nativeAssets.add(
+                                    nativeAsset {
+                                        this.policy = newmPolicyId
+                                        this.name = newmTokenName
+                                        this.amount = amountToRefund.toString()
+                                    }
+                                )
+                                // Min ADA will be calculated and added below
                             }
                         }
-                    )
+                    }.toBuilder()
+
+                    if (paymentType == PaymentType.NEWM) {
+                        val minAdaForNewmRefund = cardanoRepository.calculateMinUtxoForOutput(refundOutputUtxoBuilder.build())
+                        refundOutputUtxoBuilder.lovelace = minAdaForNewmRefund.toString()
+                    }
+                    add(refundOutputUtxoBuilder.build())
                 }
 
                 changeAddress = cashRegisterKey.address

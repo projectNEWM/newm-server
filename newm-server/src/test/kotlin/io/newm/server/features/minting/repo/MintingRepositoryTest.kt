@@ -6,12 +6,23 @@ import com.google.common.truth.Truth.assertThat
 import io.grpc.ManagedChannelBuilder
 import io.grpc.Metadata
 import io.grpc.stub.MetadataUtils
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.newm.chain.grpc.NewmChainGrpcKt
+import io.newm.chain.grpc.Signature
+import io.newm.chain.grpc.SubmitTransactionResponse
+import io.newm.chain.grpc.TransactionBuilderResponse
+import io.newm.chain.grpc.Utxo
+import io.newm.chain.grpc.nativeAsset
 import io.newm.chain.grpc.utxo
 import io.newm.chain.util.hexToByteArray
 import io.newm.server.BaseApplicationTests
+import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.features.cardano.model.Key
+import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.cardano.repo.CardanoRepositoryImpl
 import io.newm.server.features.collaboration.model.Collaboration
 import io.newm.server.features.collaboration.model.CollaborationFilters
@@ -27,6 +38,7 @@ import io.newm.server.features.song.repo.SongRepositoryImpl
 import io.newm.server.features.user.database.UserEntity
 import io.newm.server.features.user.database.UserTable
 import io.newm.server.features.user.model.User
+import io.newm.server.features.user.repo.UserRepository
 import io.newm.server.model.FilterCriteria
 import io.newm.server.typealiases.SongId
 import io.newm.shared.ktx.toHexString
@@ -37,21 +49,246 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
+import kotlin.test.assertTrue
+
 
 class MintingRepositoryTest : BaseApplicationTests() {
+
+    private lateinit var userRepository: UserRepository
+    private lateinit var collaborationRepository: CollaborationRepository
+    private lateinit var cardanoRepository: CardanoRepository
+    private lateinit var configRepository: ConfigRepository
+    private lateinit var songRepository: SongRepository // Mocked for MintingRepositoryImpl dependencies
+    private lateinit var mintingRepository: MintingRepositoryImpl
+
+    // Test constants
+    private val ownerId = UUID.randomUUID()
+    private var testSongId = UUID.randomUUID() // Changed to var for multiple test setups
+    private var testReleaseId = UUID.randomUUID()
+    private var testPaymentKeyId = UUID.randomUUID()
+
+    private val expectedCip68PolicyId = "test_cip68_policy_id"
+
+
     @BeforeEach
     fun beforeEach() {
         transaction {
             UserTable.deleteAll()
+            // Add other tables if created by original setupDatabase or addSongToDatabase
+            // Example: ReleaseTable.deleteAll(), SongTable.deleteAll(), CollaborationTable.deleteAll()
         }
+        userRepository = mockk(relaxed = true)
+        collaborationRepository = mockk(relaxed = true)
+        cardanoRepository = mockk(relaxed = true)
+        configRepository = mockk(relaxed = true)
+        songRepository = mockk(relaxed = true)
+
+        mintingRepository = MintingRepositoryImpl(
+            userRepository,
+            collaborationRepository,
+            cardanoRepository,
+            configRepository
+        )
+
+        // Common mocks for all tests, can be overridden in specific tests
+        val owner = User(id = ownerId, firstName = "Test", lastName = "User", email = "owner@email.com", walletAddress = "owner_wallet_address")
+        coEvery { userRepository.get(ownerId) } returns owner
+        coEvery { userRepository.findByEmail(any()) } returns owner // Simplified for collaborators
+
+        val collaboration = Collaboration(email = "collab@email.com", royaltyRate = BigDecimal("100.0"), status = CollaborationStatus.Accepted)
+        coEvery { collaborationRepository.getAllBySongId(any()) } returns listOf(collaboration) // Use any() for songId flexibility
+
+        // Common Cardano key mocks
+        val paymentKeyMock = Key(id = testPaymentKeyId, address = "payment_key_address", skey = "skey", vkey = "vkey", createdAt = LocalDateTime.now())
+        val cashRegisterKeyMock = Key(id = UUID.randomUUID(), address = "cash_register_address", skey = "skey_cr", vkey = "vkey_cr", createdAt = LocalDateTime.now(), name = "cashRegister")
+        val collateralKeyMock = Key(id = UUID.randomUUID(), address = "collateral_address", skey = "skey_coll", vkey = "vkey_coll", createdAt = LocalDateTime.now(), name = "collateral")
+        coEvery { cardanoRepository.getKey(testPaymentKeyId) } returns paymentKeyMock
+        coEvery { cardanoRepository.getKeyByName("cashRegister") } returns cashRegisterKeyMock
+        coEvery { cardanoRepository.getKeyByName("collateral") } returns collateralKeyMock
+        coEvery { cardanoRepository.getKeyByName("moneyBox") } returns null // Default to no moneyBox
+
+        // Common ConfigRepository mocks
+        coEvery { configRepository.getString(ConfigRepository.CONFIG_KEY_MINT_CIP68_SCRIPT_ADDRESS) } returns "cip68_script_address"
+        coEvery { configRepository.getString(ConfigRepository.CONFIG_KEY_MINT_CIP68_POLICY) } returns expectedCip68PolicyId
+        coEvery { configRepository.getLong(ConfigRepository.CONFIG_KEY_MINT_CASH_REGISTER_COLLECTION_AMOUNT) } returns 20000000L
+        coEvery { configRepository.getLong(ConfigRepository.CONFIG_KEY_MINT_CASH_REGISTER_MIN_AMOUNT) } returns 5000000L
+        coEvery { configRepository.getString(ConfigRepository.CONFIG_KEY_MINT_STARTER_TOKEN_UTXO_REFERENCE) } returns "starter_ref_hash#0"
+        coEvery { configRepository.getString(ConfigRepository.CONFIG_KEY_MINT_SCRIPT_UTXO_REFERENCE) } returns "script_ref_hash#1"
+        coEvery { cardanoRepository.isMainnet() } returns false // Default to preprod for NEWM tokens
+
+        // Common Cardano transaction mocks
+        val dummySignatures = listOf(Signature.newBuilder().setSignature("dummySig").build())
+        coEvery { cardanoRepository.signTransactionDummy(any()) } returns dummySignatures
+        coEvery { cardanoRepository.signTransaction(any(), any()) } returns dummySignatures
+        val txBuilderResponse = TransactionBuilderResponse.newBuilder()
+            .setTransactionId("test_tx_id")
+            .setTransactionCbor(com.google.protobuf.ByteString.copyFromUtf8("dummy_tx_cbor"))
+            .build()
+        coEvery { cardanoRepository.buildTransaction(any()) } returns txBuilderResponse
+        coEvery { cardanoRepository.submitTransaction(any()) } returns SubmitTransactionResponse.newBuilder()
+            .setResult("MsgAcceptTx")
+            .setTxId("test_tx_id")
+            .build()
     }
 
-    private lateinit var songId: SongId
+    private fun createMockSong(mintCostLovelace: Long? = null): Song {
+        testSongId = UUID.randomUUID() // Ensure unique songId for each test creating a song
+        return Song(
+            id = testSongId,
+            ownerId = ownerId,
+            title = "Test Song",
+            releaseId = testReleaseId,
+            paymentKeyId = testPaymentKeyId,
+            arweaveLyricsUrl = "ar://lyrics",
+            arweaveTokenAgreementUrl = "ar://agreement",
+            arweaveClipUrl = "ar://clip",
+            duration = 200000,
+            genres = listOf("Electronic"),
+            isrc = "QZ123",
+            moods = listOf("Energetic"),
+            compositionCopyrightOwner = "Owner",
+            compositionCopyrightYear = 2024,
+            phonographicCopyrightOwner = "Owner",
+            phonographicCopyrightYear = 2024,
+            mintCostLovelace = mintCostLovelace
+        )
+    }
 
-    private suspend fun setupDatabase() {
+    private fun mockReleaseAndSong(
+        mintPaymentType: String?,
+        mintCost: Long?,
+        songMintCostLovelace: Long?
+    ) {
+        testReleaseId = UUID.randomUUID() // Ensure unique releaseId
+        val release = Release(
+            id = testReleaseId,
+            ownerId = ownerId,
+            title = "Test Release",
+            releaseType = ReleaseType.SINGLE,
+            arweaveCoverArtUrl = "ar://cover",
+            releaseDate = LocalDate.now(),
+            publicationDate = LocalDate.now(),
+            mintPaymentType = mintPaymentType,
+            mintCost = mintCost
+        )
+        coEvery { songRepository.getRelease(testReleaseId) } returns release
+        // The song object passed to mint() will be created by createMockSong() in each test
+    }
+
+    private fun mockCommonUtxosForMint() {
+        val cashRegisterUtxos = listOf(utxo { hash = "cr_utxo_1"; ix = 0; lovelace = "10000000" })
+        coEvery { cardanoRepository.queryLiveUtxos(cardanoRepository.getKeyByName("cashRegister")!!.address) } returns cashRegisterUtxos
+
+        val collateralUtxo = utxo { hash = "coll_utxo_1"; ix = 0; lovelace = "5000000" }
+        coEvery { cardanoRepository.queryLiveUtxos(cardanoRepository.getKeyByName("collateral")!!.address) } returns listOf(collateralUtxo)
+    }
+
+    @Test
+    fun `test mint with NEWM payment`() = runBlocking {
+        val newmPaymentAmount = 10000L
+        mockReleaseAndSong(mintPaymentType = "NEWM", mintCost = newmPaymentAmount, songMintCostLovelace = null)
+        val songToMint = createMockSong(mintCostLovelace = null)
+        mockCommonUtxosForMint()
+
+        val newmPolicy = CardanoRepository.NEWM_TOKEN_POLICY_PREPROD
+        val newmName = CardanoRepository.NEWM_TOKEN_NAME_PREPROD
+        val newmPaymentUtxo = utxo {
+            hash = "payment_utxo_hash_newm"
+            ix = 0
+            lovelace = "2000000" // 2 ADA
+            nativeAssets.add(nativeAsset { policy = newmPolicy; name = newmName; amount = newmPaymentAmount.toString() })
+        }
+        coEvery { cardanoRepository.queryLiveUtxos(cardanoRepository.getKey(testPaymentKeyId)!!.address) } returns listOf(newmPaymentUtxo)
+
+        val mintInfo = mintingRepository.mint(songToMint)
+
+        assertThat(mintInfo.policyId).isEqualTo(expectedCip68PolicyId)
+        val cashRegisterUtxos = cardanoRepository.queryLiveUtxos(cardanoRepository.getKeyByName("cashRegister")!!.address)
+        val expectedRefUtxo = (cashRegisterUtxos + listOf(newmPaymentUtxo)).sortedBy { it.hash + "#" + it.ix }.first()
+        val (_, calculatedFracTokenName) = mintingRepository.calculateTokenNames(expectedRefUtxo)
+        assertThat(mintInfo.assetName).isEqualTo(calculatedFracTokenName)
+
+        val buildTxSlot = slot<suspend TransactionBuilderResponse.Builder.() -> Unit>()
+        coVerify(exactly = 2) { cardanoRepository.buildTransaction(capture(buildTxSlot)) }
+        val capturedSourceUtxos = mutableListOf<Utxo>()
+        val mockTxBuilderForCapture = mockk<TransactionBuilderResponse.Builder>(relaxed = true) {
+            every { addSourceUtxos(any<Utxo>()) } answers { capturedSourceUtxos.add(firstArg()); this }
+            every { addAllSourceUtxos(any<Iterable<Utxo>>()) } answers { capturedSourceUtxos.addAll(firstArg()); this }
+        }
+        runBlocking { buildTxSlot.captured.invoke(mockTxBuilderForCapture) }
+        assertTrue(capturedSourceUtxos.any { it.hash == newmPaymentUtxo.hash && it.ix == newmPaymentUtxo.ix }, "NEWM payment UTXO missing.")
+        coVerify { cardanoRepository.submitTransaction(any()) }
+    }
+
+    @Test
+    fun `test mint with Modern ADA payment`() = runBlocking {
+        val adaPaymentAmount = 5000000L // 5 ADA
+        mockReleaseAndSong(mintPaymentType = "ADA", mintCost = adaPaymentAmount, songMintCostLovelace = null) // songMintCostLovelace can be anything, release.mintCost takes precedence
+        val songToMint = createMockSong(mintCostLovelace = null) // song.mintCostLovelace is not used due to release.mintPaymentType being "ADA"
+        mockCommonUtxosForMint()
+
+        val adaPaymentUtxo = utxo { hash = "payment_utxo_hash_ada"; ix = 0; lovelace = adaPaymentAmount.toString() }
+        coEvery { cardanoRepository.queryLiveUtxos(cardanoRepository.getKey(testPaymentKeyId)!!.address) } returns listOf(adaPaymentUtxo)
+
+        val mintInfo = mintingRepository.mint(songToMint)
+
+        assertThat(mintInfo.policyId).isEqualTo(expectedCip68PolicyId)
+        val cashRegisterUtxos = cardanoRepository.queryLiveUtxos(cardanoRepository.getKeyByName("cashRegister")!!.address)
+        val expectedRefUtxo = (cashRegisterUtxos + listOf(adaPaymentUtxo)).sortedBy { it.hash + "#" + it.ix }.first()
+        val (_, calculatedFracTokenName) = mintingRepository.calculateTokenNames(expectedRefUtxo)
+        assertThat(mintInfo.assetName).isEqualTo(calculatedFracTokenName)
+
+        val buildTxSlot = slot<suspend TransactionBuilderResponse.Builder.() -> Unit>()
+        coVerify(exactly = 2) { cardanoRepository.buildTransaction(capture(buildTxSlot)) }
+        val capturedSourceUtxos = mutableListOf<Utxo>()
+        val mockTxBuilderForCapture = mockk<TransactionBuilderResponse.Builder>(relaxed = true) {
+            every { addSourceUtxos(any<Utxo>()) } answers { capturedSourceUtxos.add(firstArg()); this }
+            every { addAllSourceUtxos(any<Iterable<Utxo>>()) } answers { capturedSourceUtxos.addAll(firstArg()); this }
+        }
+        runBlocking { buildTxSlot.captured.invoke(mockTxBuilderForCapture) }
+        assertTrue(capturedSourceUtxos.any { it.hash == adaPaymentUtxo.hash && it.ix == adaPaymentUtxo.ix && it.lovelace == adaPaymentAmount.toString() }, "ADA payment UTXO missing or incorrect.")
+        coVerify { cardanoRepository.submitTransaction(any()) }
+    }
+
+    @Test
+    fun `test mint with Legacy ADA payment`() = runBlocking {
+        val legacyAdaPaymentAmount = 6000000L // 6 ADA
+        mockReleaseAndSong(mintPaymentType = null, mintCost = null, songMintCostLovelace = legacyAdaPaymentAmount)
+        val songToMint = createMockSong(mintCostLovelace = legacyAdaPaymentAmount) // song.mintCostLovelace is used here
+        mockCommonUtxosForMint()
+
+        val legacyAdaPaymentUtxo = utxo { hash = "payment_utxo_hash_legacy_ada"; ix = 0; lovelace = legacyAdaPaymentAmount.toString() }
+        coEvery { cardanoRepository.queryLiveUtxos(cardanoRepository.getKey(testPaymentKeyId)!!.address) } returns listOf(legacyAdaPaymentUtxo)
+
+        val mintInfo = mintingRepository.mint(songToMint)
+
+        assertThat(mintInfo.policyId).isEqualTo(expectedCip68PolicyId)
+        val cashRegisterUtxos = cardanoRepository.queryLiveUtxos(cardanoRepository.getKeyByName("cashRegister")!!.address)
+        val expectedRefUtxo = (cashRegisterUtxos + listOf(legacyAdaPaymentUtxo)).sortedBy { it.hash + "#" + it.ix }.first()
+        val (_, calculatedFracTokenName) = mintingRepository.calculateTokenNames(expectedRefUtxo)
+        assertThat(mintInfo.assetName).isEqualTo(calculatedFracTokenName)
+
+        val buildTxSlot = slot<suspend TransactionBuilderResponse.Builder.() -> Unit>()
+        coVerify(exactly = 2) { cardanoRepository.buildTransaction(capture(buildTxSlot)) }
+        val capturedSourceUtxos = mutableListOf<Utxo>()
+        val mockTxBuilderForCapture = mockk<TransactionBuilderResponse.Builder>(relaxed = true) {
+            every { addSourceUtxos(any<Utxo>()) } answers { capturedSourceUtxos.add(firstArg()); this }
+            every { addAllSourceUtxos(any<Iterable<Utxo>>()) } answers { capturedSourceUtxos.addAll(firstArg()); this }
+        }
+        runBlocking { buildTxSlot.captured.invoke(mockTxBuilderForCapture) }
+        assertTrue(capturedSourceUtxos.any { it.hash == legacyAdaPaymentUtxo.hash && it.ix == legacyAdaPaymentUtxo.ix && it.lovelace == legacyAdaPaymentAmount.toString() }, "Legacy ADA payment UTXO missing or incorrect.")
+        coVerify { cardanoRepository.submitTransaction(any()) }
+    }
+
+    // Original tests from MintingRepositoryTest.kt are manually merged below this line
+
+    private lateinit var originalSetupSongId: SongId // To avoid conflict with testSongId for new tests
+
+    private suspend fun originalSetupDatabase() { // Renamed to avoid conflict
         val primaryArtistId =
             listOf(
                 User(
@@ -140,7 +377,7 @@ class MintingRepositoryTest : BaseApplicationTests() {
                 )
             ).map { user -> addUserToDatabase(user) }.first()
 
-        songId =
+        originalSetupSongId =
             addSongToDatabase(
                 Release(
                     ownerId = primaryArtistId,
@@ -170,170 +407,50 @@ class MintingRepositoryTest : BaseApplicationTests() {
             )
 
         listOf(
-            Collaboration(
-                createdAt = LocalDateTime.now(),
-                songId = songId,
-                email = "bob.ross@pbs.org",
-                roles = listOf("Artwork"),
-                royaltyRate = 0.0f.toBigDecimal(),
-                credited = true,
-                status = CollaborationStatus.Accepted,
-            ),
-            Collaboration(
-                createdAt = LocalDateTime.now(),
-                songId = songId,
-                email = "NSTASIA@me.com",
-                roles = listOf("Artist"),
-                royaltyRate = 10.0f.toBigDecimal(),
-                credited = true,
-                status = CollaborationStatus.Accepted,
-            ),
-            Collaboration(
-                createdAt = LocalDateTime.now(),
-                songId = songId,
-                email = "mirai@me.com",
-                roles = listOf("Artist"),
-                royaltyRate = 10.0f.toBigDecimal(),
-                credited = true,
-                status = CollaborationStatus.Accepted,
-            ),
-            Collaboration(
-                createdAt = LocalDateTime.now(),
-                songId = songId,
-                email = "lyrics1@domain.com",
-                roles = listOf("Author (Lyrics)"),
-                royaltyRate = 0.0f.toBigDecimal(),
-                credited = true,
-                status = CollaborationStatus.Accepted,
-            ),
-            Collaboration(
-                createdAt = LocalDateTime.now(),
-                songId = songId,
-                email = "lyrics2@domain.com",
-                roles = listOf("Author (Lyrics)"),
-                royaltyRate = 0.0f.toBigDecimal(),
-                credited = true,
-                status = CollaborationStatus.Accepted,
-            ),
-            Collaboration(
-                createdAt = LocalDateTime.now(),
-                songId = songId,
-                email = "lyrics3@domain.com",
-                roles = listOf("Author (Lyrics)"),
-                royaltyRate = 0.0f.toBigDecimal(),
-                credited = true,
-                status = CollaborationStatus.Accepted,
-            ),
-            Collaboration(
-                id = UUID.randomUUID(),
-                createdAt = LocalDateTime.now(),
-                songId = songId,
-                email = "lyrics4@domain.com",
-                roles = listOf("Author (Lyrics)"),
-                royaltyRate = 0.0f.toBigDecimal(),
-                credited = true,
-                status = CollaborationStatus.Accepted,
-            ),
-            Collaboration(
-                id = UUID.randomUUID(),
-                createdAt = LocalDateTime.now(),
-                songId = songId,
-                email = "lyrics5@domain.com",
-                roles = listOf("Author (Lyrics)"),
-                royaltyRate = 0.0f.toBigDecimal(),
-                credited = true,
-                status = CollaborationStatus.Accepted,
-            ),
-            Collaboration(
-                id = UUID.randomUUID(),
-                createdAt = LocalDateTime.now(),
-                songId = songId,
-                email = "lyrics6@domain.com",
-                roles = listOf("Author (Lyrics)"),
-                royaltyRate = 0.0f.toBigDecimal(),
-                credited = true,
-                status = CollaborationStatus.Accepted,
-            ),
-            Collaboration(
-                id = UUID.randomUUID(),
-                createdAt = LocalDateTime.now(),
-                songId = songId,
-                email = "lyrics7@domain.com",
-                roles = listOf("Author (Lyrics)"),
-                royaltyRate = 0.0f.toBigDecimal(),
-                credited = true,
-                status = CollaborationStatus.Accepted,
-            ),
-            Collaboration(
-                id = UUID.randomUUID(),
-                createdAt = LocalDateTime.now(),
-                songId = songId,
-                email = "NSTASIA@me.com",
-                roles = listOf("Author (Lyrics)"),
-                royaltyRate = 0.0f.toBigDecimal(),
-                credited = true,
-                status = CollaborationStatus.Accepted,
-            ),
-            Collaboration(
-                id = UUID.randomUUID(),
-                createdAt = LocalDateTime.now(),
-                songId = songId,
-                email = "jeff@macmillan.io",
-                roles = listOf("Synthesizer"),
-                royaltyRate = 0.0f.toBigDecimal(),
-                credited = true,
-                status = CollaborationStatus.Accepted,
-            ),
-            Collaboration(
-                id = UUID.randomUUID(),
-                createdAt = LocalDateTime.now(),
-                songId = songId,
-                email = "mirai@me.com",
-                roles = listOf("Producer"),
-                royaltyRate = 0.0f.toBigDecimal(),
-                credited = true,
-                status = CollaborationStatus.Accepted,
-            ),
+            Collaboration( createdAt = LocalDateTime.now(), songId = originalSetupSongId, email = "bob.ross@pbs.org", roles = listOf("Artwork"), royaltyRate = 0.0f.toBigDecimal(), credited = true, status = CollaborationStatus.Accepted, ),
+            Collaboration( createdAt = LocalDateTime.now(), songId = originalSetupSongId, email = "NSTASIA@me.com", roles = listOf("Artist"), royaltyRate = 10.0f.toBigDecimal(), credited = true, status = CollaborationStatus.Accepted, ),
+            Collaboration( createdAt = LocalDateTime.now(), songId = originalSetupSongId, email = "mirai@me.com", roles = listOf("Artist"), royaltyRate = 10.0f.toBigDecimal(), credited = true, status = CollaborationStatus.Accepted, ),
+            Collaboration( createdAt = LocalDateTime.now(), songId = originalSetupSongId, email = "lyrics1@domain.com", roles = listOf("Author (Lyrics)"), royaltyRate = 0.0f.toBigDecimal(), credited = true, status = CollaborationStatus.Accepted, ),
+            Collaboration( createdAt = LocalDateTime.now(), songId = originalSetupSongId, email = "lyrics2@domain.com", roles = listOf("Author (Lyrics)"), royaltyRate = 0.0f.toBigDecimal(), credited = true, status = CollaborationStatus.Accepted, ),
+            Collaboration( createdAt = LocalDateTime.now(), songId = originalSetupSongId, email = "lyrics3@domain.com", roles = listOf("Author (Lyrics)"), royaltyRate = 0.0f.toBigDecimal(), credited = true, status = CollaborationStatus.Accepted, ),
+            Collaboration( id = UUID.randomUUID(), createdAt = LocalDateTime.now(), songId = originalSetupSongId, email = "lyrics4@domain.com", roles = listOf("Author (Lyrics)"), royaltyRate = 0.0f.toBigDecimal(), credited = true, status = CollaborationStatus.Accepted, ),
+            Collaboration( id = UUID.randomUUID(), createdAt = LocalDateTime.now(), songId = originalSetupSongId, email = "lyrics5@domain.com", roles = listOf("Author (Lyrics)"), royaltyRate = 0.0f.toBigDecimal(), credited = true, status = CollaborationStatus.Accepted, ),
+            Collaboration( id = UUID.randomUUID(), createdAt = LocalDateTime.now(), songId = originalSetupSongId, email = "lyrics6@domain.com", roles = listOf("Author (Lyrics)"), royaltyRate = 0.0f.toBigDecimal(), credited = true, status = CollaborationStatus.Accepted, ),
+            Collaboration( id = UUID.randomUUID(), createdAt = LocalDateTime.now(), songId = originalSetupSongId, email = "lyrics7@domain.com", roles = listOf("Author (Lyrics)"), royaltyRate = 0.0f.toBigDecimal(), credited = true, status = CollaborationStatus.Accepted, ),
+            Collaboration( id = UUID.randomUUID(), createdAt = LocalDateTime.now(), songId = originalSetupSongId, email = "NSTASIA@me.com", roles = listOf("Author (Lyrics)"), royaltyRate = 0.0f.toBigDecimal(), credited = true, status = CollaborationStatus.Accepted, ),
+            Collaboration( id = UUID.randomUUID(), createdAt = LocalDateTime.now(), songId = originalSetupSongId, email = "jeff@macmillan.io", roles = listOf("Synthesizer"), royaltyRate = 0.0f.toBigDecimal(), credited = true, status = CollaborationStatus.Accepted, ),
+            Collaboration( id = UUID.randomUUID(), createdAt = LocalDateTime.now(), songId = originalSetupSongId, email = "mirai@me.com", roles = listOf("Producer"), royaltyRate = 0.0f.toBigDecimal(), credited = true, status = CollaborationStatus.Accepted, ),
         ).forEach { collab -> addCollabToDatabase(collab) }
     }
 
     @Test
     fun `buildStreamTokenMetadata test`(): Unit =
         runBlocking {
-            setupDatabase()
+            originalSetupDatabase() // Uses the original setup method
 
-            val songRepository: SongRepository =
-                SongRepositoryImpl(mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk())
-            val collabRepository: CollaborationRepository = CollaborationRepositoryImpl(mockk(), mockk())
-            val mintingRepository = MintingRepositoryImpl(mockk(), collabRepository, mockk(), mockk())
+            val localSongRepository: SongRepository = SongRepositoryImpl(mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk())
+            val localCollabRepository: CollaborationRepository = CollaborationRepositoryImpl(mockk(), mockk())
+            // Use the class member mintingRepository which is already set up with mocks
+            // Or, if this test needs specific non-mocked instances for some parts:
+            val tempMintingRepo = MintingRepositoryImpl(userRepository, localCollabRepository, cardanoRepository, configRepository)
 
-            val song = songRepository.get(songId)
-            val release = songRepository.getRelease(song.releaseId!!)
-            val primaryArtist =
-                transaction {
-                    UserEntity.getByEmail("danketsu@me.com")!!.toModel(false)
-                }
-            val collabs =
-                collabRepository.getAll(
-                    primaryArtist.id!!,
-                    CollaborationFilters(
-                        inbound = null,
-                        songIds = FilterCriteria(includes = listOf(song.id!!)),
-                        olderThan = null,
-                        newerThan = null,
-                        ids = null,
-                        statuses = FilterCriteria(includes = listOf(CollaborationStatus.Accepted)),
-                    ),
-                    0,
-                    Integer.MAX_VALUE
-                )
 
-            val plutusDataHex =
-                mintingRepository
-                    .buildStreamTokenMetadata(release, song, primaryArtist, collabs)
-                    .toCborObject()
-                    .toCborByteArray()
-                    .toHexString()
+            val song = localSongRepository.get(originalSetupSongId) // Use localSongRepository for DB interaction
+            val release = localSongRepository.getRelease(song.releaseId!!)
+            val primaryArtist = transaction { UserEntity.getByEmail("danketsu@me.com")!!.toModel(false) }
+            val collabs = localCollabRepository.getAll(
+                primaryArtist.id!!,
+                CollaborationFilters(
+                    inbound = null,
+                    songIds = FilterCriteria(includes = listOf(song.id!!)),
+                    olderThan = null, newerThan = null, ids = null,
+                    statuses = FilterCriteria(includes = listOf(CollaborationStatus.Accepted)),
+                ),
+                0, Integer.MAX_VALUE
+            )
+
+            val plutusDataHex = tempMintingRepo.buildStreamTokenMetadata(release, song, primaryArtist, collabs)
+                .toCborObject().toCborByteArray().toHexString()
 
             println("plutusDataHex: $plutusDataHex")
             assertThat(plutusDataHex).isEqualTo(
@@ -343,9 +460,8 @@ class MintingRepositoryTest : BaseApplicationTests() {
 
     @Test
     fun `test calculateTokenNames`() {
-        val mintingRepository = MintingRepositoryImpl(mockk(), mockk(), mockk(), mockk())
         val (refTokenName, fracTokenName) =
-            mintingRepository.calculateTokenNames(
+            mintingRepository.calculateTokenNames( // Uses class member mintingRepository
                 utxo {
                     hash = "1e637fd4b1a6a633261a1ba463577d65209dbbe0f7e8ec1fbfedb4c6b1bb926b"
                     ix = 1
@@ -355,7 +471,7 @@ class MintingRepositoryTest : BaseApplicationTests() {
         assertThat(fracTokenName).isEqualTo("001bc2800138c741df813afd1e2ba521d6b798dcabbc813ac7ba84467080b9b6")
 
         val (identityRefTokenName, identityFracTokenName) =
-            mintingRepository.calculateTokenNames(
+            mintingRepository.calculateTokenNames( // Uses class member mintingRepository
                 utxo {
                     hash = ""
                     ix = 0
@@ -366,205 +482,93 @@ class MintingRepositoryTest : BaseApplicationTests() {
     }
 
     @Test
-    @Disabled
+    @Disabled("This test requires a live gRPC connection and valid JWT")
     fun `test buildMintingTransaction`(): Unit =
         runBlocking {
-            setupDatabase()
+            originalSetupDatabase() // Uses the original setup method
 
-            // plainText for localhost testing only. use SSL later.
             val channel = ManagedChannelBuilder.forAddress("localhost", 3737).usePlaintext().build()
-            val client =
-                NewmChainGrpcKt.NewmChainCoroutineStub(channel).withInterceptors(
-                    MetadataUtils.newAttachHeadersInterceptor(
-                        Metadata().apply {
-                            put(
-                                Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER),
-                                "Bearer <JWT_TOKEN_HERE_DO_NOT_COMMIT>"
-                            )
-                        }
-                    )
-                )
-
-            val cardanoRepository = CardanoRepositoryImpl(client, mockk(), "", mockk(), mockk(), mockk())
-            val songRepository: SongRepository =
-                SongRepositoryImpl(mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk(), mockk())
-            val collabRepository: CollaborationRepository = CollaborationRepositoryImpl(mockk(), mockk())
-            val mintingRepository = MintingRepositoryImpl(mockk(), collabRepository, cardanoRepository, mockk())
-
-            val song = songRepository.get(songId)
-            val release = songRepository.getRelease(song.releaseId!!)
-            val primaryArtist =
-                transaction {
-                    UserEntity.getByEmail("danketsu@me.com")!!.toModel(false)
-                }
-            val collabs =
-                collabRepository.getAll(
-                    primaryArtist.id!!,
-                    CollaborationFilters(
-                        inbound = null,
-                        songIds = FilterCriteria(includes = listOf(song.id!!)),
-                        olderThan = null,
-                        newerThan = null,
-                        ids = null,
-                        statuses = FilterCriteria(includes = listOf(CollaborationStatus.Accepted)),
-                    ),
-                    0,
-                    Integer.MAX_VALUE
-                )
-
-            val cip68Metadata = mintingRepository.buildStreamTokenMetadata(release, song, primaryArtist, collabs)
-            val cashRegisterUtxos =
-                listOf(
-                    utxo {
-                        hash = "13814410996dd1ec8b8c9beeb7169204622eb3af8e8111287ac66e086607692f"
-                        ix = 0L
-                        lovelace = "8000000"
-                    },
-                    utxo {
-                        hash = "89ca570459a08619d6b8872d8d32271dabbaa0b98baed642a347bbdd2a21460e"
-                        ix = 0L
-                        lovelace = "2000000"
+            val client = NewmChainGrpcKt.NewmChainCoroutineStub(channel).withInterceptors(
+                MetadataUtils.newAttachHeadersInterceptor(
+                    Metadata().apply {
+                        put(Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER), "Bearer <JWT_TOKEN_HERE_DO_NOT_COMMIT>")
                     }
                 )
-            val (refTokenName, fracTokenName) = mintingRepository.calculateTokenNames(cashRegisterUtxos.first())
-            val starterTokenUtxoReference =
-                utxo {
-                    hash = "1e5fcbbce6a2f83aa343fb6eb8767a35c5f0b63b36c53373a343be36fc39502f"
-                    ix = 0
-                    lovelace = "2366190"
-                }
-            val mintScriptUtxoReference =
-                utxo {
-                    hash = "2363c9d42f8d7e4f33b208c43af098cee1ce7457e7a4d789fd0e100367926a6e"
-                    ix = 1
-                    lovelace = "13658390"
-                }
+            )
 
-            val paymentKey =
-                Key.createFromCliKeys(
-                    CliKeyPair(
-                        "payment",
-                        vkey =
-                            CliKey(
-                                type = "PaymentVerificationKeyShelley_ed25519",
-                                description = "Payment Verification Key",
-                                cborHex = "5820839a69bfbc9a8041199558194cdf904bf0ccabae75f9129bc3bdf936960ae221"
-                            ),
-                    )
-                )
-            val cashRegisterKey =
-                Key.createFromCliKeys(
-                    CliKeyPair(
-                        "newm",
-                        vkey =
-                            CliKey(
-                                type = "PaymentVerificationKeyShelley_ed25519",
-                                description = "Payment Verification Key",
-                                cborHex = "5820dd121dfde327b2e4fa13b3bb870360bfa8b92ad6f3dd8afd3e0b7e0447a42974"
-                            ),
-                    )
-                )
-            val collateralKey =
-                Key.createFromCliKeys(
-                    CliKeyPair(
-                        "collateral",
-                        vkey =
-                            CliKey(
-                                type = "PaymentVerificationKeyShelley_ed25519",
-                                description = "Payment Verification Key",
-                                cborHex = "582030fe8d8ec967ed402263cc6f9bfa20e6a90963d0529edb1bf9c5bec07ff22f2f"
-                            ),
-                    )
-                )
+            val liveCardanoRepository = CardanoRepositoryImpl(client, mockk(), "", mockk(), mockk(), mockk())
+            val localSongRepository: SongRepository = SongRepositoryImpl(mockk(), mockk(), mockk(), liveCardanoRepository, mockk(), mockk(), mockk(), mockk(), mockk())
+            val localCollabRepository: CollaborationRepository = CollaborationRepositoryImpl(mockk(), mockk())
+            val tempMintingRepo = MintingRepositoryImpl(userRepository, localCollabRepository, liveCardanoRepository, configRepository)
 
+
+            val song = localSongRepository.get(originalSetupSongId)
+            val release = localSongRepository.getRelease(song.releaseId!!)
+            val primaryArtist = transaction { UserEntity.getByEmail("danketsu@me.com")!!.toModel(false) }
+            val collabs = localCollabRepository.getAll(
+                primaryArtist.id!!,
+                CollaborationFilters(
+                    inbound = null, songIds = FilterCriteria(includes = listOf(song.id!!)),
+                    olderThan = null, newerThan = null, ids = null,
+                    statuses = FilterCriteria(includes = listOf(CollaborationStatus.Accepted)),
+                ),
+                0, Integer.MAX_VALUE
+            )
+
+            val cip68Metadata = tempMintingRepo.buildStreamTokenMetadata(release, song, primaryArtist, collabs)
+            val cashRegisterUtxos = listOf(
+                utxo { hash = "13814410996dd1ec8b8c9beeb7169204622eb3af8e8111287ac66e086607692f"; ix = 0L; lovelace = "8000000" },
+                utxo { hash = "89ca570459a08619d6b8872d8d32271dabbaa0b98baed642a347bbdd2a21460e"; ix = 0L; lovelace = "2000000" }
+            )
+            val (refTokenName, fracTokenName) = tempMintingRepo.calculateTokenNames(cashRegisterUtxos.first())
+            val starterTokenUtxoReference = utxo { hash = "1e5fcbbce6a2f83aa343fb6eb8767a35c5f0b63b36c53373a343be36fc39502f"; ix = 0; lovelace = "2366190" }
+            val mintScriptUtxoReference = utxo { hash = "2363c9d42f8d7e4f33b208c43af098cee1ce7457e7a4d789fd0e100367926a6e"; ix = 1; lovelace = "13658390" }
+
+            val paymentKey = Key.createFromCliKeys(CliKeyPair("payment", vkey = CliKey(type = "PaymentVerificationKeyShelley_ed25519", description = "Payment Verification Key", cborHex = "5820839a69bfbc9a8041199558194cdf904bf0ccabae75f9129bc3bdf936960ae221")))
+            val cashRegisterKey = Key.createFromCliKeys(CliKeyPair("newm", vkey = CliKey(type = "PaymentVerificationKeyShelley_ed25519", description = "Payment Verification Key", cborHex = "5820dd121dfde327b2e4fa13b3bb870360bfa8b92ad6f3dd8afd3e0b7e0447a42974")))
+            val collateralKey = Key.createFromCliKeys(CliKeyPair("collateral", vkey = CliKey(type = "PaymentVerificationKeyShelley_ed25519", description = "Payment Verification Key", cborHex = "582030fe8d8ec967ed402263cc6f9bfa20e6a90963d0529edb1bf9c5bec07ff22f2f")))
             val signingKeys = listOf(cashRegisterKey, paymentKey, collateralKey)
 
-            var response =
-                mintingRepository.buildMintingTransaction(
-                    paymentUtxo =
-                        utxo {
-                            hash = "8ca645eee53117971504b47712f86105ce84f9d8ebc2985ea7ce0a815846a603"
-                            ix = 0L
-                            lovelace = "10000000"
-                        },
-                    cashRegisterUtxos = cashRegisterUtxos,
-                    changeAddress = "addr_test1vr620zal7m270eyjj9vcd27yj5uzy3a0vkgps3g6yh8vjtq702l28",
-                    moneyBoxUtxos = null,
-                    moneyBoxAddress = null,
-                    cashRegisterCollectionAmount = 10000000L,
-                    collateralUtxo =
-                        utxo {
-                            hash = "1964b50dc9ad31b339d5a82d9f579cd9e7d91053b97e2ca27b4aa8a5b88edb40"
-                            ix = 2L
-                            lovelace = "5000000"
-                        },
-                    collateralReturnAddress = "addr_test1vqfrhfv4hghz50yna9syvxjrltg3gjgf4k998e0ulp0y73qpp79gs",
-                    cip68ScriptAddress = "addr_test1xr2nxf8mm2qeswmhqsg3t4jvp3u67qndmvt004jy953u8xmwp6udvtz8wsdxfar962t9ea4eesmylnr8llndpm0n76ps4wgc7l",
-                    cip68Metadata = cip68Metadata,
-                    cip68Policy = "a0488f6ef1b8b5b268583312a94aaebefb36e570b198e02024d321a9",
-                    refTokenName = refTokenName,
-                    fracTokenName = fracTokenName,
-                    streamTokenSplits =
-                        listOf(
-                            Pair(
-                                "addr_test1vz0pdhl9yagp6mk4ncqvgxx796sl4hxarfazy88s63xtdscuqxqf5",
-                                100000000L
-                            )
-                        ),
-                    requiredSigners = signingKeys,
-                    starterTokenUtxoReference = starterTokenUtxoReference,
-                    mintScriptUtxoReference = mintScriptUtxoReference,
-                    signatures = cardanoRepository.signTransactionDummy(signingKeys)
-                )
-
+            var response = tempMintingRepo.buildMintingTransaction(
+                paymentUtxo = utxo { hash = "8ca645eee53117971504b47712f86105ce84f9d8ebc2985ea7ce0a815846a603"; ix = 0L; lovelace = "10000000" },
+                cashRegisterUtxos = cashRegisterUtxos,
+                changeAddress = "addr_test1vr620zal7m270eyjj9vcd27yj5uzy3a0vkgps3g6yh8vjtq702l28",
+                moneyBoxUtxos = null, moneyBoxAddress = null, cashRegisterCollectionAmount = 10000000L,
+                collateralUtxo = utxo { hash = "1964b50dc9ad31b339d5a82d9f579cd9e7d91053b97e2ca27b4aa8a5b88edb40"; ix = 2L; lovelace = "5000000" },
+                collateralReturnAddress = "addr_test1vqfrhfv4hghz50yna9syvxjrltg3gjgf4k998e0ulp0y73qpp79gs",
+                cip68ScriptAddress = "addr_test1xr2nxf8mm2qeswmhqsg3t4jvp3u67qndmvt004jy953u8xmwp6udvtz8wsdxfar962t9ea4eesmylnr8llndpm0n76ps4wgc7l",
+                cip68Metadata = cip68Metadata,
+                cip68Policy = "a0488f6ef1b8b5b268583312a94aaebefb36e570b198e02024d321a9",
+                refTokenName = refTokenName, fracTokenName = fracTokenName,
+                streamTokenSplits = listOf(Pair("addr_test1vz0pdhl9yagp6mk4ncqvgxx796sl4hxarfazy88s63xtdscuqxqf5", 100000000L)),
+                requiredSigners = signingKeys,
+                starterTokenUtxoReference = starterTokenUtxoReference,
+                mintScriptUtxoReference = mintScriptUtxoReference,
+                signatures = liveCardanoRepository.signTransactionDummy(signingKeys)
+            )
             println("transactionId: ${response.transactionId}")
             val transactionIdBytes = response.transactionId.hexToByteArray()
-
-            response =
-                mintingRepository.buildMintingTransaction(
-                    paymentUtxo =
-                        utxo {
-                            hash = "8ca645eee53117971504b47712f86105ce84f9d8ebc2985ea7ce0a815846a603"
-                            ix = 0L
-                            lovelace = "10000000"
-                        },
-                    cashRegisterUtxos = cashRegisterUtxos,
-                    changeAddress = "addr_test1vr620zal7m270eyjj9vcd27yj5uzy3a0vkgps3g6yh8vjtq702l28",
-                    moneyBoxUtxos = null,
-                    moneyBoxAddress = null,
-                    cashRegisterCollectionAmount = 10000000L,
-                    collateralUtxo =
-                        utxo {
-                            hash = "1964b50dc9ad31b339d5a82d9f579cd9e7d91053b97e2ca27b4aa8a5b88edb40"
-                            ix = 2L
-                            lovelace = "5000000"
-                        },
-                    collateralReturnAddress = "addr_test1vqfrhfv4hghz50yna9syvxjrltg3gjgf4k998e0ulp0y73qpp79gs",
-                    cip68ScriptAddress = "addr_test1xr2nxf8mm2qeswmhqsg3t4jvp3u67qndmvt004jy953u8xmwp6udvtz8wsdxfar962t9ea4eesmylnr8llndpm0n76ps4wgc7l",
-                    cip68Metadata = cip68Metadata,
-                    cip68Policy = "a0488f6ef1b8b5b268583312a94aaebefb36e570b198e02024d321a9",
-                    refTokenName = refTokenName,
-                    fracTokenName = fracTokenName,
-                    streamTokenSplits =
-                        listOf(
-                            Pair(
-                                "addr_test1vz0pdhl9yagp6mk4ncqvgxx796sl4hxarfazy88s63xtdscuqxqf5",
-                                100000000L
-                            )
-                        ),
-                    requiredSigners = signingKeys,
-                    starterTokenUtxoReference = starterTokenUtxoReference,
-                    mintScriptUtxoReference = mintScriptUtxoReference,
-                    signatures = cardanoRepository.signTransaction(transactionIdBytes, signingKeys),
-                )
-
+            response = tempMintingRepo.buildMintingTransaction(
+                paymentUtxo = utxo { hash = "8ca645eee53117971504b47712f86105ce84f9d8ebc2985ea7ce0a815846a603"; ix = 0L; lovelace = "10000000" },
+                cashRegisterUtxos = cashRegisterUtxos,
+                changeAddress = "addr_test1vr620zal7m270eyjj9vcd27yj5uzy3a0vkgps3g6yh8vjtq702l28",
+                moneyBoxUtxos = null, moneyBoxAddress = null, cashRegisterCollectionAmount = 10000000L,
+                collateralUtxo = utxo { hash = "1964b50dc9ad31b339d5a82d9f579cd9e7d91053b97e2ca27b4aa8a5b88edb40"; ix = 2L; lovelace = "5000000" },
+                collateralReturnAddress = "addr_test1vqfrhfv4hghz50yna9syvxjrltg3gjgf4k998e0ulp0y73qpp79gs",
+                cip68ScriptAddress = "addr_test1xr2nxf8mm2qeswmhqsg3t4jvp3u67qndmvt004jy953u8xmwp6udvtz8wsdxfar962t9ea4eesmylnr8llndpm0n76ps4wgc7l",
+                cip68Metadata = cip68Metadata,
+                cip68Policy = "a0488f6ef1b8b5b268583312a94aaebefb36e570b198e02024d321a9",
+                refTokenName = refTokenName, fracTokenName = fracTokenName,
+                streamTokenSplits = listOf(Pair("addr_test1vz0pdhl9yagp6mk4ncqvgxx796sl4hxarfazy88s63xtdscuqxqf5", 100000000L)),
+                requiredSigners = signingKeys,
+                starterTokenUtxoReference = starterTokenUtxoReference,
+                mintScriptUtxoReference = mintScriptUtxoReference,
+                signatures = liveCardanoRepository.signTransaction(transactionIdBytes, signingKeys),
+            )
             println("transactionId: ${response.transactionId}")
-
             val cborSigned = response.transactionCbor
-
             println("cborSigned: ${cborSigned.toByteArray().toHexString()}")
-
-            val submitTransactionResponse = cardanoRepository.submitTransaction(cborSigned)
+            val submitTransactionResponse = liveCardanoRepository.submitTransaction(cborSigned)
             println("submitTransactionResponse: $submitTransactionResponse")
         }
 }
