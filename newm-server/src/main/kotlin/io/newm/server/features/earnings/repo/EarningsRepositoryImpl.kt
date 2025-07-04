@@ -97,6 +97,8 @@ class EarningsRepositoryImpl(
         songId: SongId,
         royaltyRequest: AddSongRoyaltyRequest
     ) {
+        val streamTokenTotalSupply = 100_000_000.toBigDecimal() // 100 million stream tokens
+
         require((royaltyRequest.newmAmount != null) xor (royaltyRequest.usdAmount != null)) {
             "Either newmAmount or usdAmount must be provided, but not both."
         }
@@ -113,7 +115,7 @@ class EarningsRepositoryImpl(
 
         // should be 100m stream tokens
         val totalSupply = snapshotMap["total_supply"] ?: error("No total supply found in snapshot.")
-        val unstakedSupply = 100_000_000.toBigDecimal() - totalSupply
+        val unstakedSupply = streamTokenTotalSupply - totalSupply
 
         val now = LocalDateTime.now()
         var exchangeRate = ""
@@ -121,7 +123,7 @@ class EarningsRepositoryImpl(
             royaltyRequest.newmAmount?.toBigDecimal() ?: run {
                 val usdAmount = royaltyRequest.usdAmount!!
                 val newmUsdPrice = cardanoRepository.queryNEWMUSDPrice()
-                val newmAmount = (newmUsdPrice.toBigInteger() * usdAmount).toBigDecimal()
+                val newmAmount = (usdAmount.toBigDecimal() / newmUsdPrice.toBigDecimal()).movePointRight(6)
                 exchangeRate = " @ 1 NEWM = ${newmUsdPrice.toBigDecimal().movePointLeft(6).toPlainString()} USD"
                 newmAmount
             }
@@ -136,13 +138,7 @@ class EarningsRepositoryImpl(
                 Earning(
                     songId = songId,
                     stakeAddress = stakeAddress,
-                    amount = (
-                        totalNewmAmount * (
-                            streamTokenAmount.setScale(6) / 100_000_000
-                                .toBigDecimal()
-                                .setScale(6)
-                        )
-                    ).toLong(),
+                    amount = (totalNewmAmount * streamTokenAmount / streamTokenTotalSupply).toLong(),
                     memo = "Royalty for: ${song.title} - ${user.stageOrFullName}$exchangeRate",
                     createdAt = now,
                     startDate = if (cardanoRepository.isMainnet()) {
@@ -165,13 +161,7 @@ class EarningsRepositoryImpl(
                     } else {
                         "foundation"
                     },
-                    amount = (
-                        totalNewmAmount * (
-                            unstakedSupply.setScale(6) / 100_000_000
-                                .toBigDecimal()
-                                .setScale(6)
-                        )
-                    ).toLong(),
+                    amount = (totalNewmAmount * unstakedSupply / streamTokenTotalSupply).toLong(),
                     memo = "Royalty for: ${song.title} - ${user.stageOrFullName}$exchangeRate",
                     createdAt = now,
                     startDate = if (cardanoRepository.isMainnet()) {
