@@ -48,7 +48,13 @@ fun Routing.createWalletConnectionRoutes() {
             }
             route("{connectionId}") {
                 get {
-                    respond(walletConnectionRepository.connect(connectionId, myUserId))
+                    val connId = try {
+                        connectionId
+                    } catch (ignored: Throwable) {
+                        respond(HttpStatusCode.BadRequest, "Invalid connectionId: ${parameters["connectionId"]!!}")
+                        return@get
+                    }
+                    respond(walletConnectionRepository.connect(connId, myUserId))
                 }
                 delete {
                     walletConnectionRepository.disconnect(connectionId, myUserId)
