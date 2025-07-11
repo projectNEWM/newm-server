@@ -17,6 +17,7 @@ import io.newm.server.features.distribution.distributionKoinModule
 import io.newm.server.features.dripdropz.dripDropzKoinModule
 import io.newm.server.features.earnings.earningsKoinModule
 import io.newm.server.features.email.emailKoinModule
+import io.newm.server.features.ethereum.ethereumKoinModule
 import io.newm.server.features.idenfy.idenfyKoinModule
 import io.newm.server.features.marketplace.marketplaceKoinModule
 import io.newm.server.features.minting.mintingKoinModule
@@ -59,6 +60,7 @@ fun Application.installDependencyInjection() {
             awsKoinModule,
             idenfyKoinModule,
             cardanoKoinModule,
+            ethereumKoinModule,
             daemonsKoinModule,
             distributionKoinModule,
             arweaveKoinModule,

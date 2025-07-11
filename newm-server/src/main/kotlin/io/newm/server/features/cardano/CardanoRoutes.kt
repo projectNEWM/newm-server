@@ -154,7 +154,7 @@ fun Routing.createCardanoRoutes() {
             get("nft/songs") {
                 try {
                     respond(
-                        cardanoRepository.getWalletNFTSongs(
+                        cardanoRepository.getWalletNftSongs(
                             userId = myUserId,
                             includeLegacy = parameters["legacy"]?.toBoolean() == true,
                             useDripDropz = parameters["dripDropz"]?.toBoolean() == true
