@@ -57,7 +57,7 @@ import io.newm.server.features.cardano.database.ScriptAddressWhitelistEntity
 import io.newm.server.features.cardano.model.EncryptionRequest
 import io.newm.server.features.cardano.model.GetWalletSongsResponse
 import io.newm.server.features.cardano.model.Key
-import io.newm.server.features.cardano.model.NFTSong
+import io.newm.server.features.cardano.model.CardanoNftSong
 import io.newm.server.features.cardano.model.WalletSong
 import io.newm.server.features.cardano.parser.toNFTSongs
 import io.newm.server.features.cardano.parser.toResourceUrl
@@ -576,13 +576,13 @@ internal class CardanoRepositoryImpl(
         return null
     }
 
-    override suspend fun getWalletNFTSongs(
+    override suspend fun getWalletNftSongs(
         userId: UserId,
         includeLegacy: Boolean,
         useDripDropz: Boolean
-    ): List<NFTSong> {
+    ): List<CardanoNftSong> {
         val assets = if (useDripDropz) getDripDropzAssets(userId) else getWalletAssets(userId)
-        val nftSongs = mutableListOf<NFTSong>()
+        val nftSongs = mutableListOf<CardanoNftSong>()
         val streamTokenPolicyIds = configRepository.getStrings(CONFIG_KEY_MINT_ALL_POLICY_IDS)
         val isNftCdnEnabled = configRepository.getBoolean(CONFIG_KEY_NFTCDN_ENABLED)
         for (asset in assets) {

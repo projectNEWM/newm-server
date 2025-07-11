@@ -5,7 +5,7 @@ import io.ktor.utils.io.core.toByteArray
 import io.newm.chain.grpc.LedgerAssetMetadataItem
 import io.newm.chain.grpc.NativeAsset
 import io.newm.chain.util.hexStringToAssetName
-import io.newm.server.features.cardano.model.NFTSong
+import io.newm.server.features.cardano.model.CardanoNftSong
 import io.newm.server.features.nftcdn.repo.NftCdnRepository
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.toDurationOrNull
@@ -22,7 +22,7 @@ fun List<LedgerAssetMetadataItem>.toNFTSongs(
     asset: NativeAsset,
     isStreamToken: Boolean,
     isNftCdnEnabled: Boolean
-): List<NFTSong> {
+): List<CardanoNftSong> {
     val assetName = asset.name.hexStringToAssetName()
     logger.debug { "Parsing PolicyID: ${asset.policy}, assetName: $assetName" }
 
@@ -100,7 +100,7 @@ fun List<LedgerAssetMetadataItem>.toNFTSongs(
             }
             null
         } else {
-            NFTSong(
+            CardanoNftSong(
                 id = UUID.nameUUIDFromBytes(file.src.toByteArray()),
                 fingerprint = fingerprint,
                 policyId = asset.policy,
