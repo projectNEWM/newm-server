@@ -10,7 +10,7 @@ import io.newm.chain.grpc.copy
 import io.newm.chain.grpc.queryByNativeAssetRequest
 import io.newm.chain.util.assetNameToHexString
 import io.newm.server.BaseApplicationTests
-import io.newm.server.features.cardano.model.NFTSong
+import io.newm.server.features.cardano.model.CardanoNftSong
 import io.newm.server.features.nftcdn.repo.NftCdnRepository
 import io.newm.shared.koin.inject
 import kotlinx.coroutines.runBlocking
@@ -27,7 +27,7 @@ private const val TEST_SECURE = true
 private const val JWT_TOKEN = "<JWT_TOKEN_HERE_DO_NOT_COMMIT>"
 
 @Disabled("Disabled - require JWT Token")
-class NFTSongParserTests : BaseApplicationTests() {
+class CardanoNftSongParserTests : BaseApplicationTests() {
     private lateinit var newmChainClient: NewmChainCoroutineStub
 
     @BeforeAll
@@ -38,7 +38,7 @@ class NFTSongParserTests : BaseApplicationTests() {
     @Test
     fun `NEWM_0 - MURS Bigger Dreams, CIP-60 V1, Single`() =
         runBlocking {
-            val expectedSong = NFTSong(
+            val expectedSong = CardanoNftSong(
                 id = "ar://P141o0RDAjSYlVQgTDgHNAORQTkMYIVCprmD_dKMVss".toId(),
                 fingerprint = "asset19dx98tjqckn26yk5hcse4zm6m0aj4gf7z0z378",
                 policyId = "46e607b3046a34c95e7c29e47047618dbf5e10de777ba56c590cfd5c",
@@ -63,7 +63,7 @@ class NFTSongParserTests : BaseApplicationTests() {
         runBlocking {
             val nftCdnRepository: NftCdnRepository by inject()
             val fingerprint = "asset19dx98tjqckn26yk5hcse4zm6m0aj4gf7z0z378"
-            val expectedSong = NFTSong(
+            val expectedSong = CardanoNftSong(
                 id = "ar://P141o0RDAjSYlVQgTDgHNAORQTkMYIVCprmD_dKMVss".toId(),
                 fingerprint = fingerprint,
                 policyId = "46e607b3046a34c95e7c29e47047618dbf5e10de777ba56c590cfd5c",
@@ -86,7 +86,7 @@ class NFTSongParserTests : BaseApplicationTests() {
     @Test
     fun `NEWM_5 - Daisuke, CIP-60 V1, Single`() =
         runBlocking {
-            val expectedSong = NFTSong(
+            val expectedSong = CardanoNftSong(
                 id = "ar://QpgjmWmAHNeRVgx_Ylwvh16i3aWd8BBgyq7f16gaUu0".toId(),
                 fingerprint = "asset1effvlkkw02m9ft3ymlkfld8mhlq05wc2hal5du",
                 policyId = "46e607b3046a34c95e7c29e47047618dbf5e10de777ba56c590cfd5c",
@@ -111,7 +111,7 @@ class NFTSongParserTests : BaseApplicationTests() {
         runBlocking {
             val nftCdnRepository: NftCdnRepository by inject()
             val fingerprint = "asset1effvlkkw02m9ft3ymlkfld8mhlq05wc2hal5du"
-            val expectedSong = NFTSong(
+            val expectedSong = CardanoNftSong(
                 id = "ar://QpgjmWmAHNeRVgx_Ylwvh16i3aWd8BBgyq7f16gaUu0".toId(),
                 fingerprint = fingerprint,
                 policyId = "46e607b3046a34c95e7c29e47047618dbf5e10de777ba56c590cfd5c",
@@ -134,7 +134,7 @@ class NFTSongParserTests : BaseApplicationTests() {
     @Test
     fun `OddShapeShadow, CIP-60 V1, Single`() =
         runBlocking {
-            val expectedSong = NFTSong(
+            val expectedSong = CardanoNftSong(
                 id = "ipfs://QmaiQ2mHc2LhkApA5cXPk8WfV6923ndgVDQoAtdHsSkXWE".toId(),
                 fingerprint = "asset13ht8rn89zwvchfd4d34707xvcrr3clzkgdgj6p",
                 policyId = "7ad9d1ddb00adee7939f8027e5258a561878fff8761993afb311e56f",
@@ -159,7 +159,7 @@ class NFTSongParserTests : BaseApplicationTests() {
         runBlocking {
             val nftCdnRepository: NftCdnRepository by inject()
             val fingerprint = "asset13ht8rn89zwvchfd4d34707xvcrr3clzkgdgj6p"
-            val expectedSong = NFTSong(
+            val expectedSong = CardanoNftSong(
                 id = "ipfs://QmaiQ2mHc2LhkApA5cXPk8WfV6923ndgVDQoAtdHsSkXWE".toId(),
                 fingerprint = fingerprint,
                 policyId = "7ad9d1ddb00adee7939f8027e5258a561878fff8761993afb311e56f",
@@ -182,7 +182,7 @@ class NFTSongParserTests : BaseApplicationTests() {
     @Test
     fun `SickCity442, CIP-60 V2, Single`() =
         runBlocking {
-            val expectedSong = NFTSong(
+            val expectedSong = CardanoNftSong(
                 id = "ipfs://QmNPg1BTnyouUL1uiHyWc4tQZXH5anEz4jmua7iidwEbiE".toId(),
                 fingerprint = "asset1w90kz4y6zpgndgk8a837g3f2n4ujtlx0mgpdhw",
                 policyId = "123da5e4ef337161779c6729d2acd765f7a33a833b2a21a063ef65a5",
@@ -207,7 +207,7 @@ class NFTSongParserTests : BaseApplicationTests() {
         runBlocking {
             val nftCdnRepository: NftCdnRepository by inject()
             val fingerprint = "asset1w90kz4y6zpgndgk8a837g3f2n4ujtlx0mgpdhw"
-            val expectedSong = NFTSong(
+            val expectedSong = CardanoNftSong(
                 id = "ipfs://QmNPg1BTnyouUL1uiHyWc4tQZXH5anEz4jmua7iidwEbiE".toId(),
                 fingerprint = fingerprint,
                 policyId = "123da5e4ef337161779c6729d2acd765f7a33a833b2a21a063ef65a5",
@@ -230,7 +230,7 @@ class NFTSongParserTests : BaseApplicationTests() {
     @Test
     fun `JukeBox501, CIP-60 V3, Single`() =
         runBlocking {
-            val expectedSong = NFTSong(
+            val expectedSong = CardanoNftSong(
                 id = "ipfs://QmbchFjoQFxMTzecKnXnf7YaAretRJzVyq2qNEepnRinTv".toId(),
                 fingerprint = "asset1skssrzvfqr4qfpp7fhv5xu38t95caxumthvq4x",
                 policyId = "ecbbf5849b532038a2449c62f295cb89120db4549e9cb5372428adad",
@@ -255,7 +255,7 @@ class NFTSongParserTests : BaseApplicationTests() {
         runBlocking {
             val nftCdnRepository: NftCdnRepository by inject()
             val fingerprint = "asset1skssrzvfqr4qfpp7fhv5xu38t95caxumthvq4x"
-            val expectedSong = NFTSong(
+            val expectedSong = CardanoNftSong(
                 id = "ipfs://QmbchFjoQFxMTzecKnXnf7YaAretRJzVyq2qNEepnRinTv".toId(),
                 fingerprint = fingerprint,
                 policyId = "ecbbf5849b532038a2449c62f295cb89120db4549e9cb5372428adad",
@@ -278,7 +278,7 @@ class NFTSongParserTests : BaseApplicationTests() {
     @Test
     fun `SickCity343, Legacy, Single`() =
         runBlocking {
-            val expectedSong = NFTSong(
+            val expectedSong = CardanoNftSong(
                 id = "ipfs://QmcBtkxaKsFK3wvNHxULhuRhzaabqoX6Ryor4PvnaqcUSb".toId(),
                 fingerprint = "asset1twzjexu7m9drdznjrz47f3320jxry7erhnx3e3",
                 policyId = "123da5e4ef337161779c6729d2acd765f7a33a833b2a21a063ef65a5",
@@ -303,7 +303,7 @@ class NFTSongParserTests : BaseApplicationTests() {
         runBlocking {
             val nftCdnRepository: NftCdnRepository by inject()
             val fingerprint = "asset1twzjexu7m9drdznjrz47f3320jxry7erhnx3e3"
-            val expectedSong = NFTSong(
+            val expectedSong = CardanoNftSong(
                 id = "ipfs://QmcBtkxaKsFK3wvNHxULhuRhzaabqoX6Ryor4PvnaqcUSb".toId(),
                 fingerprint = fingerprint,
                 policyId = "123da5e4ef337161779c6729d2acd765f7a33a833b2a21a063ef65a5",
@@ -326,7 +326,7 @@ class NFTSongParserTests : BaseApplicationTests() {
     @Test
     fun `SickCity344, Legacy, Single`() =
         runBlocking {
-            val expectedSong = NFTSong(
+            val expectedSong = CardanoNftSong(
                 id = "ipfs://QmY9LRJoKMgPbEc2hvvREWP7UBzYuZaqaWacAkp3HKFUzb".toId(),
                 fingerprint = "asset163r3tg4qggphswslxmfezu2gfevs35433pqz3e",
                 policyId = "123da5e4ef337161779c6729d2acd765f7a33a833b2a21a063ef65a5",
@@ -351,7 +351,7 @@ class NFTSongParserTests : BaseApplicationTests() {
         runBlocking {
             val nftCdnRepository: NftCdnRepository by inject()
             val fingerprint = "asset163r3tg4qggphswslxmfezu2gfevs35433pqz3e"
-            val expectedSong = NFTSong(
+            val expectedSong = CardanoNftSong(
                 id = "ipfs://QmY9LRJoKMgPbEc2hvvREWP7UBzYuZaqaWacAkp3HKFUzb".toId(),
                 fingerprint = fingerprint,
                 policyId = "123da5e4ef337161779c6729d2acd765f7a33a833b2a21a063ef65a5",
@@ -374,7 +374,7 @@ class NFTSongParserTests : BaseApplicationTests() {
     @Test
     fun `SickCity349, Legacy, Single`() =
         runBlocking {
-            val expectedSong = NFTSong(
+            val expectedSong = CardanoNftSong(
                 id = "ipfs://QmczfeP54gZgjMVnbe2mLrBjQbkQu3zuA1zYKpgSVzzKBr".toId(),
                 fingerprint = "asset1n8jsja05t2dlsy3e7wzjcr2a8724qmgmnwv669",
                 policyId = "123da5e4ef337161779c6729d2acd765f7a33a833b2a21a063ef65a5",
@@ -399,7 +399,7 @@ class NFTSongParserTests : BaseApplicationTests() {
         runBlocking {
             val nftCdnRepository: NftCdnRepository by inject()
             val fingerprint = "asset1n8jsja05t2dlsy3e7wzjcr2a8724qmgmnwv669"
-            val expectedSong = NFTSong(
+            val expectedSong = CardanoNftSong(
                 id = "ipfs://QmczfeP54gZgjMVnbe2mLrBjQbkQu3zuA1zYKpgSVzzKBr".toId(),
                 fingerprint = fingerprint,
                 policyId = "123da5e4ef337161779c6729d2acd765f7a33a833b2a21a063ef65a5",
@@ -426,7 +426,7 @@ class NFTSongParserTests : BaseApplicationTests() {
             val assetName = "JamisonDanielStudioLife218"
             val fingerprint = "asset1njl2quag7haj4xcwfckn4rqprrvcwlr08z34ua"
             val expectedSongs = listOf(
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmduC7pkR14K3mhmvEazoyzGsMWVF4ji45HZ1XfEracKLv".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -441,7 +441,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmW9sHugSArzf29JPuEC2MqjtbsNkDjd9xNUxZFLDXSDUY".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -456,7 +456,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://Qmb8fm7CkzscjjoJGVp3p7qjSVMknsk27d3cwjqM26ELVB".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -471,7 +471,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmTwvwpgE9Fx6QZsjbXe5STHb3WVmaDuxFzafqCPueCmqc".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -486,7 +486,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmTETraR8WvExCaanc5aGT8EAUgCojyN8YSZYbGgmzVfja".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -501,7 +501,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://Qmdfr4PvuiZhi3a6EaDupGN6R33PKSy5kntwgFEzLQnPLR".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -516,7 +516,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmSp4Cn7qrhLTovezS1ii7ct1VAPK6Gotd2GnxnBc6ngSv".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -531,7 +531,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmV8ihv8R6cCKsFJyFP8fhnnQjeKjS7HAAjmxMgUPftmw6".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -546,7 +546,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmWux5UpX6BtYQ7pjugqRh6ySa2vVJN12iSC2AB1cAQynU".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -578,7 +578,7 @@ class NFTSongParserTests : BaseApplicationTests() {
             // NOTE: notice that "files/0" is an image file, so 1st audio file is at "files/1"
             // https://cexplorer.io/asset/asset1njl2quag7haj4xcwfckn4rqprrvcwlr08z34ua/metadata#data
             val expectedSongs = listOf(
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmduC7pkR14K3mhmvEazoyzGsMWVF4ji45HZ1XfEracKLv".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -593,7 +593,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmW9sHugSArzf29JPuEC2MqjtbsNkDjd9xNUxZFLDXSDUY".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -608,7 +608,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://Qmb8fm7CkzscjjoJGVp3p7qjSVMknsk27d3cwjqM26ELVB".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -623,7 +623,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmTwvwpgE9Fx6QZsjbXe5STHb3WVmaDuxFzafqCPueCmqc".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -638,7 +638,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmTETraR8WvExCaanc5aGT8EAUgCojyN8YSZYbGgmzVfja".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -653,7 +653,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://Qmdfr4PvuiZhi3a6EaDupGN6R33PKSy5kntwgFEzLQnPLR".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -668,7 +668,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmSp4Cn7qrhLTovezS1ii7ct1VAPK6Gotd2GnxnBc6ngSv".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -683,7 +683,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmV8ihv8R6cCKsFJyFP8fhnnQjeKjS7HAAjmxMgUPftmw6".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -698,7 +698,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmWux5UpX6BtYQ7pjugqRh6ySa2vVJN12iSC2AB1cAQynU".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -727,7 +727,7 @@ class NFTSongParserTests : BaseApplicationTests() {
             val assetName = "DecentralPerkLofiBeats01576"
             val fingerprint = "asset10ze9rhc59n4xa8d8a5a4dr9gfm93k5utj9gl9f"
             val expectedSongs = listOf(
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmZ7Cd1y586YEC2uc7pUxzoCck2ZC9yyDtdMyWgKHGRfu6".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -742,7 +742,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmSzRkmegDyegknPzjVqvmCG35jmGTHJfpnQjJzN1mfh8r".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -757,7 +757,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmcsNULNnmjAxJspomPRZxJcQhh6YHXiMC53fvqHjkNkPg".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -772,7 +772,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmPL1v1PCBH42PaBkWbiFhF1Fc38vKnWAAw4q3V4X4w6os".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -787,7 +787,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmPHR3iu4j17V2zqonKDQzUU9BVqjox6RungWF7gdQeH6t".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -802,7 +802,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmbwpXSZbmuLwbGsf3oARfYf269e4af6ZUY66wcQ3uB8uR".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -817,7 +817,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmZhux1Xqy46CNa7nCqKmpHuwR2nM7sJ6826WdRjhTTDgv".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -832,7 +832,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmcquduiNWU6EWJj8wLPSKcR8AiTEXvpcPTU4vwyX5VDfr".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -847,7 +847,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmPYgMQekJPWbvNhLP7QJAqUT2twjsBkRf32br6WPKL8dR".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -862,7 +862,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmQbSc3RYwuVG4qWKNbrQyrfcFXDZhFhAEt7VgBECC6HNN".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -877,7 +877,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmSSwxTVZdfTRe9HoCAr1EUjB9jzMrxNLV39LHnbgLDRYi".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -892,7 +892,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmRkmwkfqi1KyaPFkFcHWQNXoB3DnmqJohTsQ7zyZU9PFb".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -907,7 +907,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmWRci2Ne5yyZ7ASV8NSFfeMnrTjy9cSe2uMKS1116Stf9".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -922,7 +922,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmQQNTJDti9U4vv3ebKN5ACuu1spKzJCgodotwTWxdgdN5".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -937,7 +937,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmRCZxguhLVnYLYN253F6KgT86haFExjX4szq1Bo9dpP22".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -952,7 +952,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmTog3gpDC8aFCe7n8FWHsC3cSVFQbGDUkTUodeCL3BzC3".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -967,7 +967,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmUjJjzCh3FgoeJm5U1N2ixRX1Bc6tCSvCCdMgPS1PLAgr".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -982,7 +982,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmRHHihTiaoeEn1ZznkBfUKC2aNVTeKsA6kSioHARJv8TN".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -997,7 +997,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmdSxVRRwPNXKfdn1ZxGfMD1tKFau53VfxZaqGWr6srBTr".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -1012,7 +1012,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://Qmdjpq6sNRMsSApUzhy2YmiDmyUHuuaEYcpEHXjQp9ntdA".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -1041,7 +1041,7 @@ class NFTSongParserTests : BaseApplicationTests() {
             val assetName = "DecentralPerkLofiBeats01576"
             val fingerprint = "asset10ze9rhc59n4xa8d8a5a4dr9gfm93k5utj9gl9f"
             val expectedSongs = listOf(
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmZ7Cd1y586YEC2uc7pUxzoCck2ZC9yyDtdMyWgKHGRfu6".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -1056,7 +1056,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmSzRkmegDyegknPzjVqvmCG35jmGTHJfpnQjJzN1mfh8r".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -1071,7 +1071,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmcsNULNnmjAxJspomPRZxJcQhh6YHXiMC53fvqHjkNkPg".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -1086,7 +1086,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmPL1v1PCBH42PaBkWbiFhF1Fc38vKnWAAw4q3V4X4w6os".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -1101,7 +1101,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmPHR3iu4j17V2zqonKDQzUU9BVqjox6RungWF7gdQeH6t".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -1116,7 +1116,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmbwpXSZbmuLwbGsf3oARfYf269e4af6ZUY66wcQ3uB8uR".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -1131,7 +1131,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmZhux1Xqy46CNa7nCqKmpHuwR2nM7sJ6826WdRjhTTDgv".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -1146,7 +1146,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmcquduiNWU6EWJj8wLPSKcR8AiTEXvpcPTU4vwyX5VDfr".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -1161,7 +1161,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmPYgMQekJPWbvNhLP7QJAqUT2twjsBkRf32br6WPKL8dR".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -1176,7 +1176,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmQbSc3RYwuVG4qWKNbrQyrfcFXDZhFhAEt7VgBECC6HNN".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -1191,7 +1191,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmSSwxTVZdfTRe9HoCAr1EUjB9jzMrxNLV39LHnbgLDRYi".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -1206,7 +1206,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmRkmwkfqi1KyaPFkFcHWQNXoB3DnmqJohTsQ7zyZU9PFb".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -1221,7 +1221,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmWRci2Ne5yyZ7ASV8NSFfeMnrTjy9cSe2uMKS1116Stf9".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -1236,7 +1236,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmQQNTJDti9U4vv3ebKN5ACuu1spKzJCgodotwTWxdgdN5".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -1251,7 +1251,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmRCZxguhLVnYLYN253F6KgT86haFExjX4szq1Bo9dpP22".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -1266,7 +1266,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmTog3gpDC8aFCe7n8FWHsC3cSVFQbGDUkTUodeCL3BzC3".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -1281,7 +1281,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmUjJjzCh3FgoeJm5U1N2ixRX1Bc6tCSvCCdMgPS1PLAgr".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -1296,7 +1296,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmRHHihTiaoeEn1ZznkBfUKC2aNVTeKsA6kSioHARJv8TN".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -1311,7 +1311,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://QmdSxVRRwPNXKfdn1ZxGfMD1tKFau53VfxZaqGWr6srBTr".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -1326,7 +1326,7 @@ class NFTSongParserTests : BaseApplicationTests() {
                     genres = emptyList(),
                     moods = emptyList()
                 ),
-                NFTSong(
+                CardanoNftSong(
                     id = "ipfs://Qmdjpq6sNRMsSApUzhy2YmiDmyUHuuaEYcpEHXjQp9ntdA".toId(),
                     fingerprint = fingerprint,
                     policyId = policyId,
@@ -1355,7 +1355,7 @@ class NFTSongParserTests : BaseApplicationTests() {
         assetName: String,
         isStreamToken: Boolean,
         isNftCdnEnabled: Boolean
-    ): List<NFTSong> {
+    ): List<CardanoNftSong> {
         val assetNameHex = assetName.assetNameToHexString()
         val asset = NativeAsset.getDefaultInstance().copy {
             policy = policyId

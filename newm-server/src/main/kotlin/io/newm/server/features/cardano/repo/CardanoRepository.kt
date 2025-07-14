@@ -16,7 +16,7 @@ import io.newm.chain.grpc.VerifySignDataResponse
 import io.newm.server.features.cardano.model.EncryptionRequest
 import io.newm.server.features.cardano.model.GetWalletSongsResponse
 import io.newm.server.features.cardano.model.Key
-import io.newm.server.features.cardano.model.NFTSong
+import io.newm.server.features.cardano.model.CardanoNftSong
 import io.newm.server.features.song.model.SongFilters
 import io.newm.server.typealiases.UserId
 import kotlinx.coroutines.flow.Flow
@@ -97,11 +97,11 @@ interface CardanoRepository {
         limit: Int
     ): GetWalletSongsResponse
 
-    suspend fun getWalletNFTSongs(
+    suspend fun getWalletNftSongs(
         userId: UserId,
         includeLegacy: Boolean,
         useDripDropz: Boolean
-    ): List<NFTSong>
+    ): List<CardanoNftSong>
 
     suspend fun getWalletImages(userId: UserId): List<String>
 
