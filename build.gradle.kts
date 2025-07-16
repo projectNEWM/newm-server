@@ -24,7 +24,7 @@ plugins {
 
 allprojects {
     group = "io.newm.server"
-    version = "0.8.0-SNAPSHOT"
+    version = "0.9.0-SNAPSHOT"
 }
 
 subprojects {
@@ -76,6 +76,7 @@ subprojects {
                 listOf(
                     "-Xjsr305=strict",
                     "-opt-in=kotlin.RequiresOptIn",
+                    "-opt-in=kotlin.time.ExperimentalTime",
                 )
             jvmTarget.set(JvmTarget.JVM_21)
         }

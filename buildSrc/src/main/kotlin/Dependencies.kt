@@ -27,10 +27,8 @@ object Dependencies {
 
     object PublishPlugin {
         const val SIGNING_ID = "signing"
-        const val MAVEN_PUBLISH_ID = "maven-publish"
-
-        const val MAVEN_REPO_AUTH_VERSION = Versions.MAVEN_REPO_AUTH
-        const val MAVEN_REPO_AUTH_ID = "org.hibernate.build.maven-repo-auth"
+        const val MAVEN_PUBLISH_ID = "com.vanniktech.maven.publish"
+        const val MAVEN_PUBLISH_VERSION = Versions.MAVEN_PUBLISH
     }
 
     object Kotlin {
@@ -44,12 +42,6 @@ object Dependencies {
         private const val VERSION = Versions.KOTLINX_SERIALIZATION
 
         const val JSON = "org.jetbrains.kotlinx:kotlinx-serialization-json:$VERSION"
-    }
-
-    object KotlinXDateTime {
-        private const val VERSION = Versions.KOTLINX_DATETIME
-
-        const val DATETIME = "org.jetbrains.kotlinx:kotlinx-datetime:$VERSION"
     }
 
     object Coroutines {
@@ -280,7 +272,7 @@ object Dependencies {
     }
 
     object Newm {
-        private const val VERSION = Versions.NEWM
+        private const val VERSION = Versions.KOGMIOS
 
         const val KOGMIOS = "io.newm:kogmios:$VERSION"
     }
