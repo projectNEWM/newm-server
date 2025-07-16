@@ -48,7 +48,6 @@ dependencies {
     implementation(Dependencies.Coroutines.JDK9)
 
     implementation(Dependencies.KotlinXSerialization.JSON)
-    implementation(Dependencies.KotlinXDateTime.DATETIME)
 
     implementation(Dependencies.KotlinLogging.ALL)
 

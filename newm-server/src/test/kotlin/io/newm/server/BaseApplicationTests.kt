@@ -199,7 +199,9 @@ open class BaseApplicationTests {
 
     @AfterAll
     fun afterAll() {
-        application.stop()
+        runBlocking {
+            application.stop()
+        }
         stopKoin()
     }
 
