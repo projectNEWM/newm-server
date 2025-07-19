@@ -221,6 +221,8 @@ internal class SongRepositoryImpl(
                         it.checkTitleUnique(songEntity.ownerId.value, songEntity.mintingStatus)
                     }
                     songEntity.title = it
+                    // We're assuming this is a single, so we also update the release title to match the song title.
+                    releaseEntity.title = it
                 }
                 genres?.let { songEntity.genres = it }
                 moods?.let { songEntity.moods = it }

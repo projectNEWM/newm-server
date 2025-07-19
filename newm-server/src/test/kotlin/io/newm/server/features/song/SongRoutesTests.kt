@@ -855,6 +855,9 @@ class SongRoutesTests : BaseApplicationTests() {
             assertThat(song2.audioEncodingStatus).isEqualTo(AudioEncodingStatus.NotStarted)
             assertThat(song2.mintingStatus).isEqualTo(MintingStatus.Undistributed)
             assertThat(song2.marketplaceStatus).isEqualTo(MarketplaceStatus.NotSelling)
+
+            val release = transaction { ReleaseEntity[song2.releaseId!!].toModel() }
+            assertThat(release.title).isEqualTo(testSong2.title)
         }
 
     @Test

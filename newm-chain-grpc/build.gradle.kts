@@ -79,6 +79,34 @@ protobuf {
     }
 }
 
+// work-around for protobuf plugin not registering generated sources properly.
+sourceSets {
+    main {
+        java {
+            srcDirs(
+                "build/generated/source/proto/main/java",
+                "build/generated/source/proto/main/grpc",
+            )
+        }
+        kotlin {
+            srcDirs(
+                "build/generated/source/proto/main/kotlin",
+                "build/generated/source/proto/main/grpckt",
+            )
+        }
+    }
+}
+afterEvaluate {
+    tasks {
+        // Ensure that generated sources are done before including them in the sources jar
+        named<Jar>("sourcesJar") {
+            archiveClassifier.set("sources")
+            from(sourceSets.main.get().allSource)
+            dependsOn("generateProto")
+        }
+    }
+}
+
 signing {
     useGpgCmd()
 }
