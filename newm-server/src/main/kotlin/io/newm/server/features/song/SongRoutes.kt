@@ -153,7 +153,6 @@ fun Routing.createSongRoutes() {
                         respond(
                             songRepository.getMintingPaymentAmount(
                                 songId = songId,
-                                requesterId = myUserId,
                                 paymentType = requestPaymentType,
                             )
                         )

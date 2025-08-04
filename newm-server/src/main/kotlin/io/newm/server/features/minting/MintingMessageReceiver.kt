@@ -22,7 +22,6 @@ import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.features.user.repo.UserRepository
 import io.newm.server.logging.captureToSentry
 import io.newm.shared.koin.inject
-import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
@@ -31,6 +30,7 @@ import org.quartz.JobKey
 import org.quartz.SimpleScheduleBuilder.simpleSchedule
 import org.quartz.TriggerBuilder.newTrigger
 import software.amazon.awssdk.services.sqs.model.Message
+import kotlin.time.Duration.Companion.minutes
 
 class MintingMessageReceiver : SqsMessageReceiver {
     private val log = KotlinLogging.logger {}
@@ -133,6 +133,12 @@ class MintingMessageReceiver : SqsMessageReceiver {
                                             }
                                         )
                                     }
+
+                                    PaymentType.PAYPAL -> {
+                                        // unexpected, we never set MintingPaymentSubmitted for PayPal
+                                        // probably a bug, this is handled gracefully by the outer try-catch
+                                        throw IllegalStateException("Unexpected PayPal payment type for song: ${song.id}.")
+                                    }
                                 }
                             }
 
@@ -144,6 +150,8 @@ class MintingMessageReceiver : SqsMessageReceiver {
                                 PaymentType.NEWM -> {
                                     log.info { "Awaiting NEWM payment for song: ${song.id} on address: ${monitorRequest.address} for ${monitorRequest.lovelace} lovelace and $cost NEWM." }
                                 }
+
+                                PaymentType.PAYPAL -> {}
                             }
 
                             val response = cardanoRepository.awaitPayment(monitorRequest)

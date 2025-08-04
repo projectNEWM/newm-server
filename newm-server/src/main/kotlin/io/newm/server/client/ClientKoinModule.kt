@@ -8,20 +8,22 @@ import io.ktor.client.plugins.auth.Auth
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
 import io.newm.server.client.auth.appleMusicBearer
+import io.newm.server.client.auth.payPalBearer
 import io.newm.server.client.auth.soundCloudBearer
 import io.newm.server.client.auth.spotifyBearer
-import java.util.concurrent.TimeUnit
-import kotlin.time.Duration.Companion.minutes
-import kotlin.time.Duration.Companion.seconds
 import okhttp3.ConnectionPool
 import okhttp3.Protocol
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
+import java.util.concurrent.TimeUnit
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 val QUALIFIER_SPOTIFY_HTTP_CLIENT = named("spotifyHttpClient")
 val QUALIFIER_APPLE_MUSIC_HTTP_CLIENT = named("appleMusicHttpClient")
 val QUALIFIER_SOUND_CLOUD_HTTP_CLIENT = named("soundCloudHttpClient")
 val QUALIFIER_UPLOAD_TRACK_HTTP_CLIENT = named("uploadTrackHttpClient")
+val QUALIFIER_PAYPAL_HTTP_CLIENT = named("payPalHttpClient")
 
 val clientKoinModule =
     module {
@@ -88,6 +90,13 @@ val clientKoinModule =
                     requestTimeoutMillis = 5.minutes.inWholeMilliseconds
                     connectTimeoutMillis = 30.seconds.inWholeMilliseconds
                     socketTimeoutMillis = 3.minutes.inWholeMilliseconds
+                }
+            }
+        }
+        single(QUALIFIER_PAYPAL_HTTP_CLIENT) {
+            get<HttpClient>().config {
+                install(Auth) {
+                    payPalBearer()
                 }
             }
         }

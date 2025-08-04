@@ -49,7 +49,7 @@ class SongRepositoryTest : BaseApplicationTests() {
             assertThat(response.usdAdaExchangeRate).isEqualTo("0.750000")
 
             requireNotNull(response.mintPaymentOptions)
-            assertThat(response.mintPaymentOptions.size).isEqualTo(2)
+            assertThat(response.mintPaymentOptions.size).isEqualTo(3)
 
             assertThat(response.mintPaymentOptions[0].paymentType).isEqualTo(PaymentType.ADA)
             assertThat(response.mintPaymentOptions[0].cborHex).isEqualTo("1a0199bd81")
@@ -78,6 +78,20 @@ class SongRepositoryTest : BaseApplicationTests() {
             assertThat(response.mintPaymentOptions[1].collabPricePerArtist).isEqualTo("1208.146875")
             assertThat(response.mintPaymentOptions[1].collabPricePerArtistUsd).isEqualTo("0.966517")
             assertThat(response.mintPaymentOptions[1].usdToPaymentTypeExchangeRate).isEqualTo("0.000800")
+
+            assertThat(response.mintPaymentOptions[2].paymentType).isEqualTo(PaymentType.PAYPAL)
+            assertThat(response.mintPaymentOptions[2].cborHex).isEqualTo("")
+            assertThat(response.mintPaymentOptions[2].price).isEqualTo("19.389552")
+            assertThat(response.mintPaymentOptions[2].priceUsd).isEqualTo("19.389552")
+            assertThat(response.mintPaymentOptions[2].dspPrice).isEqualTo("14.990000")
+            assertThat(response.mintPaymentOptions[2].dspPriceUsd).isEqualTo("14.990000")
+            assertThat(response.mintPaymentOptions[2].mintPrice).isEqualTo("1.500000")
+            assertThat(response.mintPaymentOptions[2].mintPriceUsd).isEqualTo("1.500000")
+            assertThat(response.mintPaymentOptions[2].collabPrice).isEqualTo("2.899552")
+            assertThat(response.mintPaymentOptions[2].collabPriceUsd).isEqualTo("2.899552")
+            assertThat(response.mintPaymentOptions[2].collabPricePerArtist).isEqualTo("0.966517")
+            assertThat(response.mintPaymentOptions[2].collabPricePerArtistUsd).isEqualTo("0.966517")
+            assertThat(response.mintPaymentOptions[2].usdToPaymentTypeExchangeRate).isEqualTo("1.000000")
         }
 
     @Test

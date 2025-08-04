@@ -17,6 +17,12 @@ enum class PaymentType {
     @SerialName("NEWM")
     NEWM,
 
+    /**
+     * We accept USD via PayPal.
+     */
+    @SerialName("PAYPAL")
+    PAYPAL,
+
     // TODO: Finish support for additional payment types
 
 //    /**

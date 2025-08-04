@@ -88,15 +88,6 @@ import io.newm.shared.ktx.removeCloudinaryResize
 import io.newm.shared.ktx.toTempFile
 import io.newm.shared.test.TestUtils
 import io.newm.txbuilder.ktx.toNativeAssetCborMap
-import java.math.BigDecimal
-import java.math.BigInteger
-import java.math.RoundingMode
-import java.net.URI
-import java.time.Instant
-import java.time.LocalDateTime
-import java.time.ZoneId
-import java.util.Properties
-import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -111,6 +102,15 @@ import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
+import java.math.BigDecimal
+import java.math.BigInteger
+import java.math.RoundingMode
+import java.net.URI
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.util.Properties
+import java.util.UUID
 
 internal class SongRepositoryImpl(
     private val environment: ApplicationEnvironment,
@@ -617,7 +617,6 @@ internal class SongRepositoryImpl(
 
     override suspend fun getMintingPaymentAmount(
         songId: SongId,
-        requesterId: UserId,
         paymentType: PaymentType,
     ): MintPaymentResponse {
         logger.debug { "getMintingPaymentAmount: songId = $songId" }
@@ -659,6 +658,13 @@ internal class SongRepositoryImpl(
                     .toBigDecimal()
                     .movePointRight(6)
                     .toLong()
+            val totalCostPayPal =
+                paymentResponse.mintPaymentOptions
+                    .first { it.paymentType == PaymentType.PAYPAL }
+                    .price
+                    .toBigDecimal()
+                    .movePointRight(6)
+                    .toLong()
             update(
                 songId,
                 Song(
@@ -669,6 +675,7 @@ internal class SongRepositoryImpl(
                     mintCost = when (paymentType) {
                         PaymentType.ADA -> totalCostLovelace
                         PaymentType.NEWM -> totalCostNewmies
+                        PaymentType.PAYPAL -> totalCostPayPal
                     }
                 )
             )
@@ -808,6 +815,14 @@ internal class SongRepositoryImpl(
                     collabPricePerArtistUsd = sendTokenFeePerArtistUsd.toAdaString(),
                     usdToPaymentTypeExchangeRate = usdNewmExchangeRate.toAdaString(),
                 ),
+                MintPaymentOption(
+                    paymentType = PaymentType.PAYPAL,
+                    priceUsd = usdPrice.toAdaString(),
+                    dspPriceUsd = dspPriceUsdForAdaPaymentType.toBigInteger().toAdaString(),
+                    mintPriceUsd = mintPriceUsd.toAdaString(),
+                    collabPriceUsd = sendTokenFeeUsd.toAdaString(),
+                    collabPricePerArtistUsd = sendTokenFeePerArtistUsd.toAdaString()
+                ),
             )
         )
     }
@@ -852,6 +867,10 @@ internal class SongRepositoryImpl(
                     )
                     // Min ADA will be calculated and added below
                 }
+
+                PaymentType.PAYPAL -> throw HttpUnprocessableEntityException(
+                    "PayPal payment type is not supported for minting payment transactions"
+                )
             }
         }.toBuilder()
 
@@ -880,6 +899,9 @@ internal class SongRepositoryImpl(
         val song = get(songId)
         val release = getRelease(song.releaseId!!)
         val paymentType = PaymentType.valueOf(release.mintPaymentType!!)
+        if (paymentType == PaymentType.PAYPAL) {
+            throw HttpUnprocessableEntityException("PayPal payments cannot be refunded via this API")
+        }
         val amountToRefund = release.mintCost!!
 
         val keyId = song.paymentKeyId ?: throw HttpUnprocessableEntityException("missing paymentKeyId")
@@ -928,6 +950,8 @@ internal class SongRepositoryImpl(
                                         }
                                     )
                                 }
+
+                                PaymentType.PAYPAL -> {}
                             }
                         }
                     )
