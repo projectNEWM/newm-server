@@ -56,13 +56,13 @@ import io.newm.shared.ktx.toHexString
 import io.newm.txbuilder.ktx.sortByHashAndIx
 import io.newm.txbuilder.ktx.toCborObject
 import io.newm.txbuilder.ktx.toPlutusData
-import java.math.BigDecimal
-import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf
 import org.slf4j.Logger
+import java.math.BigDecimal
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 class MintingRepositoryImpl(
     private val userRepository: UserRepository,
@@ -136,6 +136,8 @@ class MintingRepositoryImpl(
                     ) { "NEWM payment UTXO not found or invalid for songId: ${song.id}, looking for $mintCost $newmPolicyId.$newmTokenName" }
                 }
 
+                PaymentType.PAYPAL -> null // we'll fund the minting with cash register funds
+
                 else -> {
                     // Handles PaymentType.ADA and legacy cases (where release.mintPaymentType might be null)
 
@@ -177,7 +179,7 @@ class MintingRepositoryImpl(
                     topLovelaceUtxos + topNewmUtxos
                 }
 
-                else -> {
+                else -> { // ADA or PayPal
                     cardanoRepository
                         .queryLiveUtxos(cashRegisterKey.address)
                         .filter { it.nativeAssetsCount == 0 }
@@ -227,10 +229,7 @@ class MintingRepositoryImpl(
             // sort utxos lexicographically smallest to largest to find the one we'll use as the reference utxo
             val refUtxo =
                 (
-                    cashRegisterUtxos + listOf(paymentUtxo) + (moneyBoxAdaUtxos ?: emptyList()) + (
-                        moneyBoxNewmUtxos
-                            ?: emptyList()
-                    )
+                    cashRegisterUtxos + listOfNotNull(paymentUtxo) + moneyBoxAdaUtxos.orEmpty() + moneyBoxNewmUtxos.orEmpty()
                 ).sortByHashAndIx()
                     .first()
 
@@ -337,7 +336,7 @@ class MintingRepositoryImpl(
 
     @VisibleForTesting
     internal suspend fun buildMintingTransaction(
-        paymentUtxo: Utxo,
+        paymentUtxo: Utxo?,
         cashRegisterUtxos: List<Utxo>,
         changeAddress: String,
         moneyBoxUtxos: List<Utxo>?,
@@ -359,7 +358,7 @@ class MintingRepositoryImpl(
         signatures: List<Signature> = emptyList()
     ) = cardanoRepository.buildTransaction {
         with(sourceUtxos) {
-            add(paymentUtxo)
+            paymentUtxo?.let { add(it) }
             moneyBoxUtxos?.let { addAll(it) }
             addAll(cashRegisterUtxos)
         }
@@ -412,7 +411,7 @@ class MintingRepositoryImpl(
                             asset.name == newmTokenName
                     }
             }
-            val paymentNewmUtxos = listOf(paymentUtxo).filter {
+            val paymentNewmUtxos = listOfNotNull(paymentUtxo).filter {
                 it.nativeAssetsCount == 1 &&
                     it.nativeAssetsList.any { asset ->
                         asset.policy == newmPolicyId &&

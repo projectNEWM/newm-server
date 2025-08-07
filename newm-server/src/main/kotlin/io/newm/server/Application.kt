@@ -20,6 +20,7 @@ import io.newm.server.features.earnings.createEarningsRoutes
 import io.newm.server.features.ethereum.createEthereumRoutes
 import io.newm.server.features.idenfy.createIdenfyRoutes
 import io.newm.server.features.marketplace.createMarketplaceRoutes
+import io.newm.server.features.paypal.createPayPalRoutes
 import io.newm.server.features.playlist.createPlaylistRoutes
 import io.newm.server.features.song.createSongRoutes
 import io.newm.server.features.user.createUserRoutes
@@ -90,6 +91,7 @@ fun Application.module() {
         createClientConfigRoutes()
         createOpenApiDocumentationRoutes()
         createEarningsRoutes()
+        createPayPalRoutes()
     }
 
     initializeDaemons()

@@ -80,7 +80,6 @@ interface SongRepository {
 
     suspend fun getMintingPaymentAmount(
         songId: SongId,
-        requesterId: UserId,
         paymentType: PaymentType,
     ): MintPaymentResponse
 

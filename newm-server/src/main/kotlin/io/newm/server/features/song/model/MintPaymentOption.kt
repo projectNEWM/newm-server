@@ -31,4 +31,28 @@ data class MintPaymentOption(
     val collabPricePerArtistUsd: String,
     @SerialName("usdToPaymentTypeExchangeRate")
     val usdToPaymentTypeExchangeRate: String,
-)
+) {
+    // Constructor for USD-based payment types
+    constructor(
+        paymentType: PaymentType,
+        priceUsd: String,
+        dspPriceUsd: String,
+        mintPriceUsd: String,
+        collabPriceUsd: String,
+        collabPricePerArtistUsd: String,
+    ) : this(
+        paymentType = paymentType,
+        cborHex = "",
+        price = priceUsd,
+        priceUsd = priceUsd,
+        dspPrice = dspPriceUsd,
+        dspPriceUsd = dspPriceUsd,
+        mintPrice = mintPriceUsd,
+        mintPriceUsd = mintPriceUsd,
+        collabPrice = collabPriceUsd,
+        collabPriceUsd = collabPriceUsd,
+        collabPricePerArtist = collabPricePerArtistUsd,
+        collabPricePerArtistUsd = collabPricePerArtistUsd,
+        usdToPaymentTypeExchangeRate = "1.000000"
+    )
+}
