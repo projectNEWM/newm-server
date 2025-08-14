@@ -88,6 +88,15 @@ import io.newm.shared.ktx.removeCloudinaryResize
 import io.newm.shared.ktx.toTempFile
 import io.newm.shared.test.TestUtils
 import io.newm.txbuilder.ktx.toNativeAssetCborMap
+import java.math.BigDecimal
+import java.math.BigInteger
+import java.math.RoundingMode
+import java.net.URI
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.util.Properties
+import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -102,15 +111,6 @@ import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
-import java.math.BigDecimal
-import java.math.BigInteger
-import java.math.RoundingMode
-import java.net.URI
-import java.time.Instant
-import java.time.LocalDateTime
-import java.time.ZoneId
-import java.util.Properties
-import java.util.UUID
 
 internal class SongRepositoryImpl(
     private val environment: ApplicationEnvironment,
@@ -221,8 +221,11 @@ internal class SongRepositoryImpl(
                         it.checkTitleUnique(songEntity.ownerId.value, songEntity.mintingStatus)
                     }
                     songEntity.title = it
-                    // We're assuming this is a single, so we also update the release title to match the song title.
-                    releaseEntity.title = it
+                    if (releaseEntity.releaseType == ReleaseType.SINGLE) {
+                        // Update the release title if the song title is changed
+                        // and the release type is SINGLE.
+                        releaseEntity.title = it
+                    }
                 }
                 genres?.let { songEntity.genres = it }
                 moods?.let { songEntity.moods = it }
