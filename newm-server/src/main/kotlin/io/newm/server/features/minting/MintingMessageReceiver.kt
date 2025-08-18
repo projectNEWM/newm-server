@@ -77,13 +77,17 @@ class MintingMessageReceiver : SqsMessageReceiver {
                     launch {
                         try {
                             val song = songRepository.get(mintingStatusSqsMessage.songId)
-                            val paymentKey = cardanoRepository.getKey(song.paymentKeyId!!)
                             val paymentType = song.mintPaymentType?.let { songMintPaymentType ->
                                 requireNotNull(PaymentType.entries.firstOrNull { it.name == songMintPaymentType }) {
                                     "Invalid mint payment type: $songMintPaymentType for song: ${song.id}"
                                 }
                             } ?: PaymentType.ADA
+                            if (paymentType == PaymentType.PAYPAL) {
+                                // nothing else to do here, we'll wait for the payment capture API call
+                                return@launch
+                            }
 
+                            val paymentKey = cardanoRepository.getKey(song.paymentKeyId!!)
                             val cost = song.mintCost!!
 
                             // Hoist suspend calls to be outside the request builder
