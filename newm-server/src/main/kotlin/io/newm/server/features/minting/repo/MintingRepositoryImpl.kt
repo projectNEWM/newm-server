@@ -105,7 +105,6 @@ class MintingRepositoryImpl(
                     Pair(collabUser.walletAddress!!, amount)
                 }
             log.info { "Royalty splits for songId: ${song.id} - $streamTokenSplits" }
-            val paymentKey = cardanoRepository.getKey(song.paymentKeyId!!)
 
             // Convert release.mintPaymentType String to PaymentType enum
             val paymentTypeEnum = PaymentType.valueOf(release.mintPaymentType ?: PaymentType.ADA.name)
@@ -122,8 +121,10 @@ class MintingRepositoryImpl(
             val newmTokenName =
                 if (isMainnet) CardanoRepository.NEWM_TOKEN_NAME else CardanoRepository.NEWM_TOKEN_NAME_PREPROD
 
+            var paymentKey: Key? = null
             val paymentUtxo = when (paymentTypeEnum) {
                 PaymentType.NEWM -> {
+                    paymentKey = cardanoRepository.getKey(song.paymentKeyId!!)
                     requireNotNull(
                         cardanoRepository.queryLiveUtxos(paymentKey.address).firstOrNull { utxo ->
                             utxo.nativeAssetsCount == 1 &&
@@ -140,7 +141,7 @@ class MintingRepositoryImpl(
 
                 else -> {
                     // Handles PaymentType.ADA and legacy cases (where release.mintPaymentType might be null)
-
+                    paymentKey = cardanoRepository.getKey(song.paymentKeyId!!)
                     val costToUse = if (release.mintPaymentType != null && paymentTypeEnum == PaymentType.ADA) {
                         mintCost // This is release.mintCost, which would be ADA amount
                     } else {
