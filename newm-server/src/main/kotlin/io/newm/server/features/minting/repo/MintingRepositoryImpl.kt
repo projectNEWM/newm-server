@@ -56,13 +56,13 @@ import io.newm.shared.ktx.toHexString
 import io.newm.txbuilder.ktx.sortByHashAndIx
 import io.newm.txbuilder.ktx.toCborObject
 import io.newm.txbuilder.ktx.toPlutusData
+import java.math.BigDecimal
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.parameter.parametersOf
 import org.slf4j.Logger
-import java.math.BigDecimal
-import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
 
 class MintingRepositoryImpl(
     private val userRepository: UserRepository,
@@ -148,8 +148,12 @@ class MintingRepositoryImpl(
                         @Suppress("DEPRECATION")
                         song.mintCostLovelace // Fallback to legacy song.mintCostLovelace
                     }
-                    cardanoRepository.queryLiveUtxos(paymentKey.address).first { utxo ->
-                        utxo.lovelace == costToUse.toString() && utxo.nativeAssetsCount == 0
+                    requireNotNull(
+                        cardanoRepository.queryLiveUtxos(paymentKey.address).firstOrNull { utxo ->
+                            utxo.lovelace == costToUse.toString() && utxo.nativeAssetsCount == 0
+                        }
+                    ) {
+                        "ADA payment UTXO not found or invalid for songId: ${song.id}, looking for $costToUse lovelace at: ${paymentKey.address}"
                     }
                 }
             }
@@ -191,6 +195,7 @@ class MintingRepositoryImpl(
 
             require(cashRegisterUtxos.isNotEmpty()) { "cashRegister has no utxos!" }
             val cashRegisterAdaAmount = cashRegisterUtxos.sumOf { it.lovelace.toLong() }
+
             val moneyBoxKey =
                 if (cashRegisterAdaAmount >= cashRegisterCollectionAmount + cashRegisterMinAmount) {
                     // we should collect to the moneybox
@@ -210,6 +215,7 @@ class MintingRepositoryImpl(
                         .sortedByDescending { it.lovelace.toLong() }
                         .take(5)
                 }
+
             val moneyBoxNewmUtxos =
                 moneyBoxKey?.let {
                     allMoneyBoxUtxos
@@ -236,6 +242,7 @@ class MintingRepositoryImpl(
 
             val (refTokenName, fracTokenName) =
                 calculateTokenNames(refUtxo)
+
             val collateralKey =
                 requireNotNull(cardanoRepository.getKeyByName("collateral")) { "collateral key not defined!" }
 

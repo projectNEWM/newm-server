@@ -357,7 +357,7 @@ class EvearaDistributionRepositoryImpl(
                         firstName = user.firstName.ifBlank { "---" },
                         lastName = user.lastName.ifBlank { "---" },
                         email = user.email,
-                    ).logRequestJson(log)
+                    ).logRequestJson("POST", log)
                 )
             }
         if (!response.status.isSuccess()) {
@@ -409,7 +409,7 @@ class EvearaDistributionRepositoryImpl(
                         firstName = user.firstName.ifBlank { "---" },
                         lastName = user.lastName.ifBlank { "---" },
                         email = user.email,
-                    ).logRequestJson(log)
+                    ).logRequestJson("PUT", log)
                 )
             }
         if (!response.status.isSuccess()) {
@@ -443,7 +443,7 @@ class EvearaDistributionRepositoryImpl(
                                     partnerReferenceId = "${user.id}_${nextLong(Long.MAX_VALUE)}".substring(0..49),
                                 )
                             )
-                    ).logRequestJson(log)
+                    ).logRequestJson("POST", log)
                 )
             }
         if (!response.status.isSuccess()) {
@@ -488,7 +488,7 @@ class EvearaDistributionRepositoryImpl(
                     AddUserLabelRequest(
                         uuid = distributionUserId,
                         name = label,
-                    ).logRequestJson(log)
+                    ).logRequestJson("POST", log)
                 )
             }
         if (!response.status.isSuccess()) {
@@ -516,7 +516,7 @@ class EvearaDistributionRepositoryImpl(
                     UpdateUserLabelRequest(
                         uuid = distributionUserId,
                         name = label,
-                    ).logRequestJson(log)
+                    ).logRequestJson("PUT", log)
                 )
             }
         if (!response.status.isSuccess()) {
@@ -574,7 +574,7 @@ class EvearaDistributionRepositoryImpl(
                 contentType(ContentType.Application.Json)
                 accept(ContentType.Application.Json)
                 bearerAuth(getEvearaApiToken())
-                setBody(addArtistRequest.logRequestJson(log))
+                setBody(addArtistRequest.logRequestJson("POST", log))
             }
         if (!response.status.isSuccess()) {
             throw ServerResponseException(response, "Error adding artist!: ${response.bodyAsText()}")
@@ -596,7 +596,7 @@ class EvearaDistributionRepositoryImpl(
                 contentType(ContentType.Application.Json)
                 accept(ContentType.Application.Json)
                 bearerAuth(getEvearaApiToken())
-                setBody(updateArtistRequest.logRequestJson(log))
+                setBody(updateArtistRequest.logRequestJson("PUT", log))
             }
         if (!response.status.isSuccess()) {
             throw ServerResponseException(response, "Error updating artist!: ${response.bodyAsText()}")
@@ -700,7 +700,7 @@ class EvearaDistributionRepositoryImpl(
                         name = collabUser?.stageOrFullName ?: user.stageOrFullName,
                         isni = collabUser?.distributionIsni ?: user.distributionIsni,
                         ipn = collabUser?.distributionIpn ?: user.distributionIpn,
-                    ).logRequestJson(log)
+                    ).logRequestJson("POST", log)
                 )
             }
         if (!response.status.isSuccess()) {
@@ -736,7 +736,7 @@ class EvearaDistributionRepositoryImpl(
                         name = collabUser?.stageOrFullName ?: user.stageOrFullName,
                         isni = collabUser?.distributionIsni ?: user.distributionIsni,
                         ipn = collabUser?.distributionIpn ?: user.distributionIpn,
-                    ).logRequestJson(log)
+                    ).logRequestJson("PUT", log)
                 )
             }
         if (!response.status.isSuccess()) {
@@ -854,7 +854,7 @@ class EvearaDistributionRepositoryImpl(
                         albumOnly = false,
                         // TODO: Implement lyrics later.
                         lyrics = null,
-                    ).logRequestJson(log)
+                    ).logRequestJson("PUT", log)
                 )
             }
         if (!response.status.isSuccess()) {
@@ -996,7 +996,7 @@ class EvearaDistributionRepositoryImpl(
                             ),
                         originalReleaseDate = release.releaseDate,
                         tracks = tracks,
-                    ).logRequestJson(log)
+                    ).logRequestJson("POST", log)
                 )
             }
         if (!response.status.isSuccess()) {
@@ -1093,7 +1093,7 @@ class EvearaDistributionRepositoryImpl(
                             ),
                         originalReleaseDate = release.releaseDate,
                         tracks = tracks,
-                    ).logRequestJson(log)
+                    ).logRequestJson("PUT", log)
                 )
             }
         if (!response.status.isSuccess()) {
@@ -1167,7 +1167,7 @@ class EvearaDistributionRepositoryImpl(
                     DistributeReleaseRequest(
                         uuid = user.distributionUserId!!,
                         releaseId = releaseId,
-                    ).logRequestJson(log)
+                    ).logRequestJson("PUT", log)
                 )
             }
         if (!response.status.isSuccess()) {
@@ -1204,7 +1204,7 @@ class EvearaDistributionRepositoryImpl(
                                     releaseStartDate = release.releaseDate,
                                 )
                             }
-                    ).logRequestJson(log)
+                    ).logRequestJson("PATCH", log)
                 )
             }
         if (!response.status.isSuccess()) {
@@ -1250,7 +1250,7 @@ class EvearaDistributionRepositoryImpl(
                     DistributeFutureReleaseRequest(
                         uuid = user.distributionUserId!!,
                         enableDistributeToFutureOutlets = true,
-                    ).logRequestJson(log)
+                    ).logRequestJson("PATCH", log)
                 )
             }
         if (!response.status.isSuccess()) {
@@ -1539,7 +1539,7 @@ class EvearaDistributionRepositoryImpl(
                                             )
                                         ).filter { it.profileUrl.isNotBlank() }.takeIf { it.isNotEmpty() },
                                 )
-                            ).logRequestJson(log)
+                            ).logRequestJson("PUT", log)
                         log.info {
                             "Updated collab distribution artist ${collabUser.email} with id ${response.artistData?.artistId}: ${response.message}"
                         }
@@ -1568,7 +1568,7 @@ class EvearaDistributionRepositoryImpl(
                                         )
                                     ).filter { it.profileUrl.isNotBlank() }.takeIf { it.isNotEmpty() },
                             )
-                        ).logRequestJson(log)
+                        ).logRequestJson("POST", log)
                     log.info { "Created collab distribution artist ${collabUser.email} with id ${response.artistId}: ${response.message}" }
                     collabRepository.update(
                         collab.copy(distributionArtistId = response.artistId),
@@ -1621,7 +1621,7 @@ class EvearaDistributionRepositoryImpl(
                                         )
                                     ).filter { it.profileUrl.isNotBlank() }.takeIf { it.isNotEmpty() },
                             )
-                        ).logRequestJson(log)
+                        ).logRequestJson("PUT", log)
                     log.info { "Updated distribution artist ${user.email} with id ${response.artistData?.artistId}: ${response.message}" }
                 }
             } else {
@@ -1650,7 +1650,7 @@ class EvearaDistributionRepositoryImpl(
                                         )
                                     ).filter { it.profileUrl.isNotBlank() }.takeIf { it.isNotEmpty() },
                             )
-                        ).logRequestJson(log)
+                        ).logRequestJson("POST", log)
                     log.info { "Created distribution artist ${user.email} with id ${response.artistId}: ${response.message}" }
                     user.distributionArtistId = response.artistId
                     userRepository.updateUserData(user.id!!, user)
@@ -1691,7 +1691,7 @@ class EvearaDistributionRepositoryImpl(
                                             )
                                         ).filter { it.profileUrl.isNotBlank() }.takeIf { it.isNotEmpty() },
                                 )
-                            ).logRequestJson(log)
+                            ).logRequestJson("PUT", log)
                         log.info {
                             "Updated distribution artist ${user.email} with id ${response.artistData?.artistId}: ${response.message}"
                         }
@@ -1734,7 +1734,7 @@ class EvearaDistributionRepositoryImpl(
                                     )
                                 ).filter { it.profileUrl.isNotBlank() }.takeIf { it.isNotEmpty() },
                         )
-                    ).logRequestJson(log)
+                    ).logRequestJson("PUT", log)
                 log.info { "Updated distribution artist ${user.email} with id ${response.artistData?.artistId}: ${response.message}" }
             }
         }

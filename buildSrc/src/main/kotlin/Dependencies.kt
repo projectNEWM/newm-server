@@ -6,7 +6,7 @@ object Dependencies {
 
     object ShadowPlugin {
         const val VERSION = Versions.SHADOW_PLUGIN
-        const val ID = "com.github.johnrengelman.shadow"
+        const val ID = "com.gradleup.shadow"
     }
 
     object KtlintPlugin {

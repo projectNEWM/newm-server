@@ -1,8 +1,7 @@
-import com.google.protobuf.gradle.generateProtoTasks
 import com.google.protobuf.gradle.id
-import com.google.protobuf.gradle.plugins
-import com.google.protobuf.gradle.protobuf
-import com.google.protobuf.gradle.protoc
+import org.gradle.kotlin.dsl.all
+import org.gradle.kotlin.dsl.plugins
+import org.gradle.kotlin.dsl.protobuf
 
 plugins {
     `java-library`
@@ -79,23 +78,6 @@ protobuf {
     }
 }
 
-// work-around for protobuf plugin not registering generated sources properly.
-sourceSets {
-    main {
-        java {
-            srcDirs(
-                "build/generated/source/proto/main/java",
-                "build/generated/source/proto/main/grpc",
-            )
-        }
-        kotlin {
-            srcDirs(
-                "build/generated/source/proto/main/kotlin",
-                "build/generated/source/proto/main/grpckt",
-            )
-        }
-    }
-}
 afterEvaluate {
     tasks {
         // Ensure that generated sources are done before including them in the sources jar

@@ -38,25 +38,8 @@ subprojects {
     }
 
     tasks.withType<DependencyUpdatesTask> {
-        // Example 1: reject all non stable versions
-        rejectVersionIf {
-            isNonStable(candidate.version)
-        }
-
-        // Example 2: disallow release candidates as upgradable versions from stable versions
         rejectVersionIf {
             isNonStable(candidate.version) && !isNonStable(currentVersion)
-        }
-
-        // Example 3: using the full syntax
-        resolutionStrategy {
-            componentSelection {
-                all {
-                    if (isNonStable(candidate.version) && !isNonStable(currentVersion)) {
-                        reject("Release candidate")
-                    }
-                }
-            }
         }
     }
 
