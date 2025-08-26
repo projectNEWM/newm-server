@@ -35,7 +35,7 @@ val cardanoKoinModule =
             val secure = environment.getConfigBoolean("newmChain.secure")
             val channel =
                 ManagedChannelBuilder
-                    .forAddress(host, port)
+                    .forTarget("dns:///$host:$port")
                     .apply {
                         keepAliveTime(30L, TimeUnit.SECONDS)
                         keepAliveTimeout(20L, TimeUnit.SECONDS)
