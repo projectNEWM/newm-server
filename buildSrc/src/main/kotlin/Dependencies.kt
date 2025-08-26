@@ -284,7 +284,7 @@ object Dependencies {
         const val API = "io.grpc:grpc-api:$VERSION"
         const val GRPC = "io.grpc:protoc-gen-grpc-java:$VERSION"
         const val PROTOBUF = "io.grpc:grpc-protobuf:$VERSION"
-        const val NETTY = "io.grpc:grpc-netty:$VERSION"
+        const val NETTY = "io.grpc:grpc-netty-shaded:$VERSION"
     }
 
     object GrpcKotlin {
