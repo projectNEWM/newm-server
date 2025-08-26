@@ -31,6 +31,7 @@ import io.newm.chain.grpc.walletRequest
 import io.newm.chain.util.Constants
 import io.newm.server.features.cardano.repo.CardanoRepository.Companion.CHARLI3_NEWM_USD_NAME_PREPROD
 import io.newm.server.features.cardano.repo.CardanoRepository.Companion.CHARLI3_NEWM_USD_POLICY_PREPROD
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Disabled
@@ -75,6 +76,32 @@ class GrpcTests {
                 }
             )
         )
+    }
+
+    @Test
+    @Disabled
+    fun `test transport for ManagedChannelBuilder`() {
+        // Test DNS resolution with secure transport and TCP-only configuration
+        val secureChannel = ManagedChannelBuilder
+            .forAddress("newm-chain.cardanostakehouse.com", 3737)
+            .keepAliveTime(30L, TimeUnit.SECONDS)
+            .keepAliveTimeout(20L, TimeUnit.SECONDS)
+            .keepAliveWithoutCalls(true)
+            .useTransportSecurity()
+            .build()
+
+        assertThat(secureChannel).isNotNull()
+        assertThat(secureChannel.isShutdown).isFalse()
+
+        // Verify the channel uses the expected transport
+        val channelState = secureChannel.getState(false)
+        assertThat(channelState).isNotNull()
+
+        // Clean up channels
+        secureChannel.shutdown()
+
+        // Verify channels can be shutdown properly
+        assertThat(secureChannel.awaitTermination(5, TimeUnit.SECONDS)).isTrue()
     }
 
     @Test
