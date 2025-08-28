@@ -1,11 +1,13 @@
-# We may start running these on docker in the future,
-# but I wanted to put something in place in the meantime
 name: ktlint
 on:
   push:
     branches:
       - master
   pull_request:
+
+env:
+  KTLINT_VERSION: "1.7.1"
+  KTLINT_SHA256: "b596a05f09364e1997b644152683af12fef58944f3acfabdf78071f5a490eb98"
 
 jobs:
   build:
@@ -16,8 +18,31 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '21'
-      - run: |
-          curl -sSLO https://github.com/pinterest/ktlint/releases/download/1.7.1/ktlint && chmod a+x ktlint && sudo mv ktlint /usr/local/bin/
+      - name: Download and verify ktlint
+        run: |
+          # Download ktlint binary and signature
+          curl -sSLO https://github.com/pinterest/ktlint/releases/download/${KTLINT_VERSION}/ktlint
+          curl -sSLO https://github.com/pinterest/ktlint/releases/download/${KTLINT_VERSION}/ktlint.asc
+          
+          # Verify SHA256 hash
+          echo "${KTLINT_SHA256}  ktlint" | sha256sum -c -
+          if [ $? -ne 0 ]; then
+            echo "SHA256 verification failed!"
+            exit 1
+          fi
+          echo "SHA256 verification passed"
+          
+          # Import ktlint PGP key and verify signature using official method
+          curl -sS https://keybase.io/ktlint/pgp_keys.asc | gpg --import && gpg --verify ktlint.asc
+          if [ $? -ne 0 ]; then
+            echo "PGP signature verification failed!"
+            exit 1
+          fi
+          echo "PGP signature verification passed"
+          
+          # Install ktlint
+          chmod a+x ktlint
+          sudo mv ktlint /usr/local/bin/
       - name: run ktlint
         run: |
           ktlint --reporter=checkstyle,output=build/ktlint-report.xml '**/*.kt*' '!**/generated/**'
