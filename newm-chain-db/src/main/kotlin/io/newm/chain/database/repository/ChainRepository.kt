@@ -3,11 +3,16 @@ package io.newm.chain.database.repository
 import io.newm.chain.database.entity.ChainBlock
 import io.newm.chain.database.entity.MonitoredAddressChain
 import io.newm.kogmios.protocols.model.PointDetail
+import io.newm.kogmios.protocols.model.Tip
 
 interface ChainRepository {
     fun getFindIntersectPairs(): List<PointDetail>
 
     fun getPointAfterSlot(slot: Long): PointDetail?
+
+    fun getTip(): PointDetail?
+
+    fun getTipInfo(): Tip?
 
     fun getVrfByPoolId(poolId: String): String?
 

@@ -202,6 +202,26 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
         }
     }
 
+    override suspend fun queryTip(request: QueryTipRequest): QueryTipResponse {
+        try {
+            return chainRepository.getTipInfo()?.let { tip ->
+                queryTipResponse {
+                    slot = tip.slot
+                    block = tip.height
+                    hash = tip.id
+                }
+            } ?: queryTipResponse {
+                slot = 0L
+                block = 0L
+                hash = ""
+            }
+        } catch (e: Throwable) {
+            Sentry.addBreadcrumb(request.toString(), "NewmChainService")
+            log.error(e) { "queryTip error!" }
+            throw e
+        }
+    }
+
     override suspend fun queryTransactionConfirmationCount(
         request: QueryTransactionConfirmationCountRequest
     ): QueryTransactionConfirmationCountResponse {
