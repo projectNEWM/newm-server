@@ -11,6 +11,7 @@ import io.newm.chain.util.Blake2b
 import io.newm.chain.util.hexToByteArray
 import io.newm.chain.util.toHexString
 import io.newm.kogmios.protocols.model.PointDetail
+import io.newm.kogmios.protocols.model.Tip
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
@@ -61,6 +62,42 @@ class ChainRepositoryImpl : ChainRepository {
                     PointDetail(
                         slot = row[ChainTable.slotNumber],
                         id = row[ChainTable.hash],
+                    )
+                }
+        }
+
+    override fun getTip(): PointDetail? =
+        transaction {
+            ChainTable
+                .select(
+                    ChainTable.slotNumber,
+                    ChainTable.hash
+                ).orderBy(ChainTable.slotNumber, SortOrder.DESC)
+                .limit(1)
+                .firstOrNull()
+                ?.let { row ->
+                    PointDetail(
+                        slot = row[ChainTable.slotNumber],
+                        id = row[ChainTable.hash]
+                    )
+                }
+        }
+
+    override fun getTipInfo(): Tip? =
+        transaction {
+            ChainTable
+                .select(
+                    ChainTable.slotNumber,
+                    ChainTable.blockNumber,
+                    ChainTable.hash
+                ).orderBy(ChainTable.slotNumber, SortOrder.DESC)
+                .limit(1)
+                .firstOrNull()
+                ?.let { row ->
+                    Tip(
+                        slot = row[ChainTable.slotNumber],
+                        height = row[ChainTable.blockNumber],
+                        id = row[ChainTable.hash]
                     )
                 }
         }
