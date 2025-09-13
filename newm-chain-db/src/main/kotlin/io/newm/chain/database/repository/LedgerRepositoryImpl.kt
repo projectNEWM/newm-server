@@ -6,7 +6,7 @@ import com.google.iot.cbor.CborByteString
 import com.google.iot.cbor.CborInteger
 import com.google.iot.cbor.CborMap
 import com.google.iot.cbor.CborReader
-import io.newm.chain.config.Config
+import io.newm.chain.util.config.Config
 import io.newm.chain.database.entity.LedgerAsset
 import io.newm.chain.database.entity.LedgerAssetMetadata
 import io.newm.chain.database.entity.LedgerUtxoHistory
@@ -42,10 +42,12 @@ import io.newm.chain.util.Constants.UTXO_SCRIPT_REF_INDEX
 import io.newm.chain.util.elementToByteArray
 import io.newm.chain.util.elementToInt
 import io.newm.chain.util.extractCredentials
+import io.newm.chain.util.getInstantAtSlot
 import io.newm.chain.util.hexToByteArray
 import io.newm.chain.util.toHexString
 import java.math.BigInteger
 import java.time.Duration
+import java.time.Instant
 import kotlin.math.max
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
@@ -88,6 +90,9 @@ class LedgerRepositoryImpl : LedgerRepository {
      * removed once they are observed to be created in a block.
      */
     private val liveUtxoMap = mutableMapOf<String, Set<Utxo>>()
+
+    // Track validity end slot (TTL) for pending transactions that produced liveUtxos
+    private val pendingTxValidityEndSlots = mutableMapOf<String, Long>()
 
     override fun queryUtxos(address: String): Set<Utxo> =
         transaction {
@@ -350,6 +355,7 @@ class LedgerRepositoryImpl : LedgerRepository {
         chainUtxos: MutableSet<Utxo>
     ): Set<Utxo> {
         utxoMutex.withLock {
+            cleanupExpiredPendingTransactions()
             return chainUtxos
                 .apply {
                     // add in any liveUtxos from pending transactions
@@ -386,9 +392,14 @@ class LedgerRepositoryImpl : LedgerRepository {
         cborByteArray: ByteArray
     ) {
         utxoMutex.withLock {
+            cleanupExpiredPendingTransactions()
             val tx = CborReader.createFromByteArray(cborByteArray).readDataItem() as CborArray
             val txBody = tx.elementAt(0) as CborMap
             val witnessSet = tx.elementAt(1) as CborMap
+            // Record TTL (validityEndSlot) if present so we can expire pending UTxOs later
+            (txBody[CborInteger.create(3)] as? CborInteger)?.longValue()?.let { ttl ->
+                pendingTxValidityEndSlots[transactionId] = ttl
+            }
             val utxosInArray = txBody[TX_SPENT_UTXOS_INDEX] as CborArray
             utxosInArray.forEach { utxo ->
                 var hash = ""
@@ -554,6 +565,37 @@ class LedgerRepositoryImpl : LedgerRepository {
                     }
                 )
             }
+            // After adding new pending utxos, perform another cleanup in case they are already expired
+            cleanupExpiredPendingTransactions()
+        }
+    }
+
+    // Purge any pending transactions whose TTL has passed
+    private fun cleanupExpiredPendingTransactions() {
+        if (pendingTxValidityEndSlots.isEmpty()) return
+        val now = Instant.now()
+        val expiredTxIds = pendingTxValidityEndSlots.filter { (_, slot) -> now.isAfter(getInstantAtSlot(slot)) }.keys
+        if (expiredTxIds.isEmpty()) return
+        expiredTxIds.forEach { pendingTxValidityEndSlots.remove(it) }
+        // Unmark spent UTXOs from expired transactions
+        if (spentUtxoSet.isNotEmpty()) {
+            spentUtxoSet.removeIf { it.transactionSpent in expiredTxIds }
+        }
+        // Remove created UTXOs from expired transactions
+        if (liveUtxoMap.isNotEmpty()) {
+            val removeAddresses = mutableListOf<String>()
+            liveUtxoMap.forEach { (address, utxos) ->
+                val newSet = utxos.filterNot { it.hash in expiredTxIds }.toSet()
+                if (newSet.isEmpty()) {
+                    if (utxos.isNotEmpty()) removeAddresses.add(address)
+                } else if (newSet.size != utxos.size) {
+                    liveUtxoMap[address] = newSet
+                }
+            }
+            removeAddresses.forEach { liveUtxoMap.remove(it) }
+        }
+        if (log.isDebugEnabled) {
+            log.debug("cleanupExpiredPendingTransactions: expiredTxIds=$expiredTxIds")
         }
     }
 

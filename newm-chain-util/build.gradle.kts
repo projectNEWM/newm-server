@@ -23,6 +23,8 @@ dependencies {
 
     implementation(Dependencies.LogBack.CLASSIC)
 
+    implementation(Dependencies.Newm.KOGMIOS)
+
     implementation(Dependencies.Cbor.CBOR)
     implementation(Dependencies.ApacheCommonsCodec.ALL)
     implementation(Dependencies.BouncyCastle.BCPROV)

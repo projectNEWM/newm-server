@@ -12,16 +12,20 @@ import io.newm.chain.grpc.redeemer
 private val KEY_FEE: CborInteger = CborInteger.create(2)
 private val KEY_TOTAL_COLLATERAL = CborInteger.create(17)
 private val KEY_REDEEMERS: CborInteger = CborInteger.create(5)
+private val KEY_VALIDITY_INTERVAL_START: CborInteger = CborInteger.create(8)
+private val KEY_TTL: CborInteger = CborInteger.create(3)
 
 interface TxFields {
     val fee: Long
     val totalCollateral: Long
     val redeemers: List<Redeemer>
+    val validityStartSlot: Long?
+    val validityEndSlot: Long?
     // TODO: add more fields later as needed
 }
 
-fun TransactionBuilderResponse.extractFields(): TxFields {
-    val tx = CborObject.createFromCborByteArray(transactionCbor.toByteArray()) as CborArray
+fun ByteArray.extractTxCborFields(): TxFields {
+    val tx = CborObject.createFromCborByteArray(this) as CborArray
     val txBody = tx.elementAt(0) as CborMap
     val witnessSet = tx.elementAt(1) as CborMap
     return object : TxFields {
@@ -31,6 +35,14 @@ fun TransactionBuilderResponse.extractFields(): TxFields {
 
         override val totalCollateral: Long by lazy {
             (txBody[KEY_TOTAL_COLLATERAL] as CborInteger).longValue()
+        }
+
+        override val validityStartSlot: Long? by lazy {
+            (txBody[KEY_VALIDITY_INTERVAL_START] as? CborInteger)?.longValue()
+        }
+
+        override val validityEndSlot: Long? by lazy {
+            (txBody[KEY_TTL] as? CborInteger)?.longValue()
         }
 
         override val redeemers: List<Redeemer> by lazy {
@@ -72,6 +84,8 @@ fun TransactionBuilderResponse.extractFields(): TxFields {
             }
         }
 
-        override fun toString(): String = "TxFields(fee=$fee, totalCollateral=$totalCollateral, redeemers=$redeemers)"
+        override fun toString(): String = "TxFields(fee=$fee, totalCollateral=$totalCollateral, validityStartSlot=$validityStartSlot, validityEndSlot=$validityEndSlot, redeemers=$redeemers)"
     }
 }
+
+fun TransactionBuilderResponse.extractFields(): TxFields = transactionCbor.toByteArray().extractTxCborFields()

@@ -5,10 +5,10 @@ import com.github.benmanes.caffeine.cache.Caffeine
 import com.google.protobuf.kotlin.toByteString
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.server.application.ApplicationEnvironment
-import io.newm.chain.cardano.getEpochForSlot
+import io.newm.chain.util.getEpochForSlot
 import io.newm.chain.cardano.to721Json
 import io.newm.chain.cardano.toMetadataMap
-import io.newm.chain.config.Config
+import io.newm.chain.util.config.Config
 import io.newm.chain.database.entity.LedgerAsset
 import io.newm.chain.database.repository.ChainRepository
 import io.newm.chain.database.repository.LedgerRepository

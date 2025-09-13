@@ -2,8 +2,8 @@ package io.newm.chain.daemon
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.server.application.ApplicationEnvironment
-import io.newm.chain.cardano.getEpochSecondAtSlot
-import io.newm.chain.config.Config
+import io.newm.chain.util.getEpochSecondAtSlot
+import io.newm.chain.util.config.Config
 import io.newm.chain.database.entity.MonitoredAddressChain
 import io.newm.chain.database.repository.ChainRepository
 import io.newm.chain.database.repository.LedgerRepository

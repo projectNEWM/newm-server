@@ -1,7 +1,7 @@
 package io.newm.chain.database.repository
 
 import com.github.benmanes.caffeine.cache.Caffeine
-import io.newm.chain.config.Config
+import io.newm.chain.util.config.Config
 import io.newm.chain.database.entity.ChainBlock
 import io.newm.chain.database.entity.MonitoredAddressChain
 import io.newm.chain.database.table.ChainTable
