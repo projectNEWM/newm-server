@@ -1,4 +1,4 @@
-package io.newm.chain.cardano
+package io.newm.chain.util
 
 data class ByronGenesis(
     val startTime: Long,

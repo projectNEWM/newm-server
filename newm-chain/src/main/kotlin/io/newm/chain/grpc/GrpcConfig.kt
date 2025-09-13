@@ -3,7 +3,7 @@ package io.newm.chain.grpc
 import io.grpc.netty.GrpcSslContexts
 import io.grpc.netty.NettyServerBuilder
 import io.ktor.server.config.ApplicationConfig
-import io.newm.chain.cardano.randomHex
+import io.newm.chain.util.randomHex
 import io.newm.ktor.server.grpc.GRPCApplicationEngine
 import io.sentry.Sentry
 import kotlinx.coroutines.CancellationException

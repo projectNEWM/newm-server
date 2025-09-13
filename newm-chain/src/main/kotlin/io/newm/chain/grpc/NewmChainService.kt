@@ -12,10 +12,10 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.newm.chain.cardano.address.Address
 import io.newm.chain.cardano.address.AddressCredential
 import io.newm.chain.cardano.address.BIP32PublicKey
-import io.newm.chain.cardano.calculateTransactionId
-import io.newm.chain.cardano.getCurrentEpoch
+import io.newm.chain.util.calculateTransactionId
+import io.newm.chain.util.getCurrentEpoch
 import io.newm.chain.cardano.toLedgerAssetMetadataItem
-import io.newm.chain.config.Config
+import io.newm.chain.util.config.Config
 import io.newm.chain.database.repository.ChainRepository
 import io.newm.chain.database.repository.LedgerRepository
 import io.newm.chain.ledger.SubmittedTransactionCache

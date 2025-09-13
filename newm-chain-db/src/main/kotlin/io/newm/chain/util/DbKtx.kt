@@ -1,6 +1,6 @@
 package io.newm.chain.util
 
-import io.newm.chain.config.Config
+import io.newm.chain.util.config.Config
 import io.newm.chain.database.entity.ChainBlock
 import io.newm.chain.database.entity.LedgerAsset
 import io.newm.chain.database.entity.LedgerAssetMetadata

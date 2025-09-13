@@ -1,7 +1,7 @@
 package io.newm.chain.cardano
 
 import com.google.common.truth.Truth.assertThat
-import io.newm.chain.config.Config
+import io.newm.chain.util.config.Config
 import io.newm.chain.util.toCreatedUtxoSet
 import io.newm.chain.util.toSpentUtxoSet
 import io.newm.kogmios.StateQueryClient

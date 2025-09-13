@@ -3,7 +3,7 @@ package io.newm.chain.cardano
 import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.Logger
 import com.google.common.truth.Truth.assertThat
-import io.newm.chain.config.Config
+import io.newm.chain.util.config.Config
 import io.newm.chain.database.entity.LedgerAsset
 import io.newm.chain.model.CreatedUtxo
 import io.newm.chain.model.NativeAsset

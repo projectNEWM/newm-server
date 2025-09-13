@@ -74,7 +74,10 @@ object Constants {
 
     val TX_SPENT_UTXOS_INDEX: CborInteger = CborInteger.create(0)
     val TX_DEST_UTXOS_INDEX: CborInteger = CborInteger.create(1) // destination addresses are at index 1
+    val TX_FEE_INDEX: CborInteger = CborInteger.create(2)
+    val TX_TTL_INDEX: CborInteger = CborInteger.create(3)
     val TX_CERTS_INDEX: CborInteger = CborInteger.create(4)
+    val TX_VALIDITY_INTERVAL_START = CborInteger.create(8)
     val TX_MINTS_INDEX: CborInteger = CborInteger.create(9)
     val TX_COLLAT_UTXOS_INDEX: CborInteger = CborInteger.create(13)
     val TX_WITNESS_DATUM_INDEX: CborInteger = CborInteger.create(4)
