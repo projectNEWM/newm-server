@@ -44,7 +44,7 @@ object Versions {
     const val SENTRY = "8.21.1"
     const val SHADOW_PLUGIN = "8.1.1"
     const val SPRING_SECURITY = "6.5.3"
-    const val SSL_KICKSTART = "9.2.1"
+    const val AYZA = "10.0.0"
     const val SWAGGER = "1.0.57"
     const val TEST_CONTAINERS = "1.21.3"
     const val TYPESAFE = "1.4.5"

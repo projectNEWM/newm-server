@@ -38,8 +38,8 @@ dependencies {
     implementation(project(":newm-shared"))
     implementation(Dependencies.Newm.KOGMIOS)
     implementation(Dependencies.Cbor.CBOR)
-    implementation(Dependencies.SSLKickstart.PEM)
-    implementation(Dependencies.SSLKickstart.NETTY)
+    implementation(Dependencies.Ayza.PEM)
+    implementation(Dependencies.Ayza.NETTY)
 
     compileOnly(Dependencies.Kotlin.REFLECTION)
     implementation(Dependencies.Kotlin.STDLIB_JDK8)
