@@ -308,11 +308,11 @@ object Dependencies {
         const val ALL = "org.quartz-scheduler:quartz:$VERSION"
     }
 
-    object SSLKickstart {
-        private const val VERSION = Versions.SSL_KICKSTART
+    object Ayza {
+        private const val VERSION = Versions.AYZA
 
-        const val PEM = "io.github.hakky54:sslcontext-kickstart-for-pem:$VERSION"
-        const val NETTY = "io.github.hakky54:sslcontext-kickstart-for-netty:$VERSION"
+        const val PEM = "io.github.hakky54:ayza-for-pem:$VERSION"
+        const val NETTY = "io.github.hakky54:ayza-for-netty:$VERSION"
     }
 
     object TestContainers {
