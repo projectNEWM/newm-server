@@ -109,7 +109,8 @@ tasks {
 tasks.withType<Jar> {
     manifest {
         attributes(
-            "Build-Time" to SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ").format(Date())
+            "Build-Time" to SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ").format(Date()),
+            "Main-Class" to "io.newm.chain.ApplicationKt"
         )
     }
 }
