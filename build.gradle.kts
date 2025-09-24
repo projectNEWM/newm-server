@@ -65,12 +65,6 @@ subprojects {
         }
     }
 
-    tasks.withType<Jar> {
-        manifest {
-            attributes["Main-Class"] = "io.newm.server.ApplicationKt"
-        }
-    }
-
     tasks.withType<ShadowJar> {
         isZip64 = true
     }
