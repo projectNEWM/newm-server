@@ -55,8 +55,13 @@ private fun printJvmCommandLine() {
 
 fun main(args: Array<String>) {
     printJvmCommandLine()
-    io.ktor.server.cio.EngineMain
-        .main(args)
+    try {
+        io.ktor.server.cio.EngineMain
+            .main(args)
+    } catch (e: Exception) {
+        log.error(e) { "Failed to start Ktor Application!" }
+        throw e
+    }
 }
 
 @Suppress("unused")
