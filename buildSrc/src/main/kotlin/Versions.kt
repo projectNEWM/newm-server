@@ -43,7 +43,7 @@ object Versions {
     const val QUARTZ = "2.5.0"
     const val SCALA_JAVA8_COMPAT = "1.0.2"
     const val SENTRY = "8.22.0"
-    const val SHADOW_PLUGIN = "9.1.0"
+    const val SHADOW_PLUGIN = "9.2.1"
     const val SPRING_SECURITY = "6.5.5"
     const val SWAGGER = "1.0.57"
     const val TEST_CONTAINERS = "1.21.3"

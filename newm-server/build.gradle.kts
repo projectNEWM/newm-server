@@ -159,11 +159,13 @@ tasks {
         // defaults to project.name
         // archiveBaseName.set("${project.name}-fat")
 
-        // defaults to all, so removing this overrides the normal, non-fat jar
+        // defaults to "all", so removing this overrides the normal, non-fat jar
         archiveClassifier.set("")
 
         // ensure gRPC stuff gets merged in
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
         mergeServiceFiles()
+
         dependsOn("distZip")
         dependsOn("distTar")
     }

@@ -1,6 +1,7 @@
 package io.newm.server.features.cardano
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.grpc.ManagedChannelBuilder
 import io.grpc.Metadata
 import io.grpc.netty.NettyChannelBuilder
 import io.grpc.stub.MetadataUtils
@@ -47,7 +48,7 @@ val cardanoKoinModule =
             log.info { "  Transport: ${if (secure) "TLS" else "Plaintext"}" }
 
             val channel =
-                NettyChannelBuilder
+                ManagedChannelBuilder
                     .forTarget("dns:///$host:$port") // force DNS resolver
                     .keepAliveTime(30L, TimeUnit.SECONDS)
                     .keepAliveTimeout(20L, TimeUnit.SECONDS)
