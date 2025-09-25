@@ -13,7 +13,7 @@ object Versions {
     const val CLOUDINARY = "1.39.0"
     const val COROUTINES = "1.10.2"
     const val EXPOSED = "0.61.0"
-    const val FLYWAYDB = "11.13.1"
+    const val FLYWAYDB = "11.12.0" // 11.13.1 has issues with our flyway ktor plugin
     const val GOOGLE_TRUTH = "1.4.5"
     const val GRPC = "1.75.0"
     const val GRPC_KOTLIN = "1.5.0"
