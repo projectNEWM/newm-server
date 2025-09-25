@@ -48,7 +48,7 @@ val cardanoKoinModule =
 
             val channel =
                 ManagedChannelBuilder
-                    .forAddress(host, port)
+                    .forTarget("dns:///$host:$port") // force DNS resolver
                     .keepAliveTime(30L, TimeUnit.SECONDS)
                     .keepAliveTimeout(20L, TimeUnit.SECONDS)
                     .keepAliveWithoutCalls(true)
