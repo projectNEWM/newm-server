@@ -13,7 +13,7 @@ object Versions {
     const val CLOUDINARY = "1.39.0"
     const val COROUTINES = "1.10.2"
     const val EXPOSED = "0.61.0"
-    const val FLYWAYDB = "11.12.0" // 11.13.1 has issues with our flyway ktor plugin
+    const val FLYWAYDB = "11.13.1"
     const val GOOGLE_TRUTH = "1.4.5"
     const val GRPC = "1.75.0"
     const val GRPC_KOTLIN = "1.5.0"
@@ -32,7 +32,7 @@ object Versions {
     const val KTLINT = "1.7.1"
     const val KTLINT_PLUGIN = "12.1.1"
     const val KTOR = "3.3.0"
-    const val KTOR_FLYWAY = "3.0.0"
+    const val KTOR_FLYWAY = "3.3.0"
     const val LOGBACK = "1.5.18"
     const val MAVEN_PUBLISH = "0.34.0"
     const val MOCKK = "1.14.5"
