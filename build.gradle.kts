@@ -1,5 +1,4 @@
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
-import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 buildscript {
@@ -63,10 +62,6 @@ subprojects {
                 )
             jvmTarget.set(JvmTarget.JVM_21)
         }
-    }
-
-    tasks.withType<ShadowJar> {
-        isZip64 = true
     }
 
     tasks.withType<Test> {

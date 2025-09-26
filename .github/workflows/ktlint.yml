@@ -32,14 +32,14 @@ jobs:
           fi
           echo "SHA256 verification passed"
           
-          #Temporarily disable gpg checks due to keybase not returning the key
-          # Import ktlint PGP key and verify signature using official method
-#          curl -sS https://keybase.io/ktlint/pgp_keys.asc | gpg --import && gpg --verify ktlint.asc
-#          if [ $? -ne 0 ]; then
-#            echo "PGP signature verification failed!"
-#            exit 1
-#          fi
-#          echo "PGP signature verification passed"
+          # Import ktlint PGP key
+          gpg --keyserver keyserver.ubuntu.com --recv adbc987d1a7b91db6b0aaa81995efbf4a3d20beb
+          gpg --verify ktlint.asc
+          if [ $? -ne 0 ]; then
+            echo "PGP signature verification failed!"
+            exit 1
+          fi
+          echo "PGP signature verification passed"
           
           # Install ktlint
           chmod a+x ktlint

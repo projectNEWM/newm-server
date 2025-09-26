@@ -1,3 +1,4 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import java.text.SimpleDateFormat
 import java.util.Date
 
@@ -96,13 +97,20 @@ dependencies {
     testImplementation(Dependencies.TestContainers.POSTGRESQL)
 }
 
-tasks {
-    shadowJar {
-        // defaults to project.name
-        // archiveBaseName.set("${project.name}-fat")
+tasks.withType<ShadowJar> {
+    isZip64 = true
+    // defaults to project.name
+    // archiveBaseName.set("${project.name}-fat")
 
-        // defaults to all, so removing this overrides the normal, non-fat jar
-        archiveClassifier.set("")
+    // defaults to "all", so removing this overrides the normal, non-fat jar
+    archiveClassifier.set("")
+
+    // ensure gRPC stuff gets merged together first
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    mergeServiceFiles()
+
+    filesNotMatching("META-INF/services/**") {
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     }
 }
 
