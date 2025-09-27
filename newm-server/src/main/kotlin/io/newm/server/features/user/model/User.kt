@@ -22,7 +22,8 @@ data class User(
     val firstName: String? = null,
     val lastName: String? = null,
     // nickname should be accessed through stageOrFullName
-    @VisibleForTesting
+    @param:VisibleForTesting
+    @property:VisibleForTesting
     val nickname: String? = null,
     val pictureUrl: String? = null,
     val bannerUrl: String? = null,
