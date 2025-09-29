@@ -2,7 +2,7 @@ object Versions {
     const val APACHE_COMMONS_CODEC = "1.19.0"
     const val APACHE_COMMONS_EMAIL = "1.6.0"
     const val APACHE_COMMONS_NUMBERS = "1.2"
-    const val APACHE_CURATORS = "5.9.0"
+    const val APACHE_CURATORS = "5.8.0"
     const val APACHE_TIKA = "3.2.3"
     const val ARWEAVE4S = "0.21.0"
     const val AWS = "2.34.5"
