@@ -8,8 +8,6 @@ import io.newm.shared.ktx.getBoolean
 import io.newm.shared.ktx.getConfigChild
 import io.newm.shared.ktx.getInt
 import io.newm.shared.ktx.getString
-import kotlin.io.path.Path
-import kotlin.io.path.readText
 import org.apache.curator.ensemble.fixed.FixedEnsembleProvider
 import org.apache.curator.retry.ExponentialBackoffRetry
 
@@ -21,13 +19,10 @@ fun Application.installCurator() {
             ensembleProvider(
                 FixedEnsembleProvider(
                     config.getString("connectionString").also { connectionString ->
-                        log.info {
-                            "Using Zookeeper connection string: '$connectionString', contents: ${
-                                Path(
-                                    connectionString
-                                ).readText()
-                            }"
-                        }
+                        log.info { "Using Zookeeper connection string: $connectionString" }
+                        // do a dns lookup of the connection string.
+                        val address = java.net.InetAddress.getByName(connectionString.split(":").first())
+                        log.info { "Using Zookeeper address: $address" }
                     },
                     false
                 ),
