@@ -22,6 +22,7 @@ import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.features.user.repo.UserRepository
 import io.newm.server.logging.captureToSentry
 import io.newm.shared.koin.inject
+import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
@@ -30,7 +31,6 @@ import org.quartz.JobKey
 import org.quartz.SimpleScheduleBuilder.simpleSchedule
 import org.quartz.TriggerBuilder.newTrigger
 import software.amazon.awssdk.services.sqs.model.Message
-import kotlin.time.Duration.Companion.minutes
 
 class MintingMessageReceiver : SqsMessageReceiver {
     private val log = KotlinLogging.logger {}
@@ -289,7 +289,7 @@ class MintingMessageReceiver : SqsMessageReceiver {
                 // Now that the song is Distributed, upload the song assets to arweave
                 try {
                     val song = songRepository.get(mintingStatusSqsMessage.songId)
-                    if (song.nftPolicyId?.isNotBlank() == true && song.nftName?.isNotBlank() == true) {
+                    if (song.nftPolicyId?.isNotBlank() == true && song.nftName?.isNotBlank() == true && song.arweaveClipUrl?.isNotBlank() == true && song.arweaveTokenAgreementUrl?.isNotBlank() == true) {
                         // If we already have a policy id and name manually placed in the db, this song has already
                         // been minted as one of our sample sales. We don't need to do anything else.
                         // Move -> Minted
@@ -329,24 +329,34 @@ class MintingMessageReceiver : SqsMessageReceiver {
                 try {
                     // Create and submit the mint transaction
                     val song = songRepository.get(mintingStatusSqsMessage.songId)
-                    val mintInfo = mintingRepository.mint(song)
+                    if (song.nftPolicyId?.isNotBlank() == true && song.nftName?.isNotBlank() == true) {
+                        // If we already have a policy id and name manually placed in the db, this song has already
+                        // been minted. We don't need to do anything else.
+                        // Move -> Minted
+                        songRepository.updateSongMintingStatus(
+                            songId = mintingStatusSqsMessage.songId,
+                            mintingStatus = MintingStatus.Minted
+                        )
+                    } else {
+                        val mintInfo = mintingRepository.mint(song)
 
-                    // Update the song record with the minting info
-                    songRepository.update(
-                        songId = mintingStatusSqsMessage.songId,
-                        song =
-                            Song(
-                                mintingTxId = mintInfo.transactionId,
-                                nftPolicyId = mintInfo.policyId,
-                                nftName = mintInfo.assetName,
-                            )
-                    )
+                        // Update the song record with the minting info
+                        songRepository.update(
+                            songId = mintingStatusSqsMessage.songId,
+                            song =
+                                Song(
+                                    mintingTxId = mintInfo.transactionId,
+                                    nftPolicyId = mintInfo.policyId,
+                                    nftName = mintInfo.assetName,
+                                )
+                        )
 
-                    // Done submitting mint transaction. Move -> Minted
-                    songRepository.updateSongMintingStatus(
-                        songId = mintingStatusSqsMessage.songId,
-                        mintingStatus = MintingStatus.Minted
-                    )
+                        // Done submitting mint transaction. Move -> Minted
+                        songRepository.updateSongMintingStatus(
+                            songId = mintingStatusSqsMessage.songId,
+                            mintingStatus = MintingStatus.Minted
+                        )
+                    }
                 } catch (e: Throwable) {
                     val errorMessage = "Error while minting!"
                     log.error(e) { errorMessage }
