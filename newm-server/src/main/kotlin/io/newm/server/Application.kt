@@ -38,6 +38,9 @@ import io.newm.shared.daemon.initializeDaemons
 private val log by lazy { KotlinLogging.logger {} }
 
 fun main(args: Array<String>) {
+    // Extra logging for Apache Curator
+    System.setProperty("curator-log-events", "true")
+
     printJvmCommandLine(log)
     try {
         io.ktor.server.cio.EngineMain

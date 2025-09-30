@@ -10,7 +10,8 @@
     </appender>
 
     <!-- Quiet down the warnings from zookeeper -->
-    <logger name="org.apache.zookeeper" level="ERROR"/>
+    <logger name="org.apache.zookeeper" level="DEBUG"/>
+    <logger name="org.apache.curator" level="DEBUG"/>
 
     <!-- Switch to DEBUG level to show generated SQL queries -->
     <logger name="Exposed" level="INFO"/>
