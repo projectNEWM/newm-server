@@ -13,6 +13,8 @@ interface MintingRepository {
      */
     suspend fun mint(song: Song): MintInfo
 
+    suspend fun updateTokenMetadata(song: Song): MintInfo
+
     fun getTokenAgreementFileIndex(policyId: String): Int
 
     fun getAudioClipFileIndex(policyId: String): Int

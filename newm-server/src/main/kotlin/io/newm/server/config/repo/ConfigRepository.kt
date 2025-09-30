@@ -38,6 +38,7 @@ interface ConfigRepository {
         const val CONFIG_KEY_MINT_CASH_REGISTER_COLLECTION_AMOUNT = "mint.cashRegisterCollectionAmount"
         const val CONFIG_KEY_MINT_CIP68_POLICY = "mint.cip68Policy"
         const val CONFIG_KEY_MINT_CIP68_SCRIPT_ADDRESS = "mint.cip68ScriptAddress"
+        const val CONFIG_KEY_MINT_CIP68_UTXO_REFERENCE = "mint.cip68UtxoReference"
         const val CONFIG_KEY_MINT_SCRIPT_UTXO_REFERENCE = "mint.scriptUtxoReference"
         const val CONFIG_KEY_MINT_STARTER_TOKEN_UTXO_REFERENCE = "mint.starterTokenUtxoReference"
         const val CONFIG_KEY_MINT_MONITOR_PAYMENT_ADDRESS_TIMEOUT_MIN = "mint.monitorPaymentAddressTimeoutMin"
