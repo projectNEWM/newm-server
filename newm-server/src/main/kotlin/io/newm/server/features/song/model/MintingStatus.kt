@@ -26,6 +26,8 @@ enum class MintingStatus {
 
     Released, // Song has been officially released by at least one major streaming platform (e.g., Spotify) - 20
 
+    UpdateTokenMetadataRequested, // An update to the token metadata has been requested - 21
+
     /**
      * --- IMPORTANT! ---
      * All new statuses should be added to the end of this list. We don't want to change the ordinal of any existing

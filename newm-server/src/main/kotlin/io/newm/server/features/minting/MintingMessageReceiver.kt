@@ -46,7 +46,19 @@ class MintingMessageReceiver : SqsMessageReceiver {
     override suspend fun onMessageReceived(message: Message) {
         log.info { "received: ${message.body()}" }
         val mintingStatusSqsMessage: MintingStatusSqsMessage = json.decodeFromString(message.body())
+
         val dbSong = songRepository.get(mintingStatusSqsMessage.songId)
+        if (mintingStatusSqsMessage.mintingStatus == MintingStatus.UpdateTokenMetadataRequested && dbSong.mintingStatus in listOf(
+                MintingStatus.Minted,
+                MintingStatus.Released
+            )
+        ) {
+            log.info { "Updating token metadata for ${dbSong.id} ..." }
+            val mintInfo = mintingRepository.updateTokenMetadata(dbSong)
+            log.info { "Updated ${dbSong.id}: $mintInfo" }
+            return
+        }
+
         if (dbSong.mintingStatus == MintingStatus.Released) {
             // Sometimes, we will manually reprocess a song. If it is already minted & released successfully when we do
             // dead-letter queue reprocessing, we can safely ignore these messages and let them be successfully
@@ -339,6 +351,8 @@ class MintingMessageReceiver : SqsMessageReceiver {
                         )
                     } else {
                         val mintInfo = mintingRepository.mint(song)
+
+                        log.info { "Minted ${song.id}: $mintInfo" }
 
                         // Update the song record with the minting info
                         songRepository.update(

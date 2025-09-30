@@ -13,14 +13,14 @@ import io.newm.chain.grpc.TransactionBuilderRequestKt
 import io.newm.chain.grpc.TransactionBuilderResponse
 import io.newm.chain.grpc.Utxo
 import io.newm.chain.grpc.VerifySignDataResponse
+import io.newm.server.features.cardano.model.CardanoNftSong
 import io.newm.server.features.cardano.model.EncryptionRequest
 import io.newm.server.features.cardano.model.GetWalletSongsResponse
 import io.newm.server.features.cardano.model.Key
-import io.newm.server.features.cardano.model.CardanoNftSong
 import io.newm.server.features.song.model.SongFilters
 import io.newm.server.typealiases.UserId
-import kotlinx.coroutines.flow.Flow
 import java.util.UUID
+import kotlinx.coroutines.flow.Flow
 
 interface CardanoRepository {
     suspend fun saveKey(
@@ -120,6 +120,14 @@ interface CardanoRepository {
      * Save a script address to the whitelist
      */
     suspend fun saveScriptAddressToWhitelist(scriptAddress: String)
+
+    /**
+     * Get the utxo(s) holding this native asset
+     */
+    suspend fun queryUtxoByNativeAsset(
+        policyHex: String,
+        nameHex: String
+    ): Utxo
 
     companion object {
         const val MUTEX_NAME = "newm-server"

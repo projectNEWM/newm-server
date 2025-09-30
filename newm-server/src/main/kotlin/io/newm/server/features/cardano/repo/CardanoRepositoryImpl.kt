@@ -220,6 +220,19 @@ internal class CardanoRepositoryImpl(
         return response.utxosList
     }
 
+    override suspend fun queryUtxoByNativeAsset(
+        policyHex: String,
+        nameHex: String
+    ): Utxo {
+        val response = client.queryUtxoByNativeAsset(
+            queryByNativeAssetRequest {
+                policy = policyHex
+                name = nameHex
+            }
+        )
+        return response
+    }
+
     override fun signTransaction(
         transactionIdBytes: ByteArray,
         signingKeys: List<Key>

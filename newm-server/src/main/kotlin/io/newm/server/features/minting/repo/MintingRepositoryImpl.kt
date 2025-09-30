@@ -11,6 +11,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.newm.chain.grpc.PlutusData
 import io.newm.chain.grpc.RedeemerTag
 import io.newm.chain.grpc.Signature
+import io.newm.chain.grpc.TransactionBuilderResponse
 import io.newm.chain.grpc.Utxo
 import io.newm.chain.grpc.nativeAsset
 import io.newm.chain.grpc.outputUtxo
@@ -27,6 +28,7 @@ import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_CAS
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_CASH_REGISTER_MIN_AMOUNT
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_CIP68_POLICY
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_CIP68_SCRIPT_ADDRESS
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_CIP68_UTXO_REFERENCE
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_LEGACY_POLICY_IDS
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_SCRIPT_UTXO_REFERENCE
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_STARTER_TOKEN_UTXO_REFERENCE
@@ -57,6 +59,7 @@ import io.newm.txbuilder.ktx.sortByHashAndIx
 import io.newm.txbuilder.ktx.toCborObject
 import io.newm.txbuilder.ktx.toPlutusData
 import java.math.BigDecimal
+import kotlin.math.absoluteValue
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
@@ -338,6 +341,111 @@ class MintingRepositoryImpl(
         }
     }
 
+    override suspend fun updateTokenMetadata(song: Song): MintInfo {
+        return cardanoRepository.withLock {
+            val user = userRepository.get(song.ownerId!!)
+            val release = songRepository.getRelease(song.releaseId!!)
+            val collabs = collabRepository.getAllBySongId(song.id!!)
+            val cip68Metadata = buildStreamTokenMetadata(release, song, user, collabs)
+
+            val cip68ScriptAddress = configRepository.getString(CONFIG_KEY_MINT_CIP68_SCRIPT_ADDRESS)
+            val cip68Policy = configRepository.getString(CONFIG_KEY_MINT_CIP68_POLICY)
+
+            val cashRegisterKey =
+                requireNotNull(cardanoRepository.getKeyByName("cashRegister")) { "cashRegister key not defined!" }
+
+            val cashRegisterUtxos = cardanoRepository
+                .queryLiveUtxos(cashRegisterKey.address)
+                .filter { it.nativeAssetsCount == 0 }
+                .sortedByDescending { it.lovelace.toLong() }
+                .take(5)
+
+            require(cashRegisterUtxos.isNotEmpty()) { "cashRegister has no utxos!" }
+
+            val refTokenName = song.nftName!!.replaceFirst(PREFIX_FRAC_TOKEN, PREFIX_REF_TOKEN)
+            val refTokenUtxo = cardanoRepository.queryUtxoByNativeAsset(cip68Policy, refTokenName)
+
+            val collateralKey =
+                requireNotNull(cardanoRepository.getKeyByName("collateral")) { "collateral key not defined!" }
+
+            val collateralUtxo =
+                requireNotNull(
+                    cardanoRepository
+                        .queryLiveUtxos(collateralKey.address)
+                        .filter { it.nativeAssetsCount == 0 }
+                        .maxByOrNull { it.lovelace.toLong() }
+                ) { "collateral utxo not found!" }
+
+            val starterTokenUtxoReference =
+                configRepository.getString(CONFIG_KEY_MINT_STARTER_TOKEN_UTXO_REFERENCE).toReferenceUtxo()
+
+            val cip68ScriptUtxoReference =
+                configRepository.getString(CONFIG_KEY_MINT_CIP68_UTXO_REFERENCE).toReferenceUtxo()
+
+            val signingKeys = listOfNotNull(cashRegisterKey, collateralKey)
+
+            var transactionBuilderResponse =
+                buildCip68UpdateTransaction(
+                    refTokenUtxo = refTokenUtxo,
+                    cashRegisterUtxos = cashRegisterUtxos,
+                    changeAddress = cashRegisterKey.address,
+                    collateralUtxo = collateralUtxo,
+                    collateralReturnAddress = collateralKey.address,
+                    cip68ScriptAddress = cip68ScriptAddress,
+                    cip68Metadata = cip68Metadata,
+                    cip68Policy = cip68Policy,
+                    refTokenName = refTokenName,
+                    requiredSigners = signingKeys,
+                    starterTokenUtxoReference = starterTokenUtxoReference,
+                    cip68ScriptUtxoReference = cip68ScriptUtxoReference,
+                    signatures = cardanoRepository.signTransactionDummy(signingKeys)
+                )
+
+            // check for errors in tx building
+            if (transactionBuilderResponse.hasErrorMessage()) {
+                throw IllegalStateException("TransactionBuilder Error!: ${transactionBuilderResponse.errorMessage}")
+            }
+
+            val transactionIdBytes = transactionBuilderResponse.transactionId.hexToByteArray()
+
+            // get signatures for this transaction
+            transactionBuilderResponse =
+                buildCip68UpdateTransaction(
+                    refTokenUtxo = refTokenUtxo,
+                    cashRegisterUtxos = cashRegisterUtxos,
+                    changeAddress = cashRegisterKey.address,
+                    collateralUtxo = collateralUtxo,
+                    collateralReturnAddress = collateralKey.address,
+                    cip68ScriptAddress = cip68ScriptAddress,
+                    cip68Metadata = cip68Metadata,
+                    cip68Policy = cip68Policy,
+                    refTokenName = refTokenName,
+                    requiredSigners = signingKeys,
+                    starterTokenUtxoReference = starterTokenUtxoReference,
+                    cip68ScriptUtxoReference = cip68ScriptUtxoReference,
+                    signatures = cardanoRepository.signTransaction(transactionIdBytes, signingKeys),
+                )
+
+            // check for errors in tx building
+            if (transactionBuilderResponse.hasErrorMessage()) {
+                throw IllegalStateException("TransactionBuilder Error!: ${transactionBuilderResponse.errorMessage}")
+            }
+
+            val submitTransactionResponse =
+                cardanoRepository.submitTransaction(transactionBuilderResponse.transactionCbor)
+
+            return@withLock if (submitTransactionResponse.result == "MsgAcceptTx") {
+                MintInfo(
+                    transactionId = submitTransactionResponse.txId,
+                    policyId = cip68Policy,
+                    assetName = refTokenName,
+                )
+            } else {
+                throw IllegalStateException(submitTransactionResponse.result)
+            }
+        }
+    }
+
     override fun getTokenAgreementFileIndex(policyId: String): Int = if (policyId in legacyPolicyIds) 1 else 0
 
     override fun getAudioClipFileIndex(policyId: String): Int = if (policyId in legacyPolicyIds) 0 else 1
@@ -568,6 +676,156 @@ class MintingRepositoryImpl(
                         )
                     ).toCborByteArray()
             )
+    }
+
+    @VisibleForTesting
+    internal suspend fun buildCip68UpdateTransaction(
+        refTokenUtxo: Utxo,
+        cashRegisterUtxos: List<Utxo>,
+        changeAddress: String,
+        collateralUtxo: Utxo,
+        collateralReturnAddress: String,
+        cip68ScriptAddress: String,
+        cip68Metadata: PlutusData,
+        cip68Policy: String,
+        refTokenName: String,
+        requiredSigners: List<Key>,
+        starterTokenUtxoReference: Utxo,
+        cip68ScriptUtxoReference: Utxo,
+        signatures: List<Signature> = emptyList(),
+    ): TransactionBuilderResponse {
+        // reference NFT output to cip68 script address with updated datum
+        val newRefTokenUtxo =
+            outputUtxo {
+                address = cip68ScriptAddress
+                // lovelace = "0" auto-calculated minutxo
+                nativeAssets.add(
+                    nativeAsset {
+                        policy = cip68Policy
+                        name = refTokenName
+                        amount = "1"
+                    }
+                )
+                datumHash = Blake2b.hash256(cip68Metadata.toCborObject().toCborByteArray()).toHexString()
+            }
+        val newRefTokenMinUtxo = cardanoRepository.calculateMinUtxoForOutput(newRefTokenUtxo)
+        val oldRefTokenMinUtxo = refTokenUtxo.lovelace.toLong()
+        val minUtxoChangedBy = newRefTokenMinUtxo - oldRefTokenMinUtxo
+
+        return cardanoRepository.buildTransaction {
+            with(sourceUtxos) {
+                add(refTokenUtxo)
+                addAll(cashRegisterUtxos)
+            }
+            with(outputUtxos) {
+                // reference NFT output to cip68 script address
+                add(
+                    outputUtxo {
+                        address = cip68ScriptAddress
+                        lovelace = newRefTokenMinUtxo.toString()
+                        nativeAssets.add(
+                            nativeAsset {
+                                policy = cip68Policy
+                                name = refTokenName
+                                amount = "1"
+                            }
+                        )
+                        datumHash = Blake2b.hash256(cip68Metadata.toCborObject().toCborByteArray()).toHexString()
+                    }
+                )
+            }
+
+            this.changeAddress = changeAddress
+
+            collateralUtxos.add(collateralUtxo)
+            this.collateralReturnAddress = collateralReturnAddress
+
+            this.requiredSigners.addAll(requiredSigners.map { key -> key.requiredSigner().toByteString() })
+
+            with(referenceInputs) {
+                add(starterTokenUtxoReference)
+                add(cip68ScriptUtxoReference)
+            }
+
+            if (signatures.isNotEmpty()) {
+                this.signatures.addAll(signatures)
+            }
+
+            // {
+            //  "constructor": 1,
+            //  "fields": [
+            //    {
+            //      "constructor": 0,
+            //      "fields": [
+            //        {
+            //          "int": 0  # amount to increase or decrease minutxo by
+            //        }
+            //      ]
+            //    },
+            //    {
+            //      "int": 0  # zero means increase minutxo, 1 means decrease minutxo
+            //    }
+            //  ]
+            // }
+            redeemers.add(
+                redeemer {
+                    tag = RedeemerTag.SPEND
+                    index = 0L
+                    data =
+                        plutusData {
+                            constr = 1
+                            list = plutusDataList {
+                                listItem.add(
+                                    plutusData {
+                                        constr = 0
+                                        list =
+                                            plutusDataList {
+                                                listItem.add(
+                                                    plutusData {
+                                                        int = minUtxoChangedBy.absoluteValue
+                                                    }
+                                                )
+                                            }
+                                    }
+                                )
+                                listItem.add(
+                                    plutusData {
+                                        int = if (minUtxoChangedBy < 0L) 1L else 0L
+                                    }
+                                )
+                            }
+                        }
+                    // calculated
+                    // exUnits = exUnits {
+                    //    mem = 2895956L
+                    //    steps = 793695629L
+                    // }
+                }
+            )
+
+            with(datums) {
+                add(cip68Metadata)
+            }
+
+            // Add a simple transaction metadata note for NEWM Mint - See: CIP-20
+            transactionMetadataCbor =
+                ByteString.copyFrom(
+                    CborMap
+                        .create(
+                            mapOf(
+                                CborInteger.create(674) to
+                                    CborMap.create(
+                                        mapOf(
+                                            CborTextString.create("msg") to
+                                                CborArray.create().apply {
+                                                    add(CborTextString.create("NEWM Update"))
+                                                }
+                                        )
+                                    )
+                            )
+                        ).toCborByteArray()
+                )
+        }
     }
 
     /**
