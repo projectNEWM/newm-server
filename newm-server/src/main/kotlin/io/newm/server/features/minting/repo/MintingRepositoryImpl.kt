@@ -59,7 +59,6 @@ import io.newm.txbuilder.ktx.sortByHashAndIx
 import io.newm.txbuilder.ktx.toCborObject
 import io.newm.txbuilder.ktx.toPlutusData
 import java.math.BigDecimal
-import kotlin.math.absoluteValue
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
@@ -694,23 +693,6 @@ class MintingRepositoryImpl(
         cip68ScriptUtxoReference: Utxo,
         signatures: List<Signature> = emptyList(),
     ): TransactionBuilderResponse {
-        // reference NFT output to cip68 script address with updated datum
-        val newRefTokenUtxo =
-            outputUtxo {
-                address = cip68ScriptAddress
-                // lovelace = "0" auto-calculated minutxo
-                nativeAssets.add(
-                    nativeAsset {
-                        policy = cip68Policy
-                        name = refTokenName
-                        amount = "1"
-                    }
-                )
-                datumHash = Blake2b.hash256(cip68Metadata.toCborObject().toCborByteArray()).toHexString()
-            }
-        val newRefTokenMinUtxo = cardanoRepository.calculateMinUtxoForOutput(newRefTokenUtxo)
-        val oldRefTokenMinUtxo = refTokenUtxo.lovelace.toLong()
-        val minUtxoChangedBy = newRefTokenMinUtxo - oldRefTokenMinUtxo
         val redeemerSpendIndex =
             (listOf(refTokenUtxo) + cashRegisterUtxos).sortByHashAndIx().indexOf(refTokenUtxo).toLong()
 
@@ -724,7 +706,7 @@ class MintingRepositoryImpl(
                 add(
                     outputUtxo {
                         address = cip68ScriptAddress
-                        lovelace = newRefTokenMinUtxo.toString()
+                        // lovelace = "0" auto-calculated minutxo
                         nativeAssets.add(
                             nativeAsset {
                                 policy = cip68Policy
@@ -776,26 +758,7 @@ class MintingRepositoryImpl(
                     data =
                         plutusData {
                             constr = 1
-                            list = plutusDataList {
-                                listItem.add(
-                                    plutusData {
-                                        constr = 0
-                                        list =
-                                            plutusDataList {
-                                                listItem.add(
-                                                    plutusData {
-                                                        int = minUtxoChangedBy.absoluteValue
-                                                    }
-                                                )
-                                            }
-                                    }
-                                )
-                                listItem.add(
-                                    plutusData {
-                                        int = if (minUtxoChangedBy < 0L) 1L else 0L
-                                    }
-                                )
-                            }
+                            list = plutusDataList { }
                         }
                     // calculated
                     // exUnits = exUnits {
