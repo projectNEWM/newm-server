@@ -806,6 +806,9 @@ class MintingRepositoryImpl(
             )
 
             with(datums) {
+                // must provide the datum for the reference token being spent
+                add(refTokenUtxo.datum)
+                // and the new datum for the re-minted reference token
                 add(cip68Metadata)
             }
 
