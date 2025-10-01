@@ -711,6 +711,8 @@ class MintingRepositoryImpl(
         val newRefTokenMinUtxo = cardanoRepository.calculateMinUtxoForOutput(newRefTokenUtxo)
         val oldRefTokenMinUtxo = refTokenUtxo.lovelace.toLong()
         val minUtxoChangedBy = newRefTokenMinUtxo - oldRefTokenMinUtxo
+        val redeemerSpendIndex =
+            (listOf(refTokenUtxo) + cashRegisterUtxos).sortByHashAndIx().indexOf(refTokenUtxo).toLong()
 
         return cardanoRepository.buildTransaction {
             with(sourceUtxos) {
@@ -770,7 +772,7 @@ class MintingRepositoryImpl(
             redeemers.add(
                 redeemer {
                     tag = RedeemerTag.SPEND
-                    index = 0L
+                    index = redeemerSpendIndex
                     data =
                         plutusData {
                             constr = 1
