@@ -54,6 +54,107 @@ class TransactionBuilderTest {
     }
 
     @Test
+    fun `test usdm transaction`() =
+        runBlocking {
+            createTxSubmitClient(
+                websocketHost = TEST_HOST,
+                websocketPort = TEST_PORT,
+                secure = TEST_SECURE,
+            ).use { client ->
+                val connectResult = client.connect()
+                assertThat(connectResult).isTrue()
+                assertThat(client.isConnected).isTrue()
+
+                val protocolParametersResponse = (client as StateQueryClient).protocolParameters()
+                val protocolParams = protocolParametersResponse.result
+
+                val datum = plutusData {
+                    constr = 0
+                    list = plutusDataList {
+                        listItem.add(
+                            plutusData { int = 12995617220001 }
+                        )
+                        listItem.add(
+                            plutusData {
+                                constr = 0
+                                list = plutusDataList {}
+                            }
+                        )
+                    }
+                }
+
+                val datumBytes = datum.toCborObject().toCborByteArray()
+                val datumHash = Blake2b.hash256(datumBytes).toHexString()
+                val datumHex = datumBytes.toHexString()
+                println("datumHex: $datumHex, datumHash: $datumHash")
+
+                val (txId, cborBytes) =
+                    transactionBuilder(protocolParams) {
+                        // input utxos
+                        sourceUtxos {
+                            add(
+                                utxo {
+                                    hash = "255b4eb8bdad7c5db9696f91c8b00e2c096805f60506c6b924d146fcf6173f21"
+                                    ix = 0
+                                    lovelace = "1163700"
+                                }
+                            )
+                            add(
+                                utxo {
+                                    hash = "19808ab3bbfd0b79f9af9073da38eb1a98eb61753597f1b174ebfe8c37211b6c"
+                                    ix = 1
+                                    lovelace = "1241272895"
+                                }
+                            )
+                        }
+
+                        outputUtxos {
+                            add(
+                                outputUtxo {
+                                    address = "addr_test1wrz6st9wd26jshznec6fu965vaxdq9ks2szdt3w899jst2cl3n8cz"
+                                    lovelace = "1189560"
+                                    nativeAssets.add(
+                                        nativeAsset {
+                                            policy = "0b64d6804e6f91a1521ab12a6ad3db0a9bab4ad44bdab2eb406c32dd"
+                                            name = "5553444d5f434f554e54"
+                                            amount = "1"
+                                        }
+                                    )
+                                    this.datumHash = datumHash
+                                }
+                            )
+                        }
+
+                        changeAddress =
+                            "addr_test1qpn579cat6lq06k3fr4wnkxhcqdu594x6sh92nec3qczsqs9g7j6ca66pxu02ddz0qvz3u5ff59fjww6zxseyp0pap3qmqsmjv"
+
+                        datums {
+                            add(datum)
+                        }
+                    }
+
+                println("txId: $txId")
+                println("cborBytes: ${cborBytes.toHexString()}")
+            }
+        }
+
+    @Test
+    fun `test usdm scriptDataHash issue`() =
+        runBlocking {
+            val datumHex = "9fd8799f1b00000bd1c725e5a1d87980ffff"
+            val datumBytes = datumHex.hexToByteArray()
+            val emptyRedeemerBytesOld = "80".hexToByteArray()
+            val emptyRedeemerBytesNew = "a0".hexToByteArray()
+            val emptyLanguageViewMap = "a0".hexToByteArray()
+
+            val scriptDataHashOld = Blake2b.hash256(emptyRedeemerBytesOld + datumBytes + emptyLanguageViewMap)
+            val scriptDataHashNew = Blake2b.hash256(emptyRedeemerBytesNew + datumBytes + emptyLanguageViewMap)
+
+            println("scriptDataHashOld: ${scriptDataHashOld.toHexString()}")
+            println("scriptDataHashNew: ${scriptDataHashNew.toHexString()}")
+        }
+
+    @Test
     fun `test create challenge transaction`() =
         runBlocking {
             createTxSubmitClient(
@@ -483,6 +584,14 @@ class TransactionBuilderTest {
                 val auxDataHash = Blake2b.hash256(auxDataCbor)
                 assertThat(auxDataHash).isEqualTo(targetHash)
             }
+        }
+
+    @Test
+    fun `test datum hashing`() =
+        runBlocking {
+            val datumHex = "d8799f1b00000bd1c725e5a0d87980ff"
+            val hash = Blake2b.hash256(datumHex.hexToByteArray()).toHexString()
+            assertThat(hash).isEqualTo("46ec384942c5bf8d652c68a608ce7030ce7cdcab9eb8e0e05b00fe9b45ab306f")
         }
 
     @Test

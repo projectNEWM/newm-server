@@ -40,6 +40,9 @@ subprojects {
         rejectVersionIf {
             isNonStable(candidate.version) && !isNonStable(currentVersion)
         }
+        filterConfigurations = Spec<Configuration> {
+            it.name.contains("ktlint", ignoreCase = true).not()
+        }
     }
 
     project.tasks.withType<org.jetbrains.kotlin.gradle.tasks.UsesKotlinJavaToolchain>().configureEach {

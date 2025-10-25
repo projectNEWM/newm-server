@@ -24,10 +24,13 @@ fun SigningKey.sign(transactionId: ByteArray): ByteArray =
             signer.update(transactionId, 0, transactionId.size)
             signer.generateSignature()
         }
-        64 -> {
-            // sign with extended ed25519 key
+        64, 128 -> {
+            // sign with extended ed25519 key (64 bytes) or ed25519e_bip32 key (128 bytes)
+            // For 128 byte keys, use the first 64 bytes as the extended private key
+            val keyBytes = this.skey.toByteArray()
+            val extendedKeyBytes = if (keyBytes.size == 128) keyBytes.copyOfRange(0, 64) else keyBytes
             val ed25519ParameterSpec: EdDSAParameterSpec = EdDSANamedCurveTable.getByName(EdDSANamedCurveTable.ED_25519)
-            val skSpec = EdDSAPrivateKeySpec(ed25519ParameterSpec, this.skey.toByteArray())
+            val skSpec = EdDSAPrivateKeySpec(ed25519ParameterSpec, extendedKeyBytes)
             val sk = EdDSAPrivateKey(skSpec)
             val engine = ed25519ExtendedSigner.getOrSet { EdDSAEngine() }
             engine.initSign(sk)
