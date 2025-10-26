@@ -86,5 +86,6 @@ interface ConfigRepository {
         const val CONFIG_KEY_SONG_SMART_LINKS_USE_DISTRIBUTOR = "songSmartLinks.useDistributor"
         const val CONFIG_KEY_SONG_SMART_LINKS_CACHE_TTL = "songSmartLinks.cacheTimeToLive"
         const val CONFIG_KEY_REFERRAL_HERO_ENABLED = "referralHero.enabled"
+        const val CONFIG_KEY_REFERRAL_HERO_REWARD_USD = "referralHero.rewardUsd"
     }
 }

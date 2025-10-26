@@ -6,5 +6,5 @@ import org.koin.dsl.module
 
 val referralHeroKoinModule =
     module {
-        single<ReferralHeroRepository> { ReferralHeroRepositoryImpl(get(), get()) }
+        single<ReferralHeroRepository> { ReferralHeroRepositoryImpl(get(), get(), get(), get(), get()) }
     }
