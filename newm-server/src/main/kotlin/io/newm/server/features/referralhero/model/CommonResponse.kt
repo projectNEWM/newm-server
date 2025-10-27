@@ -18,6 +18,13 @@ data class CommonResponse(
         val response: String,
         val code: String,
         @SerialName("referral_status")
-        val referralStatus: String?
+        val referralStatus: String?,
+        @SerialName("referred_by")
+        val referredBy: Subscriber?
+    )
+
+    @Serializable
+    data class Subscriber(
+        val email: String
     )
 }

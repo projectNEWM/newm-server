@@ -14,24 +14,16 @@ import io.newm.server.features.earnings.database.ClaimOrderEntity
 import io.newm.server.features.earnings.database.ClaimOrdersTable
 import io.newm.server.features.earnings.database.EarningEntity
 import io.newm.server.features.earnings.database.EarningsTable
-import io.newm.server.features.earnings.model.AddSongRoyaltyRequest
-import io.newm.server.features.earnings.model.ClaimOrder
+import io.newm.server.features.earnings.model.*
 import io.newm.server.features.earnings.model.ClaimOrder.Companion.ACTIVE_STATUSES
-import io.newm.server.features.earnings.model.ClaimOrderRequest
-import io.newm.server.features.earnings.model.ClaimOrderStatus
-import io.newm.server.features.earnings.model.Earning
 import io.newm.server.features.song.database.SongTable
 import io.newm.server.features.song.repo.SongRepository
-import io.newm.server.features.user.repo.UserRepository
+import io.newm.server.features.user.database.UserEntity
 import io.newm.server.ktx.withLock
 import io.newm.server.typealiases.SongId
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.toDate
 import io.newm.shared.ktx.toHexString
-import java.math.BigDecimal
-import java.time.Instant
-import java.time.LocalDateTime
-import java.util.UUID
 import org.apache.curator.framework.recipes.locks.InterProcessMutex
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.SortOrder
@@ -46,11 +38,14 @@ import org.quartz.JobBuilder.newJob
 import org.quartz.JobKey
 import org.quartz.SimpleScheduleBuilder.simpleSchedule
 import org.quartz.TriggerBuilder.newTrigger
+import java.math.BigDecimal
+import java.time.Instant
+import java.time.LocalDateTime
+import java.util.UUID
 
 private const val CLAIM_ORDER_INTER_PROCESS_MUTEX_PATH = "/mutexes/claim-order"
 
 class EarningsRepositoryImpl(
-    private val userRepository: UserRepository,
     private val songRepository: SongRepository,
     private val cardanoRepository: CardanoRepository,
     private val configRepository: ConfigRepository,
@@ -104,7 +99,7 @@ class EarningsRepositoryImpl(
         }
 
         val song = songRepository.get(songId)
-        val user = userRepository.get(song.ownerId!!)
+        val user = transaction { UserEntity[song.ownerId!!] }
 
         val snapshotResponse = cardanoRepository.snapshotToken(policyId = song.nftPolicyId!!, name = song.nftName!!)
         require(snapshotResponse.snapshotEntriesCount > 0) {
