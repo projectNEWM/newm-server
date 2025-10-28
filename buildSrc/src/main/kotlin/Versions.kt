@@ -40,7 +40,7 @@ object Versions {
     const val PROTOBUF = "4.33.0"
     const val PROTOBUF_PLUGIN = "0.9.5"
     const val QR_CODE_KOTLIN = "4.5.0"
-    const val QUARTZ = "2.5.1"
+    const val QUARTZ = "2.5.0"
     const val SCALA_JAVA8_COMPAT = "1.0.2"
     const val SENTRY = "8.24.0"
     const val SHADOW_PLUGIN = "9.2.1"
