@@ -4,11 +4,8 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 buildscript {
     repositories {
         mavenLocal()
-        maven {
-            name = "jitpack.io"
-            url = uri("https://jitpack.io")
-        }
         mavenCentral()
+        gradlePluginPortal()
     }
 }
 
