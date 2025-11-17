@@ -14,6 +14,7 @@ data class CreatedUtxo(
     @Contextual val lovelace: BigInteger,
     val datumHash: String?,
     val datum: String?,
+    val isInlineDatum: Boolean?,
     val scriptRef: String?,
     val scriptRefVersion: Int?,
     val nativeAssets: List<NativeAsset>,
@@ -33,6 +34,7 @@ data class CreatedUtxo(
         if (lovelace != other.lovelace) return false
         if (datumHash != other.datumHash) return false
         if (datum != other.datum) return false
+        if (isInlineDatum != other.isInlineDatum) return false
         if (scriptRef != other.scriptRef) return false
         if (scriptRefVersion != other.scriptRefVersion) return false
         if (nativeAssets != other.nativeAssets) return false
@@ -55,6 +57,7 @@ data class CreatedUtxo(
         result = 31 * result + lovelace.hashCode()
         result = 31 * result + (datumHash?.hashCode() ?: 0)
         result = 31 * result + (datum?.hashCode() ?: 0)
+        result = 31 * result + (isInlineDatum?.hashCode() ?: 0)
         result = 31 * result + (scriptRef?.hashCode() ?: 0)
         result = 31 * result + (scriptRefVersion ?: 0)
         result = 31 * result + nativeAssets.hashCode()

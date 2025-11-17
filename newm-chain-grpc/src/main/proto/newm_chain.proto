@@ -105,6 +105,7 @@ message Utxo {
   optional PlutusData datum = 5;
   repeated NativeAsset native_assets = 6;
   string address = 7;
+  optional bool is_inline_datum = 8;
 }
 
 message OutputUtxo {

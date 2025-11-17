@@ -13,6 +13,7 @@ data class Utxo(
     val nativeAssets: List<NativeAsset>,
     val datumHash: String?,
     val datum: String?,
+    val isInlineDatum: Boolean?,
     val scriptRef: String?,
     val scriptRefVersion: Int?,
 )

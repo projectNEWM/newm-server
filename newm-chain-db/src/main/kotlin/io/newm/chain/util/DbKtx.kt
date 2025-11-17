@@ -154,10 +154,10 @@ fun List<UtxoOutput>.toCreatedUtxoList(
             null
         }
 
-    val datumHash =
-        utxoOutput.datumHash ?: utxoOutput.datum?.let { datum ->
-            Blake2b.hash256(datum.hexToByteArray()).toHexString()
-        }
+    val (datumHash, isInlineDatum) =
+        utxoOutput.datumHash?.let { it to false } ?: utxoOutput.datum?.let { datum ->
+            Blake2b.hash256(datum.hexToByteArray()).toHexString() to true
+        } ?: (null to null)
     val datum =
         datumsMap[datumHash] ?: if (datumHash != utxoOutput.datum) {
             utxoOutput.datum
@@ -178,6 +178,7 @@ fun List<UtxoOutput>.toCreatedUtxoList(
         lovelace = utxoOutput.value.ada.ada.lovelace,
         datumHash = datumHash,
         datum = datum,
+        isInlineDatum = isInlineDatum,
         scriptRef = utxoOutput.script?.let { script ->
             when (script) {
                 is ScriptPlutusV2 -> script.cbor
