@@ -108,6 +108,7 @@ class LedgerRepositoryImpl : LedgerRepository {
                     LedgerUtxosTable.lovelace,
                     LedgerUtxosTable.datumHash,
                     LedgerUtxosTable.datum,
+                    LedgerUtxosTable.isInlineDatum,
                     LedgerUtxosTable.scriptRef,
                     LedgerUtxosTable.scriptRefVersion,
                     LedgerUtxosTable.blockSpent,
@@ -142,6 +143,7 @@ class LedgerRepositoryImpl : LedgerRepository {
                             nativeAssets = nativeAssets,
                             datumHash = row[LedgerUtxosTable.datumHash],
                             datum = row[LedgerUtxosTable.datum],
+                            isInlineDatum = row[LedgerUtxosTable.isInlineDatum],
                             scriptRef = row[LedgerUtxosTable.scriptRef],
                             scriptRefVersion = row[LedgerUtxosTable.scriptRefVersion],
                         )
@@ -169,6 +171,7 @@ class LedgerRepositoryImpl : LedgerRepository {
                     LedgerUtxosTable.lovelace,
                     LedgerUtxosTable.datumHash,
                     LedgerUtxosTable.datum,
+                    LedgerUtxosTable.isInlineDatum,
                     LedgerUtxosTable.scriptRef,
                     LedgerUtxosTable.scriptRefVersion,
                     LedgerUtxosTable.blockSpent,
@@ -203,6 +206,7 @@ class LedgerRepositoryImpl : LedgerRepository {
                             nativeAssets = nativeAssets,
                             datumHash = row[LedgerUtxosTable.datumHash],
                             datum = row[LedgerUtxosTable.datum],
+                            isInlineDatum = row[LedgerUtxosTable.isInlineDatum],
                             scriptRef = row[LedgerUtxosTable.scriptRef],
                             scriptRefVersion = row[LedgerUtxosTable.scriptRefVersion],
                         )
@@ -261,6 +265,7 @@ class LedgerRepositoryImpl : LedgerRepository {
                         nativeAssets = nativeAssets,
                         datumHash = row[LedgerUtxosTable.datumHash],
                         datum = row[LedgerUtxosTable.datum],
+                        isInlineDatum = row[LedgerUtxosTable.isInlineDatum],
                         scriptRef = row[LedgerUtxosTable.scriptRef],
                         scriptRefVersion = row[LedgerUtxosTable.scriptRefVersion],
                     )
@@ -339,6 +344,7 @@ class LedgerRepositoryImpl : LedgerRepository {
                         nativeAssets = nativeAssets,
                         datumHash = row[LedgerUtxosTable.datumHash],
                         datum = row[LedgerUtxosTable.datum],
+                        isInlineDatum = row[LedgerUtxosTable.isInlineDatum],
                         scriptRef = row[LedgerUtxosTable.scriptRef],
                         scriptRefVersion = row[LedgerUtxosTable.scriptRefVersion],
                     )
@@ -426,6 +432,7 @@ class LedgerRepositoryImpl : LedgerRepository {
                 val nativeAssets = mutableListOf<NativeAsset>()
                 var datumHash: String? = null
                 var datum: String? = null
+                var isInlineDatum: Boolean? = null
                 var scriptRef: String? = null
                 when (txOutput) {
                     is CborArray -> {
@@ -470,6 +477,7 @@ class LedgerRepositoryImpl : LedgerRepository {
                         }
                         if (txOutput.size() > 2) {
                             datumHash = txOutput.elementToByteArray(2).toHexString()
+                            isInlineDatum = false
                         }
                     }
 
@@ -528,6 +536,7 @@ class LedgerRepositoryImpl : LedgerRepository {
                                                 Blake2b.hash256(datumItem.toCborByteArray()).toHexString() == datumHash
                                             }?.toCborByteArray()
                                             ?.toHexString()
+                                    isInlineDatum = false
                                 }
 
                                 1 -> {
@@ -535,6 +544,7 @@ class LedgerRepositoryImpl : LedgerRepository {
                                     val datumBytes = datumHashArray.elementToByteArray(1)
                                     datum = datumBytes.toHexString()
                                     datumHash = Blake2b.hash256(datumBytes).toHexString()
+                                    isInlineDatum = true
                                 }
 
                                 else -> throw IllegalStateException("datum is not a hash or inline datum!")
@@ -556,6 +566,7 @@ class LedgerRepositoryImpl : LedgerRepository {
                         nativeAssets = nativeAssets,
                         datumHash = datumHash,
                         datum = datum,
+                        isInlineDatum = isInlineDatum,
                         scriptRef = scriptRef,
                         scriptRefVersion = null,
                     ).also {
@@ -907,6 +918,7 @@ class LedgerRepositoryImpl : LedgerRepository {
                             ?.hexToByteArray()
                             ?.let { Blake2b.hash256(it).toHexString() }
                         row[datum] = createdUtxo.datum
+                        row[isInlineDatum] = createdUtxo.isInlineDatum
                         row[scriptRef] = createdUtxo.scriptRef
                         row[scriptRefVersion] = createdUtxo.scriptRefVersion
                         row[lovelace] = createdUtxo.lovelace.toString()
@@ -1137,6 +1149,7 @@ class LedgerRepositoryImpl : LedgerRepository {
                         nativeAssets = nativeAssets,
                         datumHash = row[LedgerUtxosTable.datumHash],
                         datum = row[LedgerUtxosTable.datum],
+                        isInlineDatum = row[LedgerUtxosTable.isInlineDatum],
                         scriptRef = row[LedgerUtxosTable.scriptRef],
                         scriptRefVersion = row[LedgerUtxosTable.scriptRefVersion],
                     )

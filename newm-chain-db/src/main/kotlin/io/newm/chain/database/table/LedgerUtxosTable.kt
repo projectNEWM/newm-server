@@ -19,6 +19,9 @@ object LedgerUtxosTable : LongIdTable(name = "ledger_utxos") {
     // inline datum value
     val datum: Column<String?> = text("datum").nullable()
 
+    // is inline datum flag
+    val isInlineDatum: Column<Boolean?> = bool("is_inline_datum").nullable()
+
     // script reference value
     val scriptRef: Column<String?> = text("script_ref").nullable()
 
