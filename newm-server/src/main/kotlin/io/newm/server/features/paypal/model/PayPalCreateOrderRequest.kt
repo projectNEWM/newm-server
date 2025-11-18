@@ -17,7 +17,9 @@ data class PayPalCreateOrderRequest(
         @SerialName("invoice_id")
         val invoiceId: String,
         @SerialName("amount")
-        val amount: PayPalAmount
+        val amount: PayPalAmount,
+        @SerialName("items")
+        val items: List<PayPalItem>
     )
 
     @Serializable
