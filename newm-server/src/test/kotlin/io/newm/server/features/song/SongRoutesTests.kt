@@ -1073,6 +1073,7 @@ class SongRoutesTests : BaseApplicationTests() {
                 exec("INSERT INTO config VALUES ('mint.price','$expectedAmount')")
                 exec("INSERT INTO config VALUES ('distribution.price.usd','14990000')")
                 exec("INSERT INTO config VALUES ('distribution.price.usd.newm','11990000')")
+                exec("INSERT INTO config VALUES ('STUD514.enabled', 'false')")
             }
 
             // Add Song directly into database

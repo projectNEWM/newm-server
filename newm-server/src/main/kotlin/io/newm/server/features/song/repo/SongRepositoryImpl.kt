@@ -21,6 +21,7 @@ import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_DISTRIBUTION_PRICE_USD
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_DISTRIBUTION_PRICE_USD_NEWM
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_MINT_PRICE
+import io.newm.server.config.repo.ConfigRepository.Companion.`CONFIG_KEY_STUD514_ENABLED`
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_SONG_SMART_LINKS_CACHE_TTL
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_SONG_SMART_LINKS_USE_DISTRIBUTOR
 import io.newm.server.features.cardano.database.KeyTable
@@ -36,7 +37,6 @@ import io.newm.server.features.collaboration.repo.CollaborationRepository
 import io.newm.server.features.distribution.DistributionRepository
 import io.newm.server.features.email.repo.EmailRepository
 import io.newm.server.features.minting.MintingStatusSqsMessage
-import io.newm.server.features.minting.repo.MintingRepository
 import io.newm.server.features.release.repo.OutletReleaseRepository
 import io.newm.server.features.song.database.ReleaseEntity
 import io.newm.server.features.song.database.ReleaseTable
@@ -129,7 +129,6 @@ internal class SongRepositoryImpl(
     private val mimeTypes: Properties by lazy {
         propertiesFromResource("audio-mime-types.properties")
     }
-    private val mintingRepository: MintingRepository by inject()
 
     override suspend fun add(
         song: Song,
@@ -636,15 +635,29 @@ internal class SongRepositoryImpl(
         val dspPriceUsdForNewmPaymentType = configRepository.getLong(CONFIG_KEY_DISTRIBUTION_PRICE_USD_NEWM)
         val usdNewmExchangeRate = cardanoRepository.queryNEWMUSDPrice().toBigInteger()
 
-        return calculateMintPaymentResponse(
-            minUtxo,
-            numberOfCollaborators,
-            dspPriceUsd,
-            usdAdaExchangeRate,
-            dspPriceUsdForNewmPaymentType,
-            usdNewmExchangeRate,
-            mintCostBase,
-        ).also { paymentResponse ->
+        val response = if (configRepository.getBoolean(CONFIG_KEY_STUD514_ENABLED)) {
+            calculateStud514MintPaymentResponse(
+                minUtxo,
+                numberOfCollaborators,
+                dspPriceUsd,
+                usdAdaExchangeRate,
+                dspPriceUsdForNewmPaymentType,
+                usdNewmExchangeRate,
+                mintCostBase,
+            )
+        } else {
+            calculateMintPaymentResponse(
+                minUtxo,
+                numberOfCollaborators,
+                dspPriceUsd,
+                usdAdaExchangeRate,
+                dspPriceUsdForNewmPaymentType,
+                usdNewmExchangeRate,
+                mintCostBase,
+            )
+        }
+
+        return response.also { paymentResponse ->
             // Save the total cost to distribute and mint to the database
             requireNotNull(paymentResponse.mintPaymentOptions) { "mintPaymentOptions is null" }
             val totalCostLovelace =
@@ -824,6 +837,153 @@ internal class SongRepositoryImpl(
                     dspPriceUsd = dspPriceUsdForAdaPaymentType.toBigInteger().toAdaString(),
                     mintPriceUsd = mintPriceUsd.toAdaString(),
                     collabPriceUsd = sendTokenFeeUsd.toAdaString(),
+                    collabPricePerArtistUsd = sendTokenFeePerArtistUsd.toAdaString()
+                ),
+            )
+        )
+    }
+
+    @VisibleForTesting
+    internal suspend fun calculateStud514MintPaymentResponse(
+        minUtxoLovelace: Long,
+        numberOfCollaborators: Int,
+        dspPriceUsdForAdaPaymentType: Long,
+        usdAdaExchangeRate: BigInteger,
+        dspPriceUsdForNewmPaymentType: Long,
+        usdNewmExchangeRate: BigInteger,
+        mintCostBaseLovelace: Long,
+    ): MintPaymentResponse {
+        val changeAmountLovelace = 1000000L // 1 ada
+        val dspPriceLovelace =
+            dspPriceUsdForAdaPaymentType
+                .toBigDecimal()
+                .divide(usdAdaExchangeRate.toBigDecimal(), 6, RoundingMode.CEILING)
+                .movePointRight(6)
+                .toBigInteger()
+        val dspPriceNewmies =
+            dspPriceUsdForNewmPaymentType
+                .toBigDecimal()
+                .divide(usdNewmExchangeRate.toBigDecimal(), 6, RoundingMode.CEILING)
+                .movePointRight(6)
+                .toBigInteger()
+
+        val firstCollaboratorSendTokenFeeLovelace = if (numberOfCollaborators > 0) minUtxoLovelace else 0L
+        val additionalCollaboratorCount = (numberOfCollaborators - 1).coerceAtLeast(0)
+        val additionalSendTokenFeeLovelace = additionalCollaboratorCount * minUtxoLovelace
+        val totalSendTokenFeeLovelace = firstCollaboratorSendTokenFeeLovelace + additionalSendTokenFeeLovelace
+        val serviceFeeLovelace = mintCostBaseLovelace + firstCollaboratorSendTokenFeeLovelace
+        val mintCostLovelace = mintCostBaseLovelace + totalSendTokenFeeLovelace
+
+        val lovelacePrice = mintCostLovelace.toBigInteger() + dspPriceLovelace
+        // usdPrice does not include the extra changeAmountLovelace that we request the wallet to provide as it
+        // is returned to the user.
+        val usdPrice = usdAdaExchangeRate * lovelacePrice / 1000000.toBigInteger()
+
+        val newmiesPrice = mintCostLovelace
+            .toBigDecimal()
+            .multiply(usdAdaExchangeRate.toBigDecimal()) // lovelace to usd-ies
+            .divide(usdNewmExchangeRate.toBigDecimal(), 6, RoundingMode.CEILING) // usd-ies to newmies
+            .toBigInteger() + dspPriceNewmies
+        val newmiesUsdPrice = usdNewmExchangeRate * newmiesPrice / 1000000.toBigInteger()
+
+        val serviceFeeNewmies = serviceFeeLovelace
+            .toBigDecimal()
+            .multiply(usdAdaExchangeRate.toBigDecimal()) // lovelace to usd-ies
+            .divide(usdNewmExchangeRate.toBigDecimal(), 6, RoundingMode.CEILING) // usd-ies to newmies
+            .toBigInteger()
+        val serviceFeeUsd = usdAdaExchangeRate * serviceFeeLovelace.toBigInteger() / 1000000.toBigInteger()
+        val additionalSendTokenFeeNewmies = additionalSendTokenFeeLovelace
+            .toBigDecimal()
+            .multiply(usdAdaExchangeRate.toBigDecimal()) // lovelace to usd-ies
+            .divide(usdNewmExchangeRate.toBigDecimal(), 6, RoundingMode.CEILING) // usd-ies to newmies
+            .toBigInteger()
+        val additionalSendTokenFeeUsd =
+            usdAdaExchangeRate * additionalSendTokenFeeLovelace.toBigInteger() / 1000000.toBigInteger()
+        val sendTokenFeePerArtistNewmies = minUtxoLovelace
+            .toBigDecimal()
+            .multiply(usdAdaExchangeRate.toBigDecimal()) // lovelace to usd-ies
+            .divide(usdNewmExchangeRate.toBigDecimal(), 6, RoundingMode.CEILING) // usd-ies to newmies
+            .toBigInteger()
+        val sendTokenFeePerArtistUsd = usdAdaExchangeRate * minUtxoLovelace.toBigInteger() / 1000000.toBigInteger()
+
+        // we send an extra changeAmountLovelace to ensure we have enough ada to cover a return utxo
+        return MintPaymentResponse(
+            // Legacy MintPaymentResponse fields
+            cborHex =
+                CborInteger
+                    .create(mintCostLovelace + dspPriceLovelace.toLong() + changeAmountLovelace)
+                    .toCborByteArray()
+                    .toHexString(),
+            adaPrice = lovelacePrice.toAdaString(),
+            usdPrice = usdPrice.toAdaString(),
+            dspPriceAda = dspPriceLovelace.toAdaString(),
+            dspPriceUsd = dspPriceUsdForAdaPaymentType.toBigInteger().toAdaString(),
+            mintPriceAda = serviceFeeLovelace.toBigInteger().toAdaString(),
+            mintPriceUsd = serviceFeeUsd.toAdaString(),
+            collabPriceAda = additionalSendTokenFeeLovelace.toBigInteger().toAdaString(),
+            collabPriceUsd = additionalSendTokenFeeUsd.toAdaString(),
+            collabPerArtistPriceAda = minUtxoLovelace.toBigInteger().toAdaString(),
+            collabPerArtistPriceUsd = sendTokenFeePerArtistUsd.toAdaString(),
+            usdAdaExchangeRate = usdAdaExchangeRate.toAdaString(),
+            // New MintPaymentResponse fields
+            mintPaymentOptions = listOf(
+                MintPaymentOption(
+                    paymentType = PaymentType.ADA,
+                    cborHex = CborInteger
+                        .create(mintCostLovelace + dspPriceLovelace.toLong() + changeAmountLovelace)
+                        .toCborByteArray()
+                        .toHexString(),
+                    price = lovelacePrice.toAdaString(),
+                    priceUsd = usdPrice.toAdaString(),
+                    dspPrice = dspPriceLovelace.toAdaString(),
+                    dspPriceUsd = dspPriceUsdForAdaPaymentType.toBigInteger().toAdaString(),
+                    mintPrice = serviceFeeLovelace.toBigInteger().toAdaString(),
+                    mintPriceUsd = serviceFeeUsd.toAdaString(),
+                    collabPrice = additionalSendTokenFeeLovelace.toBigInteger().toAdaString(),
+                    collabPriceUsd = additionalSendTokenFeeUsd.toAdaString(),
+                    collabPricePerArtist = minUtxoLovelace.toBigInteger().toAdaString(),
+                    collabPricePerArtistUsd = sendTokenFeePerArtistUsd.toAdaString(),
+                    usdToPaymentTypeExchangeRate = usdAdaExchangeRate.toAdaString(),
+                ),
+                MintPaymentOption(
+                    paymentType = PaymentType.NEWM,
+                    cborHex = CborArray
+                        .create(
+                            listOf(
+                                CborInteger.create(minUtxoLovelace + changeAmountLovelace),
+                                listOf(
+                                    nativeAsset {
+                                        if (cardanoRepository.isMainnet()) {
+                                            policy = NEWM_TOKEN_POLICY
+                                            name = NEWM_TOKEN_NAME
+                                        } else {
+                                            policy = NEWM_TOKEN_POLICY_PREPROD
+                                            name = NEWM_TOKEN_NAME_PREPROD
+                                        }
+                                        amount = newmiesPrice.toString()
+                                    }
+                                ).toNativeAssetCborMap(),
+                            )
+                        ).toCborByteArray()
+                        .toHexString(),
+                    price = newmiesPrice.toAdaString(),
+                    priceUsd = newmiesUsdPrice.toAdaString(),
+                    dspPrice = dspPriceNewmies.toAdaString(),
+                    dspPriceUsd = dspPriceUsdForNewmPaymentType.toBigInteger().toAdaString(),
+                    mintPrice = serviceFeeNewmies.toAdaString(),
+                    mintPriceUsd = serviceFeeUsd.toAdaString(),
+                    collabPrice = additionalSendTokenFeeNewmies.toAdaString(),
+                    collabPriceUsd = additionalSendTokenFeeUsd.toAdaString(),
+                    collabPricePerArtist = sendTokenFeePerArtistNewmies.toAdaString(),
+                    collabPricePerArtistUsd = sendTokenFeePerArtistUsd.toAdaString(),
+                    usdToPaymentTypeExchangeRate = usdNewmExchangeRate.toAdaString(),
+                ),
+                MintPaymentOption(
+                    paymentType = PaymentType.PAYPAL,
+                    priceUsd = usdPrice.toAdaString(),
+                    dspPriceUsd = dspPriceUsdForAdaPaymentType.toBigInteger().toAdaString(),
+                    mintPriceUsd = serviceFeeUsd.toAdaString(),
+                    collabPriceUsd = additionalSendTokenFeeUsd.toAdaString(),
                     collabPricePerArtistUsd = sendTokenFeePerArtistUsd.toAdaString()
                 ),
             )
