@@ -14,6 +14,7 @@ import io.newm.server.features.paypal.model.PayPalAmount
 import io.newm.server.features.paypal.model.PayPalCaptureOrderResponse
 import io.newm.server.features.paypal.model.PayPalCreateOrderRequest
 import io.newm.server.features.paypal.model.PayPalCreateOrderResponse
+import io.newm.server.features.paypal.model.PayPalItem
 import io.newm.server.features.song.model.MintPaymentOption
 import io.newm.server.features.song.model.MintingStatus
 import io.newm.server.features.song.model.PaymentType
@@ -59,27 +60,22 @@ internal class PayPalRepositoryImpl(
                             PayPalCreateOrderRequest.PurchaseUnit(
                                 invoiceId = request.songId.toString(),
                                 amount = PayPalAmount(
-                                    currencyCode = "USD",
-                                    value = paymentOption.price.toBigDecimalUsd(),
-                                    breakdown = mapOf(
-                                        "item_total" to PayPalAmount(
-                                            currencyCode = "USD",
-                                            value = paymentOption.price.toBigDecimalUsd()
-                                        ),
-                                        "distribution_cost" to PayPalAmount(
-                                            currencyCode = "USD",
-                                            value = paymentOption.dspPrice.toBigDecimalUsd()
-                                        ),
-                                        "minting_cost" to PayPalAmount(
-                                            currencyCode = "USD",
-                                            value = paymentOption.mintPrice.toBigDecimalUsd()
-                                        ),
-                                        "collaborators_cost" to PayPalAmount(
-                                            currencyCode = "USD",
-                                            value = paymentOption.collabPrice.toBigDecimalUsd()
-                                        )
-                                    )
+                                    totalPriceUsd = paymentOption.price.toBigDecimalUsd(),
                                 ),
+                                items = listOf(
+                                    PayPalItem(
+                                        name = "Distribution Cost",
+                                        unitPriceUsd = paymentOption.dspPrice.toBigDecimalUsd()
+                                    ),
+                                    PayPalItem(
+                                        name = "Minting Cost",
+                                        unitPriceUsd = paymentOption.mintPrice.toBigDecimalUsd()
+                                    ),
+                                    PayPalItem(
+                                        name = "Collaborator Cost",
+                                        unitPriceUsd = paymentOption.collabPrice.toBigDecimalUsd()
+                                    )
+                                )
                             )
                         ),
                         paymentSource = PayPalCreateOrderRequest.PaymentSource(
