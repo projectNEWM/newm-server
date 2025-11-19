@@ -15,7 +15,7 @@ object Versions {
     const val EXPOSED = "0.61.0"
     const val FLYWAYDB = "11.17.0"
     const val GOOGLE_TRUTH = "1.4.5"
-    const val GRPC = "1.76.0"
+    const val GRPC = "1.77.0"
     const val GRPC_KOTLIN = "1.5.0"
     const val HIKARICP = "7.0.2"
     const val I2P_CRYPTO = "0.3.0"
