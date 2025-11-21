@@ -64,16 +64,16 @@ internal class PayPalRepositoryImpl(
                                 ),
                                 items = listOf(
                                     PayPalItem(
-                                        name = "Distribution Cost",
+                                        name = "Distribution cost",
                                         unitPriceUsd = paymentOption.dspPrice.toBigDecimalUsd()
                                     ),
                                     PayPalItem(
-                                        name = "Minting Cost",
-                                        unitPriceUsd = paymentOption.mintPrice.toBigDecimalUsd()
+                                        name = "Royalty split(s) fee",
+                                        unitPriceUsd = paymentOption.collabPrice.toBigDecimalUsd()
                                     ),
                                     PayPalItem(
-                                        name = "Collaborator Cost",
-                                        unitPriceUsd = paymentOption.collabPrice.toBigDecimalUsd()
+                                        name = "Service fee",
+                                        unitPriceUsd = paymentOption.mintPrice.toBigDecimalUsd()
                                     )
                                 )
                             )
