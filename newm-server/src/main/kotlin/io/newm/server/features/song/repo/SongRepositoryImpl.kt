@@ -606,15 +606,27 @@ internal class SongRepositoryImpl(
         val dspPriceUsdForNewmPaymentType = configRepository.getLong(CONFIG_KEY_DISTRIBUTION_PRICE_USD_NEWM)
         val usdNewmExchangeRate = cardanoRepository.queryNEWMUSDPrice().toBigInteger()
 
-        return calculateMintPaymentResponse(
-            minUtxoLovelace,
-            collaborators,
-            dspPriceUsdForAdaPaymentType,
-            usdAdaExchangeRate,
-            dspPriceUsdForNewmPaymentType,
-            usdNewmExchangeRate,
-            mintCostBaseLovelace,
-        )
+        return if (configRepository.getBoolean(CONFIG_KEY_STUD514_ENABLED)) {
+            calculateStud514MintPaymentResponse(
+                minUtxoLovelace,
+                collaborators,
+                dspPriceUsdForAdaPaymentType,
+                usdAdaExchangeRate,
+                dspPriceUsdForNewmPaymentType,
+                usdNewmExchangeRate,
+                mintCostBaseLovelace,
+            )
+        } else {
+            calculateMintPaymentResponse(
+                minUtxoLovelace,
+                collaborators,
+                dspPriceUsdForAdaPaymentType,
+                usdAdaExchangeRate,
+                dspPriceUsdForNewmPaymentType,
+                usdNewmExchangeRate,
+                mintCostBaseLovelace,
+            )
+        }
     }
 
     override suspend fun getMintingPaymentAmount(
