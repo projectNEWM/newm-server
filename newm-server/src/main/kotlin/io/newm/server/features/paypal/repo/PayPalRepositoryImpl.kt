@@ -99,7 +99,7 @@ internal class PayPalRepositoryImpl(
         val checkoutUrl = response.links.firstOrNull { it.rel == "payer-action" }?.href
             ?: throw HttpUnprocessableEntityException("No payer-action found in PayPal response")
 
-        songRepository.updateSongMintingStatus(request.songId, MintingStatus.MintingPaymentSubmitted)
+        songRepository.updateSongMintingStatus(request.songId, MintingStatus.MintingPaymentRequested)
         logger.info { "Successfully created orderId=${response.id} for songId=${request.songId}" }
         return MintingDistributionOrderResponse(
             orderId = response.id,
@@ -140,7 +140,7 @@ internal class PayPalRepositoryImpl(
                 )
             }
 
-            songRepository.updateSongMintingStatus(songId, MintingStatus.MintingPaymentReceived)
+            songRepository.updateSongMintingStatus(songId, MintingStatus.MintingPaymentSubmitted)
             logger.info { "Successfully captured orderId=$orderId for songId=$songId" }
         }
     }
