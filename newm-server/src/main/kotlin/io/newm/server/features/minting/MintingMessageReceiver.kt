@@ -95,7 +95,10 @@ class MintingMessageReceiver : SqsMessageReceiver {
                                 }
                             } ?: PaymentType.ADA
                             if (paymentType == PaymentType.PAYPAL) {
-                                // nothing else to do here, we'll wait for the payment capture API call
+                                songRepository.updateSongMintingStatus(
+                                    songId = mintingStatusSqsMessage.songId,
+                                    mintingStatus = MintingStatus.MintingPaymentReceived
+                                )
                                 return@launch
                             }
 
