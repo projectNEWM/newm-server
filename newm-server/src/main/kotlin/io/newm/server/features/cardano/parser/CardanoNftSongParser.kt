@@ -88,7 +88,9 @@ fun List<LedgerAssetMetadataItem>.toNFTSongs(
                 genres += item.value
             }
 
-            else -> parseSongItem(item)
+            else -> {
+                parseSongItem(item)
+            }
         }
     }
     val fingerprint = asset.fingerprint()
@@ -135,7 +137,10 @@ private fun LedgerAssetMetadataItem.values(): List<String> =
         ?.mapNotNull {
             when (it.valueType) {
                 "string" -> it.value
-                "map" -> it.childrenList.firstOrNull()?.key // only if CIP60-V3 or above
+
+                // only if CIP60-V3 or above
+                "map" -> it.childrenList.firstOrNull()?.key
+
                 else -> null
             }
         }.orEmpty()
@@ -189,8 +194,14 @@ private fun List<LedgerAssetMetadataItem>.toFile(index: Int): File {
 
 internal fun String.toResourceUrl(): String =
     when {
-        startsWith("ipfs://") -> "https://ipfs.io/ipfs/${substring(7)}"
-        startsWith("ar://") -> "https://arweave.net/${substring(5)}"
+        startsWith("ipfs://") -> {
+            "https://ipfs.io/ipfs/${substring(7)}"
+        }
+
+        startsWith("ar://") -> {
+            "https://arweave.net/${substring(5)}"
+        }
+
         else -> {
             logger.warn { "Unknown resource schema: $this" }
             this

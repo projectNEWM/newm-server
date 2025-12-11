@@ -139,7 +139,10 @@ class MintingRepositoryImpl(
                     ) { "NEWM payment UTXO not found or invalid for songId: ${song.id}, looking for $mintCost $newmPolicyId.$newmTokenName" }
                 }
 
-                PaymentType.PAYPAL -> null // we'll fund the minting with cash register funds
+                PaymentType.PAYPAL -> {
+                    // we'll fund the minting with cash register funds
+                    null
+                }
 
                 else -> {
                     // Handles PaymentType.ADA and legacy cases (where release.mintPaymentType might be null)

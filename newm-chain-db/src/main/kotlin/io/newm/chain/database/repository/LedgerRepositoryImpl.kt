@@ -447,11 +447,17 @@ class LedgerRepositoryImpl : LedgerRepository {
                                 txOutput.elementToByteArray(0)
                             )
                         when (val assetsOutput = txOutput.elementAt(1)) {
-                            is CborInteger -> lovelace = assetsOutput.bigIntegerValue()
+                            is CborInteger -> {
+                                lovelace = assetsOutput.bigIntegerValue()
+                            }
+
                             is CborArray -> {
                                 assetsOutput.forEach { subItem ->
                                     when (subItem) {
-                                        is CborInteger -> lovelace = subItem.bigIntegerValue()
+                                        is CborInteger -> {
+                                            lovelace = subItem.bigIntegerValue()
+                                        }
+
                                         is CborMap -> {
                                             subItem.keySet().forEach { policyId ->
                                                 val policy =
@@ -547,7 +553,9 @@ class LedgerRepositoryImpl : LedgerRepository {
                                     isInlineDatum = true
                                 }
 
-                                else -> throw IllegalStateException("datum is not a hash or inline datum!")
+                                else -> {
+                                    throw IllegalStateException("datum is not a hash or inline datum!")
+                                }
                             }
                         }
                         (txOutput[UTXO_SCRIPT_REF_INDEX] as? CborByteString)?.let { scriptRefCborObject ->
@@ -555,7 +563,9 @@ class LedgerRepositoryImpl : LedgerRepository {
                         }
                     }
 
-                    else -> throw IllegalStateException("txOutput is not Array or Map!")
+                    else -> {
+                        throw IllegalStateException("txOutput is not Array or Map!")
+                    }
                 }
                 processLiveUtxoFromSubmitTx(
                     Utxo(

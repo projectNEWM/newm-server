@@ -18,9 +18,18 @@ fun Application.installStatusPages() {
         val logger = KotlinLogging.logger {}
         exception<Throwable> { call, cause ->
             when (cause) {
-                is HttpStatusException -> call.respondStatus(cause.statusCode, cause)
-                is EntityNotFoundException -> call.respondStatus(HttpStatusCode.NotFound, cause)
-                is BadRequestException -> call.respondStatus(HttpStatusCode.BadRequest, cause)
+                is HttpStatusException -> {
+                    call.respondStatus(cause.statusCode, cause)
+                }
+
+                is EntityNotFoundException -> {
+                    call.respondStatus(HttpStatusCode.NotFound, cause)
+                }
+
+                is BadRequestException -> {
+                    call.respondStatus(HttpStatusCode.BadRequest, cause)
+                }
+
                 is IllegalArgumentException,
                 is ExposedSQLException -> {
                     logger.error(cause) { "${cause.message}" }

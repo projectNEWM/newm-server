@@ -572,7 +572,9 @@ internal class CardanoRepositoryImpl(
             return when (decodedPaymentStakeAddress.bytes[0]) {
                 PAYMENT_STAKE_ADDRESS_KEY_KEY_PREFIX_MAINNET,
                 PAYMENT_STAKE_ADDRESS_KEY_KEY_PREFIX_TESTNET,
-                -> response.paymentAddress
+                -> {
+                    response.paymentAddress
+                }
 
                 else -> {
                     if (response.paymentAddress in scriptAddressWhitelistCache.get(Unit) ||

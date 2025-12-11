@@ -398,9 +398,13 @@ class MonitorAddressDaemon(
                                                 tag =
                                                     when (redeemer.validator.purpose) {
                                                         "spend" -> RedeemerTag.SPEND
+
                                                         "mint" -> RedeemerTag.MINT
+
                                                         "certificate" -> RedeemerTag.CERT
+
                                                         "withdrawal" -> RedeemerTag.REWARD
+
                                                         else -> throw IllegalArgumentException(
                                                             "Unknown redeemer tag"
                                                         )

@@ -80,9 +80,15 @@ class ReleaseEntity(
         fun all(filters: SongFilters): SizedIterable<ReleaseEntity> {
             val ops = filters.toOps()
             return when {
-                ops.isEmpty() -> all()
-                filters.phrase == null -> find(AndOp(ops))
-                else ->
+                ops.isEmpty() -> {
+                    all()
+                }
+
+                filters.phrase == null -> {
+                    find(AndOp(ops))
+                }
+
+                else -> {
                     ReleaseEntity.wrapRows(
                         ReleaseTable
                             .innerJoin(
@@ -92,6 +98,7 @@ class ReleaseEntity(
                             ).selectAll()
                             .where(AndOp(ops))
                     )
+                }
             }.orderBy(ReleaseTable.createdAt to (filters.sortOrder ?: SortOrder.ASC))
         }
 

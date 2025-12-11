@@ -509,7 +509,10 @@ internal class MarketplaceRepositoryImpl(
         val orderCostAmount = sale.costAmount.toBigInteger() * request.bundleQuantity.toBigInteger()
         val serviceFeeAmount = (orderCostAmount.toBigDecimal() * serviceFeeFraction.toBigDecimal()).toBigInteger()
         val subtotalAmountUsd = when (sale.costPolicyId) {
-            usdPolicyId -> orderCostAmount + serviceFeeAmount + profitAmountUsd
+            usdPolicyId -> {
+                orderCostAmount + serviceFeeAmount + profitAmountUsd
+            }
+
             else -> {
                 nativeAssets += nativeAsset {
                     policy = sale.costPolicyId
@@ -579,7 +582,10 @@ internal class MarketplaceRepositoryImpl(
 
         val contractNativeAssets = mutableListOf<NativeAsset>()
         val contractCurrencyAmount = when (sale.costPolicyId) {
-            usdPolicyId -> (order.currencyAmount.toBigInteger() - order.serviceFeeAmount.toBigInteger()).toString()
+            usdPolicyId -> {
+                (order.currencyAmount.toBigInteger() - order.serviceFeeAmount.toBigInteger()).toString()
+            }
+
             else -> {
                 contractNativeAssets += nativeAsset {
                     policy = sale.costPolicyId

@@ -213,7 +213,9 @@ fun String.cborHexToUtxo(): Utxo {
                                 lovelace =
                                     when (valueAmount) {
                                         is CborInteger -> valueAmount.bigIntegerValue().toString()
+
                                         is CborArray -> valueAmount.elementToBigInteger(0).toString()
+
                                         else -> throw IllegalArgumentException(
                                             "Invalid CBOR type: ${valueAmount.javaClass.name}, expected CborInteger or CborArray for lovelace!"
                                         )
@@ -266,7 +268,9 @@ fun String.cborHexToUtxo(): Utxo {
                                 lovelace =
                                     when (valueAmount) {
                                         is CborInteger -> valueAmount.bigIntegerValue().toString()
+
                                         is CborArray -> valueAmount.elementToBigInteger(0).toString()
+
                                         else -> throw IllegalArgumentException(
                                             "Invalid CBOR type: ${valueAmount?.javaClass?.name}, expected CborInteger or CborArray for lovelace!"
                                         )
@@ -301,11 +305,15 @@ fun String.cborHexToUtxo(): Utxo {
                             }
                         }
 
-                        else -> throw IllegalArgumentException("Invalid CBOR type: ${value.javaClass.name}, expected CborArray or CborMap!")
+                        else -> {
+                            throw IllegalArgumentException("Invalid CBOR type: ${value.javaClass.name}, expected CborArray or CborMap!")
+                        }
                     }
                 }
 
-                else -> throw IllegalArgumentException("Invalid CBOR type: ${cborObject.javaClass.name}, expected CborArray!")
+                else -> {
+                    throw IllegalArgumentException("Invalid CBOR type: ${cborObject.javaClass.name}, expected CborArray!")
+                }
             }
         }
     } catch (e: Exception) {

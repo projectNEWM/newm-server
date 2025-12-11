@@ -158,8 +158,14 @@ class MarketplaceSaleEntity(
         fun all(filters: SaleFilters): SizedIterable<MarketplaceSaleEntity> {
             val ops = filters.toOps()
             return when {
-                ops.isEmpty() -> all()
-                filters.isIndependent -> find(AndOp(ops))
+                ops.isEmpty() -> {
+                    all()
+                }
+
+                filters.isIndependent -> {
+                    find(AndOp(ops))
+                }
+
                 else -> {
                     MarketplaceSaleTable
                         .innerJoin(

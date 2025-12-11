@@ -28,9 +28,7 @@ enum class MintingStatus {
 
     UpdateTokenMetadataRequested, // An update to the token metadata has been requested - 21
 
-    /**
-     * --- IMPORTANT! ---
-     * All new statuses should be added to the end of this list. We don't want to change the ordinal of any existing
-     * statuses that exist in our database.
-     */
+    //    --- IMPORTANT! ---
+    //    All new statuses should be added to the end of this list. We don't want to change the ordinal of any existing
+    //    statuses that exist in our database.
 }
