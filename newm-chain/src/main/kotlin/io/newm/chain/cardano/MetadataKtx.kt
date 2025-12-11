@@ -55,7 +55,7 @@ fun PlutusData.toMetadataMap(
 
 fun PlutusData.toMetadataValue(): MetadataValue =
     when (plutusDataWrapperCase) {
-        PlutusData.PlutusDataWrapperCase.MAP ->
+        PlutusData.PlutusDataWrapperCase.MAP -> {
             MetadataMap().apply {
                 map.mapItemList.forEach { plutusDataMapItem ->
                     val key = plutusDataMapItem.mapItemKey.toMetadataValue()
@@ -63,23 +63,31 @@ fun PlutusData.toMetadataValue(): MetadataValue =
                     this[key] = value
                 }
             }
+        }
 
-        PlutusData.PlutusDataWrapperCase.LIST ->
+        PlutusData.PlutusDataWrapperCase.LIST -> {
             MetadataList().apply {
                 list.listItemList.forEach { plutusDataListItem ->
                     add(plutusDataListItem.toMetadataValue())
                 }
             }
+        }
 
-        PlutusData.PlutusDataWrapperCase.INT -> MetadataInteger(int.toBigInteger())
-        PlutusData.PlutusDataWrapperCase.BYTES ->
+        PlutusData.PlutusDataWrapperCase.INT -> {
+            MetadataInteger(int.toBigInteger())
+        }
+
+        PlutusData.PlutusDataWrapperCase.BYTES -> {
             if (bytes.isValidDbUtf8()) {
                 MetadataString(bytes.toStringUtf8())
             } else {
                 MetadataBytes(bytes.toByteArray().toB64String())
             }
+        }
 
-        else -> throw IllegalStateException("plutusDataWrapper must be set!")
+        else -> {
+            throw IllegalStateException("plutusDataWrapper must be set!")
+        }
     }
 
 fun LedgerAssetMetadata.toLedgerAssetMetadataItem(): LedgerAssetMetadataItem {
@@ -154,9 +162,17 @@ fun LedgerAssetMetadata.to721Json(isArrayItem: Boolean = false): String {
             sb.append("}")
         }
 
-        "string" -> sb.append("\"$value\"")
-        "bytestring" -> sb.append("\"$value\"")
-        "integer" -> sb.append(value)
+        "string" -> {
+            sb.append("\"$value\"")
+        }
+
+        "bytestring" -> {
+            sb.append("\"$value\"")
+        }
+
+        "integer" -> {
+            sb.append(value)
+        }
     }
     return sb.toString()
 }

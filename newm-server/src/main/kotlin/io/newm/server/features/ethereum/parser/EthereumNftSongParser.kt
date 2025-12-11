@@ -101,8 +101,12 @@ private fun String.asDuration(): Long {
     val parts = split(":")
     return try {
         when (parts.size) {
-            1 -> parts[0].toLong() // seconds
-            2 -> 60 * parts[0].toLong() + parts[1].toLong() // mm:ss format
+            // seconds
+            1 -> parts[0].toLong()
+
+            // mm:ss format
+            2 -> 60 * parts[0].toLong() + parts[1].toLong()
+
             else -> -1L
         }
     } catch (e: NumberFormatException) {

@@ -41,35 +41,41 @@ fun randomPercentage(bound: Int) = random.nextInt(bound)
 
 val byronGenesis by lazy {
     when (shelleyGenesis.networkMagic) {
-        NETWORK_MAGIC_MAINNET ->
+        NETWORK_MAGIC_MAINNET -> {
             ByronGenesis(
                 startTime = 1506203091L,
                 protocolConsts = ProtocolConsts(k = 2160L),
                 blockVersionData = BlockVersionData(slotDuration = 20000L)
             )
+        }
 
-        NETWORK_MAGIC_GUILD ->
+        NETWORK_MAGIC_GUILD -> {
             ByronGenesis(
                 startTime = 1639090522L,
                 protocolConsts = ProtocolConsts(k = 36L),
                 blockVersionData = BlockVersionData(slotDuration = 100L)
             )
+        }
 
-        NETWORK_MAGIC_PREPROD ->
+        NETWORK_MAGIC_PREPROD -> {
             ByronGenesis(
                 startTime = 1654041600L,
                 protocolConsts = ProtocolConsts(k = 2160L),
                 blockVersionData = BlockVersionData(slotDuration = 20000L)
             )
+        }
 
-        NETWORK_MAGIC_PREVIEW ->
+        NETWORK_MAGIC_PREVIEW -> {
             ByronGenesis(
                 startTime = 1666656000L,
                 protocolConsts = ProtocolConsts(k = 432L),
                 blockVersionData = BlockVersionData(slotDuration = 20000L)
             )
+        }
 
-        else -> throw IllegalStateException("Unknown network magic: ${shelleyGenesis.networkMagic}")
+        else -> {
+            throw IllegalStateException("Unknown network magic: ${shelleyGenesis.networkMagic}")
+        }
     }
 }
 

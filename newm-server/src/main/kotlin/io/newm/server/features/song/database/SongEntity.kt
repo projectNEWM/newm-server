@@ -132,9 +132,15 @@ class SongEntity(
         fun all(filters: SongFilters): SizedIterable<SongEntity> {
             val ops = filters.toOps()
             return when {
-                ops.isEmpty() -> all()
-                filters.phrase == null -> find(AndOp(ops))
-                else ->
+                ops.isEmpty() -> {
+                    all()
+                }
+
+                filters.phrase == null -> {
+                    find(AndOp(ops))
+                }
+
+                else -> {
                     SongEntity.wrapRows(
                         SongTable
                             .innerJoin(
@@ -144,6 +150,7 @@ class SongEntity(
                             ).selectAll()
                             .where(AndOp(ops))
                     )
+                }
             }.orderBy(SongTable.createdAt to (filters.sortOrder ?: SortOrder.ASC))
         }
 

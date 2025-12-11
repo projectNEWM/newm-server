@@ -24,6 +24,7 @@ fun SigningKey.sign(transactionId: ByteArray): ByteArray =
             signer.update(transactionId, 0, transactionId.size)
             signer.generateSignature()
         }
+
         64, 128 -> {
             // sign with extended ed25519 key (64 bytes) or ed25519e_bip32 key (128 bytes)
             // For 128 byte keys, use the first 64 bytes as the extended private key
@@ -36,7 +37,10 @@ fun SigningKey.sign(transactionId: ByteArray): ByteArray =
             engine.initSign(sk)
             engine.signOneShot(transactionId)
         }
-        else -> throw IllegalArgumentException("Invalid signing key size: ${this.skey.size()}")
+
+        else -> {
+            throw IllegalArgumentException("Invalid signing key size: ${this.skey.size()}")
+        }
     }
 
 fun SigningKey.verify(

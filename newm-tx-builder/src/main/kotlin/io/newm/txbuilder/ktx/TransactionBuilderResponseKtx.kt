@@ -80,7 +80,9 @@ fun ByteArray.extractTxCborFields(): TxFields {
                     }
                 }
 
-                else -> throw IllegalStateException("Expected redeemers to be a CborArray or CborMap")
+                else -> {
+                    throw IllegalStateException("Expected redeemers to be a CborArray or CborMap")
+                }
             }
         }
 

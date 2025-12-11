@@ -96,9 +96,13 @@ fun Validator.toRedeemerTagAndIndex(): Pair<RedeemerTag, Long> =
     Pair(
         when (this.purpose) {
             "spend" -> RedeemerTag.SPEND
+
             "mint" -> RedeemerTag.MINT
+
             "certificate" -> RedeemerTag.CERT
+
             "withdrawal" -> RedeemerTag.REWARD
+
             else -> throw IllegalArgumentException(
                 "Unknown redeemer tag"
             )

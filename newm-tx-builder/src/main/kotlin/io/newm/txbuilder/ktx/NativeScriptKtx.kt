@@ -72,7 +72,9 @@ fun NativeScript.toCborObject(): CborObject =
             )
         }
 
-        else -> throw IllegalArgumentException("NativeScript must have a body!")
+        else -> {
+            throw IllegalArgumentException("NativeScript must have a body!")
+        }
     }
 
 private val NATIVE_SCRIPT_KEY_PUB_KEY_INDEX by lazy { CborInteger.create(0) }

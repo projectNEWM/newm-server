@@ -254,15 +254,18 @@ private fun Certificate.toStakeRegistrationOrNull(
     certIndex: Int
 ): StakeRegistration? =
     when (this) {
-        is StakeCredentialRegistrationCertificate ->
+        is StakeCredentialRegistrationCertificate -> {
             StakeRegistration(
                 slot = slot,
                 txIndex = txIndex,
                 certIndex = certIndex,
                 stakeAddress = credential.credentialToStakeAddress(),
             )
+        }
 
-        else -> null
+        else -> {
+            null
+        }
     }
 
 private fun String.credentialToStakeAddress(): String =
@@ -396,17 +399,21 @@ private fun buildAssetMetadata(
         nestLevel = nestLevel,
         children =
             when (valueType) {
-                "array" ->
+                "array" -> {
                     (valueMetadataValue as MetadataList).mapNotNull { subValueMetadata ->
                         buildAssetMetadata(assetId, keyMetadataValue, subValueMetadata, nestLevel + 1)
                     }
+                }
 
-                "map" ->
+                "map" -> {
                     (valueMetadataValue as MetadataMap).mapNotNull { (subKeyMetadata, subValueMetadata) ->
                         buildAssetMetadata(assetId, subKeyMetadata, subValueMetadata, nestLevel + 1)
                     }
+                }
 
-                else -> emptyList()
+                else -> {
+                    emptyList()
+                }
             }
     )
 }
@@ -450,5 +457,7 @@ private fun Certificate.toStakeDelegationOrNull(
             }
         }
 
-        else -> null
+        else -> {
+            null
+        }
     }

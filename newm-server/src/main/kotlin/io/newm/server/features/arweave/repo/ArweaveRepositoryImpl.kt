@@ -162,10 +162,21 @@ class ArweaveRepositoryImpl(
                 // no-op
             }
 
-            208 -> log.warn { "Transaction already processed: $signedTransaction" }
-            429 -> log.error("Too many requests!")
-            400, 503 -> log.error("Transaction verification failed!: $signedTransaction")
-            else -> log.error("Unknown problem submitting transaction: $submitResponse")
+            208 -> {
+                log.warn { "Transaction already processed: $signedTransaction" }
+            }
+
+            429 -> {
+                log.error("Too many requests!")
+            }
+
+            400, 503 -> {
+                log.error("Transaction verification failed!: $signedTransaction")
+            }
+
+            else -> {
+                log.error("Unknown problem submitting transaction: $submitResponse")
+            }
         }
         return submitResponse.isSuccess
     }
@@ -197,7 +208,10 @@ class ArweaveRepositoryImpl(
                         break // success, stop checking status
                     }
 
-                    202 -> log.warn { "Pending, transaction is not yet on chain!: $transactionId, $mimeType" }
+                    202 -> {
+                        log.warn { "Pending, transaction is not yet on chain!: $transactionId, $mimeType" }
+                    }
+
                     404 -> {
                         log.warn { "Not Found, transaction could not be found!: $transactionId, $mimeType" }
                         if (queryCount < 3) {
@@ -322,10 +336,22 @@ class ArweaveRepositoryImpl(
                 val arweaveUrl = "ar://${weaveResponse.id}"
                 val toUpdate: Any? =
                     when (weaveResponse.contentType) {
-                        "image/webp" -> Release(arweaveCoverArtUrl = arweaveUrl)
-                        "application/pdf" -> Song(arweaveTokenAgreementUrl = arweaveUrl)
-                        "audio/mpeg" -> Song(arweaveClipUrl = arweaveUrl)
-                        "text/plain" -> Song(arweaveLyricsUrl = arweaveUrl)
+                        "image/webp" -> {
+                            Release(arweaveCoverArtUrl = arweaveUrl)
+                        }
+
+                        "application/pdf" -> {
+                            Song(arweaveTokenAgreementUrl = arweaveUrl)
+                        }
+
+                        "audio/mpeg" -> {
+                            Song(arweaveClipUrl = arweaveUrl)
+                        }
+
+                        "text/plain" -> {
+                            Song(arweaveLyricsUrl = arweaveUrl)
+                        }
+
                         else -> {
                             arweaveException = IllegalStateException("Unknown mime type: ${weaveResponse.contentType}")
                             null

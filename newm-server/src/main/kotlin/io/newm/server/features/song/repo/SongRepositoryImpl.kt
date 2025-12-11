@@ -571,7 +571,9 @@ internal class SongRepositoryImpl(
 
                 AudioEncodingStatus.Completed -> {}
 
-                else -> return
+                else -> {
+                    return
+                }
             }
             if (mintingStatus == MintingStatus.AwaitingAudioEncoding) {
                 updateSongMintingStatus(songId, MintingStatus.AwaitingCollaboratorApproval)
@@ -1043,9 +1045,11 @@ internal class SongRepositoryImpl(
                     // Min ADA will be calculated and added below
                 }
 
-                PaymentType.PAYPAL -> throw HttpUnprocessableEntityException(
-                    "PayPal payment type is not supported for minting payment transactions"
-                )
+                PaymentType.PAYPAL -> {
+                    throw HttpUnprocessableEntityException(
+                        "PayPal payment type is not supported for minting payment transactions"
+                    )
+                }
             }
         }.toBuilder()
 
@@ -1247,7 +1251,9 @@ internal class SongRepositoryImpl(
                 sendMintingNotification("released", songId)
             }
 
-            else -> Unit
+            else -> {
+                Unit
+            }
         }
     }
 

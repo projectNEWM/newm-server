@@ -216,9 +216,7 @@ fun String.extractStakeKeyHex(): String? {
     val bytes = Bech32.decode(this).bytes
     return when {
         startsWith("stake") && bytes.size == 29 -> bytes.toHexString(fromIndex = 1)
-
         startsWith("addr") && bytes.size == 57 -> bytes.toHexString(fromIndex = 29)
-
         else -> null
     }
 }

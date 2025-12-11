@@ -41,16 +41,20 @@ fun CborObject.toPlutusData(cborHex: String? = null): PlutusData {
             }
 
             when (fields) {
-                is CborInteger -> int = fields.longValue()
-                is CborByteString ->
+                is CborInteger -> {
+                    int = fields.longValue()
+                }
+
+                is CborByteString -> {
                     bytes =
                         fields
                             .byteArrayValue()
                             .takeUnless { it.isEmpty() }
                             ?.get(0)
                             ?.toByteString() ?: ByteString.EMPTY
+                }
 
-                is CborArray ->
+                is CborArray -> {
                     list =
                         PlutusDataList
                             .newBuilder()
@@ -59,8 +63,9 @@ fun CborObject.toPlutusData(cborHex: String? = null): PlutusData {
                                     fields.map { it.toPlutusData() }
                                 )
                             }.build()
+                }
 
-                is CborMap ->
+                is CborMap -> {
                     map =
                         PlutusDataMap
                             .newBuilder()
@@ -76,12 +81,15 @@ fun CborObject.toPlutusData(cborHex: String? = null): PlutusData {
                                     }
                                 )
                             }.build()
+                }
 
-                else -> throw IllegalArgumentException(
-                    "plutus_data fields must be int, bytes, array, or map!: ${
-                        fields.toCborByteArray().toHexString()
-                    }, type: ${fields.javaClass.name}, cborHex: $cborHex"
-                )
+                else -> {
+                    throw IllegalArgumentException(
+                        "plutus_data fields must be int, bytes, array, or map!: ${
+                            fields.toCborByteArray().toHexString()
+                        }, type: ${fields.javaClass.name}, cborHex: $cborHex"
+                    )
+                }
             }
         }.build()
 }
@@ -125,7 +133,10 @@ fun PlutusData.toCborObject(): CborObject {
             CborArray.create(list.listItemList.map { it.toCborObject() }, cborTag)
         }
 
-        PlutusData.PlutusDataWrapperCase.INT -> CborInteger.create(int, cborTag)
+        PlutusData.PlutusDataWrapperCase.INT -> {
+            CborInteger.create(int, cborTag)
+        }
+
         PlutusData.PlutusDataWrapperCase.BYTES -> {
             if (bytes.size() > 64) {
                 val chunks =
@@ -147,7 +158,9 @@ fun PlutusData.toCborObject(): CborObject {
             }
         }
 
-        else -> throw IllegalArgumentException("PlutusData must contain one of map, list, int, or bytes!")
+        else -> {
+            throw IllegalArgumentException("PlutusData must contain one of map, list, int, or bytes!")
+        }
     }
 }
 
