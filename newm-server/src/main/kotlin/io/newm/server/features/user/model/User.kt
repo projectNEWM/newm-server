@@ -16,6 +16,8 @@ data class User(
     val id: UserId? = null,
     @Contextual
     val createdAt: LocalDateTime? = null,
+    @Contextual
+    val lastLogin: LocalDateTime? = null,
     val oauthType: OAuthType? = null,
     val signupPlatform: ClientPlatform? = null,
     val oauthId: String? = null,

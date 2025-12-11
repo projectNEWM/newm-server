@@ -6,15 +6,15 @@ on:
   pull_request:
 
 env:
-  KTLINT_VERSION: "1.7.1"
-  KTLINT_SHA256: "b596a05f09364e1997b644152683af12fef58944f3acfabdf78071f5a490eb98"
+  KTLINT_VERSION: "1.8.0"
+  KTLINT_SHA256: "a3fd620207d5c40da6ca789b95e7f823c54e854b7fade7f613e91096a3706d75"
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-java@v2
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '21'

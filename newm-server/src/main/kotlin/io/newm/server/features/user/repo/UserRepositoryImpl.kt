@@ -44,6 +44,7 @@ import io.newm.shared.ktx.orNull
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import java.time.LocalDateTime
 import org.jetbrains.exposed.sql.transactions.transaction
 
 internal class UserRepositoryImpl(
@@ -136,6 +137,7 @@ internal class UserRepositoryImpl(
             password.checkAuth(entity.passwordHash)
             entity.oauthType = null
             entity.oauthId = null
+            entity.lastLogin = LocalDateTime.now()
             entity.id.value to entity.admin
         }
     }
@@ -186,6 +188,7 @@ internal class UserRepositoryImpl(
             }
             entity.oauthType = oauthType
             entity.oauthId = user.id
+            entity.lastLogin = LocalDateTime.now()
             entity.id.value
         }
     }
@@ -396,7 +399,9 @@ internal class UserRepositoryImpl(
                         email
                     }
 
-                    else -> null
+                    else -> {
+                        null
+                    }
                 }
             }
         } ?: return

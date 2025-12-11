@@ -26,6 +26,7 @@ open class UserEntity(
     id: EntityID<UserId>
 ) : UUIDEntity(id) {
     val createdAt: LocalDateTime by UserTable.createdAt
+    var lastLogin: LocalDateTime by UserTable.lastLogin
     var signupPlatform: ClientPlatform by UserTable.signupPlatform
     var oauthType: OAuthType? by UserTable.oauthType
     var oauthId: String? by UserTable.oauthId
@@ -70,6 +71,7 @@ open class UserEntity(
         User(
             id = id.value,
             createdAt = createdAt,
+            lastLogin = lastLogin.takeIf { includeAll },
             signupPlatform = signupPlatform.takeIf { includeAll },
             oauthType = oauthType.takeIf { includeAll },
             oauthId = oauthId.takeIf { includeAll },

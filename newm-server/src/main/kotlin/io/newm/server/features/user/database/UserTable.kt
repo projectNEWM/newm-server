@@ -12,6 +12,7 @@ import java.time.LocalDateTime
 
 object UserTable : UUIDTable(name = "users") {
     val createdAt: Column<LocalDateTime> = datetime("created_at").defaultExpression(CurrentDateTime)
+    val lastLogin: Column<LocalDateTime> = datetime("last_login").defaultExpression(CurrentDateTime)
     val oauthType: Column<OAuthType?> = enumeration("oauth_type", OAuthType::class).nullable()
     val signupPlatform: Column<ClientPlatform> =
         enumeration("signup_platform", ClientPlatform::class).default(ClientPlatform.Studio)
