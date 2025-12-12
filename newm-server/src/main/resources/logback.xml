@@ -22,4 +22,5 @@
     <logger name="org.eclipse.jetty" level="WARN"/>
     <logger name="io.netty" level="WARN"/>
     <logger name="org.asynchttpclient.netty" level="WARN"/>
+    <logger name="io.ktor.server.plugins.cors.CORS" level="WARN"/>
 </configuration>
