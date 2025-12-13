@@ -88,5 +88,6 @@ interface ConfigRepository {
         const val CONFIG_KEY_REFERRAL_HERO_ENABLED = "referralHero.enabled"
         const val CONFIG_KEY_REFERRAL_HERO_REWARD_USD = "referralHero.rewardUsd"
         const val CONFIG_KEY_STUD514_ENABLED = "STUD514.enabled"
+        const val CONFIG_KEY_PAYPAL_ITEMIZED_INVOICE_ENABLED = "paypal.itemizedInvoiceEnabled"
     }
 }
