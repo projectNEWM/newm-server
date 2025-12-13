@@ -19,7 +19,7 @@ data class PayPalCreateOrderRequest(
         @SerialName("amount")
         val amount: PayPalAmount,
         @SerialName("items")
-        val items: List<PayPalItem>
+        val items: List<PayPalItem>?
     )
 
     @Serializable
