@@ -7,5 +7,5 @@ import org.koin.dsl.module
 
 val payPalKoinModule =
     module {
-        single<PayPalRepository> { PayPalRepositoryImpl(get(), get(QUALIFIER_PAYPAL_HTTP_CLIENT), get()) }
+        single<PayPalRepository> { PayPalRepositoryImpl(get(), get(), get(QUALIFIER_PAYPAL_HTTP_CLIENT), get()) }
     }

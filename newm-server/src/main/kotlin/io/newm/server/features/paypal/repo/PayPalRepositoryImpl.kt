@@ -8,6 +8,8 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.server.application.ApplicationEnvironment
+import io.newm.server.config.repo.ConfigRepository
+import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_PAYPAL_ITEMIZED_INVOICE_ENABLED
 import io.newm.server.features.paypal.model.MintingDistributionOrderRequest
 import io.newm.server.features.paypal.model.MintingDistributionOrderResponse
 import io.newm.server.features.paypal.model.PayPalAmount
@@ -31,6 +33,7 @@ import java.math.RoundingMode
 
 internal class PayPalRepositoryImpl(
     private val environment: ApplicationEnvironment,
+    private val configRepository: ConfigRepository,
     private val httpClient: HttpClient,
     private val songRepository: SongRepository
 ) : PayPalRepository {
@@ -62,20 +65,24 @@ internal class PayPalRepositoryImpl(
                                 amount = PayPalAmount(
                                     totalPriceUsd = paymentOption.price.toBigDecimalUsd(),
                                 ),
-                                items = listOf(
-                                    PayPalItem(
-                                        name = "Distribution cost",
-                                        unitPriceUsd = paymentOption.dspPrice.toBigDecimalUsd()
-                                    ),
-                                    PayPalItem(
-                                        name = "Royalty split(s) fee",
-                                        unitPriceUsd = paymentOption.collabPrice.toBigDecimalUsd()
-                                    ),
-                                    PayPalItem(
-                                        name = "Service fee",
-                                        unitPriceUsd = paymentOption.mintPrice.toBigDecimalUsd()
+                                items = if (configRepository.getBoolean(CONFIG_KEY_PAYPAL_ITEMIZED_INVOICE_ENABLED)) {
+                                    listOf(
+                                        PayPalItem(
+                                            name = "Distribution cost",
+                                            unitPriceUsd = paymentOption.dspPrice.toBigDecimalUsd()
+                                        ),
+                                        PayPalItem(
+                                            name = "Royalty split(s) fee",
+                                            unitPriceUsd = paymentOption.collabPrice.toBigDecimalUsd()
+                                        ),
+                                        PayPalItem(
+                                            name = "Service fee",
+                                            unitPriceUsd = paymentOption.mintPrice.toBigDecimalUsd()
+                                        )
                                     )
-                                )
+                                } else {
+                                    null
+                                }
                             )
                         ),
                         paymentSource = PayPalCreateOrderRequest.PaymentSource(
