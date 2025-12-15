@@ -104,8 +104,13 @@ import org.apache.tika.Tika
 import org.jaudiotagger.audio.AudioFileIO
 import org.jetbrains.annotations.VisibleForTesting
 import org.jetbrains.exposed.dao.id.EntityID
+import org.jetbrains.exposed.sql.CustomFunction
+import org.jetbrains.exposed.sql.Expression
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.stringLiteral
+import org.jetbrains.exposed.sql.TextColumnType
 import org.jetbrains.exposed.sql.transactions.transaction
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest
@@ -356,6 +361,22 @@ internal class SongRepositoryImpl(
                 val release = ReleaseEntity[it.releaseId!!].toModel()
                 it.toModel(release)
             }
+        }
+    }
+
+    override suspend fun getByIsrc(isrc: String): Song? {
+        logger.debug { "getByIsrc: isrc = $isrc" }
+        val normalizedIsrc = isrc.replace("-", "").uppercase()
+        return transaction {
+            SongEntity
+                .find {
+                    (SongTable.archived eq false) and
+                        (sqlUpper(sqlReplace(SongTable.isrc, "-", "")) eq normalizedIsrc)
+                }.firstOrNull()
+                ?.let {
+                    val release = ReleaseEntity[it.releaseId!!].toModel()
+                    it.toModel(release)
+                }
         }
     }
 
@@ -1556,3 +1577,13 @@ internal class SongRepositoryImpl(
         nftName?.checkLength("nftName")
     }
 }
+
+/** SQL UPPER function wrapper for Exposed */
+private fun sqlUpper(expr: Expression<*>): CustomFunction<String> = CustomFunction("UPPER", TextColumnType(), expr)
+
+/** SQL REPLACE function wrapper for Exposed */
+private fun sqlReplace(
+    expr: Expression<String?>,
+    from: String,
+    to: String
+): CustomFunction<String> = CustomFunction("REPLACE", TextColumnType(), expr, stringLiteral(from), stringLiteral(to))
