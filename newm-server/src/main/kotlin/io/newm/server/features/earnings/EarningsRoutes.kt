@@ -20,21 +20,50 @@ import io.newm.server.features.earnings.model.Earning
 import io.newm.server.features.earnings.model.GetEarningsBySongIdResponse
 import io.newm.server.features.earnings.model.GetEarningsResponse
 import io.newm.server.features.earnings.repo.EarningsRepository
+import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.ktx.songId
 import io.newm.server.recaptcha.repo.RecaptchaRepository
+import io.newm.server.typealiases.SongId
 import io.newm.shared.koin.inject
 import io.newm.shared.ktx.get
 import io.newm.shared.ktx.post
 import io.newm.shared.ktx.toLocalDateTime
+import java.util.UUID
 
 private const val EARNINGS_PATH = "v1/earnings"
 private const val EARNINGS_PATH_ADMIN = "v1/earnings/admin"
+
+internal val ISRC_REGEX = Regex("^[A-Z]{2}-?\\w{3}-?\\d{2}-?\\d{5}$", RegexOption.IGNORE_CASE)
+
+internal suspend fun resolveSongId(
+    identifier: String,
+    songRepository: SongRepository
+): SongId {
+    // Try to parse as UUID first
+    try {
+        return UUID.fromString(identifier)
+    } catch (_: IllegalArgumentException) {
+        // Not a UUID, try ISRC
+    }
+
+    // Validate ISRC format
+    if (!ISRC_REGEX.matches(identifier)) {
+        throw IllegalArgumentException("Invalid identifier: must be a valid UUID or ISRC")
+    }
+
+    // Lookup by ISRC
+    val song = songRepository.getByIsrc(identifier)
+        ?: throw NoSuchElementException("No song found with ISRC: $identifier")
+
+    return song.id!!
+}
 
 fun Routing.createEarningsRoutes() {
     val configRepository: ConfigRepository by inject()
     val cardanoRepository: CardanoRepository by inject()
     val earningsRepository: EarningsRepository by inject()
     val recaptchaRepository: RecaptchaRepository by inject()
+    val songRepository: SongRepository by inject()
 
     authenticate(AUTH_JWT_ADMIN) {
         route(EARNINGS_PATH_ADMIN) {
@@ -48,15 +77,18 @@ fun Routing.createEarningsRoutes() {
                 earningsRepository.addAll(earnings)
                 respond(HttpStatusCode.Created)
             }
-            get("{songId}") {
-                // get earnings by song id
-                val earnings = earningsRepository.getAllBySongId(songId)
+            get("{songIdOrIsrc}") {
+                // get earnings by song id or ISRC
+                val resolvedSongId = resolveSongId(parameters["songIdOrIsrc"]!!, songRepository)
+                val earnings = earningsRepository.getAllBySongId(resolvedSongId)
                 respond(earnings)
             }
-            post("{songId}") {
+            post("{songIdOrIsrc}") {
                 // create earning records for a song based on receiving a total amount of royalties.
+                // Accepts either a songId (UUID) or ISRC as the path parameter.
+                val resolvedSongId = resolveSongId(parameters["songIdOrIsrc"]!!, songRepository)
                 val royaltyRequest: AddSongRoyaltyRequest = receive()
-                earningsRepository.addRoyaltySplits(songId, royaltyRequest)
+                earningsRepository.addRoyaltySplits(resolvedSongId, royaltyRequest)
                 respond(HttpStatusCode.Created)
             }
         }

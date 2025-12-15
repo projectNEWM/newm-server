@@ -42,6 +42,8 @@ interface SongRepository {
 
     suspend fun get(songId: SongId): Song
 
+    suspend fun getByIsrc(isrc: String): Song?
+
     suspend fun getRelease(releaseId: ReleaseId): Release
 
     suspend fun getAll(
