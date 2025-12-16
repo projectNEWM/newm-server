@@ -102,8 +102,7 @@ class ReferralHeroRepositoryImpl(
         logger.debug { "Succeeded confirm-referral for $email" }
 
         val (referee, referrer) = transaction {
-            UserEntity.getByEmail(email) to response.data
-                ?.referredBy
+            UserEntity.getByEmail(email) to response.data.referredBy
                 ?.email
                 ?.let { UserEntity.getByEmail(it) }
         }
