@@ -25,6 +25,6 @@ data class CommonResponse(
 
     @Serializable
     data class Subscriber(
-        val email: String
+        val email: String?
     )
 }
