@@ -850,7 +850,7 @@ class MintingRepositoryImpl(
                                             add(
                                                 plutusDataMapItem {
                                                     mapItemKey = "music_metadata_version".toPlutusData()
-                                                    mapItemValue = plutusData { int = 2 } // CIP-60 Version 2
+                                                    mapItemValue = plutusData { int = 3 } // CIP-60 Version 3
                                                 }
                                             )
                                             add(createPlutusDataRelease(release, collabs))
@@ -1093,8 +1093,26 @@ class MintingRepositoryImpl(
                             add(
                                 plutusDataMapItem {
                                     mapItemKey = "copyright".toPlutusData()
-                                    mapItemValue =
-                                        "© ${song.compositionCopyrightYear} ${song.compositionCopyrightOwner}, ℗ ${song.phonographicCopyrightYear} ${song.phonographicCopyrightOwner}".toPlutusData()
+                                    mapItemValue = plutusData {
+                                        map = plutusDataMap {
+                                            with(mapItem) {
+                                                add(
+                                                    plutusDataMapItem {
+                                                        mapItemKey = "master".toPlutusData()
+                                                        mapItemValue =
+                                                            "℗ ${song.phonographicCopyrightYear} ${song.phonographicCopyrightOwner}".toPlutusData()
+                                                    }
+                                                )
+                                                add(
+                                                    plutusDataMapItem {
+                                                        mapItemKey = "composition".toPlutusData()
+                                                        mapItemValue =
+                                                            "© ${song.compositionCopyrightYear} ${song.compositionCopyrightOwner}".toPlutusData()
+                                                    }
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                             )
                             if (!song.arweaveLyricsUrl.isNullOrBlank()) {
@@ -1153,28 +1171,74 @@ class MintingRepositoryImpl(
 
                             // TODO: add country_of_origin from idenfy data? - maybe not MVP
 
-                            val lyricists =
-                                collabs.filter { it.roles?.containsIgnoreCase("Author (Lyrics)") == true && it.credited == true }
-                            if (lyricists.isNotEmpty()) {
+                            val featuredArtists = collabs.filter { it.featured == true }
+                            if (featuredArtists.isNotEmpty()) {
                                 transaction {
                                     add(
                                         plutusDataMapItem {
-                                            mapItemKey = "lyricists".toPlutusData()
-                                            mapItemValue =
-                                                plutusData {
-                                                    list =
-                                                        plutusDataList {
-                                                            listItem.addAll(
-                                                                lyricists.map { collab ->
-                                                                    UserEntity
-                                                                        .getByEmail(collab.email!!)!!
-                                                                        .toModel(false)
-                                                                        .stageOrFullName
-                                                                        .toPlutusData()
+                                            mapItemKey = "featured_artists".toPlutusData()
+                                            mapItemValue = plutusData {
+                                                list = plutusDataList {
+                                                    listItem.addAll(
+                                                        featuredArtists.map { collab ->
+                                                            plutusData {
+                                                                map = plutusDataMap {
+                                                                    with(mapItem) {
+                                                                        add(
+                                                                            plutusDataMapItem {
+                                                                                mapItemKey = "name".toPlutusData()
+                                                                                mapItemValue =
+                                                                                    UserEntity
+                                                                                        .getByEmail(collab.email!!)!!
+                                                                                        .toModel(false)
+                                                                                        .stageOrFullName
+                                                                                        .toPlutusData()
+                                                                            }
+                                                                        )
+                                                                    }
                                                                 }
-                                                            )
+                                                            }
                                                         }
+                                                    )
                                                 }
+                                            }
+                                        }
+                                    )
+                                }
+                            }
+
+                            val authors =
+                                collabs.filter { it.roles?.containsIgnoreCase("Author (Lyrics)") == true && it.credited == true }
+                            if (authors.isNotEmpty()) {
+                                transaction {
+                                    add(
+                                        plutusDataMapItem {
+                                            mapItemKey = "authors".toPlutusData()
+                                            mapItemValue = plutusData {
+                                                list = plutusDataList {
+                                                    listItem.addAll(
+                                                        authors.map { collab ->
+                                                            plutusData {
+                                                                map = plutusDataMap {
+                                                                    with(mapItem) {
+                                                                        add(
+                                                                            plutusDataMapItem {
+                                                                                mapItemKey = "name".toPlutusData()
+                                                                                mapItemValue =
+                                                                                    UserEntity
+                                                                                        .getByEmail(collab.email!!)!!
+                                                                                        .toModel(false)
+                                                                                        .stageOrFullName
+                                                                                        .toPlutusData()
+                                                                            }
+                                                                        )
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    )
+                                                }
+                                            }
                                         }
                                     )
                                 }
@@ -1182,7 +1246,7 @@ class MintingRepositoryImpl(
 
                             val contributingArtists =
                                 collabs.filter {
-                                    it.roles.orEmpty().any { it in contributingArtistRoles } && it.credited == true
+                                    it.roles.orEmpty().any { ca -> ca in contributingArtistRoles } && it.credited == true
                                 }
                             if (contributingArtists.isNotEmpty()) {
                                 transaction {
@@ -1367,7 +1431,7 @@ class MintingRepositoryImpl(
             plutusData {
                 val primaryArtistEmails =
                     collabs
-                        .filter { it.roles?.containsIgnoreCase("Artist") == true && it.credited == true }
+                        .filter { it.roles?.containsIgnoreCase("Artist") == true && it.credited == true && !(it.featured ?: false) }
                         .map { it.email!! }
                         .toMutableSet()
                 if (primaryArtistEmails.isEmpty()) {

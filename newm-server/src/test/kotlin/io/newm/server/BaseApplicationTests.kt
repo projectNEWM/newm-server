@@ -243,6 +243,7 @@ open class BaseApplicationTests {
                     songId = EntityID(collab.songId!!, SongTable)
                     roles = collab.roles!!
                     credited = collab.credited!!
+                    featured = collab.featured ?: false
                     royaltyRate = collab.royaltyRate?.toFloat()
                     status = CollaborationStatus.Accepted
                 }.id.value
