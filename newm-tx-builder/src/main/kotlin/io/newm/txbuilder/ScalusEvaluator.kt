@@ -25,6 +25,7 @@ import scalus.cardano.ledger.Transaction
 import scalus.cardano.ledger.TransactionInput
 import scalus.cardano.ledger.TransactionOutput
 import scalus.cardano.ledger.Value
+import io.newm.chain.util.hexToByteArray
 
 import scalus.cardano.ledger.`Hashes$package$`
 
@@ -57,8 +58,7 @@ object ScalusEvaluator {
         val scalusUtxos = convertToScalusUtxos(utxos)
 
         val evaluatedRedeemers = evaluator.evalPlutusScripts(tx, scalusUtxos)
-        val result = convertToEvaluateTxResult(evaluatedRedeemers)
-        result
+        return convertToEvaluateTxResult(evaluatedRedeemers)
     }
 
     private fun convertToEvaluateTxResult(evaluatedRedeemers: scala.collection.immutable.Seq<Redeemer>): EvaluateTxResult {
@@ -109,7 +109,7 @@ object ScalusEvaluator {
                 when {
                     utxo.hasDatum() && utxo.isInlineDatum -> {
                         // Inline datum - parse from CBOR hex
-                        val datumBytes = hexToByteArray(utxo.datum.cborHex)
+                        val datumBytes = utxo.datum.cborHex.hexToByteArray()
                         val datumData = Data.fromCbor(datumBytes)
                         Option.apply(DatumOption.Inline.apply(datumData))
                     }
@@ -135,6 +135,4 @@ object ScalusEvaluator {
         return scala.collection.immutable.Map
             .from(scalaSeq)
     }
-
-    private fun hexToByteArray(hex: String): ByteArray = hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
 }
