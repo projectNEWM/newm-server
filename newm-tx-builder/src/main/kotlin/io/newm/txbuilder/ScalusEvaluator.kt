@@ -6,8 +6,10 @@ import io.newm.kogmios.protocols.model.ExecutionUnits
 import io.newm.kogmios.protocols.model.Validator
 import io.newm.kogmios.protocols.model.result.EvaluateTx
 import io.newm.kogmios.protocols.model.result.EvaluateTxResult
+import io.newm.kogmios.protocols.model.result.ProtocolParametersResult
 import scalus.cardano.ledger.Redeemer
 import scalus.cardano.ledger.RedeemerTag
+import scalus.cardano.ledger.SlotConfig
 import java.math.BigInteger
 import scala.Option
 import scala.Tuple2
@@ -16,6 +18,8 @@ import scalus.cardano.address.Address
 import scalus.cardano.ledger.CardanoInfo
 import scalus.cardano.ledger.Coin
 import scalus.cardano.ledger.EvaluatorMode
+import scalus.cardano.ledger.ExUnits
+import scalus.cardano.ledger.MajorProtocolVersion
 import scalus.builtin.Data
 import scalus.cardano.ledger.DatumOption
 import scalus.cardano.ledger.MultiAsset
@@ -39,26 +43,70 @@ object ScalusEvaluator {
      *
      * @param cborBytes The transaction CBOR bytes
      * @param utxos All UTxOs needed for evaluation (source + reference inputs)
-     * @param config The configuration object containing network information
+     * @param protocolParameters Protocol parameters containing cost models and major protocol version
+     * @param config Configuration object to determine network (mainnet vs testnet)
      */
     fun evaluateTx(
         cborBytes: ByteArray,
         utxos: Set<Utxo>,
+        protocolParameters: ProtocolParametersResult,
         config: Config,
     ): EvaluateTxResult {
-        val cardanoInfo =
-            if (config.isMainnet) {
-                CardanoInfo.mainnet()
-            } else {
-                CardanoInfo.preprod()
-            }
+        val slotConfig = if (config.isMainnet) SlotConfig.Mainnet() else SlotConfig.Preprod()
+        val costModels = convertCostModels(protocolParameters)
 
-        val evaluator = PlutusScriptEvaluator.apply(cardanoInfo, EvaluatorMode.EvaluateAndComputeCost)
+        val initialBudget = ExUnits(
+            protocolParameters.maxExecutionUnitsPerTransaction.memory.toLong(),
+            protocolParameters.maxExecutionUnitsPerTransaction.cpu.toLong()
+        )
+
+        val evaluator = PlutusScriptEvaluator.apply(
+            slotConfig,
+            initialBudget,
+            MajorProtocolVersion(protocolParameters.version.major),
+            costModels,
+            EvaluatorMode.EvaluateAndComputeCost,
+            false, // debugDumpFilesForTesting
+            false  // logBudgetDifferences
+        )
+
         val tx = Transaction.fromCbor(cborBytes, ProtocolVersion.conwayPV())
         val scalusUtxos = convertToScalusUtxos(utxos)
 
         val evaluatedRedeemers = evaluator.evalPlutusScripts(tx, scalusUtxos)
         return convertToEvaluateTxResult(evaluatedRedeemers)
+    }
+
+    private fun convertCostModels(protocolParameters: ProtocolParametersResult): scalus.cardano.ledger.CostModels {
+        val kogmiosCostModels = protocolParameters.plutusCostModels
+        val tuples = mutableListOf<scala.Tuple2<Int, scala.collection.immutable.IndexedSeq<Long>>>()
+
+        // PlutusV1 = language 0
+        kogmiosCostModels.plutusV1?.let { v1 ->
+            tuples.add(scala.Tuple2(0, convertCostModelArray(v1)))
+        }
+
+        // PlutusV2 = language 1
+        kogmiosCostModels.plutusV2?.let { v2 ->
+            tuples.add(scala.Tuple2(1, convertCostModelArray(v2)))
+        }
+
+        // PlutusV3 = language 2
+        kogmiosCostModels.plutusV3?.let { v3 ->
+            tuples.add(scala.Tuple2(2, convertCostModelArray(v3)))
+        }
+
+        // Convert to Scala immutable.Map
+        val scalaSeq = scala.jdk.javaapi.CollectionConverters.asScala(tuples).toSeq()
+        @Suppress("UNCHECKED_CAST")
+        val scalaMap = scala.collection.immutable.Map.from(scalaSeq) as scala.collection.immutable.Map<Any, scala.collection.immutable.IndexedSeq<Any>>
+
+        return scalus.cardano.ledger.CostModels(scalaMap)
+    }
+
+    private fun convertCostModelArray(costModel: List<BigInteger>): scala.collection.immutable.IndexedSeq<Long> {
+        val longArray = costModel.map { it.toLong() }
+        return scala.jdk.javaapi.CollectionConverters.asScala(longArray).toIndexedSeq()
     }
 
     private fun convertToEvaluateTxResult(evaluatedRedeemers: scala.collection.immutable.Seq<Redeemer>): EvaluateTxResult {
