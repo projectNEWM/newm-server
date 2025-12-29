@@ -122,3 +122,14 @@ tasks.withType<Jar> {
         )
     }
 }
+
+// Ensure start scripts tasks depend on shadowJar since we use it as the main jar
+tasks.named("startScripts") {
+    dependsOn(tasks.named("shadowJar"))
+}
+
+// startShadowScripts needs both jar (which shadowJar transforms) and shadowJar itself
+tasks.named("startShadowScripts") {
+    dependsOn(tasks.named("jar"))
+    dependsOn(tasks.named("shadowJar"))
+}
