@@ -69,9 +69,6 @@ import org.junit.jupiter.api.TestInstance
 import org.koin.core.context.GlobalContext.loadKoinModules
 import org.koin.core.context.stopKoin
 import org.koin.dsl.module
-import org.testcontainers.containers.PostgreSQLContainer
-import org.testcontainers.junit.jupiter.Container
-import org.testcontainers.junit.jupiter.Testcontainers
 import software.amazon.awssdk.services.kms.KmsAsyncClient
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.presigner.S3Presigner
@@ -83,7 +80,6 @@ import java.util.UUID
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
-@Testcontainers
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 open class BaseApplicationTests {
     protected val application = TestApplication {
@@ -140,16 +136,17 @@ open class BaseApplicationTests {
     protected val testUserToken: String
         get() = testUserId.toString()
 
+    private lateinit var hikariDataSource: HikariDataSource
+
     @BeforeAll
     fun beforeAll() {
-        Database.connect(
-            HikariDataSource().apply {
-                driverClassName = container.driverClassName
-                jdbcUrl = container.jdbcUrl
-                username = container.username
-                password = container.password
-            }
-        )
+        hikariDataSource = HikariDataSource().apply {
+            driverClassName = TestContext.container.driverClassName
+            jdbcUrl = TestContext.container.jdbcUrl
+            username = TestContext.container.username
+            password = TestContext.container.password
+        }
+        Database.connect(hikariDataSource)
         transaction {
             SchemaUtils.create(
                 ConfigTable,
@@ -169,6 +166,25 @@ open class BaseApplicationTests {
                 MarketplacePurchaseTable,
                 EarningsTable
             )
+            val tables = listOf(
+                ConfigTable,
+                UserTable,
+                TwoFactorAuthTable,
+                KeyTable,
+                SongTable,
+                SongSmartLinkTable,
+                CollaborationTable,
+                PlaylistTable,
+                SongsInPlaylistsTable,
+                SongReceiptTable,
+                WalletConnectionChallengeTable,
+                WalletConnectionTable,
+                MarketplaceBookmarkTable,
+                MarketplaceSaleTable,
+                MarketplacePurchaseTable,
+                EarningsTable
+            )
+            exec("TRUNCATE ${tables.joinToString(", ") { it.tableName }} RESTART IDENTITY CASCADE")
         }
         runBlocking {
             application.start()
@@ -203,6 +219,7 @@ open class BaseApplicationTests {
             application.stop()
         }
         stopKoin()
+        hikariDataSource.close()
     }
 
     protected fun addUserToDatabase(user: User): UUID =
@@ -320,15 +337,6 @@ open class BaseApplicationTests {
     ) = transaction {
         ConfigEntity.new(id) {
             this.value = value
-        }
-    }
-
-    companion object {
-        @Container
-        val container = PostgreSQLContainer<Nothing>("postgres:12").apply {
-            withDatabaseName("newm-db")
-            withUsername("tester")
-            withPassword("newm1234")
         }
     }
 }
