@@ -104,7 +104,7 @@ Organize SOPs by category:
 
 | Category | SOP Name | Description | Date |
 |----------|----------|-------------|------|
-| *No SOPs yet* | — | — | — |
+| debugging | [PayPal Capture Amount Validation](debugging/paypal-capture-amount-validation.md) | Ensure PayPal capture uses stored price, not recalculated | 2025-12-30 |
 
 ---
 

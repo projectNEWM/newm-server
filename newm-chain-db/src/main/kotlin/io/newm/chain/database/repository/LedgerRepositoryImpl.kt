@@ -1082,7 +1082,7 @@ class LedgerRepositoryImpl : LedgerRepository {
                 }
             }
 
-    override fun siblingHashCount(hash: String): Long = siblingHashCountCache[hash]!!
+    override fun siblingHashCount(hash: String): Long = siblingHashCountCache[hash]
 
     override fun queryPayerAddress(receivedUtxo: Utxo): String =
         transaction {
