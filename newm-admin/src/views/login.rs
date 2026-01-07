@@ -1,41 +1,16 @@
+use std::sync::Arc;
+
 use async_compat::Compat;
 use gpui::prelude::FluentBuilder;
 use gpui::*;
 use gpui_component::{input::*, radio::*, *};
 
+use crate::app::LoginSuccessEvent;
 use crate::auth::{AuthClient, AuthError, Environment};
+use crate::colors;
 
-// NEWM Studio Design Colors
-mod colors {
-    use gpui::rgb;
-    use gpui::Rgba;
-
-    // Backgrounds
-    pub fn bg_primary() -> Rgba { rgb(0x000000) }      // Pure black
-    pub fn bg_surface() -> Rgba { rgb(0x1a1a1a) }      // Cards, sidebar
-    #[allow(dead_code)]
-    pub fn bg_elevated() -> Rgba { rgb(0x2a2a2a) }     // Input fields
-    pub fn border() -> Rgba { rgb(0x3a3a3a) }          // Subtle borders
-
-    // Button Gradient
-    pub fn gradient_start() -> Rgba { rgb(0xC341F0) }  // Bottom-left
-    pub fn gradient_end() -> Rgba { rgb(0xF53C69) }    // Top-right
-    
-    // Secondary Button
-    #[allow(dead_code)]
-    pub fn secondary_border() -> Rgba { rgb(0x1c1c1e) }
-    #[allow(dead_code)]
-    pub fn secondary_text() -> Rgba { rgb(0xDC3CAA) }
-
-    // Text
-    pub fn text_primary() -> Rgba { rgb(0xffffff) }    // Headings
-    pub fn text_secondary() -> Rgba { rgb(0xa1a1aa) }  // Labels, descriptions
-    #[allow(dead_code)]
-    pub fn text_muted() -> Rgba { rgb(0x71717a) }      // Placeholders
-    
-    // Status
-    pub fn error() -> Rgba { rgb(0xef4444) }           // Error text
-}
+// Embed the NEWM logo at compile time
+const LOGO_BYTES: &[u8] = include_bytes!("../NEWM_Logo.png");
 
 // Custom gradient button component using GPUI's native linear_gradient
 fn gradient_button(
@@ -45,20 +20,26 @@ fn gradient_button(
     on_click: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static,
 ) -> impl IntoElement {
     let label = label.into();
-    
+
     // 45 degrees = bottom-left to top-right diagonal
     // Convert Rgba to Hsla for LinearColorStop
     let start_color: Hsla = colors::gradient_start().into();
     let end_color: Hsla = colors::gradient_end().into();
-    
+
     let gradient = linear_gradient(
         45.0,
-        LinearColorStop { color: start_color, percentage: 0.0 },
-        LinearColorStop { color: end_color, percentage: 1.0 },
+        LinearColorStop {
+            color: start_color,
+            percentage: 0.0,
+        },
+        LinearColorStop {
+            color: end_color,
+            percentage: 1.0,
+        },
     );
-    
+
     let opacity = if disabled { 0.5 } else { 1.0 };
-    
+
     let base = div()
         .id(id)
         .h_flex()
@@ -71,10 +52,14 @@ fn gradient_button(
         .bg(gradient)
         .text_color(colors::text_primary())
         .font_weight(FontWeight::MEDIUM)
-        .cursor(if disabled { CursorStyle::default() } else { CursorStyle::PointingHand })
+        .cursor(if disabled {
+            CursorStyle::default()
+        } else {
+            CursorStyle::PointingHand
+        })
         .opacity(opacity)
         .child(label);
-    
+
     if disabled {
         base
     } else {
@@ -83,18 +68,13 @@ fn gradient_button(
 }
 
 /// Login status for tracking async operations
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub enum LoginStatus {
+    #[default]
     Idle,
     Loading,
     Error(String),
     Success,
-}
-
-impl Default for LoginStatus {
-    fn default() -> Self {
-        LoginStatus::Idle
-    }
 }
 
 pub struct LoginView {
@@ -107,9 +87,7 @@ pub struct LoginView {
 
 impl LoginView {
     pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
-        let email_state = cx.new(|cx| {
-            InputState::new(window, cx).placeholder("Email")
-        });
+        let email_state = cx.new(|cx| InputState::new(window, cx).placeholder("Email"));
 
         let password_state = cx.new(|cx| {
             InputState::new(window, cx)
@@ -125,31 +103,30 @@ impl LoginView {
             login_status: LoginStatus::Idle,
         }
     }
-    
+
     fn perform_login(&mut self, cx: &mut Context<Self>) {
         let email = self.username_state.read(cx).value().to_string();
         let password = self.password_state.read(cx).value().to_string();
         let environment = Environment::from_index(self.selected_environment);
-        
+
         // Validate inputs
         if email.is_empty() || password.is_empty() {
             self.login_status = LoginStatus::Error("Please enter email and password".to_string());
             cx.notify();
             return;
         }
-        
+
         self.login_status = LoginStatus::Loading;
         cx.notify();
-        
+
         // Spawn async task with Compat wrapper for Tokio compatibility
         cx.spawn(async move |this, cx| {
             let client = AuthClient::new();
-            
+
             // Wrap the async reqwest call with Compat to enable Tokio context
-            let result = Compat::new(async {
-                client.login(&email, &password, environment).await
-            }).await;
-            
+            let result =
+                Compat::new(async { client.login(&email, &password, environment).await }).await;
+
             cx.update(|cx| {
                 this.update(cx, |view, cx| {
                     match result {
@@ -163,9 +140,13 @@ impl LoginView {
                                 &response.refresh_token[..20.min(response.refresh_token.len())]
                             );
                             view.login_status = LoginStatus::Success;
-                            // TODO: Store tokens and navigate to dashboard
+                            // Emit event to switch to dashboard
+                            cx.emit(LoginSuccessEvent);
                         }
-                        Err(AuthError::Http { status: 401, message }) => {
+                        Err(AuthError::Http {
+                            status: 401,
+                            message,
+                        }) => {
                             view.login_status = LoginStatus::Error(message);
                         }
                         Err(e) => {
@@ -175,7 +156,8 @@ impl LoginView {
                     cx.notify();
                 })
             })
-        }).detach();
+        })
+        .detach();
     }
 }
 
@@ -184,7 +166,7 @@ impl Render for LoginView {
         let username_state = self.username_state.clone();
         let password_state = self.password_state.clone();
         let is_loading = matches!(self.login_status, LoginStatus::Loading);
-        
+
         // Build environment radio options
         let radio_items = vec![
             Radio::new("garage").label("Garage"),
@@ -213,6 +195,13 @@ impl Render for LoginView {
                             .v_flex()
                             .gap_2()
                             .items_center()
+                            .child(
+                                img(Arc::new(Image::from_bytes(
+                                    ImageFormat::Png,
+                                    LOGO_BYTES.to_vec(),
+                                )))
+                                .size(px(80.0)),
+                            )
                             .child(
                                 div()
                                     .text_2xl()
@@ -247,7 +236,7 @@ impl Render for LoginView {
                         Input::new(&username_state)
                             .bg(colors::bg_surface())
                             .border_color(colors::border())
-                            .text_color(colors::text_primary())
+                            .text_color(colors::text_primary()),
                     )
                     // Password field
                     .child(
@@ -271,12 +260,15 @@ impl Render for LoginView {
                                     .on_click(cx.listener(|this, _, window, cx| {
                                         this.password_masked = !this.password_masked;
                                         let masked = this.password_masked;
-                                        this.password_state.update(cx, |state: &mut InputState, cx| {
-                                            state.set_masked(masked, window, cx);
-                                        });
+                                        this.password_state.update(
+                                            cx,
+                                            |state: &mut InputState, cx| {
+                                                state.set_masked(masked, window, cx);
+                                            },
+                                        );
                                         cx.notify();
                                     })),
-                            )
+                            ),
                     )
                     // Error message
                     .when_some(
@@ -285,38 +277,34 @@ impl Render for LoginView {
                             _ => None,
                         },
                         |this: Div, error_msg| {
-                            this.child(
-                                div()
-                                    .text_sm()
-                                    .text_color(colors::error())
-                                    .child(error_msg),
-                            )
+                            this.child(div().text_sm().text_color(colors::error()).child(error_msg))
                         },
                     )
                     // Success message
-                    .when(matches!(self.login_status, LoginStatus::Success), |this: Div| {
-                        this.child(
-                            div()
-                                .text_sm()
-                                .text_color(rgb(0x22c55e))
-                                .child("Login successful!"),
-                        )
-                    })
+                    .when(
+                        matches!(self.login_status, LoginStatus::Success),
+                        |this: Div| {
+                            this.child(
+                                div()
+                                    .text_sm()
+                                    .text_color(rgb(0x22c55e))
+                                    .child("Login successful!"),
+                            )
+                        },
+                    )
                     // Login button
-                    .child(
-                        div()
-                            .mt_2()
-                            .child(
-                                gradient_button(
-                                    "login-btn",
-                                    if is_loading { "Logging in..." } else { "Log In" },
-                                    is_loading,
-                                    cx.listener(|this, _, _window, cx| {
-                                        this.perform_login(cx);
-                                    }),
-                                ),
-                            ),
-                    ),
+                    .child(div().mt_2().child(gradient_button(
+                        "login-btn",
+                        if is_loading {
+                            "Logging in..."
+                        } else {
+                            "Log In"
+                        },
+                        is_loading,
+                        cx.listener(|this, _, _window, cx| {
+                            this.perform_login(cx);
+                        }),
+                    ))),
             )
     }
 }
