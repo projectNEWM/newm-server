@@ -8,6 +8,7 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.server.application.ApplicationEnvironment
+import io.newm.chain.util.toAdaString
 import io.newm.server.config.repo.ConfigRepository
 import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_PAYPAL_ITEMIZED_INVOICE_ENABLED
 import io.newm.server.features.paypal.model.MintingDistributionOrderRequest
@@ -140,10 +141,18 @@ internal class PayPalRepositoryImpl(
             }
 
             val songId = invoiceId.toUUID()
-            val price = getPaymentOption(songId).price.toBigDecimalUsd()
-            if (amount.currencyCode != "USD" || amount.value != price) {
+            // Use stored price from DB (set once when /mint/payment was first called)
+            val song = songRepository.get(songId)
+            if (song.mintPaymentType != PaymentType.PAYPAL.name) {
+                throw HttpUnprocessableEntityException("Unexpected payment type for songId=$songId: ${song.mintPaymentType}")
+            }
+            val storedPriceMicroUsd = song.mintCost
+                ?: throw HttpUnprocessableEntityException("No stored mint cost found for songId=$songId")
+            val expectedPrice = storedPriceMicroUsd.toBigInteger().toAdaString().toBigDecimalUsd()
+
+            if (amount.currencyCode != "USD" || amount.value.setScale(2, RoundingMode.HALF_UP) != expectedPrice) {
                 throw HttpUnprocessableEntityException(
-                    "Unexpected capture amount - expected $price USD, received: ${amount.value} ${amount.currencyCode}"
+                    "Unexpected capture amount - expected $expectedPrice USD, received: ${amount.value} ${amount.currencyCode}"
                 )
             }
 
