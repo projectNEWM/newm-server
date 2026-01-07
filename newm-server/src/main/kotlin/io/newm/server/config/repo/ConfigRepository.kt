@@ -1,5 +1,7 @@
 package io.newm.server.config.repo
 
+import io.newm.server.config.model.CidrWhitelistEntry
+
 interface ConfigRepository {
     suspend fun exists(id: String): Boolean
 
@@ -22,6 +24,13 @@ interface ConfigRepository {
     suspend fun getDouble(id: String): Double
 
     suspend fun getDoubles(id: String): List<Double>
+
+    suspend fun getCidrWhitelist(id: String): List<CidrWhitelistEntry>
+
+    suspend fun isIpInCidrWhitelist(
+        ip: String,
+        whitelist: List<CidrWhitelistEntry>
+    ): Boolean
 
     suspend fun putString(
         id: String,
@@ -58,6 +67,7 @@ interface ConfigRepository {
         const val CONFIG_KEY_OUTLET_STATUS_CHECK_MINUTES = "outlet.statusCheckMinutes"
         const val CONFIG_KEY_RECAPTCHA_ENABLED = "recaptcha.enabled"
         const val CONFIG_KEY_RECAPTCHA_MIN_SCORE = "recaptcha.minScore"
+        const val CONFIG_KEY_RECAPTCHA_IP_WHITELIST = "recaptcha.ipWhitelist"
         const val CONFIG_KEY_NFTCDN_ENABLED = "nftcdn.enabled"
         const val CONFIG_KEY_MARKETPLACE_MONITORING_MULTI_MODE_ENABLED = "marketplace.monitoringMultiModeEnabled"
         const val CONFIG_KEY_MARKETPLACE_MONITORING_RETRY_DELAY = "marketplace.monitoringRetryDelay"

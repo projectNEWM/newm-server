@@ -71,6 +71,7 @@ Available workflows:
 
 | Workflow | Description | Trigger |
 |----------|-------------|---------|
+| [`admin.md`](./workflows/admin.md) | NEWM Admin desktop app (Rust/GPUI) | `/admin` |
 | [`build.md`](./workflows/build.md) | Build all modules | `/build` |
 | [`test.md`](./workflows/test.md) | Run test suites | `/test` |
 | [`backend.md`](./workflows/backend.md) | Backend Kotlin development | `/backend` |
@@ -83,13 +84,14 @@ Available workflows:
 
 ## 🏗️ Project Overview
 
-**NEWM Server** is the backend for the NEWM music platform on Cardano. It provides REST APIs for mobile apps and the artist portal, enabling artists to distribute, tokenize, and earn from their music. The code is 100% Kotlin.
+**NEWM Server** is the backend for the NEWM music platform on Cardano. It provides REST APIs for mobile apps and the artist portal, enabling artists to distribute, tokenize, and earn from their music.
 
 ### Technology Stack
 
 | Layer | Technology | Key Modules |
 |-------|------------|-------------|
 | **Backend** | Kotlin 2.x on Java 21, Ktor | `newm-server` |
+| **Admin App** | Rust, GPUI | `newm-admin` |
 | **ORM** | Exposed (Kotlin SQL framework) | Tables in `features/*/database/` |
 | **DI** | Koin | Modules in `*KoinModule.kt` |
 | **Database** | PostgreSQL | Flyway migrations |

@@ -1,13 +1,20 @@
 package io.newm.server.config.repo
 
 import com.github.benmanes.caffeine.cache.Caffeine
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.newm.server.config.database.ConfigEntity
+import io.newm.server.config.model.CidrWhitelistEntry
 import io.newm.shared.ktx.existsHavingId
 import io.newm.shared.ktx.splitAndTrim
-import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.Duration
+import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
+import org.apache.commons.net.util.SubnetUtils
+import org.jetbrains.exposed.sql.transactions.transaction
 
 internal class ConfigRepositoryImpl : ConfigRepository {
+    private val log by lazy { KotlinLogging.logger { } }
+
     private val configCache =
         Caffeine
             .newBuilder()
@@ -15,6 +22,19 @@ internal class ConfigRepositoryImpl : ConfigRepository {
             .build<String, String> { key ->
                 transaction {
                     ConfigEntity[key].value
+                }
+            }
+
+    private val ipWhitelistCache =
+        Caffeine
+            .newBuilder()
+            .expireAfterWrite(Duration.ofMinutes(5))
+            .build<String, List<CidrWhitelistEntry>> { key ->
+                val json = runBlocking { getString(key) }
+                if (json.isBlank() || json == "[]") {
+                    emptyList()
+                } else {
+                    Json.decodeFromString(json)
                 }
             }
 
@@ -42,6 +62,27 @@ internal class ConfigRepositoryImpl : ConfigRepository {
     override suspend fun getDouble(id: String): Double = getString(id).toDouble()
 
     override suspend fun getDoubles(id: String): List<Double> = getStrings(id).map(String::toDouble)
+
+    override suspend fun getCidrWhitelist(id: String): List<CidrWhitelistEntry> = ipWhitelistCache[id]
+
+    override suspend fun isIpInCidrWhitelist(
+        ip: String,
+        whitelist: List<CidrWhitelistEntry>
+    ): Boolean {
+        if (whitelist.isEmpty()) return false
+        return whitelist.any { entry ->
+            try {
+                val subnetUtils = SubnetUtils(entry.cidr)
+                // Allow checking if the network address itself is in range
+                subnetUtils.isInclusiveHostCount = true
+                subnetUtils.info.isInRange(ip)
+            } catch (_: IllegalArgumentException) {
+                // Invalid CIDR notation, skip this entry
+                log.warn { "Invalid CIDR notation in config: ${entry.cidr}" }
+                false
+            }
+        }
+    }
 
     override suspend fun putString(
         id: String,
