@@ -162,6 +162,12 @@ object Dependencies {
         const val FRACTION = "org.apache.commons:commons-numbers-fraction:$VERSION"
     }
 
+    object ApacheCommonsNet {
+        private const val VERSION = Versions.APACHE_COMMONS_NET
+
+        const val ALL = "commons-net:commons-net:$VERSION"
+    }
+
     object ApacheCurators {
         private const val VERSION = Versions.APACHE_CURATORS
 
