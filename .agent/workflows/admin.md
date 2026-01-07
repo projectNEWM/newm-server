@@ -191,3 +191,19 @@ gpui_component::init(cx);
 ```bash
 sudo apt install libxkbcommon-dev libwayland-dev
 ```
+
+---
+
+## Visual Verification
+
+This is a **desktop application**, not a web app. You cannot use browser tools to verify UI changes.
+
+When visual verification of UI changes is needed:
+
+1. **Run the application** using `cargo run`
+2. **Ask the user to take a screenshot** of the relevant window/view
+3. **Request the user provide the screenshot** so you can verify the UI appears correctly
+4. Document what specific UI elements should be visible in the screenshot
+
+Example prompt to user:
+> "Please run the application and take a screenshot of [specific view]. I need to verify that [specific UI element] appears correctly. Attach the screenshot to your reply."

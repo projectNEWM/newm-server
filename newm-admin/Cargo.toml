@@ -12,8 +12,8 @@ gpui-component-assets = "0.5"
 # Async Compatibility (bridges Tokio futures to GPUI's executor)
 async-compat = "0.2"
 
-# HTTP Client
-reqwest = { version = "0.12", features = ["json"] }
+# HTTP Client (rustls-tls for cross-compilation compatibility)
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 
 # Serialization
 serde = { version = "1", features = ["derive"] }
@@ -25,3 +25,6 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # Error Handling
 anyhow = "1"
+
+# JWT Parsing
+base64 = "0.22"

@@ -11,28 +11,31 @@ This document provides the definitive overview of the NEWM Server system archite
 NEWM Server is the backend for the NEWM music platform on Cardano. It enables artists to distribute, tokenize, and earn from their music through NFTs and streaming royalties.
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
+┌──────────────────────────────────────────────────────────────────────────────┐
 │                            NEWM PLATFORM                                     │
-├─────────────────────────────────────────────────────────────────────────────┤
+├──────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
-│  ┌─────────────┐     REST API      ┌─────────────────────────────────────┐  │
+│  ┌─────────────┐     REST API       ┌─────────────────────────────────────┐  │
 │  │ Mobile Apps │◄──────────────────►│          newm-server                │  │
 │  │   Portal    │                    │           (Ktor)                    │  │
 │  └─────────────┘                    └───────────┬───────────────────────┬─┘  │
 │                                                 │                       │    │
-│                          ┌──────────────────────┼───────────────────────┤    │
-│                          │                      │                       │    │
-│                          ▼                      ▼                       ▼    │
-│               ┌──────────────────┐   ┌─────────────────┐   ┌───────────────┐│
-│               │   PostgreSQL     │   │   newm-chain    │   │   AWS SDK     ││
-│               │   (Exposed ORM)  │   │    (gRPC)       │   │ (S3,SQS,KMS)  ││
-│               └──────────────────┘   └────────┬────────┘   └───────────────┘│
+│  ┌─────────────┐     REST API                   │                       │    │
+│  │ newm-admin  │◄───────────────────────────────┤                       │    │
+│  │ (Rust/GPUI) │                                │                       │    │
+│  └─────────────┘                    ┌───────────┼───────────────────────┤    │
+│                                     │           │                       │    │
+│                                     ▼           ▼                       ▼    │
+│               ┌──────────────────┐   ┌─────────────────┐   ┌───────────────┐ │
+│               │   PostgreSQL     │   │   newm-chain    │   │   AWS SDK     │ │
+│               │   (Exposed ORM)  │   │    (gRPC)       │   │ (S3,SQS,KMS)  │ │
+│               └──────────────────┘   └────────┬────────┘   └───────────────┘ │
 │                                               │                              │
 │                                               ▼                              │
-│                                      ┌─────────────────┐                    │
-│                                      │ Cardano (Ogmios)│                    │
-│                                      └─────────────────┘                    │
-└─────────────────────────────────────────────────────────────────────────────┘
+│                                      ┌─────────────────┐                     │
+│                                      │ Cardano (Ogmios)│                     │
+│                                      └─────────────────┘                     │
+└──────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -51,6 +54,21 @@ NEWM Server is the backend for the NEWM music platform on Cardano. It enables ar
 | `newm-tx-builder` | `io.newm.txbuilder` | Cardano transaction building |
 | `newm-chain-util` | `io.newm.chain.util` | Chain utilities |
 | `newm-objectpool` | `io.newm.objectpool` | Object pooling utilities |
+
+### Desktop Applications
+
+| Module | Language | Framework | Responsibility |
+|--------|----------|-----------|----------------|
+| `newm-admin` | Rust | GPUI + gpui-component | Admin desktop app for earnings/refunds management |
+
+**newm-admin Details:**
+- **UI Framework**: GPUI (GPU-accelerated, from Zed editor)
+- **HTTP Client**: reqwest with async-compat bridge for GPUI async compatibility
+- **Auth**: JWT-based, validates `admin: true` claim
+- **Environments**: Garage (dev) / Studio (prod)
+- **Platforms**: Linux, macOS, Windows
+
+See [/admin workflow](../workflows/admin.md) for development commands.
 
 ### Feature Domains (in newm-server)
 

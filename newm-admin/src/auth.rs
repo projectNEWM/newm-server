@@ -49,7 +49,7 @@ impl Environment {
 
     /// Get index for RadioGroup
     #[allow(dead_code)]
-    pub fn to_index(&self) -> usize {
+    pub fn to_index(self) -> usize {
         match self {
             Environment::Garage => 0,
             Environment::Studio => 1,
@@ -98,6 +98,8 @@ pub enum AuthError {
     Http { status: u16, message: String },
     /// Failed to parse response
     Parse(String),
+    /// User is not an admin
+    NotAdmin,
 }
 
 impl fmt::Display for AuthError {
@@ -106,6 +108,7 @@ impl fmt::Display for AuthError {
             AuthError::Network(msg) => write!(f, "Network error: {}", msg),
             AuthError::Http { status, message } => write!(f, "Error {}: {}", status, message),
             AuthError::Parse(msg) => write!(f, "Parse error: {}", msg),
+            AuthError::NotAdmin => write!(f, "Access denied: Admin privileges required"),
         }
     }
 }
@@ -135,7 +138,7 @@ impl AuthClient {
     }
 
     /// Attempt to login with email and password.
-    /// 
+    ///
     /// This is an async method that uses reqwest. When called from GPUI,
     /// wrap the call in `async_compat::Compat::new()` to enable Tokio compatibility.
     pub async fn login(
@@ -169,7 +172,16 @@ impl AuthClient {
                 .await
                 .map_err(|e| AuthError::Parse(e.to_string()))?;
 
-            tracing::info!("Login successful for {}", email);
+            // Validate that the user is an admin
+            let claims =
+                crate::jwt::parse_claims(&login_response.access_token).map_err(AuthError::Parse)?;
+
+            if claims.admin != Some(true) {
+                tracing::warn!("Login rejected for {}: user is not an admin", email);
+                return Err(AuthError::NotAdmin);
+            }
+
+            tracing::info!("Admin login successful for {}", email);
             Ok(login_response)
         } else {
             // Try to parse error response
@@ -201,7 +213,7 @@ impl AuthClient {
     }
 
     /// Refresh access token using refresh token.
-    /// 
+    ///
     /// This is an async method that uses reqwest. When called from GPUI,
     /// wrap the call in `async_compat::Compat::new()` to enable Tokio compatibility.
     #[allow(dead_code)]

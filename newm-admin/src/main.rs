@@ -1,10 +1,12 @@
 mod app;
 mod auth;
+mod colors;
+mod jwt;
 mod views;
 
 use gpui::*;
-use gpui_component::*;
 use gpui_component::theme::{Theme, ThemeMode};
+use gpui_component::*;
 use gpui_component_assets::Assets;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -25,7 +27,7 @@ fn main() {
     app.run(move |cx| {
         // Initialize gpui-component system
         gpui_component::init(cx);
-        
+
         // Set dark theme mode
         Theme::change(ThemeMode::Dark, None, cx);
 
@@ -34,8 +36,12 @@ fn main() {
                 WindowOptions {
                     window_bounds: Some(WindowBounds::Windowed(Bounds::new(
                         point(px(100.0), px(100.0)),
-                        size(px(800.0), px(600.0)),
+                        size(px(1600.0), px(1200.0)),
                     ))),
+                    titlebar: Some(TitlebarOptions {
+                        title: Some(format!("NEWM Admin v{}", env!("CARGO_PKG_VERSION")).into()),
+                        ..Default::default()
+                    }),
                     ..Default::default()
                 },
                 |window, cx| {
@@ -48,4 +54,3 @@ fn main() {
         .detach();
     });
 }
-

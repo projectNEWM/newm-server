@@ -1,0 +1,96 @@
+# Based on https://github.com/actions-rs/meta/blob/master/recipes/quickstart.md
+
+on:
+  push:
+    paths:
+      - 'newm-admin/**'
+
+name: Validate
+
+jobs:
+  build:
+    name: Build
+    strategy:
+      fail-fast: false
+      matrix:
+        job:
+          - { os: ubuntu-22.04, label: ubuntu22, target: x86_64-unknown-linux-gnu }
+          - { os: macos-latest, label: macos, target: aarch64-apple-darwin }
+          - { os: windows-latest, label: windows, target: x86_64-pc-windows-msvc }
+        rust: [ nightly ]
+
+    runs-on: ${{ matrix.job.os }}
+
+    defaults:
+      run:
+        working-directory: newm-admin
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Install nightly toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly
+          components: rustfmt, clippy
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libxkbcommon-x11-dev libxkbcommon-dev libwayland-dev
+
+      - name: Run cargo check
+        if: ${{ matrix.job.target == 'x86_64-unknown-linux-gnu' }}
+        run: cargo check
+
+      - name: Run cargo fmt
+        if: ${{ matrix.job.target == 'x86_64-unknown-linux-gnu' }}
+        run: cargo fmt --all -- --check
+
+      - name: Run cargo clippy
+        run: cargo clippy --release --target ${{ matrix.job.target }} -- -D warnings
+
+      - name: Run cargo test
+        run: cargo test --release --target ${{ matrix.job.target }}
+
+      - name: Build Release
+        run: cargo build --release --target ${{ matrix.job.target }} --locked
+
+      - name: Package
+        id: package
+        shell: bash
+        run: |
+          PROJECT_NAME=$(sed -n 's/^name = "\(.*\)"/\1/p' Cargo.toml)
+          PROJECT_VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n1)
+          if [[ "${{ matrix.job.target }}" == *-pc-windows-* ]]; then
+            PKG_SUFFIX=".zip"
+          else
+            PKG_SUFFIX=".tar.gz"
+          fi
+          PKG_NAME=${PROJECT_NAME}-${PROJECT_VERSION}-${{ matrix.job.label }}-${{ matrix.job.target }}${PKG_SUFFIX}
+          
+          if [[ "${{ matrix.job.target }}" == *-pc-windows-* ]]; then
+            7z -y a "${PKG_NAME}" ./target/${{matrix.job.target}}/release/newm-admin.exe | tail -2
+          else
+            tar -C target/${{matrix.job.target}}/release -czf "${PKG_NAME}" newm-admin
+          fi
+
+          echo "PKG_NAME=${PKG_NAME}" >> $GITHUB_OUTPUT
+          echo "PKG_PATH=${PKG_NAME}" >> $GITHUB_OUTPUT
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.package.outputs.PKG_NAME }}
+          path: ${{ steps.package.outputs.PKG_PATH }}
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          prerelease: "${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') || contains(github.ref, 'rc') }}"
+          files: ${{ steps.package.outputs.PKG_PATH }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
