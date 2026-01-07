@@ -13,9 +13,7 @@ import scalus.cardano.ledger.SlotConfig
 import java.math.BigInteger
 import scala.Option
 import scala.Tuple2
-import scalus.builtin.ByteString
 import scalus.cardano.address.Address
-import scalus.cardano.ledger.CardanoInfo
 import scalus.cardano.ledger.Coin
 import scalus.cardano.ledger.EvaluatorMode
 import scalus.cardano.ledger.ExUnits
@@ -118,13 +116,12 @@ object ScalusEvaluator {
             val tag = redeemer.tag()
             val purpose =
                 when (tag) {
-                    RedeemerTag.valueOf("Spend") -> "spend"
-                    RedeemerTag.valueOf("Mint") -> "mint"
-                    RedeemerTag.valueOf("Cert") -> "certificate"
-                    RedeemerTag.valueOf("Reward") -> "withdrawal"
-                    RedeemerTag.valueOf("Voting") -> "vote"
-                    RedeemerTag.valueOf("Proposing") -> "propose"
-                    else -> throw IllegalStateException("Unknown redeemer tag: $tag")
+                    RedeemerTag.Spend -> "spend"
+                    RedeemerTag.Mint -> "mint"
+                    RedeemerTag.Cert -> "certificate"
+                    RedeemerTag.Reward -> "withdrawal"
+                    RedeemerTag.Voting -> "vote"
+                    RedeemerTag.Proposing -> "propose"
                 }
 
             val validator = Validator(redeemer.index().toInt(), purpose)
