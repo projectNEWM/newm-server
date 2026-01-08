@@ -32,6 +32,7 @@ Authorization: Bearer <jwt_token>
 | **Users** | `/v1/users` | User profile management |
 | **Songs** | `/v1/songs` | Song metadata and management |
 | **Earnings** | `/v1/earnings` | Artist earnings |
+| **Earnings (Admin)** | `/v1/earnings/admin` | Admin earnings management |
 | **Distribution** | `/v1/distribution` | DSP distribution |
 | **Cardano** | `/v1/cardano` | Wallet and blockchain operations |
 | **Collaborations** | `/v1/collaborations` | Artist collaborations |
@@ -104,11 +105,59 @@ Delete a song.
 
 ### Earnings
 
-#### GET `/v1/earnings`
-List earnings for current user.
+#### GET `/v1/earnings/{walletAddress}`
+Get earnings for a wallet address (requires recaptcha verification).
 
-#### POST `/v1/earnings/{id}/claim`
-Claim earnings to wallet.
+#### GET `/v1/earnings/song/{songId}`
+Get earnings by song ID with optional date range filters.
+
+**Query Parameters:**
+| Param | Type | Description |
+|-------|------|-------------|
+| `startDate` | datetime | Filter earnings from this date |
+| `endDate` | datetime | Filter earnings until this date |
+
+#### POST `/v1/earnings`
+Create a claim order for all unclaimed earnings on a wallet.
+
+### Earnings (Admin)
+
+> **Auth:** Requires `AUTH_JWT_ADMIN` (admin-only endpoints)
+
+#### GET `/v1/earnings/admin`
+Fetch all earnings records.
+
+#### POST `/v1/earnings/admin`
+Batch create earnings records.
+
+**Request:** `List<Earning>`
+
+#### DELETE `/v1/earnings/admin`
+Delete earnings by IDs.
+
+**Request:**
+```json
+["uuid1", "uuid2", "uuid3"]
+```
+
+**Response:** `204 No Content`
+
+#### GET `/v1/earnings/admin/{songIdOrIsrc}`
+Get earnings by song ID or ISRC.
+
+**Path Parameters:**
+- `songIdOrIsrc` — UUID or ISRC format (e.g., `IE-LOI-23-01693`)
+
+#### POST `/v1/earnings/admin/{songIdOrIsrc}`
+Create royalty splits for a song.
+
+**Request:**
+```json
+{
+  "usdAmount": 10500000
+}
+```
+> Amount is in 6-decimal format (10.50 USD = 10500000)
 
 ---
 

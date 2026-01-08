@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=NEWM Admin
+Comment=NEWM Administration Tool
+Exec=newm-admin
+Icon=newm-admin
+Type=Application
+Categories=Utility;Development;
+Terminal=false
+StartupWMClass=newm-admin

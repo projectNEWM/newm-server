@@ -202,20 +202,147 @@ padding: 24px;
 
 ## Icons
 
-### Style
-- Outline/stroke style (not filled)
-- 16-20px size for UI elements
-- Muted color (#71717a) by default
-- White on hover/active
+### Using Icons from gpui-component
 
-### Common Icons
-- Back arrow: ← (in circle)
-- Add/Plus: +
-- Delete: Trash
-- Edit: Pencil
-- Menu: Three vertical dots
-- Upload: Cloud with arrow
-- Drag handle: Six dots (⋮⋮)
+The `gpui-component` library provides a curated set of icons via the `IconName` enum. 
+
+**Full documentation:** https://longbridge.github.io/gpui-component/docs/components/icon
+
+#### Basic Usage
+
+```rust
+use gpui_component::icon::{Icon, IconName};
+
+// In your element tree
+Icon::new(IconName::Search).size(px(16.0))
+
+// With custom color
+Icon::new(IconName::Check)
+    .size(px(16.0))
+    .text_color(colors::success())
+
+// In a button
+Button::new("my-button")
+    .icon(Icon::new(IconName::Plus).size(px(16.0)))
+    .label("Add Item")
+```
+
+#### Available IconName Variants
+
+| Category | Icons |
+|----------|-------|
+| **Navigation** | `ArrowUp`, `ArrowDown`, `ArrowLeft`, `ArrowRight`, `ChevronUp`, `ChevronDown`, `ChevronLeft`, `ChevronRight`, `ChevronsUpDown` |
+| **Actions** | `Check`, `Close`, `Plus`, `Minus`, `Copy`, `Delete`, `Search`, `Replace`, `Maximize`, `Minimize`, `WindowRestore` |
+| **Files & Folders** | `File`, `Folder`, `FolderOpen`, `FolderClosed`, `BookOpen`, `Inbox` |
+| **UI Elements** | `Menu`, `Settings`, `Settings2`, `Ellipsis`, `EllipsisVertical`, `Eye`, `EyeOff`, `Bell`, `Info` |
+| **Social & External** | `GitHub`, `Globe`, `ExternalLink`, `Heart`, `HeartOff`, `Star`, `StarOff`, `ThumbsUp`, `ThumbsDown` |
+| **Status & Alerts** | `CircleCheck`, `CircleX`, `TriangleAlert`, `Loader`, `LoaderCircle` |
+| **Panels & Layout** | `PanelLeft`, `PanelRight`, `PanelBottom`, `PanelLeftOpen`, `PanelRightOpen`, `PanelBottomOpen`, `LayoutDashboard`, `Frame` |
+| **Users & Profile** | `User`, `CircleUser`, `Bot` |
+| **Other** | `Calendar`, `Map`, `Palette`, `Inspector`, `Sun`, `Moon`, `Building2`, `ChartPie`, `Undo` |
+
+#### Icon Sizes
+
+```rust
+Icon::new(IconName::Search).xsmall()     // size_3 (12px)
+Icon::new(IconName::Search).small()      // size_3p5 (14px)
+Icon::new(IconName::Search).medium()     // size_4 (16px) - default
+Icon::new(IconName::Search).large()      // size_6 (24px)
+Icon::new(IconName::Search).size(px(20.0)) // custom size
+```
+
+---
+
+### Custom SVG Icons
+
+When a suitable icon is not available in `IconName`, you can create custom SVG icons.
+
+#### Step 1: Create the SVG file
+
+Place your SVG file in the `assets/` folder:
+```
+newm-admin/assets/
+├── NEWM_Logo.png
+├── NEWM_Logo.svg
+├── refresh.svg      ← Custom icon
+└── upload.svg       ← Custom icon
+```
+
+**SVG Requirements:**
+- Monochrome (single color)
+- Use `currentColor` for fill/stroke to inherit text color
+- 24×24 viewBox recommended
+- Outline/stroke style (not filled) for consistency
+
+**Example SVG (`refresh.svg`):**
+```xml
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" 
+     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" 
+     stroke-linejoin="round">
+  <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+  <path d="M21 3v5h-5"/>
+  <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+  <path d="M3 21v-5h5"/>
+</svg>
+```
+
+#### Step 2: Use the SVG in code
+
+```rust
+use gpui::{img, Arc, Image, ImageFormat};
+
+// Include the SVG bytes at compile time
+const REFRESH_SVG: &[u8] = include_bytes!("../assets/refresh.svg");
+const UPLOAD_SVG: &[u8] = include_bytes!("../assets/upload.svg");
+
+// Render as an image element
+img(Arc::new(Image::from_bytes(ImageFormat::Svg, REFRESH_SVG.to_vec())))
+    .size(px(16.0))
+
+// In a button
+Button::new("refresh-btn")
+    .child(
+        img(Arc::new(Image::from_bytes(ImageFormat::Svg, REFRESH_SVG.to_vec())))
+            .size(px(16.0))
+    )
+    .tooltip("Refresh")
+    .ghost()
+```
+
+#### Icon Sources
+
+For finding SVG icons:
+- [Lucide Icons](https://lucide.dev/) - The icon set used by gpui-component
+- [Heroicons](https://heroicons.com/) - Tailwind's icon set
+- [Feather Icons](https://feathericons.com/) - Simple, clean icons
+
+### Style Guidelines
+
+- **Size**: 16-20px for UI elements
+- **Default color**: `#71717a` (muted)
+- **Hover/Active color**: `#ffffff` (white)
+- **Success**: `#22c55e` (green)
+- **Error**: `#ef4444` (red)
+
+### Common Icon Mappings
+
+| Action | Icon |
+|--------|------|
+| Back | `ArrowLeft` |
+| Add/Create | `Plus` |
+| Delete | `Close` or `Delete` |
+| Edit | Custom pencil SVG |
+| Menu | `EllipsisVertical` |
+| Upload | Custom SVG (`assets/upload.svg`) - not in library |
+| Refresh | Custom SVG (`assets/refresh.svg`) - not in library |
+| Search | `Search` |
+| Settings | `Settings` |
+| Success | `Check` or `CircleCheck` |
+| Error | `Close` or `CircleX` |
+| Warning | `TriangleAlert` |
+| Info | `Info` |
+
+> **Note:** Some common icons like `Upload`, `Refresh`, and `Trash` are not available in the current gpui-component version. For these, use custom SVGs from Lucide or similar icon sets.
 
 ---
 

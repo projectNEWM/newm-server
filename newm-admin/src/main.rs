@@ -1,7 +1,11 @@
 mod app;
 mod auth;
 mod colors;
+mod csv_import;
+mod earnings;
 mod jwt;
+mod session;
+mod toast;
 mod views;
 
 use gpui::*;
@@ -36,7 +40,7 @@ fn main() {
                 WindowOptions {
                     window_bounds: Some(WindowBounds::Windowed(Bounds::new(
                         point(px(100.0), px(100.0)),
-                        size(px(1600.0), px(1200.0)),
+                        size(px(1920.0), px(1080.0)),
                     ))),
                     titlebar: Some(TitlebarOptions {
                         title: Some(format!("NEWM Admin v{}", env!("CARGO_PKG_VERSION")).into()),

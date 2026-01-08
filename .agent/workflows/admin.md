@@ -56,18 +56,24 @@ cd newm-admin && cargo run
 cd newm-admin && cargo build --release
 ```
 
+### Format Code Check
+// turbo
+```bash
+cd newm-admin && cargo fmt --all -- --check
+```
+
 ### Format Code
 
 // turbo
 ```bash
-cd newm-admin && cargo fmt
+cd newm-admin && cargo fmt --all
 ```
 
 ### Lint
 
 // turbo
 ```bash
-cd newm-admin && cargo clippy
+cd newm-admin && cargo clippy --all-targets --all-features -- -D warnings
 ```
 
 ---

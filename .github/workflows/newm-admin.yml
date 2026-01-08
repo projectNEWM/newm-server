@@ -4,8 +4,13 @@ on:
   push:
     paths:
       - 'newm-admin/**'
+    tags:
+      - 'v*'
+  pull_request:
+    paths:
+      - 'newm-admin/**'
 
-name: Validate
+name: NEWM Admin CI
 
 jobs:
   build:
@@ -14,7 +19,7 @@ jobs:
       fail-fast: false
       matrix:
         job:
-          - { os: ubuntu-22.04, label: ubuntu22, target: x86_64-unknown-linux-gnu }
+          - { os: ubuntu-24.04, label: ubuntu24, target: x86_64-unknown-linux-gnu }
           - { os: macos-latest, label: macos, target: aarch64-apple-darwin }
           - { os: windows-latest, label: windows, target: x86_64-pc-windows-msvc }
         rust: [ nightly ]
@@ -39,7 +44,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libxkbcommon-x11-dev libxkbcommon-dev libwayland-dev
+          sudo apt-get install -y libxkbcommon-x11-dev libxkbcommon-dev libwayland-dev libfuse2
 
       - name: Run cargo check
         if: ${{ matrix.job.target == 'x86_64-unknown-linux-gnu' }}
@@ -58,7 +63,7 @@ jobs:
       - name: Build Release
         run: cargo build --release --target ${{ matrix.job.target }} --locked
 
-      - name: Package
+      - name: Package (basic archive)
         id: package
         shell: bash
         run: |
@@ -79,18 +84,181 @@ jobs:
 
           echo "PKG_NAME=${PKG_NAME}" >> $GITHUB_OUTPUT
           echo "PKG_PATH=${PKG_NAME}" >> $GITHUB_OUTPUT
+          echo "PROJECT_VERSION=${PROJECT_VERSION}" >> $GITHUB_OUTPUT
 
-      - name: Upload Artifacts
+      - name: Upload Artifacts (basic archive)
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.package.outputs.PKG_NAME }}
-          path: ${{ steps.package.outputs.PKG_PATH }}
+          path: newm-admin/${{ steps.package.outputs.PKG_PATH }}
 
-      - name: Release
-        uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/v')
+  # Platform-specific packaging only runs on tagged releases
+  package-macos:
+    name: Package macOS DMG
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: macos-latest
+
+    defaults:
+      run:
+        working-directory: newm-admin
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Install nightly toolchain
+        uses: dtolnay/rust-toolchain@stable
         with:
-          prerelease: "${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') || contains(github.ref, 'rc') }}"
-          files: ${{ steps.package.outputs.PKG_PATH }}
+          toolchain: nightly
+
+      - name: Install create-dmg
+        run: brew install create-dmg
+
+      - name: Build Release
+        run: cargo build --release --target aarch64-apple-darwin --locked
+
+      - name: Get version
+        id: version
+        run: |
+          VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n1)
+          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Create DMG
+        run: |
+          chmod +x packaging/macos/bundle.sh
+          packaging/macos/bundle.sh ${{ steps.version.outputs.VERSION }} aarch64-apple-darwin
+
+      - name: Upload DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: NEWM-Admin-${{ steps.version.outputs.VERSION }}-macos.dmg
+          path: newm-admin/target/aarch64-apple-darwin/release/NEWM-Admin-${{ steps.version.outputs.VERSION }}-macos.dmg
+
+  package-linux:
+    name: Package Linux AppImage
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-22.04
+
+    defaults:
+      run:
+        working-directory: newm-admin
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Install nightly toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libxkbcommon-x11-dev libxkbcommon-dev libwayland-dev libfuse2
+
+      - name: Build Release
+        run: cargo build --release --target x86_64-unknown-linux-gnu --locked
+
+      - name: Get version
+        id: version
+        run: |
+          VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n1)
+          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Create AppImage
+        run: |
+          chmod +x packaging/linux/build-appimage.sh
+          packaging/linux/build-appimage.sh ${{ steps.version.outputs.VERSION }} x86_64-unknown-linux-gnu
+
+      - name: Upload AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: NEWM-Admin-${{ steps.version.outputs.VERSION }}-x86_64.AppImage
+          path: newm-admin/target/x86_64-unknown-linux-gnu/release/NEWM-Admin-${{ steps.version.outputs.VERSION }}-x86_64.AppImage
+
+  package-windows:
+    name: Package Windows MSI
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: windows-latest
+
+    defaults:
+      run:
+        working-directory: newm-admin
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Install nightly toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly
+
+      - name: Install WiX Toolset
+        run: |
+          dotnet tool install --global wix
+          cargo install cargo-wix
+
+      - name: Build Release
+        run: cargo build --release --target x86_64-pc-windows-msvc --locked
+
+      - name: Get version
+        id: version
+        shell: bash
+        run: |
+          VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n1)
+          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Initialize and Build MSI
+        run: |
+          cargo wix init --force
+          cargo wix --nocapture --target x86_64-pc-windows-msvc
+
+      - name: Upload MSI
+        uses: actions/upload-artifact@v4
+        with:
+          name: NEWM-Admin-${{ steps.version.outputs.VERSION }}-windows.msi
+          path: newm-admin/target/wix/*.msi
+
+  # Release job uploads all packaged artifacts to GitHub Releases
+  release:
+    name: Create Release
+    needs: [package-macos, package-linux, package-windows]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Get version
+        id: version
+        run: |
+          VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' newm-admin/Cargo.toml | head -n1)
+          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: List artifacts
+        run: find artifacts -type f
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: NEWM Admin v${{ steps.version.outputs.VERSION }}
+          prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') || contains(github.ref, 'rc') }}
+          files: |
+            artifacts/**/*.dmg
+            artifacts/**/*.AppImage
+            artifacts/**/*.msi
+            artifacts/**/*.tar.gz
+            artifacts/**/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

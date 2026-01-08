@@ -18,6 +18,30 @@ pub struct JwtClaims {
     /// User ID (subject)
     #[allow(dead_code)]
     pub sub: Option<String>,
+    /// Expiration timestamp (seconds since epoch)
+    pub exp: Option<i64>,
+}
+
+/// Check if a token is expired
+#[allow(dead_code)]
+pub fn is_expired(token: &str) -> bool {
+    expires_in_secs(token).is_none_or(|secs| secs <= 0)
+}
+
+/// Check if a token expires within the given buffer (in seconds)
+pub fn expires_soon(token: &str, buffer_secs: i64) -> bool {
+    expires_in_secs(token).is_none_or(|secs| secs <= buffer_secs)
+}
+
+/// Get seconds until token expires (negative if already expired)
+fn expires_in_secs(token: &str) -> Option<i64> {
+    let claims = parse_claims(token).ok()?;
+    let exp = claims.exp?;
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .ok()?
+        .as_secs() as i64;
+    Some(exp - now)
 }
 
 /// Parse claims from a JWT token without signature verification.
