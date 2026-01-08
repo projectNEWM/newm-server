@@ -344,6 +344,12 @@ class EarningsRepositoryImpl(
             ClaimOrderEntity.findById(claimOrderId)?.toModel()
         }
 
+    override suspend fun deleteByIds(earningsIds: List<UUID>) {
+        transaction {
+            EarningEntity.find { EarningsTable.id inList earningsIds }.forEach { it.delete() }
+        }
+    }
+
     private fun monitor(claimOrder: ClaimOrder) {
         val jobKey = JobKey("monitorClaimOrder_${claimOrder.id}", "earnings")
         if (schedulerDaemon.jobExists(jobKey)) {

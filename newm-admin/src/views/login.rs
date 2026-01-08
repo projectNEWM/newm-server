@@ -10,7 +10,7 @@ use crate::auth::{AuthClient, AuthError, Environment};
 use crate::colors;
 
 // Embed the NEWM logo at compile time
-const LOGO_BYTES: &[u8] = include_bytes!("../NEWM_Logo.png");
+const LOGO_BYTES: &[u8] = include_bytes!("../../assets/NEWM_Logo.png");
 
 // Custom gradient button component using GPUI's native linear_gradient
 fn gradient_button(
@@ -135,13 +135,12 @@ impl LoginView {
                                 "Login successful! Access token: {}...",
                                 &response.access_token[..20.min(response.access_token.len())]
                             );
-                            tracing::info!(
-                                "Refresh token: {}...",
-                                &response.refresh_token[..20.min(response.refresh_token.len())]
-                            );
                             view.login_status = LoginStatus::Success;
-                            // Emit event to switch to dashboard
-                            cx.emit(LoginSuccessEvent);
+                            // Emit event with tokens and environment for session creation
+                            cx.emit(LoginSuccessEvent {
+                                login_response: response,
+                                environment,
+                            });
                         }
                         Err(AuthError::Http {
                             status: 401,

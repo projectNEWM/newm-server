@@ -25,6 +25,7 @@ import io.newm.server.ktx.songId
 import io.newm.server.recaptcha.repo.RecaptchaRepository
 import io.newm.server.typealiases.SongId
 import io.newm.shared.koin.inject
+import io.newm.shared.ktx.delete
 import io.newm.shared.ktx.get
 import io.newm.shared.ktx.post
 import io.newm.shared.ktx.toLocalDateTime
@@ -90,6 +91,12 @@ fun Routing.createEarningsRoutes() {
                 val royaltyRequest: AddSongRoyaltyRequest = receive()
                 earningsRepository.addRoyaltySplits(resolvedSongId, royaltyRequest)
                 respond(HttpStatusCode.Created)
+            }
+            // Delete earning records by IDs
+            delete {
+                val earningIds = receive<List<UUID>>()
+                earningsRepository.deleteByIds(earningIds)
+                respond(HttpStatusCode.NoContent)
             }
         }
     }

@@ -83,4 +83,9 @@ interface EarningsRepository {
      * Get a claim order by id
      */
     suspend fun getByClaimOrderId(claimOrderId: UUID): ClaimOrder?
+
+    /**
+     * Delete earnings by their IDs (admin only)
+     */
+    suspend fun deleteByIds(earningsIds: List<UUID>)
 }
