@@ -213,16 +213,16 @@ jobs:
           VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n1)
           echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
 
-      - name: Initialize and Build MSI
+      - name: Build MSI
+        shell: pwsh
         run: |
-          cargo wix init --force
-          cargo wix --nocapture --target x86_64-pc-windows-msvc
+          ./packaging/windows/build-msi.ps1 -Version "${{ steps.version.outputs.VERSION }}" -Target "x86_64-pc-windows-msvc"
 
       - name: Upload MSI
         uses: actions/upload-artifact@v4
         with:
           name: NEWM-Admin-${{ steps.version.outputs.VERSION }}-windows.msi
-          path: newm-admin/target/wix/*.msi
+          path: newm-admin/target/x86_64-pc-windows-msvc/release/NEWM-Admin-${{ steps.version.outputs.VERSION }}-windows.msi
 
   # Release job uploads all packaged artifacts to GitHub Releases
   release:

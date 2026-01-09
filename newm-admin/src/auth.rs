@@ -6,6 +6,7 @@
 //! Uses async reqwest with async-compat for Tokio compatibility
 //! within GPUI's async executor.
 
+use crate::http_client;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -133,7 +134,7 @@ impl AuthClient {
     /// Create a new authentication client
     pub fn new() -> Self {
         Self {
-            client: Client::new(),
+            client: http_client::new_client(),
         }
     }
 
