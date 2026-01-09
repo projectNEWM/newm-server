@@ -6,6 +6,7 @@ use async_compat::Compat;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
+use crate::http_client;
 use crate::session::{Session, SessionError};
 
 /// Request to add royalties to a song
@@ -81,7 +82,7 @@ impl EarningsClient {
     /// Create a new earnings client
     pub fn new() -> Self {
         Self {
-            client: Client::new(),
+            client: http_client::new_client(),
         }
     }
 

@@ -5,10 +5,10 @@
 
 use async_compat::Compat;
 use gpui::*;
-use reqwest::Client;
 use std::sync::{Arc, Mutex};
 
 use crate::auth::{Environment, LoginResponse};
+use crate::http_client;
 use crate::jwt;
 
 /// Session state containing authentication tokens
@@ -82,7 +82,7 @@ impl Session {
         tracing::info!("Access token expires soon, refreshing...");
 
         // Need to refresh - use the refresh token
-        let client = Client::new();
+        let client = http_client::new_client();
         let url = self.environment.refresh_url();
 
         let response = Compat::new(async {

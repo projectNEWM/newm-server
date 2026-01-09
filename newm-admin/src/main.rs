@@ -3,6 +3,7 @@ mod auth;
 mod colors;
 mod csv_import;
 mod earnings;
+mod http_client;
 mod jwt;
 mod session;
 mod toast;
