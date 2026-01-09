@@ -34,6 +34,8 @@ dependencies {
 
     implementation(Dependencies.ApacheCommonsNumbers.FRACTION)
 
+    implementation(Dependencies.Scalus.CARDANO_LEDGER)
+
     testImplementation(platform(Dependencies.JUnit.BOM))
     testImplementation(Dependencies.JUnit.JUPITER_API)
     testImplementation(Dependencies.JUnit.JUPITER_PARAMS)
