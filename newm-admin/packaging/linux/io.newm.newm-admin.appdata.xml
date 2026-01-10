@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  AppStream metadata for NEWM Admin.
+  AppImage tooling may validate this with appstreamcli; keep it well-formed.
+-->
+<component type="desktop-application">
+  <id>io.newm.newm-admin</id>
+  <name>NEWM Admin</name>
+  <summary>NEWM Administration Tool</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>Apache-2.0</project_license>
+
+  <developer id="io.newm">
+    <name>NEWM</name>
+  </developer>
+
+  <url type="homepage">https://github.com/projectNEWM/newm-server</url>
+
+  <launchable type="desktop-id">io.newm.newm-admin.desktop</launchable>
+
+  <categories>
+    <category>Utility</category>
+    <category>Development</category>
+  </categories>
+
+  <description>
+    <p>NEWM Admin is a desktop application for administering NEWM Server, including authentication and earnings management workflows.</p>
+  </description>
+
+  <content_rating type="oars-1.1" />
+
+  <icon type="stock">io.newm.newm-admin</icon>
+</component>

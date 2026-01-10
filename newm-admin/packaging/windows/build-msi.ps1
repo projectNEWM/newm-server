@@ -14,7 +14,7 @@ $ProjectDir = Split-Path -Parent (Split-Path -Parent $ScriptDir)
 $BuildDir = Join-Path $ProjectDir "target\$Target\release"
 $MsiName = "NEWM-Admin-$Version-windows.msi"
 
-Write-Host "Creating Windows MSI installer..."
+Write-Host "Creating Windows MSI installer for version $Version..."
 
 # Check if cargo-wix is installed
 $cargoWix = Get-Command cargo-wix -ErrorAction SilentlyContinue
@@ -23,19 +23,17 @@ if (-not $cargoWix) {
     cargo install cargo-wix
 }
 
-# Initialize WiX if not already done
-$wixDir = Join-Path $ProjectDir "wix"
-if (-not (Test-Path $wixDir)) {
-    Write-Host "Initializing WiX configuration..."
-    Push-Location $ProjectDir
-    cargo wix init
-    Pop-Location
+# Verify main.wxs exists (we use custom WiX config, not cargo wix init)
+$wixFile = Join-Path $ProjectDir "packaging\windows\main.wxs"
+if (-not (Test-Path $wixFile)) {
+    Write-Error "WiX source file not found: $wixFile"
+    exit 1
 }
 
-# Build MSI
+# Build MSI with version parameter
 Write-Host "Building MSI..."
 Push-Location $ProjectDir
-cargo wix --nocapture --target $Target --output "$BuildDir\$MsiName"
+cargo wix --nocapture --target $Target --output "$BuildDir\$MsiName" --input "$wixFile" -D "Version=$Version"
 Pop-Location
 
 Write-Host "MSI created at: $BuildDir\$MsiName"

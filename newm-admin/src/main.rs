@@ -39,6 +39,7 @@ fn main() {
         cx.spawn(async move |cx| {
             cx.open_window(
                 WindowOptions {
+                    app_id: Some("io.newm.newm-admin".to_string()),
                     window_bounds: Some(WindowBounds::Windowed(Bounds::new(
                         point(px(100.0), px(100.0)),
                         size(px(1920.0), px(1080.0)),

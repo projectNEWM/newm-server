@@ -1,16 +1,16 @@
-# Based on https://github.com/actions-rs/meta/blob/master/recipes/quickstart.md
+# CI workflow for NEWM Admin - runs on pull requests
+# For releases, see newm-admin-release.yml
 
 on:
-  push:
-    paths:
-      - 'newm-admin/**'
-    tags:
-      - 'v*'
   pull_request:
     paths:
       - 'newm-admin/**'
 
 name: NEWM Admin CI
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -22,7 +22,7 @@ jobs:
           - { os: ubuntu-24.04, label: ubuntu24, target: x86_64-unknown-linux-gnu }
           - { os: macos-latest, label: macos, target: aarch64-apple-darwin }
           - { os: windows-latest, label: windows, target: x86_64-pc-windows-msvc }
-        rust: [ nightly ]
+        rust: [ stable ]
 
     runs-on: ${{ matrix.job.os }}
 
@@ -34,11 +34,16 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v4
 
-      - name: Install nightly toolchain
+      - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: nightly
+          toolchain: stable
           components: rustfmt, clippy
+
+      - name: Setup Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "newm-admin -> target"
 
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
@@ -62,203 +67,3 @@ jobs:
 
       - name: Build Release
         run: cargo build --release --target ${{ matrix.job.target }} --locked
-
-      - name: Package (basic archive)
-        id: package
-        shell: bash
-        run: |
-          PROJECT_NAME=$(sed -n 's/^name = "\(.*\)"/\1/p' Cargo.toml)
-          PROJECT_VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n1)
-          if [[ "${{ matrix.job.target }}" == *-pc-windows-* ]]; then
-            PKG_SUFFIX=".zip"
-          else
-            PKG_SUFFIX=".tar.gz"
-          fi
-          PKG_NAME=${PROJECT_NAME}-${PROJECT_VERSION}-${{ matrix.job.label }}-${{ matrix.job.target }}${PKG_SUFFIX}
-          
-          if [[ "${{ matrix.job.target }}" == *-pc-windows-* ]]; then
-            7z -y a "${PKG_NAME}" ./target/${{matrix.job.target}}/release/newm-admin.exe | tail -2
-          else
-            tar -C target/${{matrix.job.target}}/release -czf "${PKG_NAME}" newm-admin
-          fi
-
-          echo "PKG_NAME=${PKG_NAME}" >> $GITHUB_OUTPUT
-          echo "PKG_PATH=${PKG_NAME}" >> $GITHUB_OUTPUT
-          echo "PROJECT_VERSION=${PROJECT_VERSION}" >> $GITHUB_OUTPUT
-
-      - name: Upload Artifacts (basic archive)
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ steps.package.outputs.PKG_NAME }}
-          path: newm-admin/${{ steps.package.outputs.PKG_PATH }}
-
-  # Platform-specific packaging only runs on tagged releases
-  package-macos:
-    name: Package macOS DMG
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: macos-latest
-
-    defaults:
-      run:
-        working-directory: newm-admin
-
-    steps:
-      - name: Checkout sources
-        uses: actions/checkout@v4
-
-      - name: Install nightly toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: nightly
-
-      - name: Install create-dmg
-        run: brew install create-dmg
-
-      - name: Build Release
-        run: cargo build --release --target aarch64-apple-darwin --locked
-
-      - name: Get version
-        id: version
-        run: |
-          VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n1)
-          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
-
-      - name: Create DMG
-        run: |
-          chmod +x packaging/macos/bundle.sh
-          packaging/macos/bundle.sh ${{ steps.version.outputs.VERSION }} aarch64-apple-darwin
-
-      - name: Upload DMG
-        uses: actions/upload-artifact@v4
-        with:
-          name: NEWM-Admin-${{ steps.version.outputs.VERSION }}-macos.dmg
-          path: newm-admin/target/aarch64-apple-darwin/release/NEWM-Admin-${{ steps.version.outputs.VERSION }}-macos.dmg
-
-  package-linux:
-    name: Package Linux AppImage
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-22.04
-
-    defaults:
-      run:
-        working-directory: newm-admin
-
-    steps:
-      - name: Checkout sources
-        uses: actions/checkout@v4
-
-      - name: Install nightly toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: nightly
-
-      - name: Install Linux dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libxkbcommon-x11-dev libxkbcommon-dev libwayland-dev libfuse2
-
-      - name: Build Release
-        run: cargo build --release --target x86_64-unknown-linux-gnu --locked
-
-      - name: Get version
-        id: version
-        run: |
-          VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n1)
-          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
-
-      - name: Create AppImage
-        run: |
-          chmod +x packaging/linux/build-appimage.sh
-          packaging/linux/build-appimage.sh ${{ steps.version.outputs.VERSION }} x86_64-unknown-linux-gnu
-
-      - name: Upload AppImage
-        uses: actions/upload-artifact@v4
-        with:
-          name: NEWM-Admin-${{ steps.version.outputs.VERSION }}-x86_64.AppImage
-          path: newm-admin/target/x86_64-unknown-linux-gnu/release/NEWM-Admin-${{ steps.version.outputs.VERSION }}-x86_64.AppImage
-
-  package-windows:
-    name: Package Windows MSI
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: windows-latest
-
-    defaults:
-      run:
-        working-directory: newm-admin
-
-    steps:
-      - name: Checkout sources
-        uses: actions/checkout@v4
-
-      - name: Install nightly toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: nightly
-
-      - name: Install WiX Toolset
-        run: |
-          dotnet tool install --global wix
-          cargo install cargo-wix
-
-      - name: Build Release
-        run: cargo build --release --target x86_64-pc-windows-msvc --locked
-
-      - name: Get version
-        id: version
-        shell: bash
-        run: |
-          VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n1)
-          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
-
-      - name: Build MSI
-        shell: pwsh
-        run: |
-          ./packaging/windows/build-msi.ps1 -Version "${{ steps.version.outputs.VERSION }}" -Target "x86_64-pc-windows-msvc"
-
-      - name: Upload MSI
-        uses: actions/upload-artifact@v4
-        with:
-          name: NEWM-Admin-${{ steps.version.outputs.VERSION }}-windows.msi
-          path: newm-admin/target/x86_64-pc-windows-msvc/release/NEWM-Admin-${{ steps.version.outputs.VERSION }}-windows.msi
-
-  # Release job uploads all packaged artifacts to GitHub Releases
-  release:
-    name: Create Release
-    needs: [package-macos, package-linux, package-windows]
-    if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout sources
-        uses: actions/checkout@v4
-
-      - name: Get version
-        id: version
-        run: |
-          VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' newm-admin/Cargo.toml | head -n1)
-          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
-
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-
-      - name: List artifacts
-        run: find artifacts -type f
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          name: NEWM Admin v${{ steps.version.outputs.VERSION }}
-          prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') || contains(github.ref, 'rc') }}
-          files: |
-            artifacts/**/*.dmg
-            artifacts/**/*.AppImage
-            artifacts/**/*.msi
-            artifacts/**/*.tar.gz
-            artifacts/**/*.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

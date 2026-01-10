@@ -1,0 +1,129 @@
+<?xml version='1.0' encoding='windows-1252'?>
+<!--
+  NEWM Admin WiX Installer Source
+  
+  This file configures the Windows MSI installer with:
+  - Application installation to Program Files
+  - Start Menu shortcut with folder
+  - Desktop shortcut
+  - Proper cleanup on uninstall
+-->
+<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
+  
+  <Product
+    Id='*'
+    Name='NEWM Admin'
+    UpgradeCode='A7D84F2E-9B3C-4E5F-8A1B-2C6D7E8F9A0B'
+    Manufacturer='NEWM'
+    Language='1033'
+    Codepage='1252'
+    Version='$(var.Version)'>
+
+    <Package Id='*'
+      Keywords='Installer'
+      Description='NEWM Admin Application Installer'
+      Manufacturer='NEWM'
+      InstallerVersion='450'
+      Languages='1033'
+      Compressed='yes'
+      InstallScope='perMachine'
+      SummaryCodepage='1252'/>
+
+    <MajorUpgrade
+      Schedule='afterInstallInitialize'
+      DowngradeErrorMessage='A newer version of [ProductName] is already installed. Setup will now exit.'/>
+
+    <Media Id='1' Cabinet='media1.cab' EmbedCab='yes' DiskPrompt='CD-ROM #1'/>
+    <Property Id='DiskPrompt' Value='NEWM Admin Installation'/>
+
+    <!-- Icon for Add/Remove Programs and shortcuts -->
+    <Icon Id='ProductIcon' SourceFile='assets\icon.ico'/>
+    <Property Id='ARPPRODUCTICON' Value='ProductIcon'/>
+
+    <!-- Directory Structure -->
+    <Directory Id='TARGETDIR' Name='SourceDir'>
+      
+      <!-- Program Files installation directory -->
+      <Directory Id='ProgramFiles64Folder' Name='PFiles'>
+        <Directory Id='APPLICATIONFOLDER' Name='NEWM Admin'>
+          <Component Id='MainExecutable' Guid='*'>
+            <File
+              Id='exe0'
+              Name='newm-admin.exe'
+              DiskId='1'
+              Source='$(var.CargoTargetBinDir)'
+              KeyPath='yes'/>
+          </Component>
+        </Directory>
+      </Directory>
+
+      <!-- Start Menu shortcuts -->
+      <Directory Id='ProgramMenuFolder' Name='Programs'>
+        <Directory Id='ApplicationProgramsFolder' Name='NEWM Admin'>
+          <Component Id='ApplicationShortcut' Guid='E1B2C3D4-5678-9ABC-DEF0-123456789ABC'>
+            <Shortcut Id='ApplicationStartMenuShortcut'
+                      Name='NEWM Admin'
+                      Description='NEWM Admin Application'
+                      Target='[APPLICATIONFOLDER]newm-admin.exe'
+                      WorkingDirectory='APPLICATIONFOLDER'
+                      Icon='ProductIcon'/>
+            <RemoveFolder Id='CleanUpStartMenuShortcut' 
+                          Directory='ApplicationProgramsFolder' 
+                          On='uninstall'/>
+            <RegistryValue Root='HKCU' 
+                           Key='Software\NEWM\Admin' 
+                           Name='StartMenuShortcut' 
+                           Type='integer' 
+                           Value='1' 
+                           KeyPath='yes'/>
+          </Component>
+        </Directory>
+      </Directory>
+
+      <!-- Desktop shortcut -->
+      <Directory Id='DesktopFolder' Name='Desktop'>
+        <Component Id='DesktopShortcut' Guid='F2A3B4C5-6789-0DEF-1234-567890ABCDEF'>
+          <Shortcut Id='ApplicationDesktopShortcut'
+                    Name='NEWM Admin'
+                    Description='NEWM Admin Application'
+                    Target='[APPLICATIONFOLDER]newm-admin.exe'
+                    WorkingDirectory='APPLICATIONFOLDER'
+                    Icon='ProductIcon'/>
+          <RegistryValue Root='HKCU' 
+                         Key='Software\NEWM\Admin' 
+                         Name='DesktopShortcut' 
+                         Type='integer' 
+                         Value='1' 
+                         KeyPath='yes'/>
+        </Component>
+      </Directory>
+
+    </Directory>
+
+    <!-- Features to install -->
+    <Feature
+      Id='MainProgram'
+      Title='NEWM Admin'
+      Description='The complete NEWM Admin application.'
+      Level='1'
+      ConfigurableDirectory='APPLICATIONFOLDER'
+      AllowAdvertise='no'
+      Display='expand'
+      Absent='disallow'>
+      
+      <ComponentRef Id='MainExecutable'/>
+      <ComponentRef Id='ApplicationShortcut'/>
+      <ComponentRef Id='DesktopShortcut'/>
+
+      <Feature
+        Id='Documentation'
+        Title='Documentation'
+        Level='1000'>
+      </Feature>
+    </Feature>
+
+    <!-- UI Configuration - Minimal UI for simple install -->
+    <UIRef Id='WixUI_Minimal'/>
+
+  </Product>
+</Wix>
