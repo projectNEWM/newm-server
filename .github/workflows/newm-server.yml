@@ -1,4 +1,5 @@
-name: ktlint
+# NEWM Server CI - ktlint and tests
+name: NEWM Server CI
 on:
   push:
     branches:
@@ -10,7 +11,8 @@ env:
   KTLINT_SHA256: "a3fd620207d5c40da6ca789b95e7f823c54e854b7fade7f613e91096a3706d75"
 
 jobs:
-  build:
+  ktlint:
+    name: Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -44,7 +46,7 @@ jobs:
           # Install ktlint
           chmod a+x ktlint
           sudo mv ktlint /usr/local/bin/
-      - name: run ktlint
+      - name: Run ktlint
         run: |
           ktlint --reporter=checkstyle,output=build/ktlint-report.xml '**/*.kt*' '!**/generated/**'
         continue-on-error: true
@@ -52,3 +54,16 @@ jobs:
         with:
           report-path: build/*.xml
         continue-on-error: false
+
+  build:
+    name: Test
+    needs: ktlint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+      - name: Run tests
+        run: ./gradlew test -PisGithubActions
