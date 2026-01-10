@@ -23,17 +23,17 @@ if (-not $cargoWix) {
     cargo install cargo-wix
 }
 
-# Verify main.wxs exists (we use custom WiX config, not cargo wix init)
-$wixFile = Join-Path $ProjectDir "packaging\windows\main.wxs"
+# Verify wix/main.wxs exists (cargo-wix expects this default location)
+$wixFile = Join-Path $ProjectDir "wix\main.wxs"
 if (-not (Test-Path $wixFile)) {
     Write-Error "WiX source file not found: $wixFile"
     exit 1
 }
 
-# Build MSI with version parameter
+# Build MSI (version is read from Cargo.toml automatically by cargo-wix)
 Write-Host "Building MSI..."
 Push-Location $ProjectDir
-cargo wix --nocapture --target $Target --output "$BuildDir\$MsiName" --input "$wixFile" -D "Version=$Version"
+cargo wix --nocapture --target $Target --output "$BuildDir\$MsiName"
 Pop-Location
 
 Write-Host "MSI created at: $BuildDir\$MsiName"

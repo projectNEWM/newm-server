@@ -51,7 +51,7 @@
               Id='exe0'
               Name='newm-admin.exe'
               DiskId='1'
-              Source='$(var.CargoTargetBinDir)'
+              Source='$(var.CargoTargetBinDir)\newm-admin.exe'
               KeyPath='yes'/>
           </Component>
         </Directory>
