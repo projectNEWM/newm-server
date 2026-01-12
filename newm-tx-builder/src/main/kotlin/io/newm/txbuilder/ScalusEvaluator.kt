@@ -65,7 +65,7 @@ object ScalusEvaluator {
             costModels,
             EvaluatorMode.EvaluateAndComputeCost,
             false, // debugDumpFilesForTesting
-            false  // logBudgetDifferences
+            false // logBudgetDifferences
         )
 
         val tx = Transaction.fromCbor(cborBytes, ProtocolVersion.conwayPV())
@@ -95,16 +95,22 @@ object ScalusEvaluator {
         }
 
         // Convert to Scala immutable.Map
-        val scalaSeq = scala.jdk.javaapi.CollectionConverters.asScala(tuples).toSeq()
+        val scalaSeq = scala.jdk.javaapi.CollectionConverters
+            .asScala(tuples)
+            .toSeq()
+
         @Suppress("UNCHECKED_CAST")
-        val scalaMap = scala.collection.immutable.Map.from(scalaSeq) as scala.collection.immutable.Map<Any, scala.collection.immutable.IndexedSeq<Any>>
+        val scalaMap = scala.collection.immutable.Map
+            .from(scalaSeq) as scala.collection.immutable.Map<Any, scala.collection.immutable.IndexedSeq<Any>>
 
         return scalus.cardano.ledger.CostModels(scalaMap)
     }
 
     private fun convertCostModelArray(costModel: List<BigInteger>): scala.collection.immutable.IndexedSeq<Long> {
         val longArray = costModel.map { it.toLong() }
-        return scala.jdk.javaapi.CollectionConverters.asScala(longArray).toIndexedSeq()
+        return scala.jdk.javaapi.CollectionConverters
+            .asScala(longArray)
+            .toIndexedSeq()
     }
 
     private fun convertToEvaluateTxResult(evaluatedRedeemers: scala.collection.immutable.Seq<Redeemer>): EvaluateTxResult {
@@ -116,15 +122,16 @@ object ScalusEvaluator {
             val tag = redeemer.tag()
             val purpose =
                 when (tag) {
-                    RedeemerTag.Spend -> "spend"
-                    RedeemerTag.Mint -> "mint"
-                    RedeemerTag.Cert -> "certificate"
-                    RedeemerTag.Reward -> "withdrawal"
-                    RedeemerTag.Voting -> "vote"
-                    RedeemerTag.Proposing -> "propose"
+                    scalus.cardano.ledger.`RedeemerTag$`.Spend -> "spend"
+                    scalus.cardano.ledger.`RedeemerTag$`.Mint -> "mint"
+                    scalus.cardano.ledger.`RedeemerTag$`.Cert -> "certificate"
+                    scalus.cardano.ledger.`RedeemerTag$`.Reward -> "withdrawal"
+                    scalus.cardano.ledger.`RedeemerTag$`.Voting -> "vote"
+                    scalus.cardano.ledger.`RedeemerTag$`.Proposing -> "propose"
+                    else -> throw IllegalStateException("Unknown redeemer tag: $tag")
                 }
 
-            val validator = Validator(redeemer.index().toInt(), purpose)
+            val validator = Validator(redeemer.index(), purpose)
             val executionUnits =
                 ExecutionUnits(
                     memory = BigInteger.valueOf(redeemer.exUnits().memory()),
