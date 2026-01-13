@@ -94,7 +94,7 @@ jobs:
           path: newm-admin/${{ steps.package.outputs.PKG_PATH }}
 
   package-macos:
-    name: Package macOS DMG
+    name: Package macOS DMG (Universal)
     needs: build
     runs-on: macos-latest
 
@@ -110,6 +110,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
 
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2
@@ -119,8 +120,11 @@ jobs:
       - name: Install create-dmg
         run: brew install create-dmg
 
-      - name: Build Release
+      - name: Build ARM64 (Apple Silicon)
         run: cargo build --release --target aarch64-apple-darwin --locked
+
+      - name: Build x86_64 (Intel)
+        run: cargo build --release --target x86_64-apple-darwin --locked
 
       - name: Get version
         id: version
@@ -128,16 +132,82 @@ jobs:
           VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n1)
           echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
 
-      - name: Create DMG
+      - name: Import Code Signing Certificate
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PWD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          # Create a temporary keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security set-keychain-settings -t 3600 -u build.keychain
+          
+          # Decode certificate
+          echo "$MACOS_CERTIFICATE" | base64 --decode > certificate.p12
+          
+          # Debug: Check file size (should be ~4300 bytes based on 5760 base64 chars)
+          echo "Certificate file size:"
+          ls -la certificate.p12
+          
+          # Debug: Verify the p12 file is valid with openssl first
+          echo "Verifying p12 with openssl..."
+          if ! openssl pkcs12 -in certificate.p12 -nokeys -passin pass:"$MACOS_CERTIFICATE_PWD" 2>&1; then
+            echo "ERROR: p12 file appears invalid or password is wrong"
+            echo "Password length: ${#MACOS_CERTIFICATE_PWD}"
+            echo "Expected file size: ~4300 bytes, Actual: $(stat -f%z certificate.p12) bytes"
+            exit 1
+          fi
+          
+          # Import certificate
+          security import certificate.p12 -k build.keychain -P "$MACOS_CERTIFICATE_PWD" -T /usr/bin/codesign -T /usr/bin/security
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
+          
+          # Verify certificate was imported and show what identities are available
+          echo "Available signing identities in keychain:"
+          security find-identity -v -p codesigning build.keychain
+          
+          # Clean up certificate file
+          rm certificate.p12
+          
+          # Also make sure we can find it in the login keychain search list
+          security list-keychains -d user -s build.keychain login.keychain
+
+      - name: Create Universal App Bundle and DMG
+        env:
+          MACOS_SIGNING_IDENTITY: ${{ secrets.MACOS_SIGNING_IDENTITY }}
         run: |
           chmod +x packaging/macos/bundle.sh
           packaging/macos/bundle.sh ${{ steps.version.outputs.VERSION }} aarch64-apple-darwin
+
+      - name: Notarize App
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          DMG_PATH="target/aarch64-apple-darwin/release/NEWM-Admin-${{ steps.version.outputs.VERSION }}-macos.dmg"
+          
+          echo "Submitting DMG for notarization..."
+          xcrun notarytool submit "$DMG_PATH" \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_APP_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            --wait
+          
+          echo "Stapling notarization ticket to DMG..."
+          xcrun stapler staple "$DMG_PATH"
+          
+          echo "Verifying notarization..."
+          xcrun stapler validate "$DMG_PATH"
 
       - name: Upload DMG
         uses: actions/upload-artifact@v4
         with:
           name: NEWM-Admin-${{ steps.version.outputs.VERSION }}-macos.dmg
           path: newm-admin/target/aarch64-apple-darwin/release/NEWM-Admin-${{ steps.version.outputs.VERSION }}-macos.dmg
+
 
   package-linux:
     name: Package Linux AppImage
