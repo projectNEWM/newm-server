@@ -8,5 +8,10 @@ interface ArweaveRepository {
 
     suspend fun getWalletARBalance(): BigDecimal
 
-    suspend fun uploadSongAssets(song: Song)
+    suspend fun checkAndFundTurboBalance()
+
+    suspend fun uploadSongAssets(
+        song: Song,
+        testMode: Boolean = false
+    )
 }

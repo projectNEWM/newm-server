@@ -92,6 +92,7 @@ Available workflows:
 |-------|------------|-------------|
 | **Backend** | Kotlin 2.x on Java 21, Ktor | `newm-server` |
 | **Admin App** | Rust, GPUI | `newm-admin` |
+| **SDK** | Kotlin | `ardrive-turbo-kotlin` |
 | **ORM** | Exposed (Kotlin SQL framework) | Tables in `features/*/database/` |
 | **DI** | Koin | Modules in `*KoinModule.kt` |
 | **Database** | PostgreSQL | Flyway migrations |

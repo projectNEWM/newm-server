@@ -254,7 +254,7 @@ fun String.cborHexToUtxo(): Utxo {
                             utxo {
                                 hash = hashIxArray.elementToHexString(0)
                                 ix = hashIxArray.elementToInt(1).toLong()
-                                value.get(CborInteger.create(0))?.let { addressCborObject ->
+                                value.get(CborInteger.create(0))?.let { addressCborObject: CborObject ->
                                     (addressCborObject as CborByteString).byteArrayValue()[0].let { bytes ->
                                         address =
                                             if (bytes[0] in PAYMENT_ADDRESS_PREFIXES_MAINNET) {
