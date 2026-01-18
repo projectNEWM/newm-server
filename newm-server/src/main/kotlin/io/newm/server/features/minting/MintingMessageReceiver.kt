@@ -315,7 +315,12 @@ class MintingMessageReceiver : SqsMessageReceiver {
                     } else {
                         // Upload 30-second clip, lyrics.txt, streamtokenagreement.pdf, coverArt to arweave and save those URLs
                         // on the Song record
-                        arweaveRepository.uploadSongAssets(song)
+                        val testMode =
+                            !cardanoRepository.isMainnet() && song.title?.contains("[ArweaveTest]", true) == true
+                        if (testMode) {
+                            log.info { "Arweave test mode enabled for song ${song.id}" }
+                        }
+                        arweaveRepository.uploadSongAssets(song, testMode)
 
                         // Done with arweave. Move -> Pending for minting
                         songRepository.updateSongMintingStatus(

@@ -75,6 +75,7 @@ object Dependencies {
         const val CLIENT_AUTH = "io.ktor:ktor-client-auth:$VERSION"
         const val CLIENT_CONTENT_NEGOTIATION = "io.ktor:ktor-client-content-negotiation:$VERSION"
         const val CLIENT_LOGGING = "io.ktor:ktor-client-logging:$VERSION"
+        const val CLIENT_MOCK = "io.ktor:ktor-client-mock:$VERSION"
         const val CLIENT_SERIALIZATION = "io.ktor:ktor-client-serialization:$VERSION"
         const val SERIALIZATION = "io.ktor:ktor-serialization:$VERSION"
         const val SERIALIZATION_JSON = "io.ktor:ktor-serialization-kotlinx-json:$VERSION"
@@ -195,7 +196,7 @@ object Dependencies {
     object BouncyCastle {
         private const val VERSION = Versions.BOUNCY_CASTLE
 
-        const val BCPROV = "org.bouncycastle:bcprov-jdk15on:$VERSION"
+        const val BCPROV = "org.bouncycastle:bcprov-jdk18on:$VERSION"
     }
 
     object I2PCrypto {
@@ -225,21 +226,12 @@ object Dependencies {
         const val SQS = "software.amazon.awssdk:sqs"
         const val KMS = "software.amazon.awssdk:kms"
         const val SECRETS_MANAGER = "software.amazon.awssdk:secretsmanager"
-        const val LAMBDA = "software.amazon.awssdk:lambda"
         const val EC2 = "software.amazon.awssdk:ec2"
         const val IMDS = "software.amazon.awssdk:imds"
     }
 
     object Zensum {
         const val HEALTH_CHECK = "cc.rbbl:ktor-health-check:2.0.0"
-    }
-
-    object Arweave {
-        private const val ARWEAVE4S_VERSION = Versions.ARWEAVE4S
-        private const val SCALA_JAVA8_COMPAT_VERSION = Versions.SCALA_JAVA8_COMPAT
-
-        const val ARWEAVE4S = "co.upvest:arweave4s-core_2.12:$ARWEAVE4S_VERSION"
-        const val SCALA_JAVA8_COMPAT = "org.scala-lang.modules:scala-java8-compat_2.12:$SCALA_JAVA8_COMPAT_VERSION"
     }
 
     object JUnit {

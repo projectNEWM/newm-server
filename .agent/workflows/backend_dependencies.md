@@ -18,7 +18,7 @@ Uses Gradle's dependency updates plugin to check for available updates, research
 
 // turbo
 ```bash
-./gradlew dependencyUpdates --no-parallel --no-configuration-cache
+./gradlew dependencyUpdates -Drevision=release --no-parallel --no-configuration-cache
 ```
 
 This outputs a report showing:

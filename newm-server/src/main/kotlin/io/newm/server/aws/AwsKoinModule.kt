@@ -7,7 +7,6 @@ import org.koin.dsl.module
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.ec2.Ec2Client
 import software.amazon.awssdk.services.kms.KmsAsyncClient
-import software.amazon.awssdk.services.lambda.LambdaAsyncClient
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.presigner.S3Presigner
@@ -55,13 +54,6 @@ val awsKoinModule =
 
         single<SecretsManagerAsyncClient> {
             SecretsManagerAsyncClient
-                .builder()
-                .region(get<Region>(AWS_REGION))
-                .build()
-        }
-
-        single<LambdaAsyncClient> {
-            LambdaAsyncClient
                 .builder()
                 .region(get<Region>(AWS_REGION))
                 .build()

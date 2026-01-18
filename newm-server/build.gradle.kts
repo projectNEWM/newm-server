@@ -34,6 +34,7 @@ dependencies {
     implementation(project(":newm-chain-grpc"))
     implementation(project(":newm-chain-util"))
     implementation(project(":newm-tx-builder"))
+    implementation(project(":ardrive-turbo-kotlin"))
     implementation(Dependencies.Newm.KOGMIOS)
 
     compileOnly(Dependencies.Kotlin.REFLECTION)
@@ -59,6 +60,7 @@ dependencies {
     implementation(Dependencies.Ktor.CLIENT_AUTH)
     implementation(Dependencies.Ktor.CLIENT_CONTENT_NEGOTIATION)
     implementation(Dependencies.Ktor.CLIENT_SERIALIZATION)
+    implementation(Dependencies.Ktor.CLIENT_LOGGING)
     implementation(Dependencies.Ktor.SERIALIZATION)
     implementation(Dependencies.Ktor.SERIALIZATION_JSON)
     implementation(Dependencies.Ktor.SERVER_STATUS_PAGES)
@@ -104,13 +106,9 @@ dependencies {
     implementation(Dependencies.Aws.SQS)
     implementation(Dependencies.Aws.KMS)
     implementation(Dependencies.Aws.SECRETS_MANAGER)
-    implementation(Dependencies.Aws.LAMBDA)
     implementation(Dependencies.Aws.CLOUDFRONT)
     implementation(Dependencies.Aws.EC2)
     implementation(Dependencies.Aws.IMDS)
-
-    implementation(Dependencies.Arweave.ARWEAVE4S)
-    implementation(Dependencies.Arweave.SCALA_JAVA8_COMPAT)
 
     implementation(Dependencies.ApacheTika.CORE)
     implementation(Dependencies.JAudioTagger.ALL)

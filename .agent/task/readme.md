@@ -107,6 +107,7 @@ Any unresolved decisions.
 | Domain | Plan | Status | Date |
 |--------|------|--------|------|
 | admin | [newm-admin.md](admin/newm-admin.md) — NEWM Admin Desktop App | 🚧 In Progress | 2026-01-07 |
+| arweave | [ardrive-turbo-kotlin.md](arweave/ardrive-turbo-kotlin.md) — ArDrive Turbo Kotlin SDK | 🚧 In Progress | 2026-01-19 |
 
 ---
 
