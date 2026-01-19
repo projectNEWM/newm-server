@@ -43,6 +43,7 @@ object Versions {
     const val QR_CODE_KOTLIN = "4.5.0"
     const val QUARTZ = "2.5.2"
     const val SCALA_JAVA8_COMPAT = "1.0.2"
+    const val SCALUS = "0.14.1"
     const val SENTRY = "8.29.0"
     const val SHADOW_PLUGIN = "9.2.1"
     const val SPRING_SECURITY = "6.5.6"

@@ -283,6 +283,12 @@ object Dependencies {
         const val KOGMIOS = "io.newm:kogmios:$VERSION"
     }
 
+    object Scalus {
+        private const val VERSION = Versions.SCALUS
+
+        const val CARDANO_LEDGER = "org.scalus:scalus-cardano-ledger_3:$VERSION"
+    }
+
     object Grpc {
         private const val VERSION = Versions.GRPC
 
