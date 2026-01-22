@@ -114,6 +114,10 @@ class ArweaveRepositoryImpl(
     override suspend fun getWalletARBalance(): BigDecimal = getWalletArBalance()
 
     override suspend fun checkAndFundTurboBalance() {
+        if (Instant.now().toEpochMilli() < nextWalletBalanceCheck) {
+            return
+        }
+        nextWalletBalanceCheck = Instant.now().plus(1, ChronoUnit.HOURS).toEpochMilli()
         val paymentBalance = turboClient.getPaymentBalance()
         val wincBalance = paymentBalance.winc.toBigDecimalOrNull()
             ?: throw IllegalStateException("Unexpected payment balance winc value: ${paymentBalance.winc}")
@@ -136,25 +140,6 @@ class ArweaveRepositoryImpl(
             return
         }
         submitTopUp()
-    }
-
-    private suspend fun checkWalletBalance() {
-        if (Instant.now().toEpochMilli() < nextWalletBalanceCheck) {
-            return
-        }
-        nextWalletBalanceCheck = Instant.now().plus(1, ChronoUnit.HOURS).toEpochMilli()
-        val balance = getWalletArBalance()
-        if (balance < minWalletBalance) {
-            log.warn { "Low Wallet Balance: $balance AR" }
-            with(environment.getConfigChild("arweave.warningEmail")) {
-                emailRepository.send(
-                    to = getString("to"),
-                    subject = getString("subject"),
-                    messageUrl = getString("messageUrl"),
-                    messageArgs = mapOf("balance" to balance)
-                )
-            }
-        }
     }
 
     private suspend fun getWalletArBalance(): BigDecimal {
@@ -217,7 +202,6 @@ class ArweaveRepositoryImpl(
     ) {
         log.info { "Uploading song assets for song: ${song.id}" }
         if (!testMode) {
-            checkWalletBalance()
             checkAndFundTurboBalance()
         }
 
