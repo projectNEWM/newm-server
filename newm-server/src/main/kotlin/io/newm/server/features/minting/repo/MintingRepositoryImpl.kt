@@ -862,7 +862,14 @@ class MintingRepositoryImpl(
                             }
                         )
                         // CIP-68 Version
-                        add(plutusData { int = 1L })
+                        add(plutusData { int = 2L })
+                        // empty extra metadata
+                        add(
+                            plutusData {
+                                constr = 0
+                                list = plutusDataList { }
+                            }
+                        )
                     }
                 }
         }
