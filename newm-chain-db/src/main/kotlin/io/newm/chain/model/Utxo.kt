@@ -1,8 +1,8 @@
 package io.newm.chain.model
 
+import java.math.BigInteger
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
-import java.math.BigInteger
 
 @Serializable
 data class Utxo(
@@ -59,11 +59,17 @@ fun List<Utxo>.toNativeAssetMap(): Map<String, List<NativeAsset>> {
                         val prevAmount = it.amount
                         val mutableList = nativeAssets.toMutableList()
                         mutableList.remove(it)
-                        mutableList.add(NativeAsset(nativeAsset.name, nativeAsset.policy, nativeAsset.amount + prevAmount))
+                        mutableList.add(
+                            NativeAsset(
+                                policy = nativeAsset.policy,
+                                name = nativeAsset.name,
+                                amount = nativeAsset.amount + prevAmount,
+                            )
+                        )
                         mutableList
                     } ?: (nativeAssets + nativeAsset)
                 } ?: listOf(nativeAsset)
-            nativeAssetMap[nativeAsset.policy] = updatedNativeAssets
+            nativeAssetMap[nativeAsset.policy] = updatedNativeAssets.sorted()
         }
     }
 
@@ -80,11 +86,17 @@ fun List<NativeAsset>.toNativeAssetMap(): Map<String, List<NativeAsset>> {
                     val prevAmount = it.amount
                     val mutableList = nativeAssets.toMutableList()
                     mutableList.remove(it)
-                    mutableList.add(NativeAsset(nativeAsset.name, nativeAsset.policy, nativeAsset.amount + prevAmount))
+                    mutableList.add(
+                        NativeAsset(
+                            policy = nativeAsset.policy,
+                            name = nativeAsset.name,
+                            amount = nativeAsset.amount + prevAmount,
+                        )
+                    )
                     mutableList
                 } ?: (nativeAssets + nativeAsset)
             } ?: listOf(nativeAsset)
-        nativeAssetMap[nativeAsset.policy] = updatedNativeAssets
+        nativeAssetMap[nativeAsset.policy] = updatedNativeAssets.sorted()
     }
 
     return nativeAssetMap
