@@ -12,10 +12,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.newm.chain.cardano.address.Address
 import io.newm.chain.cardano.address.AddressCredential
 import io.newm.chain.cardano.address.BIP32PublicKey
-import io.newm.chain.util.calculateTransactionId
-import io.newm.chain.util.getCurrentEpoch
 import io.newm.chain.cardano.toLedgerAssetMetadataItem
-import io.newm.chain.util.config.Config
 import io.newm.chain.database.repository.ChainRepository
 import io.newm.chain.database.repository.LedgerRepository
 import io.newm.chain.ledger.SubmittedTransactionCache
@@ -27,7 +24,10 @@ import io.newm.chain.util.Constants.ROLE_CHANGE
 import io.newm.chain.util.Constants.ROLE_PAYMENT
 import io.newm.chain.util.Constants.ROLE_STAKING
 import io.newm.chain.util.Constants.stakeAddressFinderRegex
+import io.newm.chain.util.calculateTransactionId
+import io.newm.chain.util.config.Config
 import io.newm.chain.util.elementToByteArray
+import io.newm.chain.util.getCurrentEpoch
 import io.newm.chain.util.hexToByteArray
 import io.newm.chain.util.toCreatedUtxoMap
 import io.newm.chain.util.toHexString
@@ -39,7 +39,6 @@ import io.newm.objectpool.useInstance
 import io.newm.shared.koin.inject
 import io.newm.txbuilder.TransactionBuilder
 import io.newm.txbuilder.ktx.cborHexToPlutusData
-import io.newm.txbuilder.ktx.toNativeAssetMap
 import io.newm.txbuilder.ktx.verify
 import io.newm.txbuilder.ktx.withMinUtxo
 import io.sentry.Sentry
@@ -339,15 +338,7 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
 
     override suspend fun monitorPaymentAddress(request: MonitorPaymentAddressRequest): MonitorPaymentAddressResponse {
         try {
-            val requestNativeAssetMap =
-                request.nativeAssetsList
-                    .map {
-                        io.newm.chain.model.NativeAsset(
-                            policy = it.policy,
-                            name = it.name,
-                            amount = it.amount.toBigInteger()
-                        )
-                    }.toNativeAssetMap()
+            val requestNativeAssetMap = request.nativeAssetsList.grpcToModelNativeAssetMap()
 
             return withTimeoutOrNull(request.timeoutMs) {
                 // Check utxos immediately to see if payment has already arrived
@@ -356,7 +347,7 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                     liveUtxosResponse.utxosList.firstOrNull { utxo ->
                         (utxo.lovelace == request.lovelace) &&
                             // lovelace matches
-                            (requestNativeAssetMap == utxo.nativeAssetsList.toNativeAssetMap()) // nativeAssets match exactly
+                            (requestNativeAssetMap == utxo.nativeAssetsList.grpcToModelNativeAssetMap()) // nativeAssets match exactly
                     }
                 if (existingUtxo != null) {
                     monitorPaymentAddressResponse {
@@ -381,12 +372,11 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                         // Make sure this utxo is not spent by checking liveUtxos on the address
                         val response = queryLiveUtxos(queryUtxosRequest { address = request.address })
                         val lovelace = it.lovelace.toString()
-                        val reqNativeAssetMap = request.nativeAssetsList.toNativeAssetMap()
                         response.utxosList.firstOrNull { utxo ->
                             (utxo.hash == it.hash) &&
                                 (utxo.ix == it.ix) &&
                                 (utxo.lovelace == lovelace) &&
-                                (reqNativeAssetMap == utxo.nativeAssetsList.toNativeAssetMap())
+                                (requestNativeAssetMap == utxo.nativeAssetsList.grpcToModelNativeAssetMap())
                         }
 
                         monitorPaymentAddressResponse {
@@ -1014,4 +1004,14 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
             }
         }
     }
+
+    private fun List<NativeAsset>.grpcToModelNativeAssetMap(): Map<String, List<io.newm.chain.model.NativeAsset>> =
+        this
+            .map {
+                io.newm.chain.model.NativeAsset(
+                    policy = it.policy,
+                    name = it.name,
+                    amount = it.amount.toBigInteger()
+                )
+            }.toNativeAssetMap()
 }

@@ -129,9 +129,9 @@ class LedgerRepositoryImpl : LedgerRepository {
                                     LedgerUtxoAssetsTable.amount
                                 ).map { naRow ->
                                     NativeAsset(
-                                        name = naRow[LedgerAssetsTable.name],
                                         policy = naRow[LedgerAssetsTable.policy],
-                                        amount = BigInteger(naRow[LedgerUtxoAssetsTable.amount])
+                                        name = naRow[LedgerAssetsTable.name],
+                                        amount = BigInteger(naRow[LedgerUtxoAssetsTable.amount]),
                                     )
                                 }
 
@@ -192,9 +192,9 @@ class LedgerRepositoryImpl : LedgerRepository {
                                     LedgerUtxoAssetsTable.amount
                                 ).map { naRow ->
                                     NativeAsset(
-                                        name = naRow[LedgerAssetsTable.name],
                                         policy = naRow[LedgerAssetsTable.policy],
-                                        amount = BigInteger(naRow[LedgerUtxoAssetsTable.amount])
+                                        name = naRow[LedgerAssetsTable.name],
+                                        amount = BigInteger(naRow[LedgerUtxoAssetsTable.amount]),
                                     )
                                 }
 
@@ -252,9 +252,9 @@ class LedgerRepositoryImpl : LedgerRepository {
                             ).selectAll()
                             .map { naRow ->
                                 NativeAsset(
-                                    name = naRow[LedgerAssetsTable.name],
                                     policy = naRow[LedgerAssetsTable.policy],
-                                    amount = BigInteger(naRow[LedgerUtxoAssetsTable.amount])
+                                    name = naRow[LedgerAssetsTable.name],
+                                    amount = BigInteger(naRow[LedgerUtxoAssetsTable.amount]),
                                 )
                             }
                     Utxo(
@@ -330,9 +330,9 @@ class LedgerRepositoryImpl : LedgerRepository {
                             ).selectAll()
                             .map { naRow ->
                                 NativeAsset(
-                                    name = naRow[LedgerAssetsTable.name],
                                     policy = naRow[LedgerAssetsTable.policy],
-                                    amount = BigInteger(naRow[LedgerUtxoAssetsTable.amount])
+                                    name = naRow[LedgerAssetsTable.name],
+                                    amount = BigInteger(naRow[LedgerUtxoAssetsTable.amount]),
                                 )
                             }
 
@@ -469,9 +469,9 @@ class LedgerRepositoryImpl : LedgerRepository {
                                                     val amount = (token[tokenName] as CborInteger).bigIntegerValue()
                                                     nativeAssets.add(
                                                         NativeAsset(
-                                                            name = name,
                                                             policy = policy,
-                                                            amount = amount
+                                                            name = name,
+                                                            amount = amount,
                                                         )
                                                     )
                                                 }
@@ -519,9 +519,9 @@ class LedgerRepositoryImpl : LedgerRepository {
                                                     val amount = (token[tokenName] as CborInteger).bigIntegerValue()
                                                     nativeAssets.add(
                                                         NativeAsset(
-                                                            name = name,
                                                             policy = policy,
-                                                            amount = amount
+                                                            name = name,
+                                                            amount = amount,
                                                         )
                                                     )
                                                 }
@@ -1145,9 +1145,9 @@ class LedgerRepositoryImpl : LedgerRepository {
                             ).selectAll()
                             .map { naRow ->
                                 NativeAsset(
-                                    name = naRow[LedgerAssetsTable.name],
                                     policy = naRow[LedgerAssetsTable.policy],
-                                    amount = BigInteger(naRow[LedgerUtxoAssetsTable.amount])
+                                    name = naRow[LedgerAssetsTable.name],
+                                    amount = BigInteger(naRow[LedgerUtxoAssetsTable.amount]),
                                 )
                             }
 
