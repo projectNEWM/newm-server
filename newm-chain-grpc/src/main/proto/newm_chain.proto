@@ -106,6 +106,8 @@ message Utxo {
   repeated NativeAsset native_assets = 6;
   string address = 7;
   optional bool is_inline_datum = 8;
+  optional string script_ref = 9;
+  optional int32 script_ref_version = 10;
 }
 
 message OutputUtxo {
