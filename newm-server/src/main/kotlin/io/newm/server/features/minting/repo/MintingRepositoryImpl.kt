@@ -863,13 +863,14 @@ class MintingRepositoryImpl(
                         )
                         // CIP-68 Version
                         add(plutusData { int = 2L })
-                        // empty extra metadata
-                        add(
-                            plutusData {
-                                constr = 0
-                                list = plutusDataList { }
-                            }
-                        )
+                        // TODO: We can't follow the cip-68 standard here unless we fork our contract. commenting out for now.
+//                        // empty extra metadata
+//                        add(
+//                            plutusData {
+//                                constr = 0
+//                                list = plutusDataList { }
+//                            }
+//                        )
                     }
                 }
         }
