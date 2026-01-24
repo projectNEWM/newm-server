@@ -141,6 +141,8 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                     datum = it.cborHexToPlutusData()
                 }
                 utxo.isInlineDatum?.let { isInlineDatum = it }
+                utxo.scriptRef?.let { scriptRef = it }
+                utxo.scriptRefVersion?.let { scriptRefVersion = it }
                 nativeAssets.addAll(
                     utxo.nativeAssets.map { nativeAsset ->
                         nativeAsset {
