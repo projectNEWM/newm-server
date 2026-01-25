@@ -22,6 +22,7 @@ import io.newm.server.features.idenfy.idenfyKoinModule
 import io.newm.server.features.marketplace.marketplaceKoinModule
 import io.newm.server.features.minting.mintingKoinModule
 import io.newm.server.features.nftcdn.nftCdnKoinModule
+import io.newm.server.features.nftsong.nftSongKoinModule
 import io.newm.server.features.paypal.payPalKoinModule
 import io.newm.server.features.playlist.playlistKoinModule
 import io.newm.server.features.referralhero.referralHeroKoinModule
@@ -74,6 +75,7 @@ fun Application.installDependencyInjection() {
             dripDropzKoinModule,
             referralHeroKoinModule,
             payPalKoinModule,
+            nftSongKoinModule,
         )
     }
 }

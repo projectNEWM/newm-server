@@ -69,6 +69,8 @@ object Dependencies {
         const val SERVER_AUTH = "io.ktor:ktor-server-auth:$VERSION"
         const val SERVER_AUTH_JWT = "io.ktor:ktor-server-auth-jwt:$VERSION"
         const val SERVER_HTML_BUILDER = "io.ktor:ktor-server-html-builder:$VERSION"
+        const val SERVER_COMPRESSION = "io.ktor:ktor-server-compression:$VERSION"
+        const val SERVER_COMPRESSION_ZSTD = "io.ktor:ktor-server-compression-zstd:$VERSION"
         const val CLIENT_CORE = "io.ktor:ktor-client-core:$VERSION"
         const val CLIENT_CIO = "io.ktor:ktor-client-cio:$VERSION"
         const val CLIENT_OKHTTP = "io.ktor:ktor-client-okhttp:$VERSION"

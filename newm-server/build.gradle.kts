@@ -54,6 +54,8 @@ dependencies {
     implementation(Dependencies.Ktor.SERVER_AUTH)
     implementation(Dependencies.Ktor.SERVER_AUTH_JWT)
     implementation(Dependencies.Ktor.SERVER_HTML_BUILDER)
+    implementation(Dependencies.Ktor.SERVER_COMPRESSION)
+    implementation(Dependencies.Ktor.SERVER_COMPRESSION_ZSTD)
     implementation(Dependencies.Ktor.CLIENT_CORE)
     implementation(Dependencies.Ktor.CLIENT_CIO)
     implementation(Dependencies.Ktor.CLIENT_OKHTTP)

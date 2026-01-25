@@ -44,8 +44,8 @@ import io.newm.shared.ktx.orNull
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
-import java.time.LocalDateTime
 import org.jetbrains.exposed.sql.transactions.transaction
+import java.time.LocalDateTime
 
 internal class UserRepositoryImpl(
     private val googleUserProvider: GoogleUserProvider,
@@ -388,13 +388,13 @@ internal class UserRepositoryImpl(
         logger.debug { "updateReferralStatusIfNeeded: userId = $userId, isConfirmed: $isConfirmed" }
         val email = transaction {
             UserEntity[userId].run {
-                when {
-                    referralStatus == ReferralStatus.Pending && !isConfirmed -> {
+                when (referralStatus) {
+                    ReferralStatus.Pending if !isConfirmed -> {
                         referralStatus = ReferralStatus.Unconfirmed
                         email
                     }
 
-                    referralStatus == ReferralStatus.Unconfirmed && isConfirmed -> {
+                    ReferralStatus.Unconfirmed if isConfirmed -> {
                         referralStatus = ReferralStatus.Confirmed
                         email
                     }
