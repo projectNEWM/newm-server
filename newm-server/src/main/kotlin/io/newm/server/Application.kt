@@ -5,6 +5,7 @@ import io.ktor.server.application.Application
 import io.ktor.server.routing.routing
 import io.newm.server.auth.createAuthenticationRoutes
 import io.newm.server.auth.installAuthentication
+import io.newm.server.compression.installCompression
 import io.newm.server.content.installContentNegotiation
 import io.newm.server.cors.installCORS
 import io.newm.server.curator.installCurator
@@ -20,6 +21,7 @@ import io.newm.server.features.earnings.createEarningsRoutes
 import io.newm.server.features.ethereum.createEthereumRoutes
 import io.newm.server.features.idenfy.createIdenfyRoutes
 import io.newm.server.features.marketplace.createMarketplaceRoutes
+import io.newm.server.features.nftsong.createNftSongRoutes
 import io.newm.server.features.paypal.createPayPalRoutes
 import io.newm.server.features.playlist.createPlaylistRoutes
 import io.newm.server.features.song.createSongRoutes
@@ -65,6 +67,7 @@ fun Application.module() {
     installCORS()
     installForwarder()
     installHealthCheck()
+    installCompression()
 
     routing {
         createStaticContentRoutes()
@@ -84,6 +87,7 @@ fun Application.module() {
         createOpenApiDocumentationRoutes()
         createEarningsRoutes()
         createPayPalRoutes()
+        createNftSongRoutes()
     }
 
     initializeDaemons()

@@ -31,7 +31,7 @@ object Versions {
     const val KOTLIN_PLUGIN = "2.3.0"
     const val KTLINT = "1.8.0"
     const val KTLINT_PLUGIN = "12.1.1"
-    const val KTOR = "3.3.3"
+    const val KTOR = "3.4.0"
     const val KTOR_FLYWAY = "3.3.0"
     const val LOGBACK = "1.5.23"
     const val MAVEN_PUBLISH = "0.35.0"
