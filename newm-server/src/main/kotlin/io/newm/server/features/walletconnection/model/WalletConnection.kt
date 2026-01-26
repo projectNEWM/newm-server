@@ -11,5 +11,9 @@ data class WalletConnection(
     val id: UUID,
     @Contextual
     val createdAt: LocalDateTime,
+    val address: String,
+    val chain: WalletChain,
+    val name: String,
+    @Deprecated("use address field instead, will be removed in future versions")
     val stakeAddress: String
 )

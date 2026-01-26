@@ -1,5 +1,6 @@
 package io.newm.server.features.walletconnection.database
 
+import io.newm.server.features.walletconnection.model.WalletChain
 import io.newm.server.features.walletconnection.model.WalletConnection
 import io.newm.server.typealiases.UserId
 import org.jetbrains.exposed.dao.UUIDEntity
@@ -18,14 +19,19 @@ class WalletConnectionEntity(
     id: EntityID<UUID>
 ) : UUIDEntity(id) {
     val createdAt: LocalDateTime by WalletConnectionTable.createdAt
-    var stakeAddress: String by WalletConnectionTable.stakeAddress
+    var address: String by WalletConnectionTable.address
+    var chain: WalletChain by WalletConnectionTable.chain
+    var name: String by WalletConnectionTable.name
     var userId: EntityID<UserId>? by WalletConnectionTable.userId
 
     fun toModel(): WalletConnection =
         WalletConnection(
             id = id.value,
             createdAt = createdAt,
-            stakeAddress = stakeAddress
+            address = address,
+            chain = chain,
+            name = name,
+            stakeAddress = address // to be removed in future versions
         )
 
     companion object : UUIDEntityClass<WalletConnectionEntity>(WalletConnectionTable) {
@@ -37,13 +43,21 @@ class WalletConnectionEntity(
 
         fun deleteAllDuplicates(entity: WalletConnectionEntity) {
             WalletConnectionTable.deleteWhere {
-                (id neq entity.id) and (userId eq entity.userId) and (stakeAddress eq entity.stakeAddress)
+                (id neq entity.id) and (userId eq entity.userId) and (address eq entity.address)
             }
         }
 
         fun getAllByUserId(userId: UserId): SizedIterable<WalletConnectionEntity> =
             find {
                 WalletConnectionTable.userId eq userId
+            }
+
+        fun getAllByUserIdAndWalletChain(
+            userId: UserId,
+            chain: WalletChain
+        ): SizedIterable<WalletConnectionEntity> =
+            find {
+                (WalletConnectionTable.userId eq userId) and (WalletConnectionTable.chain eq chain)
             }
     }
 }
