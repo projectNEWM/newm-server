@@ -6,8 +6,8 @@ import com.google.iot.cbor.CborMap
 import com.google.iot.cbor.CborTextString
 import com.google.protobuf.kotlin.toByteString
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.ktor.server.application.*
-import io.ktor.utils.io.core.*
+import io.ktor.server.application.ApplicationEnvironment
+import io.ktor.utils.io.core.toByteArray
 import io.newm.chain.util.Bech32
 import io.newm.chain.util.Constants
 import io.newm.chain.util.toHexString
@@ -15,17 +15,25 @@ import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.user.database.UserTable
 import io.newm.server.features.walletconnection.database.WalletConnectionChallengeEntity
 import io.newm.server.features.walletconnection.database.WalletConnectionEntity
-import io.newm.server.features.walletconnection.model.*
+import io.newm.server.features.walletconnection.model.AnswerChallengeRequest
+import io.newm.server.features.walletconnection.model.AnswerChallengeResponse
+import io.newm.server.features.walletconnection.model.ChallengeMethod
+import io.newm.server.features.walletconnection.model.GenerateChallengeRequest
+import io.newm.server.features.walletconnection.model.GenerateChallengeResponse
+import io.newm.server.features.walletconnection.model.WalletChain
+import io.newm.server.features.walletconnection.model.WalletConnection
+import io.newm.server.features.walletconnection.model.WalletConnectionUpdateRequest
 import io.newm.server.typealiases.UserId
 import io.newm.shared.exception.HttpForbiddenException
 import io.newm.shared.exception.HttpNotFoundException
 import io.newm.shared.ktx.existsHavingId
 import io.newm.shared.ktx.getConfigLong
 import org.jetbrains.exposed.dao.id.EntityID
+import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
 import qrcode.QRCode
 import qrcode.color.Colors
-import java.util.*
+import java.util.UUID
 
 internal class WalletConnectionRepositoryImpl(
     private val environment: ApplicationEnvironment,
@@ -158,7 +166,9 @@ internal class WalletConnectionRepositoryImpl(
         val connection =
             transaction {
                 WalletConnectionEntity.new {
-                    this.stakeAddress = stakeAddress
+                    this.address = stakeAddress
+                    this.chain = WalletChain.Cardano
+                    this.name = "Cardano-${stakeAddress.takeLast(6)}"
                 }
             }
         return AnswerChallengeResponse(
@@ -214,6 +224,21 @@ internal class WalletConnectionRepositoryImpl(
         logger.debug { "getUserConnections: userId = $userId" }
         return transaction {
             WalletConnectionEntity.getAllByUserId(userId).map(WalletConnectionEntity::toModel)
+        }
+    }
+
+    override suspend fun updateUserConnection(
+        connectionId: UUID,
+        userId: UserId,
+        request: WalletConnectionUpdateRequest
+    ) {
+        logger.debug { "updateUserConnection: connectionId = $connectionId, userId = $userId, request = $request" }
+
+        newSuspendedTransaction {
+            with(WalletConnectionEntity[connectionId]) {
+                if (this.userId?.value != userId) throw HttpForbiddenException("User doesn't own connection")
+                this.name = request.name
+            }
         }
     }
 

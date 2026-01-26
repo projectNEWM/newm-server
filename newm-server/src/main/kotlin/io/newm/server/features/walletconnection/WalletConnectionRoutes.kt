@@ -15,6 +15,7 @@ import io.newm.server.ktx.myUserId
 import io.newm.server.recaptcha.repo.RecaptchaRepository
 import io.newm.shared.ktx.delete
 import io.newm.shared.ktx.get
+import io.newm.shared.ktx.patch
 import io.newm.shared.ktx.post
 import org.koin.ktor.ext.inject
 
@@ -56,6 +57,12 @@ fun Routing.createWalletConnectionRoutes() {
                     }
                     respond(walletConnectionRepository.connect(connId, myUserId))
                 }
+
+                patch {
+                    walletConnectionRepository.updateUserConnection(connectionId, myUserId, receive())
+                    respond(HttpStatusCode.NoContent)
+                }
+
                 delete {
                     walletConnectionRepository.disconnect(connectionId, myUserId)
                     respond(HttpStatusCode.NoContent)

@@ -54,10 +54,10 @@ import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_NFTCDN_E
 import io.newm.server.features.cardano.database.KeyEntity
 import io.newm.server.features.cardano.database.KeyTable
 import io.newm.server.features.cardano.database.ScriptAddressWhitelistEntity
+import io.newm.server.features.cardano.model.CardanoNftSong
 import io.newm.server.features.cardano.model.EncryptionRequest
 import io.newm.server.features.cardano.model.GetWalletSongsResponse
 import io.newm.server.features.cardano.model.Key
-import io.newm.server.features.cardano.model.CardanoNftSong
 import io.newm.server.features.cardano.model.WalletSong
 import io.newm.server.features.cardano.parser.toNFTSongs
 import io.newm.server.features.cardano.parser.toResourceUrl
@@ -80,6 +80,7 @@ import io.newm.server.features.song.model.Song
 import io.newm.server.features.song.model.SongFilters
 import io.newm.server.features.song.repo.SongRepository
 import io.newm.server.features.walletconnection.database.WalletConnectionEntity
+import io.newm.server.features.walletconnection.model.WalletChain
 import io.newm.server.ktx.cborHexToUtxo
 import io.newm.server.ktx.sign
 import io.newm.server.model.FilterCriteria
@@ -91,12 +92,6 @@ import io.newm.txbuilder.ktx.fingerprint
 import io.newm.txbuilder.ktx.mergeAmounts
 import io.newm.txbuilder.ktx.toCborObject
 import io.newm.txbuilder.ktx.toNativeAssetMap
-import java.time.Duration
-import java.util.UUID
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
-import kotlin.coroutines.suspendCoroutine
-import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -107,6 +102,12 @@ import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.kms.KmsAsyncClient
 import software.amazon.awssdk.services.kms.model.DecryptRequest
 import software.amazon.awssdk.services.kms.model.EncryptRequest
+import java.time.Duration
+import java.util.UUID
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
+import kotlin.time.Duration.Companion.minutes
 
 internal class CardanoRepositoryImpl(
     private val client: NewmChainCoroutineStub,
@@ -623,7 +624,7 @@ internal class CardanoRepositoryImpl(
 
     private fun getStakeAddressesByUserId(userId: UserId): List<String> =
         transaction {
-            WalletConnectionEntity.getAllByUserId(userId).map { it.stakeAddress }
+            WalletConnectionEntity.getAllByUserIdAndWalletChain(userId, WalletChain.Cardano).map { it.address }
         }
 
     private suspend fun getWalletAssets(userId: UserId): List<NativeAsset> =

@@ -7,6 +7,7 @@ import io.ktor.client.request.accept
 import io.ktor.client.request.bearerAuth
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
+import io.ktor.client.request.patch
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsChannel
@@ -30,9 +31,12 @@ import io.newm.server.features.walletconnection.database.WalletConnectionTable
 import io.newm.server.features.walletconnection.model.AnswerChallengeRequest
 import io.newm.server.features.walletconnection.model.AnswerChallengeResponse
 import io.newm.server.features.walletconnection.model.ChallengeMethod
-import io.newm.server.features.walletconnection.model.WalletConnection
 import io.newm.server.features.walletconnection.model.GenerateChallengeRequest
 import io.newm.server.features.walletconnection.model.GenerateChallengeResponse
+import io.newm.server.features.walletconnection.model.WalletChain
+import io.newm.server.features.walletconnection.model.WalletConnection
+import io.newm.server.features.walletconnection.model.WalletConnectionUpdateRequest
+import io.newm.server.typealiases.UserId
 import io.newm.shared.ktx.existsHavingId
 import io.newm.shared.ktx.toHexString
 import io.newm.shared.ktx.toTempFile
@@ -151,7 +155,9 @@ class WalletConnectionRoutesTest : BaseApplicationTests() {
                     WalletConnectionEntity.all().first()
                 }
             Truth.assertThat(entity.createdAt).isAtLeast(startTime)
-            Truth.assertThat(entity.stakeAddress).isEqualTo(TEST_STAKE_ADDRESS)
+            Truth.assertThat(entity.chain).isEqualTo(WalletChain.Cardano)
+            Truth.assertThat(entity.address).isEqualTo(TEST_STAKE_ADDRESS)
+            Truth.assertThat(entity.name).isEqualTo("Cardano-${TEST_STAKE_ADDRESS.takeLast(6)}")
             Truth.assertThat(entity.userId).isNull()
 
             // verify response body values
@@ -242,7 +248,7 @@ class WalletConnectionRoutesTest : BaseApplicationTests() {
                     WalletConnectionEntity.all().first()
                 }
             Truth.assertThat(entity.createdAt).isAtLeast(startTime)
-            Truth.assertThat(entity.stakeAddress).isEqualTo(TEST_STAKE_ADDRESS)
+            Truth.assertThat(entity.address).isEqualTo(TEST_STAKE_ADDRESS)
             Truth.assertThat(entity.userId).isNull()
 
             // verify response body values
@@ -254,14 +260,7 @@ class WalletConnectionRoutesTest : BaseApplicationTests() {
     @Test
     fun testGenerateQRCode() =
         runBlocking {
-            val connectionId =
-                transaction {
-                    WalletConnectionEntity
-                        .new {
-                            stakeAddress = TEST_STAKE_ADDRESS
-                        }.id.value
-                }
-
+            val connectionId = createWalletConnection().id.value
             val response =
                 client.get("v1/wallet-connections/$connectionId/qrcode") {
                     accept(ContentType.Image.Any)
@@ -292,14 +291,7 @@ class WalletConnectionRoutesTest : BaseApplicationTests() {
                             email = "testuser@newm.io"
                         }.id.value
                 }
-            val connectionId =
-                transaction {
-                    WalletConnectionEntity
-                        .new {
-                            stakeAddress = TEST_STAKE_ADDRESS
-                        }.id.value
-                }
-
+            val connectionId = createWalletConnection().id.value
             val response =
                 client.get("v1/wallet-connections/$connectionId") {
                     bearerAuth(userId.toString())
@@ -318,7 +310,10 @@ class WalletConnectionRoutesTest : BaseApplicationTests() {
             val connection = response.body<WalletConnection>()
             Truth.assertThat(connection.id).isEqualTo(connectionId)
             Truth.assertThat(connection.createdAt).isEqualTo(entity.createdAt)
-            Truth.assertThat(connection.stakeAddress).isEqualTo(entity.stakeAddress)
+            Truth.assertThat(connection.chain).isEqualTo(entity.chain)
+            Truth.assertThat(connection.address).isEqualTo(entity.address)
+            Truth.assertThat(connection.stakeAddress).isEqualTo(entity.address)
+            Truth.assertThat(connection.name).isEqualTo(entity.name)
         }
 
     @Test
@@ -331,15 +326,7 @@ class WalletConnectionRoutesTest : BaseApplicationTests() {
                             email = "testuser@newm.io"
                         }.id.value
                 }
-            val connectionId =
-                transaction {
-                    WalletConnectionEntity
-                        .new {
-                            stakeAddress = TEST_STAKE_ADDRESS
-                            this.userId = EntityID(userId, UserTable)
-                        }.id.value
-                }
-
+            val connectionId = createWalletConnection(userId = userId).id.value
             val response =
                 client.delete("v1/wallet-connections/$connectionId") {
                     bearerAuth(userId.toString())
@@ -359,17 +346,14 @@ class WalletConnectionRoutesTest : BaseApplicationTests() {
                     UserEntity
                         .new {
                             email = "testuser@newm.io"
-                        }.id
+                        }.id.value
                 }
             val expectedConnections = mutableListOf<WalletConnection>()
             for (i in 0..4) {
-                expectedConnections +=
-                    transaction {
-                        WalletConnectionEntity.new {
-                            stakeAddress = TEST_STAKE_ADDRESS + i
-                            this.userId = userId
-                        }
-                    }.toModel()
+                expectedConnections += createWalletConnection(
+                    address = TEST_STAKE_ADDRESS + i,
+                    userId = userId
+                ).toModel()
             }
 
             val response =
@@ -380,6 +364,46 @@ class WalletConnectionRoutesTest : BaseApplicationTests() {
             Truth.assertThat(response.status).isEqualTo(HttpStatusCode.OK)
             val actualConnections = response.body<List<WalletConnection>>()
             Truth.assertThat(actualConnections).isEqualTo(expectedConnections)
+        }
+
+    @Test
+    fun testUpdateWalletConnectionsFromMobile() =
+        runBlocking {
+            val userId =
+                transaction {
+                    UserEntity
+                        .new {
+                            email = "testuser@newm.io"
+                        }.id.value
+                }
+
+            val originalConnection = createWalletConnection(userId = userId).toModel()
+            val connectionId = originalConnection.id
+            val request = WalletConnectionUpdateRequest(name = "My New Cool Name")
+            val response =
+                client.patch("v1/wallet-connections/$connectionId") {
+                    bearerAuth(userId.toString())
+                    contentType(ContentType.Application.Json)
+                    setBody(request)
+                }
+            Truth.assertThat(response.status).isEqualTo(HttpStatusCode.NoContent)
+            val actualConnection = transaction { WalletConnectionEntity[connectionId] }.toModel()
+            val expectedConnection = originalConnection.copy(name = request.name)
+            Truth.assertThat(actualConnection).isEqualTo(expectedConnection)
+        }
+
+    private fun createWalletConnection(
+        chain: WalletChain = WalletChain.Cardano,
+        address: String = TEST_STAKE_ADDRESS,
+        userId: UserId? = null
+    ): WalletConnectionEntity =
+        transaction {
+            WalletConnectionEntity.new {
+                this.address = address
+                this.chain = WalletChain.Cardano
+                this.name = "$chain-${address.takeLast(6)}"
+                this.userId = userId?.let { EntityID(it, UserTable) }
+            }
         }
 
     private fun buildChallengeString(challengeId: UUID): String = """{"connectTo":"NEWM Mobile $challengeId","stakeAddress":"$TEST_STAKE_ADDRESS"}"""
