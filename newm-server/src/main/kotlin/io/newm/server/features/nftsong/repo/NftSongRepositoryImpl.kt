@@ -5,7 +5,6 @@ import io.newm.server.features.cardano.repo.CardanoRepository
 import io.newm.server.features.ethereum.model.EthereumNftSong
 import io.newm.server.features.ethereum.repo.EthereumRepository
 import io.newm.server.features.nftsong.model.NftChainMetadata
-import io.newm.server.features.nftsong.model.NftChainType
 import io.newm.server.features.nftsong.model.NftSong
 import io.newm.server.typealiases.UserId
 
@@ -38,7 +37,6 @@ internal class NftSongRepositoryImpl(
             genres = genres,
             moods = moods,
             amount = amount,
-            chainType = NftChainType.Cardano,
             chainMetadata = NftChainMetadata.Cardano(
                 fingerprint = fingerprint,
                 policyId = policyId,
@@ -58,7 +56,6 @@ internal class NftSongRepositoryImpl(
             genres = genres,
             moods = moods,
             amount = amount,
-            chainType = NftChainType.Ethereum,
             chainMetadata = NftChainMetadata.Ethereum(
                 contractAddress = contractAddress,
                 tokenType = tokenType,
