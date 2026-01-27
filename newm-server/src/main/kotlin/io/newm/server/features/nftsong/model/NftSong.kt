@@ -16,6 +16,5 @@ data class NftSong(
     val genres: List<String>,
     val moods: List<String>,
     val amount: Long,
-    val chainType: NftChainType,
     val chainMetadata: NftChainMetadata
 )

@@ -312,6 +312,7 @@ class WalletConnectionRoutesTest : BaseApplicationTests() {
             Truth.assertThat(connection.createdAt).isEqualTo(entity.createdAt)
             Truth.assertThat(connection.chain).isEqualTo(entity.chain)
             Truth.assertThat(connection.address).isEqualTo(entity.address)
+            @Suppress("DEPRECATION")
             Truth.assertThat(connection.stakeAddress).isEqualTo(entity.address)
             Truth.assertThat(connection.name).isEqualTo(entity.name)
         }
