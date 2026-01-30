@@ -10,6 +10,7 @@ import io.newm.chain.cardano.to721Json
 import io.newm.chain.cardano.toMetadataMap
 import io.newm.chain.util.config.Config
 import io.newm.chain.database.entity.LedgerAsset
+import io.newm.chain.database.entity.LedgerAssetMetadata
 import io.newm.chain.database.repository.ChainRepository
 import io.newm.chain.database.repository.LedgerRepository
 import io.newm.chain.database.table.AddressTxLogTable
@@ -86,6 +87,14 @@ class BlockDaemon(
     private val secure by lazy { environment.getConfigBoolean("ogmios.secure") }
     private val syncRawTxns by lazy { environment.getConfigBoolean("newmchain.syncRawTxns") }
     private val pruneUtxos by lazy { environment.getConfigBoolean("newmchain.pruneUtxos") }
+    private val maxCatchupBlockBufferSize by lazy {
+        environment.config
+            .propertyOrNull("newmchain.maxCatchupBlockBufferSize")
+            ?.getString()
+            ?.toIntOrNull()
+            ?.takeIf { it > 0 }
+            ?: DEFAULT_MAX_CATCHUP_BLOCK_BUFFER_SIZE
+    }
 
     private val rollForwardFlow =
         MutableSharedFlow<RollForward>(
@@ -105,6 +114,9 @@ class BlockDaemon(
     private val blockBuffer: MutableList<RollForward> = mutableListOf()
 
     private var tipBlockHeight = 0L
+
+    @Volatile
+    private var rollbackRequested = false
 
     /**
      * Store the blocknumber mapped to a map of transactionIds so we can re-submit to the mempool
@@ -249,6 +261,7 @@ class BlockDaemon(
             when (response.result) {
                 is RollBackward -> {
                     log.info { "RollBackward: ${(response.result as RollBackward).point}" }
+                    rollbackRequested = true
                 }
 
                 is RollForward -> {
@@ -294,6 +307,9 @@ class BlockDaemon(
         rollForwardData: RollForward,
         isTip: Boolean
     ) {
+        if (rollbackRequested && blockBuffer.isNotEmpty()) {
+            blockBuffer.clear()
+        }
         blockBuffer.add(rollForwardData)
         if (blockBuffer.size == blockBufferSize || isTip) {
             // Create a copy of the list
@@ -325,13 +341,16 @@ class BlockDaemon(
                 warnLongQueriesDuration = 1000L
                 val firstBlock = blocksToCommit.first().block as BlockPraos
                 val lastBlock = blocksToCommit.last().block as BlockPraos
-                rollbackTime +=
-                    measureTimeMillis {
-                        chainRepository.rollback(firstBlock.height)
-                        ledgerRepository.doRollback(firstBlock.height)
-                        AddressTxLogTable.deleteWhere { blockNumber greaterEq firstBlock.height }
-                        NativeAssetMonitorLogTable.deleteWhere { blockNumber greaterEq firstBlock.height }
-                    }
+                if (rollbackRequested) {
+                    rollbackTime +=
+                        measureTimeMillis {
+                            chainRepository.rollback(firstBlock.height)
+                            ledgerRepository.doRollback(firstBlock.height)
+                            AddressTxLogTable.deleteWhere { blockNumber greaterEq firstBlock.height }
+                            NativeAssetMonitorLogTable.deleteWhere { blockNumber greaterEq firstBlock.height }
+                        }
+                    rollbackRequested = false
+                }
 
                 blocksToCommit.forEach { rollForwardData ->
                     val block = rollForwardData.block as BlockPraos
@@ -340,6 +359,7 @@ class BlockDaemon(
 //                    }
                     val createdUtxos = block.toCreatedUtxoSet()
                     val ledgerAssets = block.toLedgerAssets()
+                    val ledgerMetadataCache = LedgerMetadataCache(ledgerRepository)
 
                     // Mark same block number as rolled back
                     rollbackTime +=
@@ -403,7 +423,8 @@ class BlockDaemon(
                     nativeAssetTime +=
                         measureTimeMillis {
                             // Save metadata for CIP-68 reference metadata appearing on createdUtxos datum values
-                            val nativeAssetMetadataList = cip68UtxoOutputsTo721MetadataMap(createdUtxos)
+                            val nativeAssetMetadataList =
+                                cip68UtxoOutputsTo721MetadataMap(createdUtxos, ledgerMetadataCache)
                             nativeAssetMetadataList.forEach { (metadataMap, assetList) ->
                                 try {
                                     ledgerRepository.insertLedgerAssetMetadataList(
@@ -430,7 +451,7 @@ class BlockDaemon(
                     nativeAssetTime +=
                         measureTimeMillis {
                             if (ledgerAssets.isNotEmpty()) {
-                                commitNativeAssetLogTransactions(block, ledgerAssets, createdUtxos)
+                                commitNativeAssetLogTransactions(block, ledgerAssets, createdUtxos, ledgerMetadataCache)
                             }
                         }
                 }
@@ -472,10 +493,16 @@ class BlockDaemon(
             } else if (totalTime < COMMIT_BLOCKS_ERROR_LEVEL_MILLIS) {
                 blockBufferSize++
             }
+            if (!isTip && blockBufferSize > maxCatchupBlockBufferSize) {
+                blockBufferSize = maxCatchupBlockBufferSize
+            }
         }
     }
 
-    private fun cip68UtxoOutputsTo721MetadataMap(createdUtxos: Set<CreatedUtxo>): List<Pair<MetadataMap, List<LedgerAsset>>> =
+    private fun cip68UtxoOutputsTo721MetadataMap(
+        createdUtxos: Set<CreatedUtxo>,
+        ledgerMetadataCache: LedgerMetadataCache
+    ): List<Pair<MetadataMap, List<LedgerAsset>>> =
         createdUtxos
             .filter { createdUtxo ->
                 createdUtxo.nativeAssets.any { nativeAsset ->
@@ -492,7 +519,7 @@ class BlockDaemon(
                                 val metadataMap = cip68PlutusData.toMetadataMap(nativeAsset.policy, nativeAsset.name)
                                 metadataMap to
                                     cip68CreatedUtxo.nativeAssets.map { na ->
-                                        ledgerRepository.queryLedgerAsset(na.policy, na.name)!!
+                                        ledgerMetadataCache.getLedgerAsset(na.policy, na.name)!!
                                     }
                             }
                     } else {
@@ -574,9 +601,11 @@ class BlockDaemon(
     private fun commitNativeAssetLogTransactions(
         block: BlockPraos,
         ledgerAssetList: List<LedgerAsset>,
-        createdUtxos: Set<CreatedUtxo>
+        createdUtxos: Set<CreatedUtxo>,
+        ledgerMetadataCache: LedgerMetadataCache
     ) {
         val ledgerAssets = ledgerRepository.queryLedgerAssets(ledgerAssetList)
+        ledgerAssets.forEach { ledgerMetadataCache.putLedgerAsset(it) }
         // handle supply changes
         val batch = mutableListOf<ByteArray>()
         batch.addAll(
@@ -600,8 +629,8 @@ class BlockDaemon(
                 val metadataLedgerAsset =
                     if (ledgerAsset.name.matches(CIP68_USER_TOKEN_REGEX)) {
                         val name = "$CIP68_REFERENCE_TOKEN_PREFIX${ledgerAsset.name.substring(8)}"
-                        ledgerRepository
-                            .queryLedgerAsset(ledgerAsset.policy, name)
+                        ledgerMetadataCache
+                            .getLedgerAsset(ledgerAsset.policy, name)
                             ?.copy(txId = ledgerAsset.txId) ?: run {
                             log.warn {
                                 "No LedgerAsset REF Token found for: '${ledgerAsset.policy}.${ledgerAsset.name}' -> '${ledgerAsset.policy}.$name' !"
@@ -613,7 +642,7 @@ class BlockDaemon(
                     }
 
                 val ledgerAssetMetadataList =
-                    ledgerRepository.queryLedgerAssetMetadataList(metadataLedgerAsset.id!!)
+                    ledgerMetadataCache.getLedgerAssetMetadataList(metadataLedgerAsset.id!!)
                 val bos = ByteArrayOutputStream()
                 monitorNativeAssetsResponse {
                     policy = ledgerAsset.policy
@@ -643,13 +672,13 @@ class BlockDaemon(
                 }.flatten()
                 .flatMap { updatedNativeAsset ->
                     val metadataBatch = mutableListOf<ByteArray>()
-                    ledgerRepository
-                        .queryLedgerAsset(
+                    ledgerMetadataCache
+                        .getLedgerAsset(
                             updatedNativeAsset.policy,
                             updatedNativeAsset.name
                         )?.let { nativeAsset ->
                             val ledgerAssetMetadataList =
-                                ledgerRepository.queryLedgerAssetMetadataList(nativeAsset.id!!)
+                                ledgerMetadataCache.getLedgerAssetMetadataList(nativeAsset.id!!)
                             val bos = ByteArrayOutputStream()
                             // Create a response for the cip68 reference token itself
                             monitorNativeAssetsResponse {
@@ -673,8 +702,8 @@ class BlockDaemon(
 
                             prefixes.forEach { prefix ->
                                 val name = prefix + updatedNativeAsset.name.substring(8)
-                                ledgerRepository
-                                    .queryLedgerAsset(updatedNativeAsset.policy, name)
+                                ledgerMetadataCache
+                                    .getLedgerAsset(updatedNativeAsset.policy, name)
                                     ?.let { nativeAsset ->
                                         val bos1 = ByteArrayOutputStream()
                                         // Create a response for any cip68 user token based on the reference token
@@ -708,9 +737,34 @@ class BlockDaemon(
         }
     }
 
+    private class LedgerMetadataCache(
+        private val ledgerRepository: LedgerRepository
+    ) {
+        private val assetCache = mutableMapOf<Pair<String, String>, LedgerAsset?>()
+        private val metadataCache = mutableMapOf<Long, List<LedgerAssetMetadata>>()
+
+        fun getLedgerAsset(
+            policyId: String,
+            hexName: String
+        ): LedgerAsset? =
+            assetCache.getOrPut(policyId to hexName) {
+                ledgerRepository.queryLedgerAsset(policyId, hexName)
+            }
+
+        fun putLedgerAsset(ledgerAsset: LedgerAsset) {
+            assetCache[ledgerAsset.policy to ledgerAsset.name] = ledgerAsset
+        }
+
+        fun getLedgerAssetMetadataList(assetId: Long): List<LedgerAssetMetadata> =
+            metadataCache.getOrPut(assetId) {
+                ledgerRepository.queryLedgerAssetMetadataList(assetId)
+            }
+    }
+
     companion object {
         private const val COMMIT_BLOCKS_WARN_LEVEL_MILLIS = 1_000L
         private const val COMMIT_BLOCKS_ERROR_LEVEL_MILLIS = 5_000L
+        private const val DEFAULT_MAX_CATCHUP_BLOCK_BUFFER_SIZE = 100
         private const val CIP68_REFERENCE_TOKEN_PREFIX = "000643b0"
         private val CIP68_REFERENCE_TOKEN_REGEX = Regex("^000643b0.*$") // (100)TokenName
         private val CIP68_USER_TOKEN_REGEX =

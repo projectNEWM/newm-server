@@ -73,11 +73,17 @@ import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.sum
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
+import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.slf4j.LoggerFactory
 
 class LedgerRepositoryImpl : LedgerRepository {
     private val log by lazy { LoggerFactory.getLogger("LedgerRepository") }
     private val utxoMutex = Mutex()
+
+    private data class LedgerAssetKey(
+        val policy: String,
+        val name: String
+    )
 
     /**
      * Set of the Utxos that are "spent", but not yet in a block. These should be removed once observed to be
@@ -650,6 +656,12 @@ class LedgerRepositoryImpl : LedgerRepository {
     // Wait until 10 blocks have passed to make sure the blocks are immutable before removing them from live utxo map
     private val blockQueue = LinkedHashMap<Long, Set<CreatedUtxo>>(11)
 
+    private val missingAfterTxIdLogCache =
+        Caffeine
+            .newBuilder()
+            .expireAfterWrite(Duration.ofMinutes(1))
+            .build<String, Boolean>()
+
     private suspend fun processLiveUtxoFromBlock(
         blockNumber: Long,
         createdUtxos: Set<CreatedUtxo>
@@ -881,16 +893,44 @@ class LedgerRepositoryImpl : LedgerRepository {
         blockNumber: Long,
         spentUtxos: Set<SpentUtxo>
     ) {
-        var count = 0
-        spentUtxos.forEach { spentUtxo ->
-            count +=
-                LedgerUtxosTable.update({
-                    (LedgerUtxosTable.txId eq spentUtxo.hash) and
-                        (LedgerUtxosTable.txIx eq spentUtxo.ix.toInt())
-                }) { row ->
-                    row[blockSpent] = blockNumber
-                    row[transactionSpent] = spentUtxo.transactionSpent
+        if (spentUtxos.isEmpty()) {
+            runBlocking {
+                processSpentUtxoFromBlock(spentUtxos)
+            }
+            return
+        }
+        val spentUtxoList = spentUtxos.toList()
+        spentUtxoList.chunked(500).forEach { batch ->
+            val sql = StringBuilder()
+            sql.append("UPDATE ledger_utxos SET block_spent = ?, transaction_spent = CASE ")
+            batch.forEach { _ ->
+                sql.append("WHEN tx_id = ? AND tx_ix = ? THEN ? ")
+            }
+            sql.append("ELSE transaction_spent END WHERE ")
+            batch.forEachIndexed { index, _ ->
+                if (index > 0) {
+                    sql.append(" OR ")
                 }
+                sql.append("(tx_id = ? AND tx_ix = ?)")
+            }
+            val connection = TransactionManager.current().connection
+            val statement = connection.prepareStatement(sql.toString(), false)
+            try {
+                var paramIndex = 1
+                statement.set(paramIndex++, blockNumber)
+                batch.forEach { spentUtxo ->
+                    statement.set(paramIndex++, spentUtxo.hash)
+                    statement.set(paramIndex++, spentUtxo.ix.toInt())
+                    statement.set(paramIndex++, spentUtxo.transactionSpent)
+                }
+                batch.forEach { spentUtxo ->
+                    statement.set(paramIndex++, spentUtxo.hash)
+                    statement.set(paramIndex++, spentUtxo.ix.toInt())
+                }
+                statement.executeUpdate()
+            } finally {
+                statement.closeIfPossible()
+            }
         }
         runBlocking {
             processSpentUtxoFromBlock(spentUtxos)
@@ -901,60 +941,146 @@ class LedgerRepositoryImpl : LedgerRepository {
         blockNumber: Long,
         createdUtxos: Set<CreatedUtxo>
     ) {
+        if (createdUtxos.isEmpty()) {
+            return
+        }
+        val createdUtxoByAddress = LinkedHashMap<String, CreatedUtxo>()
         createdUtxos.forEach { createdUtxo ->
-            val ledgerTableId =
-                LedgerTable
-                    .select(LedgerTable.id)
-                    .where {
-                        LedgerTable.address eq createdUtxo.address
-                    }.limit(1)
-                    .firstOrNull()
-                    ?.let { row ->
-                        row[LedgerTable.id].value
-                    } ?: LedgerTable
-                    .insertAndGetId { row ->
-                        row[address] = createdUtxo.address
-                        row[stakeAddress] = createdUtxo.stakeAddress
-                        row[addressType] = createdUtxo.addressType
-                    }.value
+            createdUtxoByAddress.putIfAbsent(createdUtxo.address, createdUtxo)
+        }
+        val addresses = createdUtxoByAddress.keys.toList()
+        val ledgerIdsByAddress =
+            LedgerTable
+                .select(LedgerTable.id, LedgerTable.address)
+                .where { LedgerTable.address inList addresses }
+                .associate { row ->
+                    row[LedgerTable.address] to row[LedgerTable.id].value
+                }.toMutableMap()
 
-            val ledgerUtxoTableId =
-                LedgerUtxosTable
-                    .insertAndGetId { row ->
-                        row[ledgerId] = ledgerTableId
-                        row[txId] = createdUtxo.hash
-                        row[txIx] = createdUtxo.ix.toInt()
-                        row[datumHash] = createdUtxo.datumHash ?: createdUtxo.datum
-                            ?.hexToByteArray()
-                            ?.let { Blake2b.hash256(it).toHexString() }
-                        row[datum] = createdUtxo.datum
-                        row[isInlineDatum] = createdUtxo.isInlineDatum
-                        row[scriptRef] = createdUtxo.scriptRef
-                        row[scriptRefVersion] = createdUtxo.scriptRefVersion
-                        row[lovelace] = createdUtxo.lovelace.toString()
-                        row[blockCreated] = blockNumber
-                        row[blockSpent] = null
-                        row[transactionSpent] = null
-                        row[cbor] = createdUtxo.cbor
-                        row[paymentCred] = createdUtxo.paymentCred
-                        row[stakeCred] = createdUtxo.stakeCred
-                    }.value
+        val missingAddresses = addresses.filterNot { ledgerIdsByAddress.containsKey(it) }
+        if (missingAddresses.isNotEmpty()) {
+            LedgerTable.batchInsert(
+                data = missingAddresses,
+                ignore = true,
+                shouldReturnGeneratedValues = false,
+            ) { missingAddress ->
+                val createdUtxo = createdUtxoByAddress.getValue(missingAddress)
+                this[LedgerTable.address] = missingAddress
+                this[LedgerTable.stakeAddress] = createdUtxo.stakeAddress
+                this[LedgerTable.addressType] = createdUtxo.addressType
+            }
 
+            LedgerTable
+                .select(LedgerTable.id, LedgerTable.address)
+                .where { LedgerTable.address inList missingAddresses }
+                .forEach { row ->
+                    ledgerIdsByAddress[row[LedgerTable.address]] = row[LedgerTable.id].value
+                }
+        }
+        val createdUtxoList = createdUtxos.toList()
+        val ledgerAssetIdsByKey =
+            createdUtxoList
+                .flatMap { createdUtxo ->
+                    createdUtxo.nativeAssets.map { nativeAsset ->
+                        LedgerAssetKey(nativeAsset.policy, nativeAsset.name)
+                    }
+                }.toSet()
+                .let { assetKeys ->
+                    if (assetKeys.isEmpty()) {
+                        mutableMapOf()
+                    } else {
+                        val assetMatchExpression =
+                            assetKeys
+                                .map { assetKey ->
+                                    (LedgerAssetsTable.policy eq assetKey.policy) and
+                                        (LedgerAssetsTable.name eq assetKey.name)
+                                }.reduce { acc, expression -> acc or expression }
+                        val existingAssets =
+                            LedgerAssetsTable
+                                .select(LedgerAssetsTable.id, LedgerAssetsTable.policy, LedgerAssetsTable.name)
+                                .where { assetMatchExpression }
+                                .associate { row ->
+                                    LedgerAssetKey(row[LedgerAssetsTable.policy], row[LedgerAssetsTable.name]) to
+                                        row[LedgerAssetsTable.id].value
+                                }.toMutableMap()
+                        val missingAssets = assetKeys.filterNot { assetKey -> existingAssets.containsKey(assetKey) }
+                        if (missingAssets.isNotEmpty()) {
+                            LedgerAssetsTable.batchInsert(
+                                data = missingAssets,
+                                ignore = true,
+                                shouldReturnGeneratedValues = false,
+                            ) { assetKey ->
+                                this[LedgerAssetsTable.policy] = assetKey.policy
+                                this[LedgerAssetsTable.name] = assetKey.name
+                                this[LedgerAssetsTable.supply] = "0"
+                            }
+
+                            val missingMatchExpression =
+                                missingAssets
+                                    .map { assetKey ->
+                                        (LedgerAssetsTable.policy eq assetKey.policy) and
+                                            (LedgerAssetsTable.name eq assetKey.name)
+                                    }.reduce { acc, expression -> acc or expression }
+                            LedgerAssetsTable
+                                .select(LedgerAssetsTable.id, LedgerAssetsTable.policy, LedgerAssetsTable.name)
+                                .where { missingMatchExpression }
+                                .forEach { row ->
+                                    existingAssets[
+                                        LedgerAssetKey(row[LedgerAssetsTable.policy], row[LedgerAssetsTable.name])
+                                    ] = row[LedgerAssetsTable.id].value
+                                }
+                        }
+                        existingAssets
+                    }
+                }
+        val insertedRows =
+            LedgerUtxosTable.batchInsert(
+                data = createdUtxoList,
+                shouldReturnGeneratedValues = true,
+            ) { createdUtxo ->
+                val ledgerTableId = ledgerIdsByAddress.getValue(createdUtxo.address)
+                this[LedgerUtxosTable.ledgerId] = ledgerTableId
+                this[LedgerUtxosTable.txId] = createdUtxo.hash
+                this[LedgerUtxosTable.txIx] = createdUtxo.ix.toInt()
+                this[LedgerUtxosTable.datumHash] = createdUtxo.datumHash ?: createdUtxo.datum
+                    ?.hexToByteArray()
+                    ?.let { Blake2b.hash256(it).toHexString() }
+                this[LedgerUtxosTable.datum] = createdUtxo.datum
+                this[LedgerUtxosTable.isInlineDatum] = createdUtxo.isInlineDatum
+                this[LedgerUtxosTable.scriptRef] = createdUtxo.scriptRef
+                this[LedgerUtxosTable.scriptRefVersion] = createdUtxo.scriptRefVersion
+                this[LedgerUtxosTable.lovelace] = createdUtxo.lovelace.toString()
+                this[LedgerUtxosTable.blockCreated] = blockNumber
+                this[LedgerUtxosTable.blockSpent] = null
+                this[LedgerUtxosTable.transactionSpent] = null
+                this[LedgerUtxosTable.cbor] = createdUtxo.cbor
+                this[LedgerUtxosTable.paymentCred] = createdUtxo.paymentCred
+                this[LedgerUtxosTable.stakeCred] = createdUtxo.stakeCred
+            }
+
+        val ledgerUtxoAssetRows = mutableListOf<Triple<Long, Long, String>>()
+        createdUtxoList.forEachIndexed { index, createdUtxo ->
+            val ledgerUtxoTableId = insertedRows[index][LedgerUtxosTable.id].value
             createdUtxo.nativeAssets.forEach { nativeAsset ->
                 val ledgerAssetTableId =
-                    LedgerAssetsTable
-                        .selectAll()
-                        .where {
-                            (LedgerAssetsTable.policy eq nativeAsset.policy) and (LedgerAssetsTable.name eq nativeAsset.name)
-                        }.limit(1)
-                        .first()[LedgerAssetsTable.id]
-                        .value
-
-                LedgerUtxoAssetsTable.insert { row ->
-                    row[ledgerUtxoId] = ledgerUtxoTableId
-                    row[ledgerAssetId] = ledgerAssetTableId
-                    row[amount] = nativeAsset.amount.toString()
-                }
+                    ledgerAssetIdsByKey.getValue(LedgerAssetKey(nativeAsset.policy, nativeAsset.name))
+                ledgerUtxoAssetRows.add(
+                    Triple(
+                        ledgerUtxoTableId,
+                        ledgerAssetTableId,
+                        nativeAsset.amount.toString()
+                    )
+                )
+            }
+        }
+        if (ledgerUtxoAssetRows.isNotEmpty()) {
+            LedgerUtxoAssetsTable.batchInsert(
+                data = ledgerUtxoAssetRows,
+                shouldReturnGeneratedValues = false,
+            ) { (ledgerUtxoTableId, ledgerAssetTableId, amountValue) ->
+                this[LedgerUtxoAssetsTable.ledgerUtxoId] = ledgerUtxoTableId
+                this[LedgerUtxoAssetsTable.ledgerAssetId] = ledgerAssetTableId
+                this[LedgerUtxoAssetsTable.amount] = amountValue
             }
         }
         runBlocking {
@@ -1234,7 +1360,12 @@ class LedgerRepositoryImpl : LedgerRepository {
                 } ?: -1L
 
             if (afterId == -1L && afterTxId != null) {
-                log.warn("Unable to find txId: $afterTxId for address: $address. afterId: $afterId, limit: $limit, offset: $offset")
+                if (missingAfterTxIdLogCache.getIfPresent(afterTxId) == null) {
+                    missingAfterTxIdLogCache.put(afterTxId, true)
+                    log.warn(
+                        "Unable to find txId: $afterTxId for address: $address. afterId: $afterId, limit: $limit, offset: $offset"
+                    )
+                }
             }
 
             val maxBlockNumberExpression = ChainTable.blockNumber.max()

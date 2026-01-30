@@ -68,6 +68,14 @@ class MonitorAddressDaemon(
     private val server by lazy { environment.getConfigString("ogmios.server") }
     private val port by lazy { environment.getConfigInt("ogmios.port") }
     private val secure by lazy { environment.getConfigBoolean("ogmios.secure") }
+    private val maxCatchupBlockBufferSize by lazy {
+        environment.config
+            .propertyOrNull("newmchain.maxCatchupBlockBufferSize")
+            ?.getString()
+            ?.toIntOrNull()
+            ?.takeIf { it > 0 }
+            ?: DEFAULT_MAX_CATCHUP_BLOCK_BUFFER_SIZE
+    }
     private val blockDaemon by inject<BlockDaemon>()
     private val rollForwardFlow =
         MutableSharedFlow<RollForward>(
@@ -291,6 +299,9 @@ class MonitorAddressDaemon(
                 blockBufferSize = max(1, ((COMMIT_BLOCKS_ERROR_LEVEL_MILLIS * 2) / averageTimePerBlock).toInt())
             } else if (totalTime < COMMIT_BLOCKS_ERROR_LEVEL_MILLIS) {
                 blockBufferSize++
+            }
+            if (!isTip && blockBufferSize > maxCatchupBlockBufferSize) {
+                blockBufferSize = maxCatchupBlockBufferSize
             }
         }
     }
@@ -531,5 +542,6 @@ class MonitorAddressDaemon(
     companion object {
         private const val COMMIT_BLOCKS_WARN_LEVEL_MILLIS = 1_000L
         private const val COMMIT_BLOCKS_ERROR_LEVEL_MILLIS = 5_000L
+        private const val DEFAULT_MAX_CATCHUP_BLOCK_BUFFER_SIZE = 100
     }
 }
