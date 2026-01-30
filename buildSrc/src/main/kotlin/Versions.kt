@@ -25,7 +25,7 @@ object Versions {
     const val J_AUDIO_TAGGER = "3.0.1"
     const val KOIN = "4.1.0-Beta8"
     const val KOIN_TEST = "4.1.1"
-    const val KOGMIOS = "2.6.1"
+    const val KOGMIOS = "2.7.1"
     const val KOTLINX_SERIALIZATION = "1.9.0"
     const val KOTLIN_LOGGING = "7.0.13"
     const val KOTLIN_PLUGIN = "2.3.0"

@@ -28,13 +28,13 @@ fun Application.initializeDatabase() {
                     this["dataSource.portNumber"] = environment.getConfigString("database.port")
                     this["dataSource.serverName"] = environment.getConfigString("database.server")
                     this["autoCommit"] = false
-                    this["transactionIsolation"] = "TRANSACTION_REPEATABLE_READ"
-                    this["connectionTimeout"] = 40_000L
-                    this["maximumPoolSize"] = 30
-                    this["minimumIdle"] = 5
-                    this["maxLifetime"] = 600_000L // 10 minutes
-                    this["validationTimeout"] = 12_000L
-                    this["idleTimeout"] = 12_000L
+                    this["transactionIsolation"] = "TRANSACTION_READ_COMMITTED"
+                    this["connectionTimeout"] = 10_000L
+                    this["maximumPoolSize"] = 10
+                    this["minimumIdle"] = 1
+                    this["maxLifetime"] = 1_500_000L // 25 minutes
+                    this["validationTimeout"] = 5_000L
+                    this["idleTimeout"] = 30_000L
                     this["leakDetectionThreshold"] = 60_000L
                 }
             )

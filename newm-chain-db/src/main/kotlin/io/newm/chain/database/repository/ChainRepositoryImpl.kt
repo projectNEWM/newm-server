@@ -127,44 +127,56 @@ class ChainRepositoryImpl : ChainRepository {
         }
 
     override fun insertAll(blocks: List<ChainBlock>) {
+        if (blocks.isEmpty()) {
+            return
+        }
+
         transaction {
-            blocks.forEach { block ->
-                ChainTable.deleteWhere { blockNumber greaterEq block.blockNumber }
-                val prevEtaV: String =
-                    ChainTable
-                        .select(
-                            ChainTable.etaV
-                        ).where { ChainTable.slotNumber eqSubQuery ChainTable.select(ChainTable.slotNumber.max()) }
-                        .singleOrNull()
-                        ?.get(ChainTable.etaV)
-                        ?: Config.shelleyGenesisHash
+            val firstBlockNumber = blocks.minOf { it.blockNumber }
+            ChainTable.deleteWhere { blockNumber greaterEq firstBlockNumber }
 
+            var prevEtaV: String =
                 ChainTable
-                    .insertAndGetId { row ->
-                        row[blockNumber] = block.blockNumber
-                        row[slotNumber] = block.slotNumber
-                        row[hash] = block.hash
-                        row[prevHash] = block.prevHash
-                        row[poolId] = nodeVKeyToPoolId(block.nodeVkey)
-                        row[etaV] = calculateEtaV(prevEtaV, block.etaVrf0)
-                        row[nodeVkey] = block.nodeVkey
-                        row[nodeVrfVkey] = block.nodeVrfVkey
-                        row[blockVrf0] = block.blockVrf
-                        row[blockVrf1] = block.blockVrfProof
-                        row[etaVrf0] = block.etaVrf0
-                        row[etaVrf1] = block.etaVrf1
-                        row[leaderVrf0] = block.leaderVrf0
-                        row[leaderVrf1] = block.leaderVrf1
-                        row[blockSize] = block.blockSize
-                        row[blockBodyHash] = block.blockBodyHash
-                        row[poolOpcert] = block.poolOpcert
-                        row[sequenceNumber] = block.sequenceNumber
-                        row[kesPeriod] = block.kesPeriod
-                        row[sigmaSignature] = block.sigmaSignature
-                        row[protocolMajorVersion] = block.protocolMajorVersion
-                        row[protocolMinorVersion] = block.protocolMinorVersion
-                    }.value
+                    .select(
+                        ChainTable.etaV
+                    ).where { ChainTable.slotNumber eqSubQuery ChainTable.select(ChainTable.slotNumber.max()) }
+                    .singleOrNull()
+                    ?.get(ChainTable.etaV)
+                    ?: Config.shelleyGenesisHash
 
+            val blocksWithEtaV = blocks.map { block ->
+                val newEtaV = calculateEtaV(prevEtaV, block.etaVrf0)
+                prevEtaV = newEtaV
+                prevEtaVCache.put(block.blockNumber, newEtaV)
+                block to newEtaV
+            }
+
+            ChainTable.batchInsert(blocksWithEtaV, shouldReturnGeneratedValues = false) { (block, etaV) ->
+                this[ChainTable.blockNumber] = block.blockNumber
+                this[ChainTable.slotNumber] = block.slotNumber
+                this[ChainTable.hash] = block.hash
+                this[ChainTable.prevHash] = block.prevHash
+                this[ChainTable.poolId] = nodeVKeyToPoolId(block.nodeVkey)
+                this[ChainTable.etaV] = etaV
+                this[ChainTable.nodeVkey] = block.nodeVkey
+                this[ChainTable.nodeVrfVkey] = block.nodeVrfVkey
+                this[ChainTable.blockVrf0] = block.blockVrf
+                this[ChainTable.blockVrf1] = block.blockVrfProof
+                this[ChainTable.etaVrf0] = block.etaVrf0
+                this[ChainTable.etaVrf1] = block.etaVrf1
+                this[ChainTable.leaderVrf0] = block.leaderVrf0
+                this[ChainTable.leaderVrf1] = block.leaderVrf1
+                this[ChainTable.blockSize] = block.blockSize
+                this[ChainTable.blockBodyHash] = block.blockBodyHash
+                this[ChainTable.poolOpcert] = block.poolOpcert
+                this[ChainTable.sequenceNumber] = block.sequenceNumber
+                this[ChainTable.kesPeriod] = block.kesPeriod
+                this[ChainTable.sigmaSignature] = block.sigmaSignature
+                this[ChainTable.protocolMajorVersion] = block.protocolMajorVersion
+                this[ChainTable.protocolMinorVersion] = block.protocolMinorVersion
+            }
+
+            blocks.forEach { block ->
                 if (block.stakeDestAddresses.isNotEmpty()) {
                     // Ignore errors as we want to just keep the existing record as-is because it's older
                     PaymentStakeAddressTable.batchInsert(

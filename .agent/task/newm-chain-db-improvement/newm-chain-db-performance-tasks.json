@@ -1,0 +1,228 @@
+{
+  "metadata": {
+    "title": "NEWM Chain DB Initial Sync Performance Tasks",
+    "created": "2026-01-30",
+    "updated": "2026-01-30",
+    "version": "1.0.0",
+    "totalTasks": 9,
+    "prdReference": ".agent/task/newm-chain-db-improvement/newm-chain-db-performance-prd.md",
+    "description": "Incremental, safe performance improvements for initial chain sync without changing external behavior or transactional guarantees",
+    "importantNote": "Each task must keep the system runnable and preserve existing rollback and transactional semantics. Validate after every change."
+  },
+  "phases": [
+    {
+      "id": "phase-1",
+      "name": "Rollback & Batch Safety",
+      "description": "Remove unnecessary rollback work during forward sync and establish safe batch boundaries",
+      "riskLevel": "medium",
+      "tasks": [
+        {
+          "id": "task-001",
+          "title": "Rollback only on RollBackward",
+          "description": "Stop running rollback deletes on every forward batch; perform rollbacks only when RollBackward is received",
+          "status": "completed",
+          "priority": "high",
+          "estimatedHours": 2,
+          "dependencies": [],
+          "targetPath": "newm-chain/src/main/kotlin/io/newm/chain/daemon/BlockDaemon.kt",
+          "acceptanceCriteria": [
+            "Forward-only sync no longer triggers rollback deletes",
+            "Rollback events still cleanly revert chain/ledger/log tables"
+          ],
+          "testPlan": [
+            "Sync forward over N blocks and verify no rollback deletes",
+            "Simulate rollback and verify state consistency"
+          ]
+        },
+        {
+          "id": "task-002",
+          "title": "Cap batch size during catch-up",
+          "description": "Introduce a safe max blockBufferSize for initial sync while preserving tip syncing behavior",
+          "status": "completed",
+          "priority": "medium",
+          "estimatedHours": 1,
+          "dependencies": ["task-001"],
+          "targetPath": "newm-chain/src/main/kotlin/io/newm/chain/daemon/BlockDaemon.kt",
+          "acceptanceCriteria": [
+            "blockBufferSize does not grow unbounded during catch-up",
+            "Tip sync latency unchanged"
+          ],
+          "testPlan": [
+            "Observe batch size during long catch-up",
+            "Verify tip syncing remains responsive"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phase-2",
+      "name": "Chain Inserts",
+      "description": "Reduce per-block DB work for chain table writes",
+      "riskLevel": "medium",
+      "tasks": [
+        {
+          "id": "task-003",
+          "title": "Batch insert chain blocks",
+          "description": "Replace per-block inserts with batchInsert and compute etaV in-memory per batch",
+          "status": "completed",
+          "priority": "high",
+          "estimatedHours": 3,
+          "dependencies": ["task-001"],
+          "targetPath": "newm-chain-db/src/main/kotlin/io/newm/chain/database/repository/ChainRepositoryImpl.kt",
+          "acceptanceCriteria": [
+            "Chain rows match baseline for same range",
+            "etaV continuity preserved across batch boundaries"
+          ],
+          "testPlan": [
+            "Compare chain table rows vs baseline",
+            "Validate etaV sequence for a multi-batch range"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phase-3",
+      "name": "Ledger UTXO Writes",
+      "description": "Eliminate N+1 queries for UTXO creation and asset joins",
+      "riskLevel": "high",
+      "tasks": [
+        {
+          "id": "task-004",
+          "title": "Batch ledger lookup/insert",
+          "description": "Preload ledger ids by address and batch insert missing ledger rows",
+          "status": "completed",
+          "priority": "high",
+          "estimatedHours": 3,
+          "dependencies": ["task-003"],
+          "targetPath": "newm-chain-db/src/main/kotlin/io/newm/chain/database/repository/LedgerRepositoryImpl.kt",
+          "acceptanceCriteria": [
+            "Ledger rows match baseline",
+            "No duplicate ledger rows created"
+          ],
+          "testPlan": [
+            "Compare ledger table counts and distinct addresses",
+            "Verify existing addresses are reused"
+          ]
+        },
+        {
+          "id": "task-005",
+          "title": "Batch insert ledger_utxos",
+          "description": "Insert created UTXOs in batch and return ids for asset join",
+          "status": "completed",
+          "priority": "high",
+          "estimatedHours": 3,
+          "dependencies": ["task-004"],
+          "targetPath": "newm-chain-db/src/main/kotlin/io/newm/chain/database/repository/LedgerRepositoryImpl.kt",
+          "acceptanceCriteria": [
+            "UTXO rows match baseline",
+            "UTXO fields (datum, scripts, creds) preserved"
+          ],
+          "testPlan": [
+            "Compare UTXO counts and sample rows vs baseline",
+            "Verify datum/script fields for script outputs"
+          ]
+        },
+        {
+          "id": "task-006",
+          "title": "Batch resolve and insert ledger_assets",
+          "description": "Resolve asset ids in one query and batch insert missing assets",
+          "status": "completed",
+          "priority": "high",
+          "estimatedHours": 2,
+          "dependencies": ["task-005"],
+          "targetPath": "newm-chain-db/src/main/kotlin/io/newm/chain/database/repository/LedgerRepositoryImpl.kt",
+          "acceptanceCriteria": [
+            "Ledger assets match baseline",
+            "No duplicate assets for same policy/name"
+          ],
+          "testPlan": [
+            "Compare ledger_assets counts and sample rows",
+            "Verify policy/name uniqueness"
+          ]
+        },
+        {
+          "id": "task-007",
+          "title": "Batch insert ledger_utxo_assets",
+          "description": "Insert all asset-to-utxo rows in batch",
+          "status": "completed",
+          "priority": "high",
+          "estimatedHours": 2,
+          "dependencies": ["task-006"],
+          "targetPath": "newm-chain-db/src/main/kotlin/io/newm/chain/database/repository/LedgerRepositoryImpl.kt",
+          "acceptanceCriteria": [
+            "UTXO asset links match baseline",
+            "Amounts preserved"
+          ],
+          "testPlan": [
+            "Compare asset balances per policy/name vs baseline",
+            "Verify UTXO asset counts for sample transactions"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phase-4",
+      "name": "Spend & Metadata Optimization",
+      "description": "Reduce per-input updates and repeated metadata reads",
+      "riskLevel": "medium",
+      "tasks": [
+        {
+          "id": "task-008",
+          "title": "Batch spend updates",
+          "description": "Replace per-spent-UTXO updates with a batch update",
+          "status": "completed",
+          "priority": "medium",
+          "estimatedHours": 2,
+          "dependencies": ["task-005"],
+          "targetPath": "newm-chain-db/src/main/kotlin/io/newm/chain/database/repository/LedgerRepositoryImpl.kt",
+          "acceptanceCriteria": [
+            "Spent UTXOs match baseline",
+            "No unspent UTXOs incorrectly marked"
+          ],
+          "testPlan": [
+            "Compare spent UTXO counts after block range",
+            "Verify random sample of unspent UTXOs remain unspent"
+          ]
+        },
+        {
+          "id": "task-009",
+          "title": "Per-block metadata lookup cache",
+          "description": "Cache ledger asset and metadata queries within a block to reduce repeated reads",
+          "status": "completed",
+          "priority": "medium",
+          "estimatedHours": 2,
+          "dependencies": ["task-007"],
+          "targetPath": "newm-chain/src/main/kotlin/io/newm/chain/daemon/BlockDaemon.kt",
+          "acceptanceCriteria": [
+            "Native asset log output unchanged",
+            "Fewer metadata DB queries per block"
+          ],
+          "testPlan": [
+            "Compare log outputs for sample blocks",
+            "Measure query count per block"
+          ]
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "totalPhases": 4,
+    "totalTasks": 9,
+    "estimatedTotalHours": 20,
+    "criticalPath": ["task-001", "task-003", "task-004", "task-005", "task-006", "task-007"],
+    "keyFiles": [
+      "newm-chain/src/main/kotlin/io/newm/chain/daemon/BlockDaemon.kt",
+      "newm-chain-db/src/main/kotlin/io/newm/chain/database/repository/ChainRepositoryImpl.kt",
+      "newm-chain-db/src/main/kotlin/io/newm/chain/database/repository/LedgerRepositoryImpl.kt"
+    ],
+    "deferred": [
+      "step-007: performance instrumentation"
+    ],
+    "safetyNotes": [
+      "No API changes",
+      "Keep rollback semantics identical",
+      "Each change must keep sync runnable and consistent",
+      "Validate after every incremental change"
+    ]
+  }
+}
