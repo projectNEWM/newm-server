@@ -469,10 +469,18 @@ class TransactionBuilder(
                     }
                 }
 
+            // Add in referenceInputs fee if we are spending a utxo that contains a reference script
+            val referenceScriptInputBytes: Long? = sourceUtxos?.takeIf { it.isNotEmpty() }?.let { srcInputs ->
+                calculateReferenceScriptBytes?.invoke(srcInputs)
+            }
+
+            val allReferenceScriptBytes =
+                ((referenceScriptBytes ?: 0L) + (referenceScriptInputBytes ?: 0L)).takeIf { it > 0L }
+
             updateFeesAndCollateral(
                 cborByteSize = dummyTxCbor.size,
                 computationalFee = maxComputationalFee,
-                referenceScriptBytes = referenceScriptBytes
+                referenceScriptBytes = allReferenceScriptBytes
             )
 
             if (totalCollateral != null && calculateTxExecutionUnits != null) {
