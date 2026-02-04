@@ -123,6 +123,11 @@ interface LedgerRepository {
         ix: Int
     ): Set<Utxo>
 
+    suspend fun queryLiveUtxosByOutputRef(
+        hash: String,
+        ix: Int
+    ): Set<Utxo>
+
     fun queryUtxosByStakeAddress(address: String): Set<Utxo>
 
     fun queryUtxoByNativeAsset(

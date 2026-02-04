@@ -283,6 +283,14 @@ class LedgerRepositoryImpl : LedgerRepository {
         policy: String
     ): Utxo? = findLiveUtxoByNativeAsset(name, policy) ?: queryUtxoByNativeAsset(name, policy)
 
+    override suspend fun queryLiveUtxosByOutputRef(
+        hash: String,
+        ix: Int
+    ): Set<Utxo> =
+        findLiveUtxosByOutputRef(hash, ix).ifEmpty {
+            queryUtxosByOutputRef(hash, ix)
+        }
+
     override fun queryPublicKeyHashByOutputRef(
         hash: String,
         ix: Int
@@ -396,6 +404,18 @@ class LedgerRepositoryImpl : LedgerRepository {
                     } != null
                 }
             }
+        }
+    }
+
+    private suspend fun findLiveUtxosByOutputRef(
+        hash: String,
+        ix: Int
+    ): Set<Utxo> {
+        utxoMutex.withLock {
+            return liveUtxoMap
+                .flatMap { (_, utxos) -> utxos }
+                .filter { utxo -> utxo.hash == hash && utxo.ix == ix.toLong() }
+                .toSet()
         }
     }
 
