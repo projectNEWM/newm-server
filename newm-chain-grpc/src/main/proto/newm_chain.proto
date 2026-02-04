@@ -12,6 +12,7 @@ service NewmChain {
   rpc QueryUtxos (QueryUtxosRequest) returns (QueryUtxosResponse);
   rpc QueryLiveUtxos (QueryUtxosRequest) returns (QueryUtxosResponse);
   rpc QueryUtxosByOutputRef (QueryUtxosOutputRefRequest) returns (QueryUtxosResponse);
+  rpc QueryLiveUtxosByOutputRef (QueryUtxosOutputRefRequest) returns (QueryUtxosResponse);
   rpc QueryUtxosByStakeAddress (QueryUtxosRequest) returns (QueryUtxosResponse);
   rpc QueryPaymentAddressForStakeAddress (QueryPaymentAddressForStakeAddressRequest) returns (QueryPaymentAddressForStakeAddressResponse);
   rpc QueryDatumByHash (QueryDatumByHashRequest) returns (QueryDatumByHashResponse);

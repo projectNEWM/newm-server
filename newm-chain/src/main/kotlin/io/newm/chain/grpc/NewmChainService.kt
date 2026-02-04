@@ -98,6 +98,16 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
         }
     }
 
+    override suspend fun queryLiveUtxosByOutputRef(request: QueryUtxosOutputRefRequest): QueryUtxosResponse {
+        try {
+            return ledgerRepository.queryLiveUtxosByOutputRef(request.hash, request.ix.toInt()).toQueryUtxosResponse()
+        } catch (e: Throwable) {
+            Sentry.addBreadcrumb(request.toString(), "NewmChainService")
+            log.error(e) { "queryLiveUtxosByOutputRef error!" }
+            throw e
+        }
+    }
+
     override suspend fun queryPublicKeyHashByOutputRef(request: QueryUtxosOutputRefRequest): QueryPublicKeyHashResponse {
         try {
             return ledgerRepository.queryPublicKeyHashByOutputRef(request.hash, request.ix.toInt())?.let {
@@ -422,7 +432,7 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                             val scriptRefHexLength =
                                 requireNotNull(
                                     ledgerRepository
-                                        .queryUtxosByOutputRef(utxo.hash, utxo.ix.toInt())
+                                        .queryLiveUtxosByOutputRef(utxo.hash, utxo.ix.toInt())
                                         .firstOrNull()
                                 ) { "Utxo not found in ledger: ${utxo.hash}#${utxo.ix}" }
                                     .scriptRef
@@ -439,7 +449,7 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
                     utxos
                         .mapNotNull { utxo ->
                             val firstUtxo =
-                                ledgerRepository.queryUtxosByOutputRef(utxo.hash, utxo.ix.toInt()).firstOrNull()
+                                ledgerRepository.queryLiveUtxosByOutputRef(utxo.hash, utxo.ix.toInt()).firstOrNull()
                             firstUtxo?.scriptRefVersion ?: firstUtxo?.scriptRef?.let { scriptRef ->
                                 if (scriptRef.startsWith("010100")) {
                                     3
