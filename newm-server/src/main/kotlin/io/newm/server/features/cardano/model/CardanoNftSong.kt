@@ -13,6 +13,7 @@ data class CardanoNftSong(
     val assetName: String,
     val isStreamToken: Boolean,
     val amount: Long,
+    val allocations: Map<@Contextual UUID, Long>,
     val title: String,
     val imageUrl: String,
     val audioUrl: String,

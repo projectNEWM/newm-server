@@ -10,6 +10,8 @@ import kotlinx.serialization.modules.SerializersModule
 import org.junit.jupiter.api.Test
 import java.util.UUID
 
+private val TEST_ALLOCATIONS = mapOf(UUID.randomUUID() to 1L)
+
 class EthereumNftSongParserTests {
     private val json = Json {
         ignoreUnknownKeys = true
@@ -143,13 +145,12 @@ class EthereumNftSongParserTests {
             }
             """.trimIndent()
         val nft = json.decodeFromString<EthereumNft>(nftJson)
-        val result = nft.parseSong()
+        val result = nft.parseSong(TEST_ALLOCATIONS)
         assertThat(result).isEqualTo(
             nftSongOf(
                 contractAddress = "0x328B49C56a8A15fb34aB3eCD8883Fac5F9512453",
                 tokenType = "ERC721",
                 tokenId = "107",
-                amount = 1L,
                 title = "A Little Rain Must Fall",
                 imageUrl = "https://cyan-adjacent-gazelle-655.mypinata.cloud/ipfs/QmSMVf3Atwjwqkf5KooKvd2kxuvwg3XZXVzb8bwVuRRCxb/107.png",
                 audioUrl = "https://cyan-adjacent-gazelle-655.mypinata.cloud/ipfs/QmWAKnDzr9Yxn7wFQDkEdxq6GFLwQp2nHowVNEKJVKdKAv/A%20Little%20Rain%20Must%20Fall.mp3",
@@ -280,13 +281,12 @@ class EthereumNftSongParserTests {
             }
             """.trimIndent()
         val nft = json.decodeFromString<EthereumNft>(nftJson)
-        val result = nft.parseSong()
+        val result = nft.parseSong(TEST_ALLOCATIONS)
         assertThat(result).isEqualTo(
             nftSongOf(
                 contractAddress = "0x328B49C56a8A15fb34aB3eCD8883Fac5F9512453",
                 tokenType = "ERC721",
                 tokenId = "124",
-                amount = 1L,
                 title = "Landed in Your Heart",
                 imageUrl = "https://cyan-adjacent-gazelle-655.mypinata.cloud/ipfs/QmSMVf3Atwjwqkf5KooKvd2kxuvwg3XZXVzb8bwVuRRCxb/124.png",
                 audioUrl = "https://cyan-adjacent-gazelle-655.mypinata.cloud/ipfs/QmWAKnDzr9Yxn7wFQDkEdxq6GFLwQp2nHowVNEKJVKdKAv/Landed%20in%20Your%20Heart.mp3",
@@ -302,7 +302,6 @@ class EthereumNftSongParserTests {
         contractAddress: String,
         tokenType: String,
         tokenId: String,
-        amount: Long,
         title: String,
         imageUrl: String,
         audioUrl: String,
@@ -316,7 +315,8 @@ class EthereumNftSongParserTests {
             contractAddress = contractAddress,
             tokenType = tokenType,
             tokenId = tokenId,
-            amount = amount,
+            amount = 1L,
+            allocations = TEST_ALLOCATIONS,
             title = title,
             imageUrl = imageUrl,
             audioUrl = audioUrl,

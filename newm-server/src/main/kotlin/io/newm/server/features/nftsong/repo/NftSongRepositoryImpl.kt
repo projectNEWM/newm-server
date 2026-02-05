@@ -6,9 +6,11 @@ import io.newm.server.features.ethereum.model.EthereumNftSong
 import io.newm.server.features.ethereum.repo.EthereumRepository
 import io.newm.server.features.nftsong.model.NftChainMetadata
 import io.newm.server.features.nftsong.model.NftSong
+import io.newm.server.features.nftsong.model.NftWalletAllocation
 import io.newm.server.typealiases.UserId
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import java.util.UUID
 
 internal class NftSongRepositoryImpl(
     private val cardanoRepository: CardanoRepository,
@@ -40,6 +42,7 @@ internal class NftSongRepositoryImpl(
             genres = genres,
             moods = moods,
             amount = amount,
+            allocations = allocations.mapAllocations(),
             chainMetadata = NftChainMetadata.Cardano(
                 fingerprint = fingerprint,
                 policyId = policyId,
@@ -59,10 +62,19 @@ internal class NftSongRepositoryImpl(
             genres = genres,
             moods = moods,
             amount = amount,
+            allocations = allocations.mapAllocations(),
             chainMetadata = NftChainMetadata.Ethereum(
                 contractAddress = contractAddress,
                 tokenType = tokenType,
                 tokenId = tokenId
             )
         )
+
+    private fun Map<UUID, Long>.mapAllocations(): List<NftWalletAllocation> =
+        this.map {
+            NftWalletAllocation(
+                id = it.key,
+                amount = it.value
+            )
+        }
 }
