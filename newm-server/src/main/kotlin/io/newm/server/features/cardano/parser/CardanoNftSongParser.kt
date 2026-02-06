@@ -20,6 +20,7 @@ private val legacyPrefixRegex = "^\\d+\\.\\s*".toRegex()
 
 fun List<LedgerAssetMetadataItem>.toNFTSongs(
     asset: NativeAsset,
+    allocations: Map<UUID, Long>,
     isStreamToken: Boolean,
     isNftCdnEnabled: Boolean
 ): List<CardanoNftSong> {
@@ -108,7 +109,8 @@ fun List<LedgerAssetMetadataItem>.toNFTSongs(
                 policyId = asset.policy,
                 assetName = assetName,
                 isStreamToken = isStreamToken,
-                amount = asset.amount.toLong(),
+                amount = allocations.values.sum(),
+                allocations = allocations,
                 title = title,
                 audioUrl =
                     file.src.takeUnless { isNftCdnEnabled }?.toResourceUrl() ?: nftCdnRepository.generateFileUrl(

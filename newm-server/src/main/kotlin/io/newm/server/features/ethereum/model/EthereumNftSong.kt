@@ -12,6 +12,7 @@ data class EthereumNftSong(
     val tokenType: String,
     val tokenId: String,
     val amount: Long,
+    val allocations: Map<@Contextual UUID, Long>,
     val title: String,
     val imageUrl: String,
     val audioUrl: String,

@@ -54,6 +54,7 @@ import io.newm.server.config.repo.ConfigRepository.Companion.CONFIG_KEY_NFTCDN_E
 import io.newm.server.features.cardano.database.KeyEntity
 import io.newm.server.features.cardano.database.KeyTable
 import io.newm.server.features.cardano.database.ScriptAddressWhitelistEntity
+import io.newm.server.features.cardano.model.AllocatedNativeAsset
 import io.newm.server.features.cardano.model.CardanoNftSong
 import io.newm.server.features.cardano.model.EncryptionRequest
 import io.newm.server.features.cardano.model.GetWalletSongsResponse
@@ -89,12 +90,12 @@ import io.newm.shared.koin.inject
 import io.newm.shared.ktx.isValidHex
 import io.newm.shared.ktx.isValidPassword
 import io.newm.txbuilder.ktx.fingerprint
-import io.newm.txbuilder.ktx.mergeAmounts
 import io.newm.txbuilder.ktx.toCborObject
 import io.newm.txbuilder.ktx.toNativeAssetMap
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.security.crypto.encrypt.BytesEncryptor
 import org.springframework.security.crypto.encrypt.Encryptors
@@ -597,22 +598,22 @@ internal class CardanoRepositoryImpl(
         includeLegacy: Boolean,
         useDripDropz: Boolean
     ): List<CardanoNftSong> {
-        val assets = if (useDripDropz) getDripDropzAssets(userId) else getWalletAssets(userId)
+        val allocatedAssets = if (useDripDropz) getDripDropzAssets(userId) else getWalletAssets(userId)
         val nftSongs = mutableListOf<CardanoNftSong>()
         val streamTokenPolicyIds = configRepository.getStrings(CONFIG_KEY_MINT_ALL_POLICY_IDS)
         val isNftCdnEnabled = configRepository.getBoolean(CONFIG_KEY_NFTCDN_ENABLED)
-        for (asset in assets) {
+        for ((asset, allocation) in allocatedAssets) {
             val metadata = getAssetMetadata(asset)
             if (includeLegacy || metadata.any { it.key.equals("music_metadata_version", true) }) {
                 val isStreamToken = asset.policy in streamTokenPolicyIds
-                nftSongs += metadata.toNFTSongs(asset, isStreamToken, isNftCdnEnabled)
+                nftSongs += metadata.toNFTSongs(asset, allocation, isStreamToken, isNftCdnEnabled)
             }
         }
         return nftSongs
     }
 
     override suspend fun getWalletImages(userId: UserId): List<String> {
-        val assets = getWalletAssets(userId)
+        val assets = getWalletAssets(userId).map { it.asset }
         return if (configRepository.getBoolean(CONFIG_KEY_NFTCDN_ENABLED)) {
             assets.map { nftCdnRepository.generateImageUrl(it.fingerprint()) }
         } else {
@@ -622,36 +623,52 @@ internal class CardanoRepositoryImpl(
         }
     }
 
-    private fun getStakeAddressesByUserId(userId: UserId): List<String> =
-        transaction {
-            WalletConnectionEntity.getAllByUserIdAndWalletChain(userId, WalletChain.Cardano).map { it.address }
+    private suspend fun getWalletAssets(userId: UserId): List<AllocatedNativeAsset> =
+        getAssetsByUserId(userId) { address ->
+            client
+                .queryUtxosByStakeAddress(queryUtxosRequest { this.address = address })
+                .utxosList
+                .flatMap { it.nativeAssetsList }
         }
 
-    private suspend fun getWalletAssets(userId: UserId): List<NativeAsset> =
-        getStakeAddressesByUserId(userId)
-            .flatMap {
-                client
-                    .queryUtxosByStakeAddress(
-                        queryUtxosRequest {
-                            address = it
-                        }
-                    ).utxosList
-                    .flatMap { it.nativeAssetsList }
-            }.mergeAmounts()
-
-    private suspend fun getDripDropzAssets(userId: UserId): List<NativeAsset> =
-        getStakeAddressesByUserId(userId)
-            .flatMap { dripDropzRepository.checkAvailableTokens(it) }
-            .map {
-                nativeAsset {
-                    policy = it.tokenPolicy
-                    name = it.tokenAssetId
-                    amount = it.availableQuantity
-                        .movePointRight(6)
-                        .toBigInteger()
-                        .toString()
+    private suspend fun getDripDropzAssets(userId: UserId): List<AllocatedNativeAsset> =
+        getAssetsByUserId(userId) { address ->
+            dripDropzRepository
+                .checkAvailableTokens(address)
+                .map {
+                    nativeAsset {
+                        policy = it.tokenPolicy
+                        name = it.tokenAssetId
+                        amount = it.availableQuantity
+                            .movePointRight(6)
+                            .toBigInteger()
+                            .toString()
+                    }
                 }
-            }.mergeAmounts()
+        }
+
+    private suspend fun getAssetsByUserId(
+        userId: UserId,
+        getAssetsByAddress: suspend (String) -> List<NativeAsset>
+    ): List<AllocatedNativeAsset> =
+        newSuspendedTransaction {
+            WalletConnectionEntity.getAllByUserIdAndWalletChain(userId, WalletChain.Cardano).toList()
+        }.map { connection ->
+            connection.id.value to getAssetsByAddress(connection.address)
+        }.flatMap { (connectionId, assets) ->
+            assets.map { asset ->
+                Triple(asset.policy + asset.name, asset, connectionId to asset.amount.toLong())
+            }
+        }.groupBy { it.first }
+            .map { (_, group) ->
+                AllocatedNativeAsset(
+                    asset = group.first().second,
+                    allocations = group
+                        .map { it.third }
+                        .groupBy({ it.first }, { it.second })
+                        .mapValues { (_, amounts) -> amounts.sum() }
+                )
+            }
 
     private suspend fun getAssetMetadata(asset: NativeAsset): List<LedgerAssetMetadataItem> =
         client

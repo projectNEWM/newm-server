@@ -51,7 +51,7 @@ private val MOOD_TRAIT_TYPES = listOf(
 
 private val AUDIO_URL_REGEX = "\\.(mp3|mp4|wav|flac|aiff|aac)$".toRegex(RegexOption.IGNORE_CASE)
 
-fun EthereumNft.parseSong(): EthereumNftSong? {
+fun EthereumNft.parseSong(allocations: Map<UUID, Long>): EthereumNftSong? {
     val audioUrl = (raw?.metadata?.animationUrl ?: animation?.cachedUrl ?: animation?.originalUrl)?.asHttpsUrl()
     return if (audioUrl != null && (audioUrl.matches(AUDIO_URL_REGEX) || animation?.contentType?.startsWith("audio/") == true)) {
         EthereumNftSong(
@@ -59,7 +59,8 @@ fun EthereumNft.parseSong(): EthereumNftSong? {
             contractAddress = contract.address,
             tokenType = tokenType,
             tokenId = tokenId,
-            amount = balance,
+            amount = allocations.values.sum(),
+            allocations = allocations,
             title = trait(TITLE_TRAIT_TYPES) ?: raw?.metadata?.name ?: contract.name ?: name.orEmpty(),
             imageUrl = (raw?.metadata?.image ?: image?.cachedUrl ?: image?.originalUrl)?.asHttpsUrl().orEmpty(),
             audioUrl = audioUrl,
