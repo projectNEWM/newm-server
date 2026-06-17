@@ -10,8 +10,8 @@ import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.response.respond
 import io.newm.server.logging.captureToSentry
 import io.newm.shared.exception.HttpStatusException
-import org.jetbrains.exposed.dao.exceptions.EntityNotFoundException
-import org.jetbrains.exposed.exceptions.ExposedSQLException
+import org.jetbrains.exposed.v1.dao.exceptions.EntityNotFoundException
+import org.jetbrains.exposed.v1.exceptions.ExposedSQLException
 
 fun Application.installStatusPages() {
     install(StatusPages) {

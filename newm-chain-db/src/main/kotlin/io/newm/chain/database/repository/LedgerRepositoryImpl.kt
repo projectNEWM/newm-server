@@ -51,30 +51,36 @@ import java.time.Instant
 import kotlin.math.max
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
-import org.jetbrains.exposed.sql.ResultRow
 import kotlinx.coroutines.sync.withLock
-import org.jetbrains.exposed.sql.LongColumnType
-import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.greaterEq
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.isNull
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.batchInsert
-import org.jetbrains.exposed.sql.castTo
-import org.jetbrains.exposed.sql.count
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.innerJoin
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.insertAndGetId
-import org.jetbrains.exposed.sql.max
-import org.jetbrains.exposed.sql.or
-import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.sum
-import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
-import org.jetbrains.exposed.sql.transactions.TransactionManager
+import org.jetbrains.exposed.v1.core.LongColumnType
+import org.jetbrains.exposed.v1.core.ResultRow
+import org.jetbrains.exposed.v1.core.SortOrder
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.castTo
+import org.jetbrains.exposed.v1.core.count
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.greater
+import org.jetbrains.exposed.v1.core.greaterEq
+import org.jetbrains.exposed.v1.core.inList
+import org.jetbrains.exposed.v1.core.innerJoin
+import org.jetbrains.exposed.v1.core.isNotNull
+import org.jetbrains.exposed.v1.core.isNull
+import org.jetbrains.exposed.v1.core.less
+import org.jetbrains.exposed.v1.core.lessEq
+import org.jetbrains.exposed.v1.core.like
+import org.jetbrains.exposed.v1.core.max
+import org.jetbrains.exposed.v1.core.or
+import org.jetbrains.exposed.v1.core.regexp
+import org.jetbrains.exposed.v1.core.sum
+import org.jetbrains.exposed.v1.jdbc.batchInsert
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
+import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.insertAndGetId
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.TransactionManager
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
 import org.slf4j.LoggerFactory
 
 class LedgerRepositoryImpl : LedgerRepository {
@@ -278,14 +284,15 @@ class LedgerRepositoryImpl : LedgerRepository {
             )
         }
 
-        val spentBlocks =
+        val spentBlockNumbers =
             spentRows
                 .map { row ->
                     row[LedgerUtxosTable.blockSpent]
                         ?: throw TransactionInfoIntegrityException(
                             "Spent UTXO row for txId=$txId is missing block_spent"
                         )
-                }.distinct()
+                }
+        val spentBlocks = spentBlockNumbers.distinct()
         if (spentBlocks.size > 1) {
             throw TransactionInfoIntegrityException(
                 "Spent UTXOs for txId=$txId span multiple blocks: $spentBlocks"
@@ -301,7 +308,9 @@ class LedgerRepositoryImpl : LedgerRepository {
         }
 
         return (createdBlock ?: spentBlock)
-            ?: throw TransactionInfoIntegrityException("Unable to infer block number for txId=$txId")
+            ?: throw TransactionInfoIntegrityException(
+                "Unable to infer block number for txId=$txId"
+            )
     }
 
     private fun ResultRow.toRepositoryUtxo(): Utxo {
@@ -312,7 +321,7 @@ class LedgerRepositoryImpl : LedgerRepository {
                     LedgerAssetsTable,
                     { ledgerAssetId },
                     { LedgerAssetsTable.id },
-                    { LedgerUtxoAssetsTable.ledgerUtxoId eq ledgerUtxoId },
+                    { LedgerUtxoAssetsTable.ledgerUtxoId eq ledgerUtxoId }
                 ).selectAll()
                 .map { naRow ->
                     NativeAsset(
@@ -1051,15 +1060,19 @@ class LedgerRepositoryImpl : LedgerRepository {
             val statement = connection.prepareStatement(sql.toString(), false)
             try {
                 var paramIndex = 1
-                statement.set(paramIndex++, blockNumber)
+                statement.set(paramIndex++, blockNumber, LedgerUtxosTable.blockSpent.columnType)
                 batch.forEach { spentUtxo ->
-                    statement.set(paramIndex++, spentUtxo.hash)
-                    statement.set(paramIndex++, spentUtxo.ix.toInt())
-                    statement.set(paramIndex++, spentUtxo.transactionSpent)
+                    statement.set(paramIndex++, spentUtxo.hash, LedgerUtxosTable.txId.columnType)
+                    statement.set(paramIndex++, spentUtxo.ix.toInt(), LedgerUtxosTable.txIx.columnType)
+                    statement.set(
+                        paramIndex++,
+                        spentUtxo.transactionSpent,
+                        LedgerUtxosTable.transactionSpent.columnType
+                    )
                 }
                 batch.forEach { spentUtxo ->
-                    statement.set(paramIndex++, spentUtxo.hash)
-                    statement.set(paramIndex++, spentUtxo.ix.toInt())
+                    statement.set(paramIndex++, spentUtxo.hash, LedgerUtxosTable.txId.columnType)
+                    statement.set(paramIndex++, spentUtxo.ix.toInt(), LedgerUtxosTable.txIx.columnType)
                 }
                 statement.executeUpdate()
             } finally {

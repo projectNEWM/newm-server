@@ -1,6 +1,6 @@
 package io.newm.server.security
 
-import io.ktor.util.decodeBase64Bytes
+import java.util.Base64
 
 object KeyParser {
     fun parse(key: String): ByteArray {
@@ -10,7 +10,7 @@ object KeyParser {
                 .replace(headerFooterRegexPattern, "")
                 .replace(whitespaceRegexPattern, "")
 
-        return base64Key.decodeBase64Bytes()
+        return Base64.getDecoder().decode(base64Key)
     }
 
     private val headerFooterRegexPattern = Regex("-----.*?-----")

@@ -8,8 +8,8 @@ import com.zaxxer.hikari.HikariDataSource
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.newm.shared.koin.inject
-import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.DatabaseConfig
+import org.jetbrains.exposed.v1.jdbc.Database
+import org.jetbrains.exposed.v1.core.DatabaseConfig
 
 fun Application.initializeDatabase() {
     val hikariDataSource: HikariDataSource by inject()

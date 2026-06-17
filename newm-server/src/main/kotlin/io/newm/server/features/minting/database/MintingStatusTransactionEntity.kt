@@ -2,9 +2,9 @@ package io.newm.server.features.minting.database
 
 import io.newm.server.features.minting.model.MintingStatusTransactionModel
 import io.newm.server.typealiases.SongId
-import org.jetbrains.exposed.dao.UUIDEntity
-import org.jetbrains.exposed.dao.UUIDEntityClass
-import org.jetbrains.exposed.dao.id.EntityID
+import org.jetbrains.exposed.v1.dao.java.UUIDEntity
+import org.jetbrains.exposed.v1.dao.java.UUIDEntityClass
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import java.time.LocalDateTime
 import java.util.UUID
 

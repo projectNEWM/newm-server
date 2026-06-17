@@ -319,8 +319,8 @@ object Dependencies {
         private const val VERSION = Versions.TEST_CONTAINERS
 
         const val CORE = "org.testcontainers:testcontainers:$VERSION"
-        const val JUINT = "org.testcontainers:junit-jupiter:$VERSION"
-        const val POSTGRESQL = "org.testcontainers:postgresql:$VERSION"
+        const val JUINT = "org.testcontainers:testcontainers-junit-jupiter:$VERSION"
+        const val POSTGRESQL = "org.testcontainers:testcontainers-postgresql:$VERSION"
     }
 
     object Typesafe {

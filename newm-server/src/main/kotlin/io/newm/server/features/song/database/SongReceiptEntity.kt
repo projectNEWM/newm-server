@@ -3,9 +3,9 @@ package io.newm.server.features.song.database
 import io.newm.server.features.song.model.SongReceipt
 import java.time.LocalDateTime
 import java.util.UUID
-import org.jetbrains.exposed.dao.UUIDEntity
-import org.jetbrains.exposed.dao.UUIDEntityClass
-import org.jetbrains.exposed.dao.id.EntityID
+import org.jetbrains.exposed.v1.dao.java.UUIDEntity
+import org.jetbrains.exposed.v1.dao.java.UUIDEntityClass
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
 
 class SongReceiptEntity(
     id: EntityID<UUID>

@@ -20,7 +20,7 @@ import io.newm.server.features.release.model.SpotifySearchResponse
 import io.newm.server.features.song.database.SongEntity
 import io.newm.server.ktx.checkedBody
 import io.newm.server.typealiases.SongId
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
 private const val SPOTIFY_SEARCH_API_URL = "https://api.spotify.com/v1/search"
 private const val SPOTIFY_PLAYLIST_API_URL = "https://api.spotify.com/v1/playlists/"

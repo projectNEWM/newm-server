@@ -1,7 +1,7 @@
 package io.newm.chain.database.table
 
-import org.jetbrains.exposed.dao.id.LongIdTable
-import org.jetbrains.exposed.sql.Column
+import org.jetbrains.exposed.v1.core.Column
+import org.jetbrains.exposed.v1.core.dao.id.LongIdTable
 
 object LedgerTable : LongIdTable(name = "ledger") {
     // Address that holds utxos on the ledger

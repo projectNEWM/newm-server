@@ -17,7 +17,7 @@ import io.newm.server.ktx.checkedBody
 import io.newm.server.ktx.getSecureConfigString
 import io.newm.server.typealiases.UserId
 import io.newm.shared.ktx.getConfigString
-import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 
 internal class EthereumRepositoryImpl(
     private val client: HttpClient,
@@ -28,7 +28,7 @@ internal class EthereumRepositoryImpl(
     override suspend fun getWalletNftSongs(userId: UserId): List<EthereumNftSong> {
         logger.debug { "getWalletNftSongs: userId = $userId" }
 
-        val connections = newSuspendedTransaction {
+        val connections = suspendTransaction {
             WalletConnectionEntity.getAllByUserIdAndWalletChain(userId, WalletChain.Ethereum).toList()
         }
         val apiUrl = environment.getConfigString("alchemy.apiUrl")

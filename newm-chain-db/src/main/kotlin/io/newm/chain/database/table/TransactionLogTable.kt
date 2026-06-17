@@ -1,7 +1,7 @@
 package io.newm.chain.database.table
 
-import org.jetbrains.exposed.dao.id.LongIdTable
-import org.jetbrains.exposed.sql.Column
+import org.jetbrains.exposed.v1.core.Column
+import org.jetbrains.exposed.v1.core.dao.id.LongIdTable
 
 object TransactionLogTable : LongIdTable(name = "transaction_log") {
     val transactionId: Column<String> = text("transaction_id")

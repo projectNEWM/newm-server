@@ -7,7 +7,7 @@ import io.newm.server.features.referralhero.repo.ReferralHeroRepository
 import io.newm.server.features.user.database.UserEntity
 import io.newm.shared.koin.inject
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.quartz.DisallowConcurrentExecution
 import org.quartz.Job
 import org.quartz.JobExecutionContext

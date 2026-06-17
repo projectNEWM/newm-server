@@ -1,7 +1,7 @@
 package io.newm.chain.database.table
 
-import org.jetbrains.exposed.dao.id.LongIdTable
-import org.jetbrains.exposed.sql.Column
+import org.jetbrains.exposed.v1.core.Column
+import org.jetbrains.exposed.v1.core.dao.id.LongIdTable
 
 object PaymentStakeAddressTable : LongIdTable(name = "payment_stake_addresses") {
     val receivingAddress: Column<String> = text("receiving_address")

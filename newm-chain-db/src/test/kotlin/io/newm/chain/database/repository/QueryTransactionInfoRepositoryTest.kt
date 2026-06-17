@@ -2,17 +2,12 @@ package io.newm.chain.database.repository
 
 import com.google.common.truth.Truth.assertThat
 import com.zaxxer.hikari.HikariDataSource
-import io.newm.chain.database.table.ChainTable
-import io.newm.chain.database.table.LedgerAssetsTable
-import io.newm.chain.database.table.LedgerTable
-import io.newm.chain.database.table.LedgerUtxoAssetsTable
-import io.newm.chain.database.table.LedgerUtxosTable
 import java.util.UUID
-import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.SchemaUtils
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.insertAndGetId
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.Database
+import org.jetbrains.exposed.v1.jdbc.SchemaUtils
+import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.insertAndGetId
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
@@ -20,6 +15,11 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import org.testcontainers.containers.PostgreSQLContainer
+import io.newm.chain.database.table.ChainTable
+import io.newm.chain.database.table.LedgerAssetsTable
+import io.newm.chain.database.table.LedgerTable
+import io.newm.chain.database.table.LedgerUtxoAssetsTable
+import io.newm.chain.database.table.LedgerUtxosTable
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class QueryTransactionInfoRepositoryTest {

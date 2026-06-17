@@ -25,14 +25,14 @@ import io.newm.shared.koin.inject
 import io.newm.shared.ktx.toDate
 import io.newm.shared.ktx.toHexString
 import org.apache.curator.framework.recipes.locks.InterProcessMutex
-import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.batchInsert
-import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
+import org.jetbrains.exposed.v1.core.SortOrder
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.inList
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.jdbc.batchInsert
+import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.koin.core.parameter.parametersOf
 import org.quartz.JobBuilder.newJob
 import org.quartz.JobKey
@@ -226,7 +226,7 @@ class EarningsRepositoryImpl(
 
     private suspend fun createClaimOrderInternal(claimOrderRequest: ClaimOrderRequest): ClaimOrder? {
         val claimOrder =
-            newSuspendedTransaction {
+            suspendTransaction {
                 val stakeAddress = claimOrderRequest.walletAddress.extractStakeAddress(cardanoRepository.isMainnet())
                 // check for existing open claim record first
                 getActiveClaimOrderByStakeAddress(stakeAddress) ?: run {

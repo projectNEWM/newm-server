@@ -11,8 +11,8 @@ import io.ktor.server.application.install
 import io.newm.chain.util.config.Config
 import io.newm.shared.ktx.getConfigString
 import java.util.Properties
-import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.DatabaseConfig
+import org.jetbrains.exposed.v1.core.DatabaseConfig
+import org.jetbrains.exposed.v1.jdbc.Database
 
 fun Application.initializeDatabase() {
     Config.shelleyGenesisHash = environment.getConfigString("database.shelleyGenesisHash")

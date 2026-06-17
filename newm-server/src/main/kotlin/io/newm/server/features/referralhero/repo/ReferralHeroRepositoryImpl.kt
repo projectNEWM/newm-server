@@ -24,7 +24,7 @@ import io.newm.server.ktx.checkedBody
 import io.newm.server.ktx.getSecureConfigString
 import io.newm.shared.ktx.coLazy
 import io.newm.shared.ktx.getConfigString
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import java.time.LocalDateTime
 
 class ReferralHeroRepositoryImpl(

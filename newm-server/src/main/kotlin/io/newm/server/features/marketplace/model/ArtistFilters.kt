@@ -8,7 +8,7 @@ import io.newm.server.ktx.olderThan
 import io.newm.server.ktx.sortOrder
 import io.newm.server.model.FilterCriteria
 import io.newm.server.typealiases.UserId
-import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.v1.core.SortOrder
 import java.time.LocalDateTime
 
 data class ArtistFilters(

@@ -16,7 +16,7 @@ import io.newm.server.model.toFilterCriteria
 import io.newm.server.typealiases.SaleId
 import io.newm.server.typealiases.SongId
 import io.newm.server.typealiases.UserId
-import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.v1.core.SortOrder
 import java.time.LocalDateTime
 
 data class SaleFilters(
