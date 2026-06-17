@@ -4,7 +4,7 @@ import io.newm.chain.util.extractStakeKeyHex
 import io.newm.server.features.marketplace.database.MarketplaceSaleEntity
 import org.flywaydb.core.api.migration.BaseJavaMigration
 import org.flywaydb.core.api.migration.Context
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
 @Suppress("unused")
 class V71__MarketplaceUpdates : BaseJavaMigration() {

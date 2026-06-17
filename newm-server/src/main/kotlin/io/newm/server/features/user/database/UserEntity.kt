@@ -8,18 +8,20 @@ import io.newm.server.features.user.model.UserVerificationStatus
 import io.newm.server.model.ClientPlatform
 import io.newm.server.typealiases.UserId
 import io.newm.shared.ktx.exists
-import org.jetbrains.exposed.dao.UUIDEntity
-import org.jetbrains.exposed.dao.UUIDEntityClass
-import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.AndOp
-import org.jetbrains.exposed.sql.Op
-import org.jetbrains.exposed.sql.SizedIterable
-import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.notInList
-import org.jetbrains.exposed.sql.lowerCase
+import org.jetbrains.exposed.v1.dao.java.UUIDEntity
+import org.jetbrains.exposed.v1.dao.java.UUIDEntityClass
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
+import org.jetbrains.exposed.v1.core.AndOp
+import org.jetbrains.exposed.v1.core.Op
+import org.jetbrains.exposed.v1.jdbc.SizedIterable
+import org.jetbrains.exposed.v1.core.SortOrder
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.greater
+import org.jetbrains.exposed.v1.core.inList
+import org.jetbrains.exposed.v1.core.isNullOrEmpty
+import org.jetbrains.exposed.v1.core.less
+import org.jetbrains.exposed.v1.core.notInList
+import org.jetbrains.exposed.v1.core.lowerCase
 import java.time.LocalDateTime
 
 open class UserEntity(

@@ -103,15 +103,17 @@ import kotlinx.serialization.json.Json
 import org.apache.tika.Tika
 import org.jaudiotagger.audio.AudioFileIO
 import org.jetbrains.annotations.VisibleForTesting
-import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.CustomFunction
-import org.jetbrains.exposed.sql.Expression
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.stringLiteral
-import org.jetbrains.exposed.sql.TextColumnType
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
+import org.jetbrains.exposed.v1.core.CustomFunction
+import org.jetbrains.exposed.v1.core.Expression
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.core.stringLiteral
+import org.jetbrains.exposed.v1.core.TextColumnType
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
@@ -1272,9 +1274,7 @@ internal class SongRepositoryImpl(
                 sendMintingNotification("released", songId)
             }
 
-            else -> {
-                Unit
-            }
+            else -> {}
         }
     }
 

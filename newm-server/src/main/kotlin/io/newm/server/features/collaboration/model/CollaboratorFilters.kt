@@ -6,7 +6,7 @@ import io.newm.server.ktx.phrase
 import io.newm.server.ktx.songIds
 import io.newm.server.ktx.sortOrder
 import io.newm.server.model.FilterCriteria
-import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.v1.core.SortOrder
 import java.util.UUID
 
 data class CollaboratorFilters(

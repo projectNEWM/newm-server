@@ -92,9 +92,11 @@ import io.newm.txbuilder.ktx.sortByHashAndIx
 import io.newm.txbuilder.ktx.toNativeAssetCborMap
 import java.math.BigInteger
 import java.util.UUID
-import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
 private const val SALE_TIP_KEY = "saleTip"
 private const val QUEUE_TIP_KEY = "queueTip"

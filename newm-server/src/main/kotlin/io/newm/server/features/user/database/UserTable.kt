@@ -4,10 +4,10 @@ import io.newm.server.auth.oauth.model.OAuthType
 import io.newm.server.features.referralhero.model.ReferralStatus
 import io.newm.server.features.user.model.UserVerificationStatus
 import io.newm.server.model.ClientPlatform
-import org.jetbrains.exposed.dao.id.UUIDTable
-import org.jetbrains.exposed.sql.Column
-import org.jetbrains.exposed.sql.javatime.CurrentDateTime
-import org.jetbrains.exposed.sql.javatime.datetime
+import org.jetbrains.exposed.v1.core.dao.id.java.UUIDTable
+import org.jetbrains.exposed.v1.core.Column
+import org.jetbrains.exposed.v1.javatime.CurrentDateTime
+import org.jetbrains.exposed.v1.javatime.datetime
 import java.time.LocalDateTime
 
 object UserTable : UUIDTable(name = "users") {

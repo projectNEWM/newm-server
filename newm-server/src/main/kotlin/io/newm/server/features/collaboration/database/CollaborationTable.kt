@@ -4,12 +4,12 @@ import io.newm.server.features.collaboration.model.CollaborationStatus
 import io.newm.server.features.song.database.SongTable
 import io.newm.server.typealiases.SongId
 import io.newm.shared.exposed.textArray
-import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.dao.id.UUIDTable
-import org.jetbrains.exposed.sql.Column
-import org.jetbrains.exposed.sql.ReferenceOption
-import org.jetbrains.exposed.sql.javatime.CurrentDateTime
-import org.jetbrains.exposed.sql.javatime.datetime
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
+import org.jetbrains.exposed.v1.core.dao.id.java.UUIDTable
+import org.jetbrains.exposed.v1.core.Column
+import org.jetbrains.exposed.v1.core.ReferenceOption
+import org.jetbrains.exposed.v1.javatime.CurrentDateTime
+import org.jetbrains.exposed.v1.javatime.datetime
 import java.time.LocalDateTime
 
 object CollaborationTable : UUIDTable(name = "collaborations") {

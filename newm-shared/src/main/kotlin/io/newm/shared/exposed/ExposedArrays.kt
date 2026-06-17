@@ -1,22 +1,22 @@
 package io.newm.shared.exposed
 
 import java.util.UUID
-import org.jetbrains.exposed.sql.Column
-import org.jetbrains.exposed.sql.ComparisonOp
-import org.jetbrains.exposed.sql.CustomFunction
-import org.jetbrains.exposed.sql.DoubleColumnType
-import org.jetbrains.exposed.sql.EqOp
-import org.jetbrains.exposed.sql.ExpressionWithColumnType
-import org.jetbrains.exposed.sql.FloatColumnType
-import org.jetbrains.exposed.sql.IntegerColumnType
-import org.jetbrains.exposed.sql.LongColumnType
-import org.jetbrains.exposed.sql.NotOp
-import org.jetbrains.exposed.sql.Op
-import org.jetbrains.exposed.sql.QueryParameter
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.asLiteral
-import org.jetbrains.exposed.sql.Table
-import org.jetbrains.exposed.sql.TextColumnType
-import org.jetbrains.exposed.sql.UUIDColumnType
+import org.jetbrains.exposed.v1.core.Column
+import org.jetbrains.exposed.v1.core.ComparisonOp
+import org.jetbrains.exposed.v1.core.CustomFunction
+import org.jetbrains.exposed.v1.core.DoubleColumnType
+import org.jetbrains.exposed.v1.core.EqOp
+import org.jetbrains.exposed.v1.core.ExpressionWithColumnType
+import org.jetbrains.exposed.v1.core.FloatColumnType
+import org.jetbrains.exposed.v1.core.IntegerColumnType
+import org.jetbrains.exposed.v1.core.LongColumnType
+import org.jetbrains.exposed.v1.core.NotOp
+import org.jetbrains.exposed.v1.core.Op
+import org.jetbrains.exposed.v1.core.QueryParameter
+import org.jetbrains.exposed.v1.core.Table
+import org.jetbrains.exposed.v1.core.TextColumnType
+import org.jetbrains.exposed.v1.core.asLiteral
+import org.jetbrains.exposed.v1.core.java.UUIDColumnType
 
 //
 // Exposed support for arrays

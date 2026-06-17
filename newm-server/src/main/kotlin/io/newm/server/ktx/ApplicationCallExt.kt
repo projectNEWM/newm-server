@@ -27,7 +27,7 @@ import io.newm.shared.ktx.orZero
 import io.newm.shared.ktx.toHexString
 import io.newm.shared.ktx.toLocalDateTime
 import io.newm.shared.ktx.toUUID
-import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.v1.core.SortOrder
 import java.nio.ByteBuffer
 import java.security.Key
 import java.time.LocalDateTime

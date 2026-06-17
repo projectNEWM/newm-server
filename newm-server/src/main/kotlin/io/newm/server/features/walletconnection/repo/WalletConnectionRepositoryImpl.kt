@@ -28,9 +28,9 @@ import io.newm.shared.exception.HttpForbiddenException
 import io.newm.shared.exception.HttpNotFoundException
 import io.newm.shared.ktx.existsHavingId
 import io.newm.shared.ktx.getConfigLong
-import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
+import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import qrcode.QRCode
 import qrcode.color.Colors
 import java.util.UUID
@@ -234,7 +234,7 @@ internal class WalletConnectionRepositoryImpl(
     ) {
         logger.debug { "updateUserConnection: connectionId = $connectionId, userId = $userId, request = $request" }
 
-        newSuspendedTransaction {
+        suspendTransaction {
             with(WalletConnectionEntity[connectionId]) {
                 if (this.userId?.value != userId) throw HttpForbiddenException("User doesn't own connection")
                 this.name = request.name

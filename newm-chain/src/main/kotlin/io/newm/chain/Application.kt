@@ -14,7 +14,7 @@ import io.newm.shared.daemon.initializeDaemons
 import kotlin.system.exitProcess
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.jetbrains.exposed.sql.exposedLogger
+import org.jetbrains.exposed.v1.core.exposedLogger
 import org.slf4j.LoggerFactory
 
 private var createJwtUser: String = ""

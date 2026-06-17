@@ -3,16 +3,16 @@ package io.newm.server.features.cardano.database
 import io.newm.chain.util.hexToByteArray
 import io.newm.server.features.cardano.model.Key
 import io.newm.server.features.cardano.model.KeyFilters
-import org.jetbrains.exposed.dao.UUIDEntity
-import org.jetbrains.exposed.dao.UUIDEntityClass
-import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.AndOp
-import org.jetbrains.exposed.sql.Op
-import org.jetbrains.exposed.sql.SizedIterable
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
+import org.jetbrains.exposed.v1.dao.java.UUIDEntity
+import org.jetbrains.exposed.v1.dao.java.UUIDEntityClass
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
+import org.jetbrains.exposed.v1.core.AndOp
+import org.jetbrains.exposed.v1.core.Op
+import org.jetbrains.exposed.v1.jdbc.SizedIterable
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.greater
+import org.jetbrains.exposed.v1.core.inList
+import org.jetbrains.exposed.v1.core.less
 import java.time.LocalDateTime
 import java.util.*
 

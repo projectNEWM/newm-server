@@ -42,9 +42,9 @@ import io.newm.shared.ktx.toHexString
 import io.newm.shared.ktx.toTempFile
 import kotlinx.coroutines.runBlocking
 import org.apache.tika.Tika
-import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.deleteAll
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
+import org.jetbrains.exposed.v1.jdbc.deleteAll
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test

@@ -1,7 +1,7 @@
 package io.newm.chain.database.table
 
-import org.jetbrains.exposed.dao.id.LongIdTable
-import org.jetbrains.exposed.sql.Column
+import org.jetbrains.exposed.v1.core.Column
+import org.jetbrains.exposed.v1.core.dao.id.LongIdTable
 
 object StakeDelegationsTable : LongIdTable(name = "stake_delegations") {
     // the block in which this delegation/deregistration occurred

@@ -10,7 +10,7 @@ import java.time.Duration
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import org.apache.commons.net.util.SubnetUtils
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
 internal class ConfigRepositoryImpl : ConfigRepository {
     private val log by lazy { KotlinLogging.logger { } }

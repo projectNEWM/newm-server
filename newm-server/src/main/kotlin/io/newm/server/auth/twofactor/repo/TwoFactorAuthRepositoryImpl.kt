@@ -12,7 +12,7 @@ import io.newm.shared.ktx.getString
 import io.newm.shared.ktx.nextDigitCode
 import io.newm.shared.ktx.toHash
 import io.newm.shared.ktx.verify
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import java.security.SecureRandom
 import java.time.LocalDateTime
 

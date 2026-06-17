@@ -51,12 +51,12 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.greaterEq
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.batchInsert
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.greaterEq
+import org.jetbrains.exposed.v1.jdbc.batchInsert
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
+import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 
 class MonitorAddressDaemon(
     private val environment: ApplicationEnvironment,
@@ -230,7 +230,7 @@ class MonitorAddressDaemon(
         val firstBlock = blocksToCommit.first()
         val latestBlock = blocksToCommit.last()
         measureTimeMillis {
-            newSuspendedTransaction {
+            suspendTransaction {
                 warnLongQueriesDuration = 1000L
                 rollbackTime +=
                     measureTimeMillis {
@@ -443,9 +443,10 @@ class MonitorAddressDaemon(
             }
 
         AddressTxLogTable.batchInsert(
-            batch,
+            data = batch,
             shouldReturnGeneratedValues = false
-        ) { (monitorAddress, monitorAddressResponse) ->
+        ) { entry ->
+            val (monitorAddress, monitorAddressResponse) = entry
             this[AddressTxLogTable.blockNumber] = block.height
             this[AddressTxLogTable.address] = monitorAddress
             this[AddressTxLogTable.txId] = monitorAddressResponse.txId

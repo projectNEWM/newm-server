@@ -13,8 +13,8 @@ import io.newm.server.typealiases.UserId
 import io.newm.shared.exception.HttpForbiddenException
 import io.newm.shared.exception.HttpUnprocessableEntityException
 import java.util.UUID
-import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
 internal class PlaylistRepositoryImpl : PlaylistRepository {
     private val logger = KotlinLogging.logger {}

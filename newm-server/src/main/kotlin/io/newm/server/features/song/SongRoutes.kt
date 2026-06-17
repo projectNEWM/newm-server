@@ -34,7 +34,7 @@ import io.newm.shared.ktx.patch
 import io.newm.shared.ktx.post
 import io.newm.shared.ktx.put
 import io.newm.shared.ktx.toLocalDateTime
-import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.v1.core.SortOrder
 
 private const val SONGS_PATH = "v1/songs"
 

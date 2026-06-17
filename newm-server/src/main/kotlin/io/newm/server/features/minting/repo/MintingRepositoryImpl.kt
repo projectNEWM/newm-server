@@ -61,8 +61,8 @@ import io.newm.txbuilder.ktx.toPlutusData
 import java.math.BigDecimal
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.koin.core.parameter.parametersOf
 import org.slf4j.Logger
 

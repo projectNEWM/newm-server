@@ -1,7 +1,7 @@
 package io.newm.chain.database.table
 
-import org.jetbrains.exposed.dao.id.LongIdTable
-import org.jetbrains.exposed.sql.Column
+import org.jetbrains.exposed.v1.core.Column
+import org.jetbrains.exposed.v1.core.dao.id.LongIdTable
 
 object LedgerAssetsTable : LongIdTable(name = "ledger_assets") {
     // policy id for this asset

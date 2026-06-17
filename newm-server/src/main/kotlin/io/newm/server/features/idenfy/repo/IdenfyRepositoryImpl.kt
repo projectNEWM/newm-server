@@ -15,7 +15,7 @@ import io.newm.server.ktx.checkedBody
 import io.newm.server.ktx.getSecureString
 import io.newm.server.typealiases.UserId
 import io.newm.shared.ktx.*
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import java.util.*
 
 class IdenfyRepositoryImpl(

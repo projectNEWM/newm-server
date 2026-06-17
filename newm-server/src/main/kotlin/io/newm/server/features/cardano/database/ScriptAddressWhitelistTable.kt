@@ -1,7 +1,7 @@
 package io.newm.server.features.cardano.database
 
-import org.jetbrains.exposed.dao.id.UUIDTable
-import org.jetbrains.exposed.sql.Column
+import org.jetbrains.exposed.v1.core.dao.id.java.UUIDTable
+import org.jetbrains.exposed.v1.core.Column
 
 object ScriptAddressWhitelistTable : UUIDTable(name = "script_address_whitelist") {
     // scriptAddress that is allowed to pull earnings. We prevent anything sitting in some smart contracts from pulling

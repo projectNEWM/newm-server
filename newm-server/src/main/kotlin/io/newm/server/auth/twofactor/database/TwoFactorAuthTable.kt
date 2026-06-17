@@ -1,8 +1,8 @@
 package io.newm.server.auth.twofactor.database
 
-import org.jetbrains.exposed.dao.id.LongIdTable
-import org.jetbrains.exposed.sql.Column
-import org.jetbrains.exposed.sql.javatime.datetime
+import org.jetbrains.exposed.v1.core.dao.id.LongIdTable
+import org.jetbrains.exposed.v1.core.Column
+import org.jetbrains.exposed.v1.javatime.datetime
 import java.time.LocalDateTime
 
 object TwoFactorAuthTable : LongIdTable(name = "two_factor_auth") {

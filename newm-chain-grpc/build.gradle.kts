@@ -17,6 +17,22 @@ plugins {
 java.sourceCompatibility = JavaVersion.VERSION_21
 java.targetCompatibility = JavaVersion.VERSION_21
 
+val protocArtifactClassifier =
+    when (val osName = System.getProperty("os.name").lowercase()) {
+        in listOf("linux") -> "linux"
+
+        in listOf("mac os x", "darwin") -> "osx"
+
+        else -> when {
+            osName.startsWith("windows") -> "windows"
+            else -> error("Unsupported OS for protoc artifacts: $osName")
+        }
+    } + "-" + when (val osArch = System.getProperty("os.arch").lowercase()) {
+        "x86_64", "amd64" -> "x86_64"
+        "aarch64", "arm64" -> "aarch_64"
+        else -> error("Unsupported architecture for protoc artifacts: $osArch")
+    }
+
 ktlint {
     version.set(Dependencies.KtLint.VERSION)
     filter {
@@ -55,11 +71,11 @@ dependencies {
 
 protobuf {
     protoc {
-        artifact = Dependencies.Protobuf.PROTOC
+        artifact = "${Dependencies.Protobuf.PROTOC}:$protocArtifactClassifier@exe"
     }
     plugins {
         id("grpc") {
-            artifact = Dependencies.Grpc.GRPC
+            artifact = "${Dependencies.Grpc.GRPC}:$protocArtifactClassifier@exe"
         }
         id("grpckt") {
             artifact = Dependencies.GrpcKotlin.GRPCKT

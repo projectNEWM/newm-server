@@ -95,8 +95,9 @@ import io.newm.txbuilder.ktx.toNativeAssetMap
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.springframework.security.crypto.encrypt.BytesEncryptor
 import org.springframework.security.crypto.encrypt.Encryptors
 import software.amazon.awssdk.core.SdkBytes
@@ -651,7 +652,7 @@ internal class CardanoRepositoryImpl(
         userId: UserId,
         getAssetsByAddress: suspend (String) -> List<NativeAsset>
     ): List<AllocatedNativeAsset> =
-        newSuspendedTransaction {
+        suspendTransaction {
             WalletConnectionEntity.getAllByUserIdAndWalletChain(userId, WalletChain.Cardano).toList()
         }.map { connection ->
             connection.id.value to getAssetsByAddress(connection.address)

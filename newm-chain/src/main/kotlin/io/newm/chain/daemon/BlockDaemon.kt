@@ -68,10 +68,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.greaterEq
-import org.jetbrains.exposed.sql.batchInsert
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import org.jetbrains.exposed.v1.core.greaterEq
+import org.jetbrains.exposed.v1.jdbc.batchInsert
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
+import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 
 class BlockDaemon(
     private val environment: ApplicationEnvironment,
@@ -337,7 +337,7 @@ class BlockDaemon(
         var createTime = 0L
         var pruneTime = 0L
         measureTimeMillis {
-            newSuspendedTransaction {
+            suspendTransaction {
                 warnLongQueriesDuration = 1000L
                 val firstBlock = blocksToCommit.first().block as BlockPraos
                 val lastBlock = blocksToCommit.last().block as BlockPraos
@@ -731,8 +731,8 @@ class BlockDaemon(
         )
 
         // Update the db for native asset changes
-        NativeAssetMonitorLogTable.batchInsert(batch, shouldReturnGeneratedValues = false) {
-            this[NativeAssetMonitorLogTable.monitorNativeAssetsResponseBytes] = it
+        NativeAssetMonitorLogTable.batchInsert(data = batch, shouldReturnGeneratedValues = false) { responseBytes ->
+            this[NativeAssetMonitorLogTable.monitorNativeAssetsResponseBytes] = responseBytes
             this[NativeAssetMonitorLogTable.blockNumber] = block.height
         }
     }

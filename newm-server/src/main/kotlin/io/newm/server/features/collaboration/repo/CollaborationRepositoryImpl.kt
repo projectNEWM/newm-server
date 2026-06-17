@@ -24,9 +24,9 @@ import io.newm.shared.exception.HttpForbiddenException
 import io.newm.shared.exception.HttpUnprocessableEntityException
 import io.newm.shared.ktx.getConfigString
 import io.newm.shared.ktx.millisToMinutesSecondsString
-import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.Transaction
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
+import org.jetbrains.exposed.v1.core.Transaction
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import java.util.UUID
 
 internal class CollaborationRepositoryImpl(

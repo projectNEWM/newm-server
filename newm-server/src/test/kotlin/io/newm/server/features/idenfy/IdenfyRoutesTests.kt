@@ -22,7 +22,7 @@ import java.security.Key
 import javax.crypto.Mac
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.junit.jupiter.api.Test
 
 class IdenfyRoutesTests : BaseApplicationTests() {

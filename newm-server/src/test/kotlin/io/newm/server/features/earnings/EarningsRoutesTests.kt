@@ -16,8 +16,8 @@ import io.newm.server.features.song.model.Song
 import io.newm.server.features.user.database.UserTable
 import io.newm.server.features.user.model.User
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.exposed.sql.deleteAll
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.deleteAll
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test

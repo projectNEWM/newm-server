@@ -43,8 +43,8 @@ import io.newm.shared.ktx.isValidPassword
 import io.newm.shared.ktx.orNull
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import java.time.LocalDateTime
 
 internal class UserRepositoryImpl(
@@ -170,7 +170,7 @@ internal class UserRepositoryImpl(
         if (user.isEmailVerified != true) {
             throw HttpUnauthorizedException("Unverified email: $email")
         }
-        return newSuspendedTransaction {
+        return suspendTransaction {
             val entity = UserEntity.getByEmail(email) ?: let {
                 val referralHeroSubscriber = getOrCreateReferralHeroSubscriber(email, referrer)
                 UserEntity.new {
@@ -245,7 +245,7 @@ internal class UserRepositoryImpl(
         val email = user.email?.asValidEmail()?.asVerifiedEmail(user.authCode)
         val passwordHash = user.newPassword?.asValidPassword(user.confirmPassword)?.toHash()
 
-        val userEntity = newSuspendedTransaction {
+        val userEntity = suspendTransaction {
             val entity = UserEntity[userId]
             user.firstName?.let {
                 entity.checkNameModifiable(it, entity.firstName)

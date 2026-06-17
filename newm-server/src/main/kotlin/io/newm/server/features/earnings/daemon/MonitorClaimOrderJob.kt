@@ -33,7 +33,7 @@ import java.time.ZoneOffset
 import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import org.quartz.Job
 import org.quartz.JobExecutionContext
 import org.quartz.JobExecutionException
@@ -211,7 +211,7 @@ class MonitorClaimOrderJob : Job {
                             val submitTransactionResponse =
                                 cardanoRepository.submitTransaction(transactionBuilderResponse.transactionCbor)
                             if (submitTransactionResponse.result == "MsgAcceptTx") {
-                                newSuspendedTransaction {
+                                suspendTransaction {
                                     earningsRepository.claimed(
                                         claimOrderId = claimOrder.id!!,
                                         earningsIds = claimOrder.earningsIds
