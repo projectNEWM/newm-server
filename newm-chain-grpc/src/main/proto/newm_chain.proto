@@ -7,6 +7,7 @@ package newmchain;
 
 service NewmChain {
   rpc SubmitTransaction (SubmitTransactionRequest) returns (SubmitTransactionResponse);
+  rpc QueryTransactionInfo (QueryTransactionInfoRequest) returns (QueryTransactionInfoResponse);
   rpc QueryCurrentEpoch (QueryCurrentEpochRequest) returns (QueryCurrentEpochResponse);
   rpc QueryTip (QueryTipRequest) returns (QueryTipResponse);
   rpc QueryUtxos (QueryUtxosRequest) returns (QueryUtxosResponse);
@@ -45,6 +46,23 @@ message SubmitTransactionRequest {
 message SubmitTransactionResponse {
   string result = 1;
   string tx_id = 2;
+}
+
+// Returns retained ledger-derived details for a confirmed on-chain transaction.
+//
+// This is intended for recent transactions that are still present in ledger-derived storage.
+// A response with found = false means no retained ledger-derived rows were found for the
+// transaction id. It does not guarantee the transaction never existed on-chain.
+message QueryTransactionInfoRequest {
+  string tx_id = 1;
+}
+
+message QueryTransactionInfoResponse {
+  bool found = 1;
+  uint64 block_number = 2;
+  uint64 slot_number = 3;
+  repeated Utxo spent_utxos = 4;
+  repeated Utxo created_utxos = 5;
 }
 
 message QueryCurrentEpochRequest {}

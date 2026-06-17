@@ -67,6 +67,8 @@ interface LedgerRepository {
         currentEpoch: Long
     ): Long
 
+    fun queryTransactionInfo(txId: String): TransactionInfo?
+
     fun queryAdaHandle(adaHandleName: String): String?
 
     fun siblingHashCount(hash: String): Long

@@ -12,6 +12,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.newm.chain.cardano.address.Address
 import io.newm.chain.cardano.address.AddressCredential
 import io.newm.chain.cardano.address.BIP32PublicKey
+import io.newm.chain.database.repository.TransactionInfoIntegrityException
 import io.newm.chain.cardano.toLedgerAssetMetadataItem
 import io.newm.chain.database.repository.ChainRepository
 import io.newm.chain.database.repository.LedgerRepository
@@ -42,6 +43,7 @@ import io.newm.txbuilder.ktx.cborHexToPlutusData
 import io.newm.txbuilder.ktx.verify
 import io.newm.txbuilder.ktx.withMinUtxo
 import io.sentry.Sentry
+import io.grpc.Status
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.experimental.and
@@ -210,6 +212,33 @@ class NewmChainService : NewmChainGrpcKt.NewmChainCoroutineImplBase() {
         } catch (e: Throwable) {
             Sentry.addBreadcrumb(request.toString(), "NewmChainService")
             log.error(e) { "queryCurrentEpoch error!" }
+            throw e
+        }
+    }
+
+    override suspend fun queryTransactionInfo(request: QueryTransactionInfoRequest): QueryTransactionInfoResponse {
+        try {
+            return ledgerRepository.queryTransactionInfo(request.txId)?.let { transactionInfo ->
+                queryTransactionInfoResponse {
+                    found = true
+                    blockNumber = transactionInfo.blockNumber
+                    slotNumber = transactionInfo.slotNumber
+                    spentUtxos.addAll(transactionInfo.spentUtxos.map { utxo -> utxo.toRpcUtxo() })
+                    createdUtxos.addAll(transactionInfo.createdUtxos.map { utxo -> utxo.toRpcUtxo() })
+                }
+            } ?: queryTransactionInfoResponse {
+                found = false
+            }
+        } catch (e: TransactionInfoIntegrityException) {
+            Sentry.addBreadcrumb(request.toString(), "NewmChainService")
+            log.error(e) { "queryTransactionInfo integrity error!" }
+            throw Status.INTERNAL
+                .withDescription(e.message ?: "queryTransactionInfo integrity error")
+                .withCause(e)
+                .asRuntimeException()
+        } catch (e: Throwable) {
+            Sentry.addBreadcrumb(request.toString(), "NewmChainService")
+            log.error(e) { "queryTransactionInfo error!" }
             throw e
         }
     }
