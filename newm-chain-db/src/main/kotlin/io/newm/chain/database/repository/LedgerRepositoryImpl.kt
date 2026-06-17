@@ -51,6 +51,7 @@ import java.time.Instant
 import kotlin.math.max
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
+import org.jetbrains.exposed.sql.ResultRow
 import kotlinx.coroutines.sync.withLock
 import org.jetbrains.exposed.sql.LongColumnType
 import org.jetbrains.exposed.sql.SortOrder
@@ -221,6 +222,119 @@ class LedgerRepositoryImpl : LedgerRepository {
                     }
                 }.toHashSet()
         }
+
+    override fun queryTransactionInfo(txId: String): TransactionInfo? =
+        transaction {
+            warnLongQueriesDuration = 1000L
+
+            val createdRows =
+                LedgerUtxosTable
+                    .innerJoin(LedgerTable, { ledgerId }, { LedgerTable.id })
+                    .selectAll()
+                    .where { LedgerUtxosTable.txId eq txId }
+                    .orderBy(LedgerUtxosTable.txIx, SortOrder.ASC)
+                    .toList()
+
+            val spentRows =
+                LedgerUtxosTable
+                    .innerJoin(LedgerTable, { ledgerId }, { LedgerTable.id })
+                    .selectAll()
+                    .where { LedgerUtxosTable.transactionSpent eq txId }
+                    .orderBy(LedgerUtxosTable.txId, SortOrder.ASC)
+                    .toList()
+
+            if (createdRows.isEmpty() && spentRows.isEmpty()) {
+                return@transaction null
+            }
+
+            val blockNumber = validateTransactionInfoBlockNumber(txId, createdRows, spentRows)
+            val slotNumber =
+                ChainTable
+                    .select(ChainTable.slotNumber)
+                    .where { ChainTable.blockNumber eq blockNumber }
+                    .firstOrNull()
+                    ?.let { row -> row[ChainTable.slotNumber] }
+                    ?: throw TransactionInfoIntegrityException(
+                        "Unable to resolve slot number for txId=$txId at block=$blockNumber"
+                    )
+
+            TransactionInfo(
+                blockNumber = blockNumber,
+                slotNumber = slotNumber,
+                spentUtxos = spentRows.map { row -> row.toRepositoryUtxo() },
+                createdUtxos = createdRows.map { row -> row.toRepositoryUtxo() },
+            )
+        }
+
+    private fun validateTransactionInfoBlockNumber(
+        txId: String,
+        createdRows: List<ResultRow>,
+        spentRows: List<ResultRow>,
+    ): Long {
+        val createdBlocks = createdRows.map { row -> row[LedgerUtxosTable.blockCreated] }.distinct()
+        if (createdBlocks.size > 1) {
+            throw TransactionInfoIntegrityException(
+                "Created UTXOs for txId=$txId span multiple blocks: $createdBlocks"
+            )
+        }
+
+        val spentBlocks =
+            spentRows
+                .map { row ->
+                    row[LedgerUtxosTable.blockSpent]
+                        ?: throw TransactionInfoIntegrityException(
+                            "Spent UTXO row for txId=$txId is missing block_spent"
+                        )
+                }.distinct()
+        if (spentBlocks.size > 1) {
+            throw TransactionInfoIntegrityException(
+                "Spent UTXOs for txId=$txId span multiple blocks: $spentBlocks"
+            )
+        }
+
+        val createdBlock = createdBlocks.singleOrNull()
+        val spentBlock = spentBlocks.singleOrNull()
+        if ((createdBlock != null) && (spentBlock != null) && (createdBlock != spentBlock)) {
+            throw TransactionInfoIntegrityException(
+                "Created and spent UTXOs disagree on block for txId=$txId: created=$createdBlock spent=$spentBlock"
+            )
+        }
+
+        return (createdBlock ?: spentBlock)
+            ?: throw TransactionInfoIntegrityException("Unable to infer block number for txId=$txId")
+    }
+
+    private fun ResultRow.toRepositoryUtxo(): Utxo {
+        val ledgerUtxoId = this[LedgerUtxosTable.id].value
+        val nativeAssets =
+            LedgerUtxoAssetsTable
+                .innerJoin(
+                    LedgerAssetsTable,
+                    { ledgerAssetId },
+                    { LedgerAssetsTable.id },
+                    { LedgerUtxoAssetsTable.ledgerUtxoId eq ledgerUtxoId },
+                ).selectAll()
+                .map { naRow ->
+                    NativeAsset(
+                        policy = naRow[LedgerAssetsTable.policy],
+                        name = naRow[LedgerAssetsTable.name],
+                        amount = BigInteger(naRow[LedgerUtxoAssetsTable.amount]),
+                    )
+                }
+
+        return Utxo(
+            address = this[LedgerTable.address],
+            hash = this[LedgerUtxosTable.txId],
+            ix = this[LedgerUtxosTable.txIx].toLong(),
+            lovelace = BigInteger(this[LedgerUtxosTable.lovelace]),
+            nativeAssets = nativeAssets,
+            datumHash = this[LedgerUtxosTable.datumHash],
+            datum = this[LedgerUtxosTable.datum],
+            isInlineDatum = this[LedgerUtxosTable.isInlineDatum],
+            scriptRef = this[LedgerUtxosTable.scriptRef],
+            scriptRefVersion = this[LedgerUtxosTable.scriptRefVersion],
+        )
+    }
 
     override fun queryUtxoByNativeAsset(
         name: String,
