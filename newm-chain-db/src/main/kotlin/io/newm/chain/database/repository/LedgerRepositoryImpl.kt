@@ -1576,9 +1576,9 @@ class LedgerRepositoryImpl : LedgerRepository {
 
     override fun queryTransactionConfirmationCounts(txIds: List<String>): Map<String, Long> =
         transaction {
-            val tipBlockExpression = LedgerUtxosTable.blockCreated.max()
+            val tipBlockExpression = ChainTable.blockNumber.max()
             val tipBlock: Long =
-                LedgerUtxosTable.select(tipBlockExpression).firstOrNull()?.let {
+                ChainTable.select(tipBlockExpression).firstOrNull()?.let {
                     it[tipBlockExpression]
                 } ?: 0L
 
@@ -1590,7 +1590,7 @@ class LedgerRepositoryImpl : LedgerRepository {
                     .associate { row ->
                         val txId = row[LedgerUtxosTable.txId]
                         val blockCreated = row[LedgerUtxosTable.blockCreated]
-                        txId to max(tipBlock - blockCreated, 0L)
+                        txId to max(tipBlock - blockCreated + 1L, 0L)
                     }
 
             txIds.associateWith { txId -> (ledgerMap[txId] ?: 0L) }

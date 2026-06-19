@@ -214,6 +214,40 @@ class QueryTransactionInfoRepositoryTest {
         }
     }
 
+    @Test
+    fun `queryTransactionConfirmationCounts uses chain tip and is inclusive`() {
+        (100L..106L).forEach { blockNumber ->
+            insertChainBlock(blockNumber = blockNumber, slotNumber = 1000L + blockNumber)
+        }
+        insertLedgerUtxo(
+            address = "addr_test_dest1",
+            txId = "target-tx",
+            txIx = 0,
+            lovelace = "2500",
+            blockCreated = 100L,
+        )
+
+        val result = repository.queryTransactionConfirmationCounts(listOf("target-tx", "missing-tx"))
+
+        assertThat(result["target-tx"]).isEqualTo(7L)
+        assertThat(result["missing-tx"]).isEqualTo(0L)
+    }
+
+    @Test
+    fun `queryTransactionConfirmationCounts returns zero when chain tip is missing`() {
+        insertLedgerUtxo(
+            address = "addr_test_dest1",
+            txId = "target-tx",
+            txIx = 0,
+            lovelace = "2500",
+            blockCreated = 100L,
+        )
+
+        val result = repository.queryTransactionConfirmationCounts(listOf("target-tx"))
+
+        assertThat(result["target-tx"]).isEqualTo(0L)
+    }
+
     private fun insertChainBlock(
         blockNumber: Long,
         slotNumber: Long,
