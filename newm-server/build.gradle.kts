@@ -146,11 +146,15 @@ dependencies {
     "integTestImplementation"(Dependencies.Typesafe.CONFIG)
 }
 
-tasks.withType<Jar> {
+tasks.withType<Jar>().configureEach {
     manifest {
         attributes(
-            "Build-Time" to SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ").format(Date()),
             "Main-Class" to "io.newm.server.ApplicationKt"
+        )
+    }
+    doFirst {
+        manifest.attributes(
+            "Build-Time" to SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ").format(Date())
         )
     }
 }
