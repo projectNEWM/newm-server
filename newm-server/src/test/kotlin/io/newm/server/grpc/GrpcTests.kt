@@ -31,6 +31,10 @@ import io.newm.chain.grpc.walletRequest
 import io.newm.chain.util.Constants
 import io.newm.server.features.cardano.repo.CardanoRepository.Companion.CHARLI3_NEWM_USD_NAME_PREPROD
 import io.newm.server.features.cardano.repo.CardanoRepository.Companion.CHARLI3_NEWM_USD_POLICY_PREPROD
+import java.math.BigDecimal
+import java.math.RoundingMode
+import java.nio.file.Files
+import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.runBlocking
@@ -38,21 +42,48 @@ import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
 class GrpcTests {
+    private data class RoyaltyInput(
+        val isrc: String,
+        val formattedIsrc: String,
+        val usdAmount: BigDecimal,
+    )
+
+    private data class RoyaltyAsset(
+        val input: RoyaltyInput,
+        val policy: String,
+        val metadataName: String,
+        val fractionalName: String,
+        val supply: Long,
+    )
+
+    private data class SongAllocation(
+        val asset: RoyaltyAsset,
+        val stakeAddress: String,
+        val tokenAmount: Long,
+        val usdAmount: BigDecimal,
+    )
+
     companion object {
-//        private const val TEST_HOST = "localhost"
-//        private const val TEST_PORT = 3737
-//        private const val TEST_SECURE = false
+        private const val TEST_HOST = "localhost"
+        private const val TEST_PORT = 3737
+        private const val TEST_SECURE = false
 
 //        private const val TEST_HOST = "newm-chain.cardanostakehouse.com"
 //        private const val TEST_PORT = 3737
 //        private const val TEST_SECURE = true
 
-        private const val TEST_HOST = "newmchain.tokenriot.net"
-        private const val TEST_PORT = 3737
-        private const val TEST_SECURE = true
+//        private const val TEST_HOST = "newmchain.tokenriot.net"
+//        private const val TEST_PORT = 3737
+//        private const val TEST_SECURE = true
 
         // DO NOT COMMIT THIS TOKEN
         private const val JWT_TOKEN = "<JWT_TOKEN_HERE_DO_NOT_COMMIT>"
+
+        private const val REFERENCE_TOKEN_PREFIX = "000643b0"
+        private const val FRACTIONAL_TOKEN_PREFIX = "001bc280"
+        private const val STREAM_TOKEN_SUPPLY = 100_000_000L
+        private const val FOUNDATION_STAKE_ADDRESS = "stake1ux6aw8p753m60pf439242l9smrfa90tl998pavpzv67vk6qw6nz9x"
+        private const val DATABASE_NAME = "newmchain"
     }
 
     private fun buildClient(): NewmChainGrpcKt.NewmChainCoroutineStub {
@@ -406,6 +437,319 @@ class GrpcTests {
         }
 
     @Test
+    @Disabled("Manual mainnet royalty snapshot; requires localhost newm-chain and PostgreSQL")
+    fun `snapshot sales report royalties by stake address`() =
+        runBlocking {
+            val reportPath =
+                listOf(
+                    Path.of("NEWM_Combined_Sales_Report.csv"),
+                    Path.of("..", "NEWM_Combined_Sales_Report.csv"),
+                ).firstOrNull(Files::isRegularFile)
+                    ?: error("Could not find NEWM_Combined_Sales_Report.csv")
+            val reportRoot = reportPath.toAbsolutePath().normalize().parent
+            val outputDirectory = reportRoot.resolve("newm-server/build/reports/royalties")
+            Files.createDirectories(outputDirectory)
+
+            val inputs =
+                Files.readAllLines(reportPath).mapIndexed { index, line ->
+                    val columns = line.split(',')
+                    require(columns.size == 2) { "Invalid CSV row ${index + 1}: $line" }
+                    val isrc = columns[0].trim().uppercase()
+                    require(Regex("^[A-Z]{2}[A-Z0-9]{3}\\d{7}$").matches(isrc)) {
+                        "Invalid ISRC on row ${index + 1}: $isrc"
+                    }
+                    val usdAmount = columns[1].trim().toBigDecimal()
+                    require(usdAmount > BigDecimal.ZERO) { "Invalid USD amount on row ${index + 1}: $usdAmount" }
+                    RoyaltyInput(
+                        isrc = isrc,
+                        formattedIsrc = "${isrc.substring(0, 2)}-${isrc.substring(2, 5)}-${isrc.substring(5, 7)}-${isrc.substring(7)}",
+                        usdAmount = usdAmount,
+                    )
+                }
+            require(inputs.map(RoyaltyInput::isrc).distinct().size == inputs.size) {
+                "The sales report contains duplicate ISRCs"
+            }
+
+            val requestedIsrcs = inputs.map(RoyaltyInput::isrc).toSet()
+            val metadataAssetsByIsrc = mutableMapOf<String, MutableSet<Triple<String, String, Long>>>()
+            queryDatabase(
+                """
+                SELECT metadata.value, assets.policy, assets.name, assets.supply
+                FROM ledger_asset_metadata metadata
+                JOIN ledger_assets assets ON assets.id = metadata.asset_id
+                WHERE LOWER(metadata.key) = 'isrc'
+                """.trimIndent()
+            ).forEach { row ->
+                val normalizedIsrc = row[0].replace("-", "").uppercase()
+                if (normalizedIsrc in requestedIsrcs) {
+                    metadataAssetsByIsrc
+                        .getOrPut(normalizedIsrc, ::mutableSetOf)
+                        .add(Triple(row[1], row[2], row[3].toLong()))
+                }
+            }
+            val fractionalAssets =
+                queryDatabase(
+                    "SELECT policy, name, supply FROM ledger_assets WHERE name LIKE '$FRACTIONAL_TOKEN_PREFIX%'"
+                ).associate { row -> (row[0] to row[1]) to row[2].toLong() }
+            val resolutionErrors = mutableMapOf<RoyaltyInput, String>()
+            val assets =
+                inputs.mapNotNull { input ->
+                    val metadataAssets = metadataAssetsByIsrc[input.isrc].orEmpty()
+                    val candidates =
+                        metadataAssets
+                            .mapNotNull { (policy, metadataName, metadataSupply) ->
+                                val fractionalName =
+                                    if (metadataName.startsWith(REFERENCE_TOKEN_PREFIX)) {
+                                        FRACTIONAL_TOKEN_PREFIX + metadataName.removePrefix(REFERENCE_TOKEN_PREFIX)
+                                    } else {
+                                        metadataName
+                                    }
+                                val supply =
+                                    if (fractionalName == metadataName) {
+                                        metadataSupply
+                                    } else {
+                                        fractionalAssets[policy to fractionalName]
+                                    }
+                                supply
+                                    ?.takeIf { it == STREAM_TOKEN_SUPPLY }
+                                    ?.let { RoyaltyAsset(input, policy, metadataName, fractionalName, it) }
+                            }.distinctBy { it.policy to it.fractionalName }
+                    if (candidates.size != 1) {
+                        resolutionErrors[input] =
+                            "Expected one 100M royalty asset, found ${candidates.size}; metadata assets: $metadataAssets"
+                        null
+                    } else {
+                        candidates.single()
+                    }
+                }
+
+            writeCsv(
+                outputDirectory.resolve("isrc-assets.csv"),
+                listOf(
+                    "isrc",
+                    "formatted_isrc",
+                    "usd_amount",
+                    "policy_id",
+                    "metadata_token_name",
+                    "fractional_token_name",
+                    "supply",
+                    "status",
+                ),
+                inputs.map { input ->
+                    val asset = assets.singleOrNull { it.input == input }
+                    if (asset == null) {
+                        listOf(
+                            input.isrc,
+                            input.formattedIsrc,
+                            input.usdAmount.toPlainString(),
+                            "",
+                            "",
+                            "",
+                            "",
+                            resolutionErrors.getValue(input),
+                        )
+                    } else {
+                        listOf(
+                            asset.input.isrc,
+                            asset.input.formattedIsrc,
+                            asset.input.usdAmount.toPlainString(),
+                            asset.policy,
+                            asset.metadataName,
+                            asset.fractionalName,
+                            asset.supply.toString(),
+                            "resolved",
+                        )
+                    }
+                },
+            )
+
+            val client = buildClient()
+            val allocations = mutableListOf<SongAllocation>()
+            val reconciliationRows =
+                resolutionErrors
+                    .map { (input, error) ->
+                        listOf(
+                            input.formattedIsrc,
+                            input.usdAmount.toPlainString(),
+                            "0",
+                            input.usdAmount.negate().toPlainString(),
+                            "",
+                            "",
+                            error,
+                        )
+                    }.toMutableList()
+            assets.forEachIndexed { index, asset ->
+                println("Snapshotting ${index + 1}/${assets.size}: ${asset.input.formattedIsrc}")
+                val response =
+                    client.snapshotNativeAssets(
+                        snapshotNativeAssetsRequest {
+                            policy = asset.policy
+                            name = asset.fractionalName
+                        }
+                    )
+                val snapshot = response.snapshotEntriesList.associate { it.stakeAddress to it.amount }
+                val snapshotSupply = snapshot["total_supply"] ?: 0L
+                val holders = snapshot.filterKeys { it != "total_supply" }
+                require(holders.values.sum() == snapshotSupply) {
+                    "Snapshot entries do not sum to total_supply for ${asset.input.formattedIsrc}"
+                }
+                require(snapshotSupply in 0..STREAM_TOKEN_SUPPLY) {
+                    "Invalid snapshot supply for ${asset.input.formattedIsrc}: $snapshotSupply"
+                }
+
+                val tokenAmounts = holders.toMutableMap()
+                val foundationTokens = STREAM_TOKEN_SUPPLY - snapshotSupply
+                if (foundationTokens > 0L) {
+                    tokenAmounts.merge(FOUNDATION_STAKE_ADDRESS, foundationTokens, Long::plus)
+                }
+                tokenAmounts.toSortedMap().forEach { (stakeAddress, tokenAmount) ->
+                    allocations +=
+                        SongAllocation(
+                            asset = asset,
+                            stakeAddress = stakeAddress,
+                            tokenAmount = tokenAmount,
+                            usdAmount =
+                                asset.input.usdAmount
+                                    .multiply(tokenAmount.toBigDecimal())
+                                    .divide(STREAM_TOKEN_SUPPLY.toBigDecimal()),
+                        )
+                }
+                val allocatedUsd = allocations.filter { it.asset === asset }.sumOf(SongAllocation::usdAmount)
+                reconciliationRows +=
+                    listOf(
+                        asset.input.formattedIsrc,
+                        asset.input.usdAmount.toPlainString(),
+                        allocatedUsd.toPlainString(),
+                        allocatedUsd.subtract(asset.input.usdAmount).toPlainString(),
+                        snapshotSupply.toString(),
+                        foundationTokens.toString(),
+                        "resolved",
+                    )
+            }
+
+            writeCsv(
+                outputDirectory.resolve("song-address-royalties.csv"),
+                listOf("isrc", "song_usd_amount", "policy_id", "fractional_token_name", "stake_address", "token_amount", "exact_usd_amount"),
+                allocations.map { allocation ->
+                    listOf(
+                        allocation.asset.input.formattedIsrc,
+                        allocation.asset.input.usdAmount
+                            .toPlainString(),
+                        allocation.asset.policy,
+                        allocation.asset.fractionalName,
+                        allocation.stakeAddress,
+                        allocation.tokenAmount.toString(),
+                        allocation.usdAmount.toPlainString(),
+                    )
+                },
+            )
+
+            val allocationsByStakeAddress = allocations.groupBy(SongAllocation::stakeAddress).toSortedMap()
+            val payoutRows =
+                allocationsByStakeAddress.map { (stakeAddress, stakeAllocations) ->
+                    val exactUsd = stakeAllocations.sumOf(SongAllocation::usdAmount)
+                    val roundedUsd = exactUsd.setScale(6, RoundingMode.HALF_UP)
+                    listOf(
+                        stakeAddress,
+                        stakeAllocations.size.toString(),
+                        stakeAllocations
+                            .map { it.asset.input.formattedIsrc }
+                            .distinct()
+                            .sorted()
+                            .joinToString(";"),
+                        exactUsd.toPlainString(),
+                        roundedUsd.toPlainString(),
+                        roundedUsd.subtract(exactUsd).toPlainString(),
+                    )
+                }
+            writeCsv(
+                outputDirectory.resolve("address-payouts.csv"),
+                listOf("stake_address", "song_count", "isrcs", "exact_usd_amount", "rounded_usd_amount", "rounding_difference"),
+                payoutRows,
+            )
+
+            val sourceTotal = inputs.sumOf(RoyaltyInput::usdAmount)
+            val exactTotal = allocations.sumOf(SongAllocation::usdAmount)
+            val roundedTotal =
+                allocationsByStakeAddress.values.sumOf { stakeAllocations ->
+                    stakeAllocations.sumOf(SongAllocation::usdAmount).setScale(6, RoundingMode.HALF_UP)
+                }
+            reconciliationRows +=
+                listOf(
+                    "TOTAL",
+                    sourceTotal.toPlainString(),
+                    exactTotal.toPlainString(),
+                    exactTotal.subtract(sourceTotal).toPlainString(),
+                    "",
+                    "",
+                    "${resolutionErrors.size} unresolved ISRC(s)",
+                )
+            reconciliationRows +=
+                listOf(
+                    "ROUNDED_PAYOUT_TOTAL",
+                    sourceTotal.toPlainString(),
+                    roundedTotal.toPlainString(),
+                    roundedTotal.subtract(sourceTotal).toPlainString(),
+                    "",
+                    "",
+                    "${resolutionErrors.size} unresolved ISRC(s)",
+                )
+            writeCsv(
+                outputDirectory.resolve("reconciliation.csv"),
+                listOf(
+                    "isrc",
+                    "source_usd_amount",
+                    "allocated_usd_amount",
+                    "difference",
+                    "staked_token_supply",
+                    "foundation_token_amount",
+                    "status",
+                ),
+                reconciliationRows,
+            )
+
+            require(resolutionErrors.isEmpty()) {
+                "${resolutionErrors.size} ISRC(s) could not be resolved; see isrc-assets.csv and reconciliation.csv"
+            }
+            require(exactTotal.compareTo(sourceTotal) == 0) {
+                "Exact allocations do not reconcile: source=$sourceTotal, allocated=$exactTotal"
+            }
+            println("Royalty reports written to $outputDirectory")
+        }
+
+    private fun writeCsv(
+        path: Path,
+        header: List<String>,
+        rows: List<List<String>>,
+    ) {
+        Files.newBufferedWriter(path).use { writer ->
+            (listOf(header) + rows).forEach { row ->
+                writer.appendLine(row.joinToString(",") { value -> "\"${value.replace("\"", "\"\"")}\"" })
+            }
+        }
+    }
+
+    private fun queryDatabase(sql: String): List<List<String>> {
+        val process =
+            ProcessBuilder(
+                "psql",
+                "--dbname=$DATABASE_NAME",
+                "--tuples-only",
+                "--no-align",
+                "--field-separator=\t",
+                "--command=$sql",
+            ).redirectErrorStream(true)
+                .start()
+        val output = process.inputStream.bufferedReader().readText()
+        require(process.waitFor() == 0) { "Database query failed: $output" }
+        return output
+            .lineSequence()
+            .filter(String::isNotBlank)
+            .map { it.split('\t') }
+            .toList()
+    }
+
+    @Test
     @Disabled
     fun `test deriveWalletAddresses`() =
         runBlocking {
@@ -477,14 +821,13 @@ class GrpcTests {
         }
 
     @Test
-    @Disabled
     fun `test query music nfts`() =
         runBlocking {
             val client = buildClient()
             val request =
                 queryByNativeAssetRequest {
-                    policy = "e65559518eef9ebc25d3bacfa3f037d3e8cf0830b879c9a3fc6d7617"
-                    name = "001bc280008557b67dfef2ddfdc102ed2b6c224bc266c44dc3401ff600e16501" // MusicNFT
+                    policy = "3333c8022c24d2014f02236c082105ebceb73c46c45f94eb99136f92"
+                    name = "001bc28000814524722b4095d0670a2e83346c2d09e95de99a73794f3308bdca" // MusicNFT
                 }
             val response = client.queryLedgerAssetMetadataListByNativeAsset(request)
             assertThat(response).isNotNull()
