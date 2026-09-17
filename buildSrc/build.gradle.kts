@@ -3,5 +3,5 @@ repositories {
 }
 
 plugins {
-    `kotlin-dsl`
+    embeddedKotlin("jvm")
 }
