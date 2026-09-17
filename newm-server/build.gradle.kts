@@ -25,7 +25,7 @@ application {
     mainClass.set("io.newm.server.ApplicationKt")
 }
 
-val integTest by sourceSets.creating
+val integTest = sourceSets.create("integTest")
 configurations[integTest.implementationConfigurationName].extendsFrom(configurations.testImplementation.get())
 configurations[integTest.runtimeOnlyConfigurationName].extendsFrom(configurations.testRuntimeOnly.get())
 

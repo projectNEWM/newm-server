@@ -83,7 +83,7 @@ class CloudfrontAudioStreamData(
                 request.ipRange()
             )
         val signatureBytes =
-            SigningUtils.signWithSha1Rsa(policy.toByteArray(StandardCharsets.UTF_8), request.privateKey())
+            SigningUtils.sign(policy.toByteArray(StandardCharsets.UTF_8), request.privateKey(), "SHA1withRSA")
         val urlSafePolicy = SigningUtils.makeStringUrlSafe(policy)
         val urlSafeSignature = SigningUtils.makeBytesUrlSafe(signatureBytes)
         val uri = URI.create(streamUrl)
